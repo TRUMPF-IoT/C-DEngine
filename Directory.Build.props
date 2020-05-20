@@ -1,0 +1,67 @@
+<!--
+ SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-License-Identifier: MPL-2.0
+ -->
+<Project>
+  <Choose>
+    <When Condition="'$(TargetFramework)'=='net35'">
+      <PropertyGroup>
+        <DefineConstants>CDE_NET35;$(DefineConstants)</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFramework)'=='net40'">
+      <PropertyGroup>
+        <DefineConstants>CDE_NET4;$(DefineConstants)</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFramework)'=='net45'">
+      <PropertyGroup>
+        <DefineConstants>CDE_NET45;$(DefineConstants)</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFramework)'=='netstandard2.0'">
+      <PropertyGroup>
+        <DefineConstants>CDE_STANDARD;$(DefineConstants)</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
+  <PropertyGroup Condition="'$(Configuration)' != 'Release'">
+    <cdeDebugConfig>$(Configuration)</cdeDebugConfig>
+    <cdeDebugProductSuffix> ($(Configuration))</cdeDebugProductSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'cdeUpdater'">
+    <BaseOutputPath>$(SolutionDir)..\bin\$(Configuration)\$(MSBuildProjectName)\</BaseOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'cdeUpdater'">
+    <BaseOutputPath>$(MSBuildProjectDir)..\..\..\bin\$(Configuration)\$(MSBuildProjectName)\</BaseOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OutputPath>$(BaseOutputPath)</OutputPath>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+      <PropertyGroup>
+        <SourceRevisionId>private-$([System.DateTime]::Now.ToString("yyyyMMdd"))-$(Computername.ToLowerInvariant())-$([System.DateTime]::Now.ToString("HHmmss"))</SourceRevisionId>
+        <cdeNugetSuffix>-$(SourceRevisionId.SubString(0, 20))</cdeNugetSuffix>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <SourceRevisionId>$(cdeBuildQualityPrefix.ToLowerInvariant())$(BUILD_BUILDNUMBER)</SourceRevisionId>
+        <RepositoryUrl>https://github.com/trumpf-iot/c-dengine</RepositoryUrl>
+        <!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+        <!-- Optional: Embed source files that are not tracked by the source control manager in the PDB -->
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+        <!-- Optional: Build symbol package (.snupkg) to distribute the PDB containing Source Link -->
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+      </PropertyGroup>
+      <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
+</Project>

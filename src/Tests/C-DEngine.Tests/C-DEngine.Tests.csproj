@@ -1,0 +1,55 @@
+<!--
+ SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-License-Identifier: MPL-2.0
+ -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp2.2;net35;net45</TargetFrameworks>
+    <RootNamespace>C_DEngine.Tests</RootNamespace>
+
+    <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
+    <ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
+
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)'=='net35'">
+    <Compile Remove="C-DEngines\C-DThingService\SensorModelTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="C-DEngines\C-DThingService\SensorModelTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="C-DEngine" />
+    <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="12.*" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.16.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
+  </ItemGroup>
+
+  <!--  <ItemGroup Condition="'$(TargetFramework)'!='net35'">
+    <ProjectReference Include="..\..\..\066 - C-MyVThings\C-DMyVThings\C-DMyVThings.csproj" />
+    <ProjectReference Include="..\..\..\092 - CDMyFileService\C-DMyFileService\C-DMyFileService.csproj" />
+    <ProjectReference Include="..\..\..\123 - CDMyModbus\CD-MyModbus\CDMyModbus.csproj" />
+    <ProjectReference Include="..\..\..\181 - Axoom IoTHub Sender\CDMyAxoomIoTHubSender\CDMyAXOOMIoTHubSender.csproj" />
+    <ProjectReference Include="..\..\..\097 - CDMyOPCUAServer\CDMyOPCUAServer\CDMyOPCUAServer.csproj" />
+  </ItemGroup> -->
+
+  <ItemGroup>
+    <!--<ProjectReference Include="..\..\..\078 - CDMyOPCUAClient\CDMyOPCUAClient\CDMyOPCUAClient.csproj" />
+    <ProjectReference Include="..\..\..\202 - CDMyGrafanaSQLConfig\CDMyGrafanaSQLConfig\CDMyGrafanaSQLConfig.csproj" />-->
+    <ProjectReference Include="..\CommonTestHost\CommonTestHost.csproj" />
+    <ProjectReference Include="..\DataLogUtilities\DataLogUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,93 @@
+<!--
+ SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-License-Identifier: MPL-2.0
+ -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>cdePackager</RootNamespace>
+    <AssemblyName>cdePackager</AssemblyName>
+    <Product>cdePackager for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Copyright>Copyright © 2017-2020 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <PackageDescription>cdePackager for C-DEngine plugins</PackageDescription>
+    <PackageIcon>toplogo-128.png</PackageIcon>
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!--<NuspecFile>cdePackager.nuspec</NuspecFile>-->
+    <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
+    <ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
+    <!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
+    <PackageOutputPath>$(OutDir)</PackageOutputPath>
+    <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(TargetFramework)'=='netcoreapp2.0'">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);NET_STANDARD;NETSTANDARD2_0</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFramework)'=='net45'">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);;CDE_NET45</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFramework)'=='net40'">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);CDE_NET4</DefineConstants>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(TargetFramework)'=='net35'">
+      <PropertyGroup>
+        <DefineConstants>$(DefineConstants);CDE_NET35</DefineConstants>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <ItemGroup Condition="'$(TargetFramework)'!='netcoreapp2.0'">
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net35' ">
+    <!-- Required for dotnet build -->
+    <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\C-DEngine\C-DEngine.csproj">
+      <Project>{25ac2757-e112-48f7-af07-ee8f219f4838}</Project>
+      <Name>C-DEngine</Name>
+      <Private>true</Private>
+      <IncludeAssets>all</IncludeAssets>
+    </ProjectReference>
+    <ProjectReference Include="..\cdePackagerTask\cdePackagerTask.csproj" Package="true">
+      <Project>{422492bf-8238-4b4d-8633-cd8251650b52}</Project>
+      <Name>cdePackagerTask</Name>
+      <IncludeAssets>all</IncludeAssets>
+      <Private>true</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\C-DEngine\toplogo-128.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <!--<PropertyGroup Condition="EXISTS('$(ProjectDir)..\..\..\BuildTools')">
+    <PostBuildEvent>xcopy "$(TargetDir)*.*" "$(ProjectDir)..\..\..\..\BuildTools\cdePackager" /C /R /Y /I /F</PostBuildEvent>
+  </PropertyGroup>-->
+
+  <!-- Copy to BuildTools and package the C-DEngine -->
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="EXISTS('$(ProjectDir)..\..\..\..\BuildTools')">
+    <Exec Command="xcopy &quot;$(TargetDir)*.*&quot; &quot;$(ProjectDir)..\..\..\..\BuildTools\cdePackager&quot; /C /R /Y /I /F" />
+    <Exec Command="$(ProjectDir)..\..\..\C-DEngine\packagecde.cmd $(Configuration)" Condition="'$(BuildingInsideVisualStudio)' == 'true'" />
+  </Target>
+
+</Project>

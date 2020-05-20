@@ -1,0 +1,56 @@
+﻿<!--
+ SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-License-Identifier: MPL-2.0
+ -->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45</TargetFrameworks>
+    <!-- Does NOT work on netstandard/core due to missing Httpapplication and net4 missing websockets-->
+    <Authors>Chris Muench</Authors>
+    <Company>C-Labs</Company>
+    <Description>IIS Enabler for C-DEngine on ($(TargetFramework))</Description>
+    <PackageDescription>IIS Enabler for C-DEngine</PackageDescription>
+    <PackageIcon>toplogo-128.png</PackageIcon>
+    <Copyright>Copyright (c) 2017-2020 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+    <Version>4.302.1</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
+    <ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
+    <!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
+    <PackageOutputPath>$(OutDir)</PackageOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG;NETSTANDARD2_0;CDE_SYSLOG</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>TRACE;RELEASE;NETSTANDARD2_0;CDE_SYSLOG</DefineConstants>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <None Include="..\C-DEngine\toplogo-128.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="C-DEngine" />
+    <!--<ProjectReference Include="..\C-DEngine\C-DEngine.csproj" />-->
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web" />
+        <Reference Include="System.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="call &quot;$(ProjectDir)..\..\BuildTools\signmeSha.bat&quot; &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\..\BuildTools&quot;" />
+  </Target>
+
+</Project>

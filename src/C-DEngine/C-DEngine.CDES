@@ -1,0 +1,26 @@
+{
+  // SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs.
+  // SPDX-License-Identifier: MPL-2.0
+  "ServiceName": "C-DEngine",
+  "ServiceDescription": "C-DEngine (C) 2017-2020 TRUMPF Laser GmbH, authors: C-Labs. License: MPL-2.0.",
+  "LongDescription": "The main Component of C-DEngine",
+  "CurrentVersion": 5.015,
+  "Price": 0.0,
+  "HomeUrl": "http://www.c-labs.com",
+  "IconUrl": "iconTopLogo.png",
+  "Developer": "C-Labs Corporation",
+  "DeveloperUrl": "http://www.c-labs.com",
+  "Platform": 2,
+  "Categories": [],
+  "Capabilities": [
+    33
+  ],
+  "FilesManifest": [
+    "C-DEngine.dll"
+  ],
+  "cdeMID": "CDE68A8A-CDE2-45A2-9E49-37CD7DA16F6B",
+  "cdeCTIM": "2019-10-16T12:27:12.8712265-07:00",
+  "cdeEXP": 0,
+  "cdePRI": 0,
+  "cdeAVA": 0
+}

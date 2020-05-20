@@ -1,0 +1,40 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: C-DEngine
+Upstream-Contact:  <>
+Source: https://github.com/TRUMPF-IoT/C-DEngine
+
+Files:  readme.md
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/C-DEngine/toplogo-128.png
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/C-DEngine/C-DCommunication/ClientBin/FAVICON.ICO
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/C-DEngine.sln
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/Utilities/cdePackager/cdePackager/App.config
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/Tests/C-DEngine.Tests/README.md
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/Tests/DataLogVerifier/Properties/PublishProfiles/FolderProfileRelease.pubxml
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/Tests/DataLogVerifier/Properties/PublishProfiles/To IIS Setup.pubxml
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
+
+Files:  src/Tests/DataLogVerifier/readme.md
+Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0

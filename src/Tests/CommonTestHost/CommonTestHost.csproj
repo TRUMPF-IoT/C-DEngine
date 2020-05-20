@@ -1,0 +1,25 @@
+<!--
+ SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-License-Identifier: MPL-2.0
+ -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net45;net35</TargetFrameworks>
+    <ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="C-DEngine" />
+    <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.12.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <!--<Import Project="..\..\..\144 - TheCommonMessageContracts\TheCommonMessageContracts\TheCommonMessageContracts.projitems" Label="Shared" />
+  <Import Project="..\..\..\097 - CDMyOPCUAServer\MyOPCUAServerAPI\MyOPCUAServerAPI\MyOPCUAServerAPI.projitems" Label="Shared" />-->
+</Project>

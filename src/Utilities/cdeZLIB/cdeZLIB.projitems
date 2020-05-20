@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <!--
+ SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-License-Identifier: MPL-2.0
+ -->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>605aff65-944e-4174-b92c-8180b3fa93c1</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>cdeZLIB</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Crc32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Deflate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DeflateStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\EncryptionAlgorithm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\Events.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ExtractExistingFileAction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\OffsetStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\Shared.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipCrypto.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipDirEntry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipEntry.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipEntry.Extract.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipEntry.Read.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipEntry.Write.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipEntrySource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipErrorAction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipFile.AddUpdate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipFile.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipFile.Events.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipFile.Extract.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipFile.Read.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipFile.Save.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipFile.x-IEnumerable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipInputStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipOutputStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)File\ZipSegmentedStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GZipStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Inflate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)InfTree.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ParallelDeflateOutputStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Tree.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Zlib.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ZlibBaseStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ZlibCodec.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ZlibConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ZlibStream.cs" />
+  </ItemGroup>
+</Project>
