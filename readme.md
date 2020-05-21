@@ -1,6 +1,6 @@
 # Welcome to the C-DEngine
 
-## Rapid Development Framework for distributed Industrial IoT Solutions
+## Rapid Development Framework for distributed Industrial Grade IoT Solutions
 
 Thank you for your interest in the C-DEngine - the rapid development framework for IoT solutions.
 
