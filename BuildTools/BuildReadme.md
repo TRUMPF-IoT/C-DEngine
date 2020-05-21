@@ -10,15 +10,18 @@ A set of global msbuild files ([Directory.Build.props](/Directory.Build.props) a
 
 1. GitVersion (GitVersionTask NuGet package) is used to override version information (if present) in each of the .csproj files. 
     > To build non-pre-release versions, the top-most commit must have a git tag of a compatible form including the version number. For offical builds this is handled through the GitHub Release mechanism. Developer builds should usually be marked as pre-release builds (automatic if you make additional local commits).
-2. Package references are dynamically replaced with a project reference if one is found in the solution (filtered to C-DEngine and CDMyNMIHtml5RT in the `<PackageReferenceFilter>` declaration for performance reason). This allows for easier development and debugging across or outside of depots.
-3. All binaries are placed into a central /bin/$(Configuration)/{projectname} directory instead of the bin/ directory under each .csproj. This makes it easier to extract the artifacts.
+2. Package references are dynamically replaced with a project reference if a project with a matching name is found in the solution (filtered to C-DEngine and CDMyNMIHtml5RT in the `<PackageReferenceFilter>` declaration in Directory.Build.targets for performance reason). This allows for easier development and debugging across or outside of the Git repros.
+3. All binaries are placed into a central /bin/$(Configuration)/{projectname} directory instead of the default bin/$(Configuration) directory under each .csproj. This makes it easier to extract the artifacts.
 4. Package references to Microsoft.SourceLink.GitHub are injected into each project to enable source-level debugging.
 
 ## GitHub Action/Workflow
 [.github/workflows/dotnetcore.yml](/.github/workflows/dotnetcore.yml) contains a single build sequence that is triggered on any pull request or commit/tag push to the master branch. The action creates the following outputs:
 
-1. Artifacts containing NuGet packages and CDEX deployment packages
-2. For tagged builds (top-level commit has a version tag recognized by GitVersion): NuGet Packages are pushed to NuGet.org.
+1. GitHub Artifacts containing NuGet packages, CDEX deployment packages etc.
+2. For tagged builds (top-level commit has a version tag recognized by GitVersion), NuGet Packages are pushed to NuGet.org.
+
+GitHub Releases are created through the standard GitHub Release mechanism (required owner/administrator permissions) by adding a Git tag with the desired version during the Release Draft creation. This automatically starts build workflow and publishes the NuGet packages.
+> TODO: Artifacts don't get automatically added to the Release yet, but are available in the Action workflow run.
 
 ## Copyright and License declarations
 
