@@ -1,6 +1,6 @@
 <!--
  SPDX-FileCopyrightText: Copyright (c) 2020 Connectivity-Labs LLC
- SPDX-License-Identifier: CC-BY-4.0.txt
+ SPDX-License-Identifier: CC-BY-4.0
  -->
 # cdeZLIB
 
