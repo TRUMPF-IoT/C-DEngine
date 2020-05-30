@@ -2513,17 +2513,6 @@ namespace nsCDEngine.Engines.NMIService
             ValueName = pValueNameX;
             ColumFilter = pColFilter;
             Grouping = pGrouping;
-        }
-        public TheChartDefinition(Guid pKey, string pTitle, int pBlockSize, string pDataSource, bool pInAquireMode, string pColFilter, string pGrouping, TheChartValueDefinition pValue)
-        {
-            cdeMID = pKey;
-            TitleText = pTitle;
-            BlockSize = pBlockSize;
-            DataSource = pDataSource;
-            InAquireMode = pInAquireMode;
-            ValueDefinitions = new List<TheChartValueDefinition> { pValue };
-            ColumFilter = pColFilter;
-            Grouping = pGrouping;
             if (!string.IsNullOrEmpty(pValueNameX))
             {
                 var tProps = pValueNameX.Split(';');
@@ -2558,6 +2547,18 @@ namespace nsCDEngine.Engines.NMIService
                     ValueDefinitions.Add(new TheChartValueDefinition(Guid.NewGuid(), tProps[i]) { Label = string.IsNullOrEmpty(pLabels) ? tProps[i] : (i < tLabels.Length ? tLabels[i] : tProps[i]) });
                 }
             }
+        }
+        public TheChartDefinition(Guid pKey, string pTitle, int pBlockSize, string pDataSource, bool pInAquireMode, string pColFilter, string pGrouping, TheChartValueDefinition pValue)
+        {
+            cdeMID = pKey;
+            TitleText = pTitle;
+            BlockSize = pBlockSize;
+            DataSource = pDataSource;
+            InAquireMode = pInAquireMode;
+            ValueDefinitions = new List<TheChartValueDefinition> { pValue };
+            ColumFilter = pColFilter;
+            Grouping = pGrouping;
+
         }
         public TheChartDefinition(Guid pKey, string pTitle, int pBlockSize, string pDataSource, bool pInAquireMode, string pXAxis, string pColFilter, string pGrouping, List<TheChartValueDefinition> pValues)
         {
