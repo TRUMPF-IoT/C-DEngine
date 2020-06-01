@@ -1,5 +1,5 @@
 rem SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
-rem SPDX-License-Identifier: MPL-2.0
+rem SPDX-License-Identifier: CC0-1.0
 if not exist "%~dp0\real.sign" goto noSign
 echo signing with 9dbc9dfbbe4588de1caf3ba2b672f94c5316c823 ts: http://timestamp.digicert.com
 set "SignToolEXE=%~dp0\signtool.exe"

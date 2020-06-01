@@ -14,8 +14,8 @@ There are a few tricks in the GitHub Action build integration that are described
 
 The solution also contains:
 
-- [cdeIIS](cdeIIS/cdeGlobal.cs): Adapter to run the C-DEngine inside the IIS web server ("Cloud Gate" or "Cloud Relay"). It is recommended for production deployments on internet-facing nodes, as the (optional) mini-web server in the C-DEngine is intended for local/intranet access.
-- [cdeAspNet](cdeAspNet/cdeASPNetCommon.cs): Adapter to run the C-DEngine inside an ASP.Net Core 3.x Web Server.
+- cdeIIS: Adapter to run the C-DEngine inside the IIS web server ("Cloud Gate" or "Cloud Relay"). It is recommended for production deployments on internet-facing nodes, as the (optional) mini-web server in the C-DEngine is intended for local/intranet access.
+- cdeAspNet: Adapter to run the C-DEngine inside an ASP.Net Core 3.x Web Server.
 - cdePackager: a tool that creates deployment packages (.CDEX files) for the C-DEngine plug-in management system, as well as Mesh Deployment packages (.CDEP) for the C-DEngine Mesh Manager / Provisioning Service. Refer to the [Plug-ins section](http://docs.c-labs.com/plugins/UsingPlugins.html) for more info on how to use the cdePackager tool.
 - cdeUpdater: a tool that gets embedded into the C-DEngine.dll to allow for self-updating of the C-DEngine and it's plug-ins via .CDEX deployment packages.
 

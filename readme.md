@@ -1,8 +1,8 @@
 # Welcome to the C-DEngine
 
-## Rapid Application Development Framework for distributed Industrial IoT Solutions
+## Rapid Development Framework for distributed Industrial Grade IoT Solutions
 
-Thank you for your interest in the C-DEngine - the rapid application development framework for IoT solutions.
+Thank you for your interest in the C-DEngine - the rapid development framework for IoT solutions.
 
 With the C-Labs C-DEngine (pronounced "seed engine"), you can develop distributed solutions connecting local on-premise devices with enterprise and cloud services.
 
