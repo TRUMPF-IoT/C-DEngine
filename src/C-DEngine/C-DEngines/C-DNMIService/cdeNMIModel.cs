@@ -2513,6 +2513,40 @@ namespace nsCDEngine.Engines.NMIService
             ValueName = pValueNameX;
             ColumFilter = pColFilter;
             Grouping = pGrouping;
+            if (!string.IsNullOrEmpty(pValueNameX))
+            {
+                var tProps = pValueNameX.Split(';');
+                if (tProps.Length > 0)
+                {
+                    ValueDefinitions = new List<TheChartValueDefinition>();
+                    for (int i = 0; i < tProps.Length; i++)
+                    {
+                        ValueDefinitions.Add(new TheChartValueDefinition(Guid.NewGuid(), tProps[i]) { Label = tProps[i] });
+                    }
+                    ValueName = null;
+                }
+            }
+        }
+        public TheChartDefinition(Guid pKey, string pTitle, int pBlockSize, string pDataSource, bool pInAquireMode, string pColFilter, string pGrouping, string pValueNameX, string pLabels)
+        {
+            cdeMID = pKey;
+            TitleText = pTitle;
+            BlockSize = pBlockSize;
+            DataSource = pDataSource;
+            InAquireMode = pInAquireMode;
+            ValueName = pValueNameX;
+            ColumFilter = pColFilter;
+            Grouping = pGrouping;
+            if (!string.IsNullOrEmpty(pValueNameX))
+            {
+                ValueDefinitions = new List<TheChartValueDefinition>();
+                var tProps = pValueNameX.Split(';');
+                var tLabels = pLabels?.Split(';');
+                for (int i = 0; i < tProps.Length; i++)
+                {
+                    ValueDefinitions.Add(new TheChartValueDefinition(Guid.NewGuid(), tProps[i]) { Label = string.IsNullOrEmpty(pLabels) ? tProps[i] : (i < tLabels.Length ? tLabels[i] : tProps[i]) });
+                }
+            }
         }
         public TheChartDefinition(Guid pKey, string pTitle, int pBlockSize, string pDataSource, bool pInAquireMode, string pColFilter, string pGrouping, TheChartValueDefinition pValue)
         {
@@ -2524,6 +2558,7 @@ namespace nsCDEngine.Engines.NMIService
             ValueDefinitions = new List<TheChartValueDefinition> { pValue };
             ColumFilter = pColFilter;
             Grouping = pGrouping;
+
         }
         public TheChartDefinition(Guid pKey, string pTitle, int pBlockSize, string pDataSource, bool pInAquireMode, string pXAxis, string pColFilter, string pGrouping, List<TheChartValueDefinition> pValues)
         {
