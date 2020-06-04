@@ -39,7 +39,7 @@ namespace cdeASPNetMiddleware
             tReq.Header = new cdeConcurrentDictionary<string, string>();
             foreach (var t in pContext.Request.Headers)
             {
-                tReq.Header[t.Value] = t.Value;
+                tReq.Header[t.Key] = t.Value;
             }
             //if (Request.Browser != null)
             //{

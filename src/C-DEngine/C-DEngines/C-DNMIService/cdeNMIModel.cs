@@ -1441,7 +1441,11 @@ namespace nsCDEngine.Engines.NMIService
         /// <summary>
         /// Shows the client-certificate picker
         /// </summary>
-        CertPicker = 75
+        CertPicker = 75,
+        /// <summary>
+        /// shows a DeviceType picker
+        /// </summary>
+        DeviceTypePicker = 76
     }
 
     public class TheFieldType : TheMetaDataBase
@@ -2875,8 +2879,20 @@ namespace nsCDEngine.Engines.NMIService
                 }
                 if (tAddVal)
                 {
-                    tBag.Add($"{property.Name}={Value}");
-                    tBag._FastCache.TryAdd(property.Name, Value.ToString());
+                    if (property.Name == "Custom")
+                    {
+                        var tList = TheCommonUtils.cdeSplit(Value.ToString(), ":;:", true, true);
+                        foreach (var t in tList)
+                        {
+                            tBag.Add(t);
+                            tBag._FastCache.TryAdd(property.Name, Value.ToString());
+                        }
+                    }
+                    else
+                    {
+                        tBag.Add($"{property.Name}={Value}");
+                        tBag._FastCache.TryAdd(property.Name, Value.ToString());
+                    }
                 }
             }
             return tBag;
