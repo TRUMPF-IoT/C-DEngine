@@ -196,6 +196,12 @@ namespace nsCDEngine.Engines.NMIService
         public object Value { get; set; }
 
         /// <summary>
+        /// Gets or sets a custom property. This can be used for controls that have private extensions
+        /// </summary>
+        /// <value>The custom.</value>
+        public string Custom { get; set; }
+
+        /// <summary>
         /// Allows to set a custom cookie on a control
         /// </summary>
         public string Cookie { get; set; }
@@ -1115,6 +1121,25 @@ namespace nsCDEngine.Engines.NMIService
         /// Instead of using a single input text, this property picker will use a multi-line Text Field
         /// </summary>
         public int? MultiLines { get; set; }
+
+        /// <summary>
+        /// Includes cde System Properties in return
+        /// </summary>
+        /// <value><c>null</c> if [system properties] contains no value, <c>true</c> if [system properties]; otherwise, <c>false</c>.</value>
+        public bool? SystemProperties { get; set; }
+    }
+
+    public class nmiCtrlDeviceTypePicker : TheNMIBaseControl
+    {
+        /// <summary>
+        /// Includes Remote Things
+        /// </summary>
+        public bool? IncludeRemotes { get; set; }
+
+        /// <summary>
+        /// Allows to specify a filter for the ThingPicker PropertyName=Value. The value will be interpreted as "startswith"
+        /// </summary>
+        public string Filter { get; set; }
     }
 
     public class nmiCtrlThingPicker: TheNMIBaseControl
@@ -1143,6 +1168,12 @@ namespace nsCDEngine.Engines.NMIService
         /// Allows to specify a filter for the ThingPicker PropertyName=Value. The value will be interpreted as "startswith"
         /// </summary>
         public string Filter { get; set; }
+
+        /// <summary>
+        /// If false the picker will return the content of this property instead of cdeMID
+        /// </summary>
+        /// <value>The name of the value as.</value>
+        public string ValueProperty { get; set; }
     }
 
     /// <summary>
@@ -1196,6 +1227,11 @@ namespace nsCDEngine.Engines.NMIService
         /// Display this text instead of the real value in the field
         /// </summary>
         public string DisplayField { get; set; }
+
+        /// <summary>
+        /// Changes the default separator ; to anything else
+        /// </summary>
+        public string Separator { get; set; }
     }
 
     public class nmiCtrlComboLookup : TheNMIBaseControl

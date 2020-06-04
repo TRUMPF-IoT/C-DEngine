@@ -519,7 +519,14 @@ namespace nsCDEngine.Engines.NMIService
                             case "THINGRESOLVE":
                                 {
                                     if (!pMsg.Message.IsFirstNode() || cmd.Length < 4) return;
-                                    var tThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(cmd[4]), true);
+                                    var tSP = cmd[3].Split(';');
+                                    TheFieldInfo tField = GetFieldById(TheCommonUtils.CGuid(tSP[0]));
+                                    string ValueProperty = TheCommonUtils.CStr(tField?.PropBagGetValue("ValueProperty"));
+                                    TheThing tThing=null;
+                                    if (string.IsNullOrEmpty(ValueProperty))
+                                        tThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(cmd[4]), true);
+                                    else
+                                        tThing = TheThingRegistry.GetThingByProperty("*", Guid.Empty, ValueProperty, cmd[4]);
                                     if (tThing == null && TheCommonUtils.CGuid(cmd[4]) == Guid.Empty)
                                     {
                                         var tThings = TheThingRegistry.GetThingsByProperty("*", Guid.Empty, "DeviceType", "IBaseEngine");
@@ -537,7 +544,6 @@ namespace nsCDEngine.Engines.NMIService
                                     }
                                     if (tThing != null)
                                     {
-                                        var tSP = cmd[3].Split(';');
                                         SetUXProperty(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(tSP[0]), $"ThingFriendlyName={tThing.FriendlyName}", cmd[2], tSP.Length > 1 ? $"{tSP[1]};-1" : null);
                                     }
                                 }
@@ -630,9 +636,13 @@ namespace nsCDEngine.Engines.NMIService
                                         tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
                                     else //TODO: Comes with new Sensor Model
                                         tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
+                                    var tSP = cmd[3].Split(';');
+                                    TheFieldInfo tField = GetFieldById(TheCommonUtils.CGuid(tSP[0]));
+                                    string ValueProperty = TheCommonUtils.CStr(tField?.PropBagGetValue("ValueProperty"));
                                     List<TheComboOptions> tLst = new List<TheComboOptions>
                                     {
-                                        new TheComboOptions { G = "Refresh", N = "Refresh Picker", V = "CDE_PPP" }
+                                        new TheComboOptions { G = "Refresh", N = "Refresh Picker", V = "CDE_PPP" },
+                                        new TheComboOptions { G = "Refresh", N = "Empty Entry", V = "" }
                                     };
                                     if (tThings != null)
                                     {
@@ -644,6 +654,12 @@ namespace nsCDEngine.Engines.NMIService
                                             if (string.IsNullOrEmpty(tFN))
                                                 tFN = $"no Name:{tT.cdeMID}";
                                             var tVal = $"{tT.cdeMID}";
+                                            if (!string.IsNullOrEmpty(ValueProperty))
+                                            {
+                                                var tpVal = TheCommonUtils.CStr(tT.GetAllProperties().FirstOrDefault(s => s.Name == ValueProperty)?.GetValue());
+                                                if (tpVal != null)
+                                                    tVal = tpVal;
+                                            }
                                             if (tPN == "EngineNames")
                                             {
                                                 if (tT.DeviceType != "IBaseEngine")
@@ -674,8 +690,61 @@ namespace nsCDEngine.Engines.NMIService
                                         }
                                     }
                                     var tList = TheCommonUtils.SerializeObjectToJSONString(tLst);
-
+                                    SetUXProperty(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(tSP[0]), $"LiveOptions={tList}", cmd[2], tSP.Length > 1 ? $"{tSP[1]};-1" : null);
+                                }
+                                return;
+                            case "DEVICETYPEPICKER": //Syntax of TXT: "NMI_GET_DATA:DEVICETYPEPICKER:<OwnerMID>:<ControlMID>;<FldOrder>"
+                                if (!pMsg.Message.IsFirstNode() || !TheUserManager.HasUserAccess(pMsg.CurrentUserID, 0xF0) || cmd.Length < 4) return;
+                                {
+                                    bool bInclRemotes = false;
+                                    if (cmd.Length > 4)
+                                        bInclRemotes = TheCommonUtils.CBool(cmd[4]);
+                                    string tPN = null;
+                                    string tPV = null;
+                                    if (cmd.Length > 5)
+                                    {
+                                        tPN = cmd[5].Split('=')[0];
+                                        if (cmd[5].IndexOf('=') > 0)
+                                            tPV = cmd[5].Substring(cmd[5].IndexOf('=') + 1);
+                                    }
+                                    List<TheThing> tThings = TheThingRegistry.GetThingsOfEngine("*", true, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
                                     var tSP = cmd[3].Split(';');
+                                    List<TheComboOptions> tLst = new List<TheComboOptions>
+                                    {
+                                        new TheComboOptions { N = "Refresh Picker", V = "CDE_PPP" },
+                                        new TheComboOptions { N = "Empty Entry", V = "" }
+                                    };
+                                    if (tThings != null)
+                                    {
+                                        foreach (var tT in tThings)
+                                        {
+                                            if (string.IsNullOrEmpty(tT.DeviceType) && !tT.IsInit())
+                                                continue;
+                                            if (tLst.Any(s => s.N == tT.DeviceType))
+                                                continue;
+                                            var tFN = tT.DeviceType;
+                                            var tVal = tT.DeviceType;
+                                            if (!string.IsNullOrEmpty(tPN))
+                                            {
+                                                List<cdeP> tLstP = tT.GetAllProperties().OrderBy(s => s.Name).ToList();
+                                                bool bFound = false;
+                                                foreach (cdeP tP in tLstP)
+                                                {
+                                                    if (tP.Name == tPN)
+                                                    {
+                                                        if (!string.IsNullOrEmpty(tPV) && !$"{tP.GetValue()}".StartsWith(tPV))
+                                                            continue;
+                                                        bFound = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if (!bFound)
+                                                    continue;
+                                            }
+                                            tLst.Add(new TheComboOptions { S = tT.EngineName, N = tFN, V = tVal });
+                                        }
+                                    }
+                                    var tList = TheCommonUtils.SerializeObjectToJSONString(tLst);
                                     SetUXProperty(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(tSP[0]), $"LiveOptions={tList}", cmd[2], tSP.Length > 1 ? $"{tSP[1]};-1" : null);
                                 }
                                 return;
@@ -684,6 +753,9 @@ namespace nsCDEngine.Engines.NMIService
                                 Guid ttGuid = TheCommonUtils.CGuid(cmd[4]);
                                 if (ttGuid != Guid.Empty)
                                 {
+                                    var tSP = cmd[3].Split(';');
+                                    TheFieldInfo tField = GetFieldById(TheCommonUtils.CGuid(tSP[0]));
+                                    bool AddSystemProps = TheCommonUtils.CBool(tField?.PropBagGetValue("SystemProperties"));
                                     List<TheComboOptions> tLst = new List<TheComboOptions>
                                     {
                                         new TheComboOptions { N = "Refresh Picker", V = "CDE_PPP" }
@@ -694,12 +766,19 @@ namespace nsCDEngine.Engines.NMIService
                                         List<cdeP> tLstP = tThing.GetAllProperties().OrderBy(s => s.Name).ToList();
                                         foreach (cdeP tP in tLstP)
                                             tLst.Add(new TheComboOptions { N = tP.Name, V = tP.Name });
+                                        if (AddSystemProps)
+                                        {
+                                            tLst.Add(new TheComboOptions { N = "cde TimeStamp", V = "cdeCTIM" });
+                                            tLst.Add(new TheComboOptions { N = "cde MID", V = "cdeMID" });
+                                            tLst.Add(new TheComboOptions { N = "cde NodeID", V = "cdeN" });
+                                            tLst.Add(new TheComboOptions { N = "cde MetaTag", V = "cdeM" });
+                                            tLst.Add(new TheComboOptions { N = "cde Owner", V = "cdeO" });
+                                        }
                                     }
                                     else
                                         tLst.Add(new TheComboOptions { N = "Thing not Found - select a valid Thing first", V = "CDE_NOP" });
                                     var tLO = TheCommonUtils.SerializeObjectToJSONString(tLst);
 
-                                    var tSP = cmd[3].Split(';');
                                     SetUXProperty(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(tSP[0]), $"LiveOptions={tLO}", cmd[2], tSP.Length > 1 ? $"{tSP[1]};-1" : null);
                                 }
                                 return;
