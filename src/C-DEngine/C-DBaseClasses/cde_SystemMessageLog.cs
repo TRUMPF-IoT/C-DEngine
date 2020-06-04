@@ -409,7 +409,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (!(TheBaseAssets.MyServiceHostInfo?.DisableConsole==true))
             {
-                if (TheBaseAssets.MyServiceHostInfo == null || TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.ESSENTIALS || Force)
+                if (TheBaseAssets.MyServiceHostInfo == null || TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.OFF || Force)
                     Console.WriteLine("{0}:{1}", Interlocked.Increment(ref LogSerial), text);
             }
         }

@@ -1438,6 +1438,15 @@ namespace nsCDEngine.ViewModels
         }
 
         /// <summary>
+        /// if true, the C-DEngine requires an activated license (plugin id 5737240C-AA66-417C-9B66-3919E18F9F4A)
+        /// </summary>
+        public bool RequireCDEActivation
+        {
+            get;
+            internal set;
+        }
+
+        /// <summary>
         /// if true, each QSender will get its own Heartbeat timer
         /// </summary>
         public bool UseHBTimerPerSender
