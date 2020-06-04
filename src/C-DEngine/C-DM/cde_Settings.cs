@@ -208,6 +208,8 @@ namespace nsCDEngine.ISM
                     tSettings["IsUsingUserMapper"] = TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper.ToString();
                 if (!tSettings.ContainsKey("DontVerifyTrust") || !CU.CBool(tSettings.ContainsKey("DontVerifyTrust"))) //If DontVerifyTrust was previously set to true - do not allow reset!
                     tSettings["DontVerifyTrust"] = TheBaseAssets.MyServiceHostInfo.DontVerifyTrust.ToString();
+                if (!tSettings.ContainsKey(nameof(TheServiceHostInfo.RequireCDEActivation)) || !CU.CBool(tSettings.ContainsKey(nameof(TheServiceHostInfo.RequireCDEActivation)))) //If DontVerifyTrust was previously set to true - do not allow reset!
+                    tSettings[nameof(TheServiceHostInfo.RequireCDEActivation)] = TheBaseAssets.MyServiceHostInfo.RequireCDEActivation.ToString();
                 tSettings["IsTLSEnforced"] = TheBaseAssets.MyServiceHostInfo.IsSSLEnforced.ToString();
                 tSettings["AllowRemoteAdministration"] = TheBaseAssets.MyServiceHostInfo.AllowRemoteAdministration.ToString();
                 tSettings["AllowRemoteThingCreation"] = TheBaseAssets.MyServiceHostInfo.AllowRemoteThingCreation.ToString();
@@ -614,6 +616,10 @@ namespace nsCDEngine.ISM
                 temp = GetArgOrEnv(CmdArgs, "DontVerifyTrust");
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.DontVerifyTrust = CU.CBool(temp);
+                //RequireCDEActivation can only be set once to true - then stored in the
+                temp = GetArgOrEnv(CmdArgs, nameof(TheServiceHostInfo.RequireCDEActivation));
+                if (!string.IsNullOrEmpty(temp))
+                    TheBaseAssets.MyServiceHostInfo.RequireCDEActivation = CU.CBool(temp);
                 temp = GetArgOrEnv(CmdArgs, "PresetDeviceID");
                 if (!string.IsNullOrEmpty(temp))
                 {
@@ -1365,6 +1371,8 @@ namespace nsCDEngine.ISM
                         TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper = CU.CBool(tSettings["UseUserMapper"]);
                     if (tSettings.ContainsKey("DontVerifyTrust"))
                         TheBaseAssets.MyServiceHostInfo.DontVerifyTrust = CU.CBool(tSettings["DontVerifyTrust"]);
+                    if (tSettings.ContainsKey(nameof(TheServiceHostInfo.RequireCDEActivation)))
+                        TheBaseAssets.MyServiceHostInfo.RequireCDEActivation = CU.CBool(tSettings[nameof(TheServiceHostInfo.RequireCDEActivation)]);
                     if (tSettings.ContainsKey("ProvToken"))
                         TheBaseAssets.MyServiceHostInfo.ProvToken = tSettings["ProvToken"];
                     if (tSettings.ContainsKey("ProvScope"))

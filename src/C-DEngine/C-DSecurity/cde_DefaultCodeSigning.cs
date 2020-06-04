@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using nsCDEngine.BaseClasses;
+using System.Reflection;
 #if !CDE_STANDARD // PKCS on .Net Standard requires additional nuget package: must allow running without dependency
 using System.Security.Cryptography.Pkcs;
 #endif
@@ -712,7 +713,9 @@ namespace nsCDEngine.Security
             if (!string.IsNullOrEmpty(MyAppCertThumb) && string.IsNullOrEmpty(pFromFile))
                 return MyAppCertThumb;
             if (pFromFile == null)
-                pFromFile = Path.Combine(AppDomain.CurrentDomain.RelativeSearchPath != null? AppDomain.CurrentDomain.RelativeSearchPath:AppDomain.CurrentDomain.BaseDirectory, "C-DEngine.dll");
+            {
+                pFromFile = Assembly.GetExecutingAssembly().Location; // C-DEngine.dll
+            }
             DontVerifyTrust = bDontVerifyTrust;
             VerifyTrustPath = bVerifyTrustPath;
             DontVerifyIntegrity = bDontVerifyIntegrity;
@@ -751,7 +754,7 @@ namespace nsCDEngine.Security
             if (MyAppHostCert == null)
             {
                 MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 418, "Diagnostics", $"Base Application {pFromFile} is not signed - C-DEngine is used", eMsgLevel.l1_Error);
-                pFromFile = Path.Combine(Path.GetDirectoryName(pFromFile), "C-DEngine.dll");
+                pFromFile = Assembly.GetExecutingAssembly().Location;
                 try
                 {
                     MyAppHostCert = VerifyPEAndReadSignerCert(pFromFile, VerifyTrustPath, !DontVerifyIntegrity);
