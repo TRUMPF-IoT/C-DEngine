@@ -174,9 +174,6 @@ namespace nsCDEngine.Activation
         /// <returns></returns>
         public bool CheckLicense(Guid pluginId, string deviceType, string[] licenseAuthorities, int requestedThingCount, bool useThingEntitlement = false)
         {
-            if (pluginId == new Guid("{5737240C-AA66-417C-9B66-3919E18F9F4A}")) //C-DEngine License no longer checked
-                return true;
-
             if (MyLicensesPerPlugin == null) return false;
             bool result = false;
             MyLicensesPerPlugin.MyRecordsRWLock.RunUnderUpgradeableReadLock(() => // Need to block all other writers because we may update license state (entitlements) and that needs to be atomic
@@ -244,6 +241,9 @@ namespace nsCDEngine.Activation
                     }
                 }
             });
+
+            if (!TheBaseAssets.MyServiceHostInfo.RequireCDEActivation && pluginId == new Guid("{5737240C-AA66-417C-9B66-3919E18F9F4A}")) // If no license for the C-DEngine was specified, allow use of C-DEngine (change with OSS release)
+                return true;
 
             return result;
         }
