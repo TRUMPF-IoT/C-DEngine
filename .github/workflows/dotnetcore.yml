@@ -1,7 +1,7 @@
 name: .NET Core
 
 # SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
-# SPDX-License-Identifier: MPL-2.0
+# SPDX-License-Identifier: CC0-1.0
 
 on:
   push:
@@ -111,7 +111,7 @@ jobs:
     #  run: dotnet test './src/C-DEngine.sln' --configuration Release --no-build --no-restore --verbosity normal
 
     - name: Gather artifacts
-      run: (robocopy .\bin\ .\artifacts\ *.CDEX *.CDEP *.nupkg *.msi cdePackager* /s /np) ^& IF %ERRORLEVEL% LEQ 1 exit 0
+      run: (robocopy .\bin\ .\artifacts\ *.CDEX *.CDEP *.nupkg *.snupkg *.msi cdePackager* /s /np) ^& IF %ERRORLEVEL% LEQ 1 exit 0
       shell: cmd
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
