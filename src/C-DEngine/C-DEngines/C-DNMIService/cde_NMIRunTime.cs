@@ -1260,13 +1260,12 @@ namespace nsCDEngine.Engines.NMIService
                                                 var tso = TheFormsGenerator.GetScreenOptions(tTable.cdeMID, pClientInfo, ForceReload ? tTable : null);
                                                 tJSON.FieldInfo = TheFormsGenerator.GetPermittedFields(tTable.cdeMID, pClientInfo, tso, true);
                                                 tTsm.PLS = magicMethod.Invoke(MyStorageMirror, new[] { (object)tJSON }).ToString();
-                                                if (tTsm == null || tTsm.PLS.Equals("WAITING"))
+                                                if (tTsm == null || tTsm.PLS.Equals("WAITING") || tTsm.PLS.Equals("ASYNC"))
                                                 {
-                                                    if (tTsm == null)
+                                                    if (tTsm == null || tTsm.PLS.Equals("ASYNC"))
                                                         return false;
-                                                    tTsm.PLS = "[]";
                                                     ForceReload = true;
-                                                    //return false;
+                                                    tTsm.PLS = "[]";
                                                 }
                                                 if (tJSON.TopRecords > 0)
                                                 {
