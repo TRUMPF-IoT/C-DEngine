@@ -1692,11 +1692,14 @@ namespace nsCDEngine.Engines.StorageService
                 }
                 return false;
             }
-            if(AppendOnly && IsCachePersistent)
+            if(AppendOnly && engineStorageServer == null)
             {
                 tResponse = MyMirrorCache.GetRecordsFromDisk(SQLFilter, SQLOrder, PageNumber, TopRows);
+                tResponse.SQLOrder = SQLOrder;
+                tResponse.SQLFilter = SQLFilter;
                 tResponse.Cookie = pCookie;
                 pCallBack(tResponse);
+                return true;
             }
             if ((mIsRAMStore || IsCached) && !AppendOnly)
             {
@@ -2381,7 +2384,10 @@ namespace nsCDEngine.Engines.StorageService
                 if (tFilter?.Contains("WildContent") == true)
                     tFilter = "";
                 GetRecords(tFilter, pDataSource.TopRecords, pDataSource.PageNumber, tSQLOrder, sinkJSONResponse, false, false, pDataSource);
-                return "WAITING";
+                if (IsRAMStore || AppendOnly)
+                    return "ASYNC";
+                else
+                    return "WAITING";
             }
             else
             {
