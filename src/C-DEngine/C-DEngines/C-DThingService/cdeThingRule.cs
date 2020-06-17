@@ -170,7 +170,7 @@ namespace nsCDEngine.Engines.ThingService
             get { return TheThing.GetSafePropertyString(MyBaseThing, "TriggerObjectType"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "TriggerObjectType", value); }
         }
-        [ConfigProperty(IsThingReference = true))]
+        [ConfigProperty(IsThingReference = true)]
         public string TriggerObject
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "TriggerObject"); }
@@ -208,7 +208,7 @@ namespace nsCDEngine.Engines.ThingService
             get { return TheThing.GetSafePropertyString(MyBaseThing, "ActionObjectType"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "ActionObjectType", value); }
         }
-        [ConfigProperty(IsThingReference = true))]
+        [ConfigProperty(IsThingReference = true)]
         public string ActionObject
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "ActionObject"); }
