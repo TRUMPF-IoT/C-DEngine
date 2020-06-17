@@ -137,7 +137,7 @@ namespace nsCDEngine.Engines.ThingService
             get { return TheThing.GetSafePropertyString(MyBaseThing, "Parent"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "Parent", value); }
         }
-
+        [ConfigProperty]
         public bool IsRuleActive
         {
             get { return TheThing.GetSafePropertyBool(MyBaseThing, "IsRuleActive"); }
@@ -164,33 +164,33 @@ namespace nsCDEngine.Engines.ThingService
             set { TheThing.SetSafePropertyBool(MyBaseThing, "IsTriggerObjectAlive", value); }
         }
 
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public string TriggerObjectType
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "TriggerObjectType"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "TriggerObjectType", value); }
         }
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty(IsThingReference = true))]
         public string TriggerObject
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "TriggerObject"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "TriggerObject", value); }
         }
 
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public string TriggerProperty
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "TriggerProperty"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "TriggerProperty", value); }
         }
 
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public eRuleTrigger TriggerCondition
         {
             get { return (eRuleTrigger)TheCommonUtils.CInt(TheThing.GetSafePropertyString(MyBaseThing, "TriggerCondition")); }
             set { TheThing.SetSafePropertyNumber(MyBaseThing, "TriggerCondition", ((int)value)); }
         }
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public string TriggerValue
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "TriggerValue"); }
@@ -202,25 +202,25 @@ namespace nsCDEngine.Engines.ThingService
             set { TheThing.SetSafePropertyString(MyBaseThing, "OldValue", value); }
         }
 
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public string ActionObjectType
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "ActionObjectType"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "ActionObjectType", value); }
         }
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty(IsThingReference = true))]
         public string ActionObject
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "ActionObject"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "ActionObject", value); }
         }
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public string ActionProperty
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "ActionProperty"); }
             set { TheThing.SetSafePropertyString(MyBaseThing, "ActionProperty", value); }
         }
-        [ConfigProperty(Generalize =true)]
+        [ConfigProperty]
         public string ActionValue
         {
             get { return TheThing.GetSafePropertyString(MyBaseThing, "ActionValue"); }
@@ -229,44 +229,44 @@ namespace nsCDEngine.Engines.ThingService
         [ConfigProperty(Generalize = true)]
         public string FriendlyName
         {
-            get { return TheThing.GetSafePropertyString(MyBaseThing, "FriendlyName"); }
-            set { TheThing.SetSafePropertyString(MyBaseThing, "FriendlyName", value); }
+            get { return MyBaseThing.FriendlyName; }
+            set { MyBaseThing.FriendlyName=value; }
         }
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public int ActionDelay
         {
             get { return TheCommonUtils.CInt(TheThing.GetSafePropertyString(MyBaseThing, "ActionDelay")); }
             set { TheThing.SetSafePropertyNumber(MyBaseThing, "ActionDelay", value); }
         }
 
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public int TriggerActiveTime
         {
             get { return TheCommonUtils.CInt(TheThing.GetSafePropertyString(MyBaseThing, "TriggerActiveTime")); }
             set { TheThing.SetSafePropertyNumber(MyBaseThing, "TriggerActiveTime", value); }
         }
 
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public DateTimeOffset TriggerStartTime
         {
             get { return TheCommonUtils.CDate(TheThing.GetSafePropertyString(MyBaseThing, "TriggerStartTime")); }
             set { TheThing.SetSafePropertyDate(MyBaseThing, "TriggerStartTime", value); }
         }
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public DateTimeOffset TriggerEndTime
         {
             get { return TheCommonUtils.CDate(TheThing.GetSafePropertyString(MyBaseThing, "TriggerEndTime")); }
             set { TheThing.SetSafePropertyDate(MyBaseThing, "TriggerEndTime", value); }
         }
 
-        [ConfigProperty(Generalize = true)]
+        [ConfigProperty]
         public bool IsRuleLogged
         {
             get { return TheThing.GetSafePropertyBool(MyBaseThing, "IsRuleLogged"); }
             set { TheThing.SetSafePropertyBool(MyBaseThing, "IsRuleLogged", value); }
         }
 
-        [ConfigProperty(Generalize =true)]
+        [ConfigProperty]
         public bool IsEVTLogged
         {
             get { return TheThing.MemberGetSafePropertyBool(MyBaseThing); }
