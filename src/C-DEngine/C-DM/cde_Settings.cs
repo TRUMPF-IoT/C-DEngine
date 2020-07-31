@@ -601,6 +601,20 @@ namespace nsCDEngine.ISM
                 temp = GetArgOrEnv(CmdArgs, "UseUserMapper");
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper = CU.CBool(temp);
+                temp = GetArgOrEnv(CmdArgs, "CloudToCloudUpstreamOnly");    //new in 5.108: if set, only upstream cloud-to-cloud traffic allowd (diode mode)
+                if (!string.IsNullOrEmpty(temp))
+                    TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly = CU.CBool(temp);
+                temp = GetArgOrEnv(CmdArgs, "AllowedUnscopedNodes");    //New in 5.108 - NodeIDs allowed to connect even if unscoped
+                if (!string.IsNullOrEmpty(temp))
+                {
+                    var tl = temp.Split(';');
+                    foreach (string t in tl)
+                    {
+                        Guid tBL = CU.CGuid(t);
+                        if (tBL != Guid.Empty)
+                            TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Add(tBL);
+                    }
+                }
                 //Proxy has to be read before provisioning service kicks in to use the proxy
                 //We need to remove these settings to make it more secure
                 temp = GetArgOrEnv(CmdArgs, "ProxyUrl");

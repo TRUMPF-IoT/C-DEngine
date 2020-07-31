@@ -181,7 +181,7 @@ namespace nsCDEngine.Communication
             if (pRequestData == null) return;
 
             #region Precheck on Execute Conditions
-            if (pQSender == null || pQSender.MyTargetNodeChannel == null)
+            if (pQSender?.MyTargetNodeChannel == null)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(285, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", "Enter Execute Command: OrgChannel is Null - not allowed ", eMsgLevel.l2_Warning));
                 pRequestData.ResponseBufferStr = "ERR: Illegal Request";
@@ -270,12 +270,13 @@ namespace nsCDEngine.Communication
                     string tTopic = "";
                     try
                     {
+                        var tTargetNodeChannel = pQSender?.MyTargetNodeChannel;
                         string pInTopic = pInTopicBatch;
                         if (string.IsNullOrEmpty(pInTopic))
                             pInTopic = pDevMessage.TOP;
                         recvMessage = pDevMessage.MSG;
-                        if (pQSender != null && pQSender.MyTargetNodeChannel != null && pQSender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON && recvMessage != null && string.IsNullOrEmpty(recvMessage.ORG))
-                            recvMessage.ORG = pQSender.MyTargetNodeChannel.cdeMID.ToString();
+                        if (pQSender != null && tTargetNodeChannel != null && tTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON && recvMessage != null && string.IsNullOrEmpty(recvMessage.ORG))
+                            recvMessage.ORG = tTargetNodeChannel.cdeMID.ToString();
 
                         #region ChunkResassembly
                         string[] CommandParts = null;
@@ -304,7 +305,7 @@ namespace nsCDEngine.Communication
                             }
                             var tTopicSens = tTopic.Split('@')[0]; //only topic - no ScopeID
                             var tTopicParts = tTopic.Split(';');
-                            if (pQSender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
+                            if (tTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
                             {
                                 //4.209: JavaJason does no longer get the scope ID - hence telegrams coming from the browser have to be ammmended with SID here
                                 if (string.IsNullOrEmpty(recvMessage.SID) && !string.IsNullOrEmpty(pRequestData?.SessionState?.SScopeID))
@@ -329,26 +330,26 @@ namespace nsCDEngine.Communication
                             }
                             if (tTopicParts.Length > 1)
                                 tTopicSens += $";{tTopicParts[1]}"; //if a direct address is added use this too
-                            if (TheQueuedSenderRegistry.WasTSMSeenBefore(recvMessage, pRequestData.SessionState.cdeMID, tTopicSens, pQSender?.MyTargetNodeChannel?.RealScopeID))    //ATTENTION: RScope should come from pDevMessage
+                            if (TheQueuedSenderRegistry.WasTSMSeenBefore(recvMessage, pRequestData.SessionState.cdeMID, tTopicSens, tTargetNodeChannel?.RealScopeID))    //ATTENTION: RScope should come from pDevMessage
                             {
                                 TheBaseAssets.MySYSLOG.WriteToLog(285, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("CoreComm", $"EnterExecuteCommand: Message was seen before ORG:{TheCommonUtils.GetDeviceIDML(recvMessage?.ORG)} Topic:{tTopicSens}", eMsgLevel.l2_Warning));//ORG-OK
                                 TheCDEKPIs.IncrementKPI(eKPINames.QSRejected);
                                 continue;
                             }
-                            if (pQSender.MyTargetNodeChannel.cdeMID == Guid.Empty)
-                                pQSender.MyTargetNodeChannel.cdeMID = recvMessage.GetLastRelay();
-                            if (pQSender.MyTargetNodeChannel.SenderType == cdeSenderType.NOTSET)
+                            if (tTargetNodeChannel.cdeMID == Guid.Empty)
+                                tTargetNodeChannel.cdeMID = recvMessage.GetLastRelay();
+                            if (tTargetNodeChannel.SenderType == cdeSenderType.NOTSET)
                             {
                                 TheBaseAssets.MySYSLOG.WriteToLog(285, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", "Sender Type for the QSender is not set! WE SHOULD NEVER GET HERE", eMsgLevel.l1_Error));//ORG-OK
                                 //3.218: Processing no longer allowed!!!
                                 return;
                             }
                             // Enable upper layers to do RSA decryption. Force overwrite for Browser even if SEID already set (may have been initialized to some other value)
-                            if (pQSender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON || String.IsNullOrEmpty(recvMessage.SEID))
+                            if (tTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON || String.IsNullOrEmpty(recvMessage.SEID))
                                 recvMessage.SEID = pRequestData.SessionState.cdeMID.ToString();
 
                             if (pRequestData.SessionState != null && string.IsNullOrEmpty(pRequestData.SessionState.RemoteAddress))
-                                pRequestData.SessionState.RemoteAddress = pQSender.MyTargetNodeChannel.cdeMID.ToString();
+                                pRequestData.SessionState.RemoteAddress = tTargetNodeChannel.cdeMID.ToString();
 
                             //NEW: User ID Management in Message after first node
                             if (string.IsNullOrEmpty(recvMessage.UID) && pRequestData.SessionState != null && pRequestData.SessionState.CID != Guid.Empty)

@@ -178,7 +178,7 @@ namespace nsCDEngine.Communication
                             SID = TheBaseAssets.MyScopeManager.GetScrambledScopeID(MyTargetNodeChannel.RealScopeID, true)
                         };
                         tInfoGet.SetNoDuplicates(true);
-                        SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + MyTargetNodeChannel.cdeMID,true, MyTargetNodeChannel.RealScopeID), tInfoGet, false, MyTargetNodeChannel.cdeMID, null, MyTargetNodeChannel.RealScopeID, null);
+                        SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + MyTargetNodeChannel.cdeMID, true, MyTargetNodeChannel.RealScopeID), tInfoGet, false, MyTargetNodeChannel.cdeMID, null, MyTargetNodeChannel.RealScopeID, null);
                     }
                     StartHeartBeat();
                     IsConnecting = true;
@@ -230,7 +230,8 @@ namespace nsCDEngine.Communication
         internal bool IsSenderThreadRunning;
         public bool IsAlive;
         private string m_LastError;
-        private string LastError {
+        private string LastError
+        {
             get { return m_LastError; }
             set
             {
@@ -254,7 +255,7 @@ namespace nsCDEngine.Communication
             }
         }
         private int LastErrorCode;
-        internal DateTimeOffset MyLastConnectTime=DateTimeOffset.MinValue;
+        internal DateTimeOffset MyLastConnectTime = DateTimeOffset.MinValue;
         private TheNodeInfoClone MyNodeInfo = null;
         static private List<string> ThumbList = null;   //NodeWide App.config "cache"
         public bool IsTrusted { get; private set; }
@@ -267,7 +268,7 @@ namespace nsCDEngine.Communication
         internal TheNodeDiagInfo GetNodeDiagInfo()
         {
             TheNodeDiagInfo nodeDiagInfo = null;
-            if (!(MyNodeInfo.MyServices?.Count>0) && MyTargetNodeChannel!=null && TheCommonUtils.IsLocalhost(MyTargetNodeChannel.cdeMID))
+            if (!(MyNodeInfo.MyServices?.Count > 0) && MyTargetNodeChannel != null && TheCommonUtils.IsLocalhost(MyTargetNodeChannel.cdeMID))
             {
                 List<IBaseEngine> tList3 = TheThingRegistry.GetBaseEngines(false);
                 foreach (IBaseEngine tBase in tList3)
@@ -349,7 +350,7 @@ namespace nsCDEngine.Communication
                 }
                 else
                 {
-                    if (previous!=value)
+                    if (previous != value)
                         TheBaseAssets.MySYSLOG.WriteToLog(2399, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"In Set IsConnected to {_IsConnected}: {MyTargetNodeChannel}", eMsgLevel.l4_Message), false);
                 }
             }
@@ -374,7 +375,7 @@ namespace nsCDEngine.Communication
 
         public bool HasWebSockets()
         {
-            return MyWebSocketProcessor!=null;
+            return MyWebSocketProcessor != null;
         }
 
         internal string GetLastError()
@@ -394,8 +395,8 @@ namespace nsCDEngine.Communication
         internal string GetQueDiag(bool ShowQueue)
         {
             if (MyTargetNodeChannel == null) return "No channel, yet";
-            DateTimeOffset lastConnectTime= MyLastConnectTime;
-            string ret = $"{MyTargetNodeChannel} QL=<span style='color:green;font-weight:bold;'>{MyCoreQueue.Count}</span> Seen:{MyTSMHistoryCount} LastHB:{GetLastHeartBeat()} ConnectedSince:{(lastConnectTime==DateTimeOffset.MinValue?"not yet":$"{lastConnectTime}")} ConnectedFor: {(lastConnectTime == DateTimeOffset.MinValue ? 0: (DateTimeOffset.Now - lastConnectTime).TotalSeconds)}s InPost:{IsInPost} UsesWS:<span style='color:green;font-weight:bold;'>{HasWebSockets()}</span> IsInWSPost:{IsInWSPost} IsConnecting:{IsConnecting} IsConnected:<span style='color:green;font-weight:bold;'>{IsConnected}</span> IsAlive:<span style='color:green;font-weight:bold;'>{IsAlive}</span> IsSenderThreadAlive:<span style='color:green;font-weight:bold;'>{IsSenderThreadRunning}</span> SEID:{(MyTargetNodeChannel.MySessionState == null ? "not set" : MyTargetNodeChannel.MySessionState.cdeMID.ToString())}<ul>";
+            DateTimeOffset lastConnectTime = MyLastConnectTime;
+            string ret = $"{MyTargetNodeChannel} QL=<span style='color:green;font-weight:bold;'>{MyCoreQueue.Count}</span> Seen:{MyTSMHistoryCount} LastHB:{GetLastHeartBeat()} ConnectedSince:{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : $"{lastConnectTime}")} ConnectedFor: {(lastConnectTime == DateTimeOffset.MinValue ? 0 : (DateTimeOffset.Now - lastConnectTime).TotalSeconds)}s InPost:{IsInPost} UsesWS:<span style='color:green;font-weight:bold;'>{HasWebSockets()}</span> IsInWSPost:{IsInWSPost} IsConnecting:{IsConnecting} IsConnected:<span style='color:green;font-weight:bold;'>{IsConnected}</span> IsAlive:<span style='color:green;font-weight:bold;'>{IsAlive}</span> IsSenderThreadAlive:<span style='color:green;font-weight:bold;'>{IsSenderThreadRunning}</span> SEID:{(MyTargetNodeChannel.MySessionState == null ? "not set" : MyTargetNodeChannel.MySessionState.cdeMID.ToString())}<ul>";
             if (ShowQueue)
             {
                 foreach (TheCoreQueueContent t in MyCoreQueue.TheValues.OrderBy(s => s.QueueIdx).ThenBy(s => s.EntryTime))  //LOCK-REVIEW: TheValues is already a ToList
@@ -417,9 +418,12 @@ namespace nsCDEngine.Communication
             if (MyTargetNodeChannel == null) return "No channel, yet";
             DateTimeOffset lastConnectTime = MyLastConnectTime;
             StringBuilder ret = new StringBuilder($"<tr><td class=\"cdeLogEntry\" style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);text-align:left \">{MyTargetNodeChannel.ToMLString(true)}</td>");
-            ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(string.IsNullOrEmpty(MyTargetNodeChannel?.RealScopeID) ? "<span style='color:purple'>not Scoped</span>" : cdeStatus.GetScopeHashML(TheCommonUtils.CStringToList(MyTargetNodeChannel.GetScopes(),' ')))}</td>");
+            if (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(MyTargetNodeChannel.cdeMID))
+                ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\"><span style='color:blue; font-weight:bold'>Cloud2Cloud<br>{(TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly?"Diode Mode":"Bi-Directional")}</span></td>");
+            else
+                ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(string.IsNullOrEmpty(MyTargetNodeChannel?.RealScopeID) ? "<span style='color:purple'>not Scoped</span>" : cdeStatus.GetScopeHashML(TheCommonUtils.CStringToList(MyTargetNodeChannel.GetScopes(), ' ')))}</td>");
             if (TheBaseAssets.MyServiceHostInfo.IsCloudService)
-                ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(MyNodeInfo?.MyServiceInfo?.DontVerifyTrust==true? "<span style='color:red; font-weight:bold;'>NO</span>" : (MyNodeInfo?.MyServiceInfo==null?"Unknown":"Yes"))}</td>");
+                ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(MyNodeInfo?.MyServiceInfo?.DontVerifyTrust == true ? "<span style='color:red; font-weight:bold;'>NO</span>" : (MyNodeInfo?.MyServiceInfo == null ? "Unknown" : "Yes"))}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(MyNodeInfo?.MyServiceInfo?.ClientCertificateThumb?.Length > 3 ? MyNodeInfo?.MyServiceInfo?.ClientCertificateThumb?.Substring(0, 4) : "<span style='color:purple'>No cert</span>")}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{MyCoreQueue.Count}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{MyTSMHistoryCount}</td>");
@@ -470,9 +474,9 @@ namespace nsCDEngine.Communication
             if (string.IsNullOrEmpty(pTopic)) return "";
             string tRes = pTopic;
             string tTarget = "";
-            string tScope="";
+            string tScope = "";
             if (pTopic.Contains(";"))
-                tTarget = ";"+ pTopic.Split(';')[1];
+                tTarget = ";" + pTopic.Split(';')[1];
             if (pTopic.Contains("@"))
             {
                 try
@@ -507,9 +511,9 @@ namespace nsCDEngine.Communication
         }
         private readonly TheMirrorCache<TheCoreQueueContent> MyCoreQueue;
         private readonly TheMirrorCache<TheMetaDataBase> MyJSKnownFields;
-        private readonly cdeConcurrentDictionary<Guid,byte> MyJSKnownThings;
+        private readonly cdeConcurrentDictionary<Guid, byte> MyJSKnownThings;
 
-#region Cleanup and Excption Handling
+        #region Cleanup and Excption Handling
 
 
         /// <summary>
@@ -544,7 +548,7 @@ namespace nsCDEngine.Communication
                         if (MyWebSocketProcessor.IsActive)
                             MyWebSocketProcessor.IsActive = false; //3-1.0.1 This was not set to false on certain conditions like HB failure.
                     }
-                    TheBaseAssets.MySession.RemoveSessionsByDeviceID(MyTargetNodeChannel.cdeMID,Guid.Empty);
+                    TheBaseAssets.MySession.RemoveSessionsByDeviceID(MyTargetNodeChannel.cdeMID, Guid.Empty);
                     if (!CloudInRetry)
                     {
                         CloudInRetry = true;
@@ -616,7 +620,7 @@ namespace nsCDEngine.Communication
                     var registeredSender = TheQueuedSenderRegistry.GetSenderByGuid(this.MyTargetNodeChannel.cdeMID);
                     if (registeredSender != this)
                     {
-                        if (this.MyTargetNodeChannel.cdeMID==registeredSender.MyTargetNodeChannel?.cdeMID)
+                        if (this.MyTargetNodeChannel.cdeMID == registeredSender.MyTargetNodeChannel?.cdeMID)
                         {
                             //This should not happen! We will always print an error here. One reason for this is that the ServiceRoute contains two entries with the same url as target
                             TheBaseAssets.MySYSLOG.WriteToLog(2310, new TSM("QueuedSender", $"For some unknown reason is the current (this) QeueSender not in the Registry but a different instance with same TargetMid is. QSender={MyTargetNodeChannel} (this) will be disposed! IsAlive:{IsAlive} IsConnected:{IsConnected} IsConnecting:{IsConnecting} MyWSProccIsActive:{MyWebSocketProcessor?.IsActive}", eMsgLevel.l1_Error)); // TODO assign unique logid
@@ -656,7 +660,7 @@ namespace nsCDEngine.Communication
             }
         }
 
-        void sinkCloudConnectedToWS(TheWSProcessorBase pSender, bool bSuccess,string pReason)
+        void sinkCloudConnectedToWS(TheWSProcessorBase pSender, bool bSuccess, string pReason)
         {
             if (bSuccess)
             {
@@ -759,7 +763,7 @@ namespace nsCDEngine.Communication
                 MyTargetNodeChannel = null;
             }
         }
-#endregion
+        #endregion
 
         /// <summary>
         /// Only used for "pickup messages" (no Topic, no TSM)
@@ -767,7 +771,7 @@ namespace nsCDEngine.Communication
         /// <returns></returns>
         public bool SendPickupMessage()
         {
-            return SendQueued(null,null, false, Guid.Empty, null,null, null);
+            return SendQueued(null, null, false, Guid.Empty, null, null, null);
         }
         //public bool SendQueued(string pTopic, TSM pMessage, bool PublishToTopicsOnly, Action<TSM> pLocalCallback) //Retired in 4.212: Not in use anywhere. Public is misleading as the class is "internal" and cannot be called from outside the CDE
         //{
@@ -784,7 +788,7 @@ namespace nsCDEngine.Communication
                     EntryTime = DateTimeOffset.Now,
                     QueueIdx = 1
                 };
-                MyCoreQueue.AddAnItem(tQue,null);
+                MyCoreQueue.AddAnItem(tQue, null);
                 return true;
             }
             var myTargetNodeChannel = MyTargetNodeChannel;
@@ -801,7 +805,7 @@ namespace nsCDEngine.Communication
             }
 
             //Block all telegrams that dont have the correct scope ID as specified in the Client Certificate
-            if (!string.IsNullOrEmpty(pTopicScopeID) && myTargetNodeChannel.MySessionState?.CertScopes?.Count > 0 && myTargetNodeChannel.MySessionState?.CertScopes?.Contains(pTopicScopeID)==false)
+            if (!string.IsNullOrEmpty(pTopicScopeID) && myTargetNodeChannel.MySessionState?.CertScopes?.Count > 0 && myTargetNodeChannel.MySessionState?.CertScopes?.Contains(pTopicScopeID) == false)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2320, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} rejected - scope on message does not match scopes in certificate", eMsgLevel.l1_Error), true);
                 TheCDEKPIs.IncrementKPI(eKPINames.QSNotRelayed); //TODO:KPI New KPI here
@@ -826,8 +830,7 @@ namespace nsCDEngine.Communication
                 return false;
             }
 
-
-            bool tHasDirectAddress = pDirectAddress!=Guid.Empty || pTopic.Contains(";");
+            bool tHasDirectAddress = pDirectAddress != Guid.Empty || pTopic.Contains(";");
             Guid tDirectGuid = pDirectAddress;
             string tTopic = pTopic;
             if (tHasDirectAddress)
@@ -838,189 +841,211 @@ namespace nsCDEngine.Communication
             }
             string tTopicNameOnly = pTopicOnly;
             string tTopicRealScope = pTopicScopeID;
-            if (tTopicRealScope==null)
+            if (tTopicRealScope == null)
                 tTopicRealScope = TheBaseAssets.MyScopeManager.GetRealScopeIDFromTopic(tTopic, out tTopicNameOnly);
 
-            if (PublishToTopicsOnly)
+            //New in 5.108: Support for Unscoped CloudRelay to CloudRelay : Skip all Telegram Filters and just forward everything to the other cloud-relay
+            if (TheBaseAssets.MyServiceHostInfo.IsCloudService && !TheBaseAssets.MyScopeManager.IsScopingEnabled &&
+                (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE ||
+                (!TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly && myTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(MyTargetNodeChannel.cdeMID))
+                ))
             {
-                if (!tHasDirectAddress && !tTopic.StartsWith("CDE_SYSTEMWIDE"))
+                //Still checking for circular telegrams
+                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(MyTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
                 {
-                    if (!MySubscriptionContains(tTopicNameOnly, tTopicRealScope, true))    //Super high frequency!
+                    TheBaseAssets.MySYSLOG.WriteToLog(2328, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("CoreComm", $"Target {myTargetNodeChannel.ToMLString()} found in Hubs ORG:{pMessage.ORG} - {pMessage.TXT} Will be ignored", eMsgLevel.l7_HostDebugMessage), true);//ORG-OK
+                    return false;
+                }
+                if (WasTSMSeenBefore(pMessage, tTopicRealScope, true))
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(23214, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} Was sent before!", eMsgLevel.l2_Warning), true);//ORG-OK
+                    return false;
+                }
+                TheCDEKPIs.IncrementKPI("CloudToCloudTSMs");
+            }
+            else
+            {
+                if (PublishToTopicsOnly)
+                {
+                    if (!tHasDirectAddress && !tTopic.StartsWith("CDE_SYSTEMWIDE"))
                     {
-                        //Allows for Unscoped StorageService to receive and send Scoped Commands
-                        if (TheCommonUtils.IsLocalhost(myTargetNodeChannel.cdeMID))
+                        if (!MySubscriptionContains(tTopicNameOnly, tTopicRealScope, true))    //Super high frequency!
                         {
-                            IBaseEngine tBaseE = TheThingRegistry.GetBaseEngine(tTopicNameOnly);
-                            if (tBaseE != null && tBaseE.GetEngineState().IsAllowedUnscopedProcessing && !TheBaseAssets.MyScopeManager.IsScopingEnabled)
-                                TheBaseAssets.MySYSLOG.WriteToLog(2322, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} ACCEPTED - target has different scope but is allowed for unscoped Relay", eMsgLevel.l6_Debug), true);
-                            else
+                            //Allows for Unscoped StorageService to receive and send Scoped Commands
+                            if (TheCommonUtils.IsLocalhost(myTargetNodeChannel.cdeMID))
                             {
-                                if (tBaseE != null && tBaseE.GetEngineState().IsAllowedForeignScopeProcessing && (TheBaseAssets.MyServiceHostInfo.IsCloudService || TheBaseAssets.MyScopeManager.IsScopingEnabled))  //NEW3.124: Allow Foreign Scope Processing for certain plugins in the cloud which is unscoped!
-                                    TheBaseAssets.MySYSLOG.WriteToLog(2323, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} ACCEPTED - target has different scope but is allowed for Foreign-Scope Relay", eMsgLevel.l6_Debug), true);
+                                IBaseEngine tBaseE = TheThingRegistry.GetBaseEngine(tTopicNameOnly);
+                                if (tBaseE != null && tBaseE.GetEngineState().IsAllowedUnscopedProcessing && !TheBaseAssets.MyScopeManager.IsScopingEnabled)
+                                    TheBaseAssets.MySYSLOG.WriteToLog(2322, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} ACCEPTED - target has different scope but is allowed for unscoped Relay", eMsgLevel.l6_Debug), true);
                                 else
                                 {
-                                    if (tTopic.StartsWith("LOGIN_SUCCESS"))
-                                    {
-                                        TheBaseAssets.MySYSLOG.WriteToLog(2323, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} ACCEPTED - target has different scope but LOGIN_SUCESS message is allowed anyway", eMsgLevel.l6_Debug), true);
-                                    }
+                                    if (tBaseE != null && tBaseE.GetEngineState().IsAllowedForeignScopeProcessing && (TheBaseAssets.MyServiceHostInfo.IsCloudService || TheBaseAssets.MyScopeManager.IsScopingEnabled))  //NEW3.124: Allow Foreign Scope Processing for certain plugins in the cloud which is unscoped!
+                                        TheBaseAssets.MySYSLOG.WriteToLog(2323, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} ACCEPTED - target has different scope but is allowed for Foreign-Scope Relay", eMsgLevel.l6_Debug), true);
                                     else
                                     {
-                                        if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_LOCALHOST)
+                                        if (tTopic.StartsWith("LOGIN_SUCCESS"))
                                         {
-                                            bool bFoundISB = false;
-                                            List<TheQueuedSender> tISBSender = TheQueuedSenderRegistry.GetISBConnectSender(tTopicRealScope);
-                                            if (tISBSender != null && tISBSender.Count > 0)
+                                            TheBaseAssets.MySYSLOG.WriteToLog(2323, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} ACCEPTED - target has different scope but LOGIN_SUCESS message is allowed anyway", eMsgLevel.l6_Debug), true);
+                                        }
+                                        else
+                                        {
+                                            if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_LOCALHOST)
                                             {
-                                                foreach (TheQueuedSender tSend in tISBSender)
+                                                bool bFoundISB = false;
+                                                List<TheQueuedSender> tISBSender = TheQueuedSenderRegistry.GetISBConnectSender(tTopicRealScope);
+                                                if (tISBSender != null && tISBSender.Count > 0)
                                                 {
-                                                    if (tSend.MySubscriptionContains(tTopicNameOnly, tTopicRealScope, true))
+                                                    foreach (TheQueuedSender tSend in tISBSender)
                                                     {
-                                                        tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
-                                                        bFoundISB = true;
+                                                        if (tSend.MySubscriptionContains(tTopicNameOnly, tTopicRealScope, true))
+                                                        {
+                                                            tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
+                                                            bFoundISB = true;
+                                                        }
                                                     }
                                                 }
+                                                if (bFoundISB)
+                                                    return true;
                                             }
-                                            if (bFoundISB)
-                                                return true;
+                                            if (tBaseE == null)
+                                                TheBaseAssets.MySYSLOG.WriteToLog(2324, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} Message REJECTED - Topic not found on this (Localhost) node", eMsgLevel.l2_Warning), true);
+                                            else
+                                                TheBaseAssets.MySYSLOG.WriteToLog(2324, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} Message REJECTED - target has different scope and is not allowed for this node", eMsgLevel.l2_Warning), true);
+                                            return false;
                                         }
-                                        if (tBaseE == null)
-                                            TheBaseAssets.MySYSLOG.WriteToLog(2324, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} Message REJECTED - Topic not found on this (Localhost) node", eMsgLevel.l2_Warning), true);
-                                        else
-                                            TheBaseAssets.MySYSLOG.WriteToLog(2324, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} Message REJECTED - target has different scope and is not allowed for this node", eMsgLevel.l2_Warning), true);
-                                        return false;
                                     }
                                 }
                             }
-                        }
-                        else
-                        {
-                            if (!TheBaseAssets.MyServiceHostInfo.IsNodePermitted(myTargetNodeChannel.cdeMID))
+                            else
                             {
-                                TheBaseAssets.MySYSLOG.WriteToLog(2325, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message with TXT ({pMessage.TXT}) to {myTargetNodeChannel.ToMLString()} REJECTED - target does not have the subscription ({tTopicNameOnly}) required sent by {TheCommonUtils.GetDeviceIDML(pMessage.GetOriginator())}", eMsgLevel.l2_Warning), true);
+                                if (!TheBaseAssets.MyServiceHostInfo.IsNodePermitted(myTargetNodeChannel.cdeMID))
+                                {
+                                    TheBaseAssets.MySYSLOG.WriteToLog(2325, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message with TXT ({pMessage.TXT}) to {myTargetNodeChannel.ToMLString()} REJECTED - target does not have the subscription ({tTopicNameOnly}) required sent by {TheCommonUtils.GetDeviceIDML(pMessage.GetOriginator())}", eMsgLevel.l2_Warning), true);
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (tHasDirectAddress)
+                        {
+                            if (string.IsNullOrEmpty(tTopicRealScope))
+                            {
+                                if (TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.GetOriginator() == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+                                    tTopicRealScope = myTargetNodeChannel.RealScopeID;  //RScope-OK: If Scope is not set on a topic but sent from the cloud to this target node, the target RScope has to be added
+                            }
+                            if (pMessage.GetOriginator() != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID && tDirectGuid == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+                            {
+                                List<TheQueuedSender> tISBSender = TheQueuedSenderRegistry.GetISBConnectSender(tTopicRealScope);
+                                if (tISBSender != null && tISBSender.Count > 0)
+                                {
+                                    foreach (TheQueuedSender tSend in tISBSender)
+                                    {
+                                        tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
+                                    }
+                                    return true;
+                                }
+                            }
+                            if (!string.IsNullOrEmpty(tTopicRealScope) &&
+                                (!(TheBaseAssets.MyServiceHostInfo.IsCloudService && TheCommonUtils.IsLocalhost(myTargetNodeChannel.cdeMID))) &&
+                                (!(myTargetNodeChannel.HasRScope(tTopicRealScope) || myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE))
+                                )
+                            {
+                                //Check if other QSender have ISB Connect with the scope in question
+                                if (!TSM.L(eDEBUG_LEVELS.FULLVERBOSE))
+                                {
+                                    if (!string.IsNullOrEmpty(tTopicRealScope))
+                                        tTopicRealScope = tTopicRealScope.Substring(0, 4);
+                                    TheBaseAssets.MySYSLOG.WriteToLog(2325, new TSM("QueuedSender", $"DirectPub-Message to ({tDirectGuid}) via Relay-Type={ myTargetNodeChannel.SenderType} REJECTED - relay {myTargetNodeChannel} has different scope ENG:{pMessage.ENG} - {pMessage.TXT} RScope:{myTargetNodeChannel.GetScopes()} tScope:{tTopicRealScope?.Substring(0, 4).ToUpper()}", eMsgLevel.l2_Warning), true);
+                                }
                                 return false;
                             }
                         }
                     }
                 }
-                else
+
+                if (
+                        !(
+                            ((TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.IsNodePermitted(pMessage.GetOriginator())) || myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE) && string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID)
+                        )
+                        && !string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID)   //TODO: If the Localhost IsCloudService and its NOT scoped, the telegram is not blocked. That results in all Meshes get to see the Cloud Plugin NMI. If we remove this, No Cloud NMI is visible except if "AllowForeignScopeIDRouting" is true
+                        && !myTargetNodeChannel.HasRScope(tTopicRealScope)
+                    )
                 {
-                    if (tHasDirectAddress)
+                    if (!TheBaseAssets.MyServiceHostInfo.AllowForeignScopeIDRouting)
                     {
-                        if (string.IsNullOrEmpty(tTopicRealScope))
+                        if (!
+                                    (eEngineName.ContentService.Equals(pMessage.ENG) && pMessage.TXT.StartsWith("CDE_UPD_ADMIN") && !TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.IsFirstNode())
+                                &&
+                                    !tTopicNameOnly.StartsWith("LOGIN_SUCCESS")
+                                && // TODO Code Review - additional checks? Better ways of getting success notifications to Mesh Manager?
+                                    !(tDirectGuid == myTargetNodeChannel.cdeMID && (pMessage.TXT.StartsWith("CDE_INIT_SYNC") || pMessage.TXT.StartsWith("CDE_SYNCUSER") || pMessage.TXT.StartsWith("NMI_SYNCBLOCKS")))
+                           )    //TODO:SECVAL
                         {
-                            if (TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.GetOriginator() == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
-                                tTopicRealScope = myTargetNodeChannel.RealScopeID;  //RScope-OK: If Scope is not set on a topic but sent from the cloud to this target node, the target RScope has to be added
-                        }
-                        if (pMessage.GetOriginator() != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID && tDirectGuid == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
-                        {
-                            List<TheQueuedSender> tISBSender = TheQueuedSenderRegistry.GetISBConnectSender(tTopicRealScope);
-                            if (tISBSender != null && tISBSender.Count > 0)
-                            {
-                                foreach (TheQueuedSender tSend in tISBSender)
-                                {
-                                    tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
-                                }
-                                return true;
-                            }
-                        }
-                        if (!string.IsNullOrEmpty(tTopicRealScope) &&
-                            (!(TheBaseAssets.MyServiceHostInfo.IsCloudService && TheCommonUtils.IsLocalhost(myTargetNodeChannel.cdeMID))) &&
-                            (!(myTargetNodeChannel.HasRScope(tTopicRealScope) || myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE))
-                            )
-                        {
-                            //Check if other QSender have ISB Connect with the scope in question
-                            if (!TSM.L(eDEBUG_LEVELS.FULLVERBOSE))
-                            {
-                                if (!string.IsNullOrEmpty(tTopicRealScope))
-                                    tTopicRealScope = tTopicRealScope.Substring(0, 4);
-                                TheBaseAssets.MySYSLOG.WriteToLog(2325, new TSM("QueuedSender", $"DirectPub-Message to ({tDirectGuid}) via Relay-Type={ myTargetNodeChannel.SenderType} REJECTED - relay {myTargetNodeChannel} has different scope ENG:{pMessage.ENG} - {pMessage.TXT} RScope:{myTargetNodeChannel.GetScopes()} tScope:{tTopicRealScope?.Substring(0,4).ToUpper()}", eMsgLevel.l2_Warning), true);
-                            }
+                            TheBaseAssets.MySYSLOG.WriteToLog(2326, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message from {TheCommonUtils.GetDeviceIDML(pMessage.ORG)} to {myTargetNodeChannel} (type={myTargetNodeChannel.SenderType}) rejected - target has different scope", eMsgLevel.l2_Warning, $"{pMessage.TXT}"), true);
                             return false;
                         }
                     }
-                }
-            }
-
-            //Last Change before Finalizing for July 2012 Detroit trip
-            if (
-                    !(
-                        ((TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.IsNodePermitted(pMessage.GetOriginator())) || myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE) && string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID)
-                    )
-                    && !string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID)   //TODO: If the Localhost IsCloudService and its NOT scoped, the telegram is not blocked. That results in all Meshes get to see the Cloud Plugin NMI. If we remove this, No Cloud NMI is visible except if "AllowForeignScopeIDRouting" is true
-                    && !myTargetNodeChannel.HasRScope(tTopicRealScope)
-                )
-            {
-                if (!TheBaseAssets.MyServiceHostInfo.AllowForeignScopeIDRouting)
-                {
-                    if (!
-                                (eEngineName.ContentService.Equals(pMessage.ENG) && pMessage.TXT.StartsWith("CDE_UPD_ADMIN") && !TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.IsFirstNode())
-                            &&
-                                !tTopicNameOnly.StartsWith("LOGIN_SUCCESS")
-                            && // TODO Code Review - additional checks? Better ways of getting success notifications to Mesh Manager?
-                                !(tDirectGuid == myTargetNodeChannel.cdeMID && (pMessage.TXT.StartsWith("CDE_INIT_SYNC") || pMessage.TXT.StartsWith("CDE_SYNCUSER") || pMessage.TXT.StartsWith("NMI_SYNCBLOCKS")))
-                       )    //TODO:SECVAL
+                    else
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(2326, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message from {TheCommonUtils.GetDeviceIDML(pMessage.ORG)} to {myTargetNodeChannel} (type={myTargetNodeChannel.SenderType}) rejected - target has different scope", eMsgLevel.l2_Warning, $"{pMessage.TXT}"), true);
+                        if (tHasDirectAddress)
+                            pTopic = TheBaseAssets.MyScopeManager.AddScopeID(pTopic, myTargetNodeChannel.RealScopeID, ref pMessage.SID, true, true);    //RScope-OK: Scope Change to Primary RScope
+                    }
+                }
+
+                if (!IsAlive)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(2327, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"QSender to {myTargetNodeChannel.ToMLString()} is dead! Fireing SenderProblem", eMsgLevel.l1_Error), true);
+                    FireSenderProblem(new TheRequestData() { ErrorDescription = $"1301:QSender to {myTargetNodeChannel.ToMLString()} is dead! Fireing SenderProblem" });
+                    return false;
+                }
+
+                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(MyTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(2328, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("CoreComm", $"Target {myTargetNodeChannel.ToMLString()} found in Hubs ORG:{pMessage.ORG} - {pMessage.TXT} Will be ignored", eMsgLevel.l7_HostDebugMessage), true);//ORG-OK
+                    return false;
+                }
+
+                if (pMessage.DoNotRelay() && (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE || myTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL))  //NEW:2012-5-10 no NEWURL via the cloud
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(2329, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: DoNotRelay", eMsgLevel.l2_Warning), true);//ORG-OK
+                    return false;
+                }
+
+                if (pMessage.ToCloudOnly() && myTargetNodeChannel.SenderType != cdeSenderType.CDE_CLOUDROUTE)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(23210, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: ToCloudOnly", eMsgLevel.l2_Warning), true);//ORG-OK
+                    return false;
+                }
+                if (pMessage.ToRelayOnly() && myTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(23211, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: ToRelayOnly", eMsgLevel.l2_Warning), true);//ORG-OK
+                    return false;
+                }
+
+                if (pMessage.ToServiceOnly() && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))  //IDST-OK: dont send to devices if ToServiceOnly is set
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(23212, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: ToServiceOnly", eMsgLevel.l7_HostDebugMessage, "TXT:" + pMessage.TXT), true);//ORG-OK
+                    return false;
+                }
+
+                if (tHasDirectAddress && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))     //IDST-OK: Quick check if the TSM with a direct address is for this QS since it will not relay
+                {
+                    if (!tDirectGuid.Equals(myTargetNodeChannel.cdeMID) && !tDirectGuid.Equals(myTargetNodeChannel.TruDID))
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(23213, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to designated Target in Topic", eMsgLevel.l2_Warning), true);//ORG-OK
                         return false;
                     }
                 }
-                else
+
+                if (WasTSMSeenBefore(pMessage, tTopicRealScope, true))
                 {
-                    if (tHasDirectAddress)
-                        pTopic = TheBaseAssets.MyScopeManager.AddScopeID(pTopic, myTargetNodeChannel.RealScopeID,ref pMessage.SID, true, true);    //RScope-OK: Scope Change to Primary RScope
-                }
-            }
-
-            if (!IsAlive)
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(2327, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"QSender to {myTargetNodeChannel.ToMLString()} is dead! Fireing SenderProblem", eMsgLevel.l1_Error), true);
-                FireSenderProblem(new TheRequestData() { ErrorDescription = $"1301:QSender to {myTargetNodeChannel.ToMLString()} is dead! Fireing SenderProblem" });
-                return false;
-            }
-
-            if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(MyTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid== myTargetNodeChannel.cdeMID)))
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(2328, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("CoreComm", $"Target {myTargetNodeChannel.ToMLString()} found in Hubs ORG:{pMessage.ORG} - {pMessage.TXT} Will be ignored", eMsgLevel.l7_HostDebugMessage), true);//ORG-OK
-                return false;
-            }
-
-            if (pMessage.DoNotRelay() && (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE || myTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL))  //NEW:2012-5-10 no NEWURL via the cloud
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(2329, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: DoNotRelay", eMsgLevel.l2_Warning), true);//ORG-OK
-                return false;
-            }
-
-            if (pMessage.ToCloudOnly() && myTargetNodeChannel.SenderType != cdeSenderType.CDE_CLOUDROUTE)
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(23210, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: ToCloudOnly", eMsgLevel.l2_Warning), true);//ORG-OK
-                return false;
-            }
-            if (pMessage.ToRelayOnly() && myTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL)
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(23211, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: ToRelayOnly", eMsgLevel.l2_Warning), true);//ORG-OK
-                return false;
-            }
-
-            if (pMessage.ToServiceOnly() && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))  //IDST-OK: dont send to devices if ToServiceOnly is set
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(23212, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to TSM setting: ToServiceOnly", eMsgLevel.l7_HostDebugMessage, "TXT:" + pMessage.TXT), true);//ORG-OK
-                return false;
-            }
-
-            if (tHasDirectAddress && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))     //IDST-OK: Quick check if the TSM with a direct address is for this QS since it will not relay
-            {
-                if (!tDirectGuid.Equals(myTargetNodeChannel.cdeMID) && !tDirectGuid.Equals(myTargetNodeChannel.TruDID))
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(23213, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to designated Target in Topic", eMsgLevel.l2_Warning), true);//ORG-OK
+                    TheBaseAssets.MySYSLOG.WriteToLog(23214, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} Was sent before!", eMsgLevel.l2_Warning), true);//ORG-OK
                     return false;
                 }
             }
 
-            if (WasTSMSeenBefore(pMessage, tTopicRealScope,true))
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(23214, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} Was sent before!", eMsgLevel.l2_Warning), true);//ORG-OK
-                return false;
-            }
             try
             {
                 if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_LOCALHOST)
@@ -1054,21 +1079,21 @@ namespace nsCDEngine.Communication
                     TheCDEKPIs.IncrementKPI(eKPINames.QSLocalProcessed);
                     TheCommonUtils.cdeRunAsync("QS-SQ-PMLocal", true, o =>
                     {
-                    bool WasThing = false;
-                    //NEW in V3: If Owner is set, message is only routed to Thing
-                    if (!string.IsNullOrEmpty(tSendMessage.OWN))
-                    {
-                        TheThing tThing;
-                        if (tSendMessage.TXT != null && tSendMessage.TXT.StartsWith("SETP"))    //ThingProperties:SETP
+                        bool WasThing = false;
+                        //NEW in V3: If Owner is set, message is only routed to Thing
+                        if (!string.IsNullOrEmpty(tSendMessage.OWN))
                         {
-                            tThing = TheThingRegistry.GetThingByMID("*", TheCommonUtils.CGuid(tSendMessage.OWN), true, true);
-                            if (tThing != null) // && tThing.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+                            TheThing tThing;
+                            if (tSendMessage.TXT != null && tSendMessage.TXT.StartsWith("SETP"))    //ThingProperties:SETP
                             {
-                                string[] tProps = TheCommonUtils.cdeSplit(tSendMessage.PLS, ":;:", false, false);
-                                for (int i = 0; i < tProps.Length; i++)
+                                tThing = TheThingRegistry.GetThingByMID("*", TheCommonUtils.CGuid(tSendMessage.OWN), true, true);
+                                if (tThing != null) // && tThing.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
                                 {
-                                    int pos = tProps[i].IndexOf('=');
-                                    WasThing = true;
+                                    string[] tProps = TheCommonUtils.cdeSplit(tSendMessage.PLS, ":;:", false, false);
+                                    for (int i = 0; i < tProps.Length; i++)
+                                    {
+                                        int pos = tProps[i].IndexOf('=');
+                                        WasThing = true;
                                         if (pos < 0)
                                         {
                                             if (tThing.HasLiveObject)
@@ -1142,11 +1167,11 @@ namespace nsCDEngine.Communication
                                 foreach (var tForm in ttt.MyStorageInfo)
                                 {
                                     if (!MyJSKnownThings.ContainsKey(tForm.cdeO))
-                                        MyJSKnownThings.TryAdd(tForm.cdeO,0);
+                                        MyJSKnownThings.TryAdd(tForm.cdeO, 0);
                                     foreach (var tFld in tForm.FormFields)
                                     {
                                         if (!MyJSKnownThings.ContainsKey(tFld.cdeO))
-                                            MyJSKnownThings.TryAdd(tFld.cdeO,0);
+                                            MyJSKnownThings.TryAdd(tFld.cdeO, 0);
                                         if (!MyJSKnownFields.ContainsID(tFld.cdeMID))
                                             MyJSKnownFields.UpdateItem(tFld, null);
                                     }
@@ -1157,7 +1182,7 @@ namespace nsCDEngine.Communication
                                 foreach (var tDashPanel in ttt.MyDashPanels)
                                 {
                                     if (!MyJSKnownThings.ContainsKey(tDashPanel.cdeO))
-                                        MyJSKnownThings.TryAdd(tDashPanel.cdeO,0);
+                                        MyJSKnownThings.TryAdd(tDashPanel.cdeO, 0);
                                     if (!MyJSKnownFields.ContainsID(tDashPanel.cdeMID))
                                         MyJSKnownFields.UpdateItem(tDashPanel, null);
                                 }
@@ -1171,7 +1196,7 @@ namespace nsCDEngine.Communication
                         }
                         if (pMessage.TXT.StartsWith("SETNP"))
                         {
-                            if (!MyJSKnownFields.ContainsID(TheCommonUtils.CGuid(pMessage.OWN)) && pMessage.TXT.Split(':').Length<3)
+                            if (!MyJSKnownFields.ContainsID(TheCommonUtils.CGuid(pMessage.OWN)) && pMessage.TXT.Split(':').Length < 3)
                                 return false;
                         }
                     }
@@ -1276,7 +1301,7 @@ namespace nsCDEngine.Communication
                     }
                 }
 
-                    DateTimeOffset tOldStamp = DateTimeOffset.MinValue;
+                DateTimeOffset tOldStamp = DateTimeOffset.MinValue;
                 if (pMessage.NotToSendAgain() || pMessage.NoDuplicates())
                 {
                     List<TheCoreQueueContent> tQ = MyCoreQueue.TheValues;
@@ -1291,7 +1316,7 @@ namespace nsCDEngine.Communication
                     if (pMessage.NoDuplicates())
                     {
                         var tQi = tQ.FirstOrDefault(s => s.HashID == tHash);
-                        if (tQi!=null)
+                        if (tQi != null)
                         {
                             tOldStamp = tQi.EntryTime;
                             TheBaseAssets.MySYSLOG.WriteToLog(23219, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message already Queued for sending to {myTargetNodeChannel.ToMLString()} Q-Length:{tQ.Count}", eMsgLevel.l5_HostMessage, $"TXT:{pMessage.TXT} will be replaced with new TSM"), true);
@@ -1325,7 +1350,7 @@ namespace nsCDEngine.Communication
                 }
                 if (MsgToQueue.PLB == null || MsgToQueue.PLB.Length == 0)                   //NEW: New Architecture allow to send raw bytes...need to have "CDEBIN" in PLS
                 {
-                    if (MsgToQueue !=null && TheBaseAssets.MyServiceHostInfo.DisablePLSCompression && !string.IsNullOrEmpty(MsgToQueue.PLS) && MsgToQueue.PLS.Length > 512 && myTargetNodeChannel != null && myTargetNodeChannel.SenderType != cdeSenderType.CDE_JAVAJASON)
+                    if (MsgToQueue != null && TheBaseAssets.MyServiceHostInfo.DisablePLSCompression && !string.IsNullOrEmpty(MsgToQueue.PLS) && MsgToQueue.PLS.Length > 512 && myTargetNodeChannel != null && myTargetNodeChannel.SenderType != cdeSenderType.CDE_JAVAJASON)
                     {
                         PayLoadBytes = TheCommonUtils.cdeCompressString(MsgToQueue.PLS);
                         IsPLSCompressed = true;
@@ -1444,9 +1469,9 @@ namespace nsCDEngine.Communication
             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
             //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: Must remain main lock - this is a Logic Lock - not a database lock
             {
-            var tQKV = MyCoreQueue.MyRecords.GetDynamicEnumerable(); // MH: .Values; also too expensive - makes a copy //.TheValues.ToList();  //CM: To expensive: Lock already on the block
-            if (tQKV.Any())
-            {
+                var tQKV = MyCoreQueue.MyRecords.GetDynamicEnumerable(); // MH: .Values; also too expensive - makes a copy //.TheValues.ToList();  //CM: To expensive: Lock already on the block
+                if (tQKV.Any())
+                {
                     try
                     {
                         if (TheBaseAssets.MyServiceHostInfo.EnforceFifoQueue)
@@ -1503,7 +1528,7 @@ namespace nsCDEngine.Communication
                 pRequestData.WebSocket = MyWebSocketProcessor;
                 return;
             }
-            if (MyCoreQueue != null && MyCoreQueue.Count>0)
+            if (MyCoreQueue != null && MyCoreQueue.Count > 0)
             {
                 StringBuilder tSendBufferStr = CreateDeviceMessageBuffer(pRequestData);
 
@@ -1589,7 +1614,7 @@ namespace nsCDEngine.Communication
                     }
                     if (tSendBufferStr.Length > 1) tSendBufferStr.Append(",");
                     tSendBufferStr.Append(TheCommonUtils.SerializeObjectToJSONString(tDev));
-#endregion
+                    #endregion
                 }
                 else
                     IsBatchOn = 0;
@@ -1606,11 +1631,11 @@ namespace nsCDEngine.Communication
         }
 
 
-#region TSM History Management
+        #region TSM History Management
         internal TheMirrorCache<TheSentRegistryItem> MyTSMHistory = null;
         internal int MyTSMHistoryCount = 0;
 
-        internal bool WasTSMSeenBefore(TSM pTSM,string pRealSID, bool pIsOutgoing)
+        internal bool WasTSMSeenBefore(TSM pTSM, string pRealSID, bool pIsOutgoing)
         {
             if (MyTSMHistory == null) return false;
             double cFID = TheCommonUtils.CDbl(pTSM.FID);
@@ -1652,7 +1677,7 @@ namespace nsCDEngine.Communication
             return false;
         }
 
-#endregion
+        #endregion
 
     }
 }
