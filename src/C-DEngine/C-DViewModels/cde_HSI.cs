@@ -492,6 +492,20 @@ namespace nsCDEngine.ViewModels
         }
 
         /// <summary>
+        /// The allowed unscoped nodes set in the App.config. This is used to allow Cloud to Cloud connections. 
+        /// </summary>
+        internal List<Guid> AllowedUnscopedNodes = new List<Guid>();
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to cloud-to-cloud upstream only aka "Diode Traffic in one direction only". 
+        /// </summary>
+        /// <value><c>true</c> if [cloud to cloud upstream only]; otherwise, <c>false</c>.</value>
+        public bool CloudToCloudUpstreamOnly
+        {
+            internal set;
+            get;
+        }
+        /// <summary>
         /// A list of node IDs that are allowed to participate in the mesh communication although they do not have a proper ScopeID.
         /// This is useful for unscoped small devices such as sensors that need to send information to the mesh but do not have the proper OS to participate in the encrypted security of C-DEngine nodes
         /// </summary>
@@ -2194,13 +2208,25 @@ namespace nsCDEngine.ViewModels
                     cdeMID = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(pSenderType);
                 }
             }
-            SetRealScopeID(pScopeID);
+            if (pSenderType==cdeSenderType.CDE_BACKCHANNEL && string.IsNullOrEmpty(pScopeID) && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(pDeviceID))
+            {
+                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, $"Allowed Cloud-2-Cloud unscoped Node connected: {pDeviceID}!", eMsgLevel.l3_ImportantMessage);
+                TheCDEKPIs.IncrementKPI("UnscopedNodeConnects");
+            }
+            else
+                SetRealScopeID(pScopeID);
         }
 
         internal void SetRealScopeID(string pRealScopeID)
         {
             RealScopeID = pRealScopeID; //RScope-OK: Update Primary RScope
-            TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "QSender Scope Changed", eMsgLevel.l4_Message, $"{this} ({this?.RealScopeID?.Substring(0, 4).ToUpper()})");
+            if (string.IsNullOrEmpty(RealScopeID))
+            {
+                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "Illegal Connect by Unscoped Node Detected!", eMsgLevel.l1_Error, $"{this}");
+                //throw new Exception("Illegal Connect by Unscoped Node Detected!"); This would prevent connection of unscoped nodes
+            }
+            else
+                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "QSender Scope Changed", eMsgLevel.l4_Message, $"{this} ({this?.RealScopeID?.Substring(0, 4).ToUpper()})");
         }
 
         internal bool AddAltScopes(List<string> pAlternateScopes)

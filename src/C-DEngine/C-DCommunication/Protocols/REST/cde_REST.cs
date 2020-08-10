@@ -35,6 +35,7 @@ namespace nsCDEngine.Communication
             public Action<TheRequestData> ResultCallback;
             public Action<TheRequestData> ErrorCallback;
             internal RegisteredWaitHandle waitHandle;
+            internal TheREST mRest;
 
             public TheInternalRequestState()
             {
@@ -57,6 +58,7 @@ namespace nsCDEngine.Communication
                 }
                 BufferRead = null;
                 ResultData = null;
+                mRest = null;
                 ResultDataPos = 0;
                 if (request != null)
                 {
@@ -518,13 +520,13 @@ namespace nsCDEngine.Communication
         #region RESTPost
 
 
-        private void CleanUp(TheInternalRequestState pState)
+        private static void CleanUp(TheInternalRequestState pState)
         {
             if (pState != null)
             {
+                if (pState.mRest?.IsPosting > 0)
+                    Interlocked.Decrement(ref pState.mRest.IsPosting); //= false;
                 pState.Dispose();
-                if (IsPosting > 0)
-                    Interlocked.Decrement(ref IsPosting); //= false;
             }
         }
 
@@ -553,7 +555,8 @@ namespace nsCDEngine.Communication
             Interlocked.Increment(ref IsPosting); // = true;
             TheInternalRequestState myRequestState = new TheInternalRequestState
             {
-                MyRequestData = pRequest
+                MyRequestData = pRequest,
+                mRest=this
             };
             IAsyncResult tResult = null;
             try
@@ -684,7 +687,7 @@ namespace nsCDEngine.Communication
                 }
                 try
                 {
-                    myRequestState.waitHandle = ThreadPool.RegisterWaitForSingleObject(tResult.AsyncWaitHandle, TimeoutCallback, myRequestState, myRequestState.MyRequestData.TimeOut, true);
+                    myRequestState.waitHandle = ThreadPool.RegisterWaitForSingleObject(tResult.AsyncWaitHandle,new WaitOrTimerCallback(TimeoutCallback), myRequestState, myRequestState.MyRequestData.TimeOut, true);
                 }
                 catch (ObjectDisposedException) { } // This can happen in races with BeginGetRequestStream error cleanup: swallow to avoid a second error callback
             }
@@ -964,7 +967,7 @@ namespace nsCDEngine.Communication
         }
 #endif
 
-        private void TimeoutCallback(object pState, bool timedOut)
+        private static void TimeoutCallback(object pState, bool timedOut)
         {
             if (timedOut)
             {
@@ -977,7 +980,7 @@ namespace nsCDEngine.Communication
                         {
                             tReg = tPostState.MyRequestData.RequestUri?.ToString() ?? tReg;
                             tPostState.MyRequestData.ErrorDescription = "1410:Timeout Error";
-                            tPostState.ErrorCallback(tPostState.MyRequestData);
+                            tPostState.ErrorCallback?.Invoke(tPostState.MyRequestData);
                             TheBaseAssets.MySYSLOG.WriteToLog(257, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "HttpWebRequest timed out and was aborted to ORG:" + tReg, eMsgLevel.l2_Warning));
                         }
                     }
@@ -987,7 +990,6 @@ namespace nsCDEngine.Communication
                     }
                     finally
                     {
-                        // tPostState?.request?.Abort(); // will be done in CleanUp()
                         CleanUp(tPostState);
                     }
                 }
