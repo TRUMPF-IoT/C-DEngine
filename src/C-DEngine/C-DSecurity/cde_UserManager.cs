@@ -1859,6 +1859,8 @@ namespace nsCDEngine.Security
             if (TheBaseAssets.MyServiceHostInfo.IsCloudNMIBlocked && !TheBaseAssets.MySettings.HasTrustedNodes)
                 return false;
             List<Guid> tRouts = TheQueuedSenderRegistry.GetSendersBySenderType(cdeSenderType.CDE_CLOUDROUTE);
+            if (TheBaseAssets.MyServiceHostInfo.IsCloudService && !TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Count > 0)
+                tRouts.AddRange(TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes);
             if (tRouts == null || tRouts.Count == 0)
                 return false;
             for (int i = tL.Count - 1; i >= 0; i--)
