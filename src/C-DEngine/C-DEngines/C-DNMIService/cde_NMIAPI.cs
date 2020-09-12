@@ -2891,7 +2891,7 @@ namespace nsCDEngine.Engines.NMIService
             cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
             if (pParentFld == 0)
             {
-                tFlds["Group"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.CollapsibleGroup, StartFldOrder, 2, 0xFE, "###Device Status###", null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
+                tFlds["Group"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.CollapsibleGroup, StartFldOrder, 2, 0, "###Device Status###", null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
                 tFlds["Group"].AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiCtrlCollapsibleGroup { DoClose = true });
                 pParentFld = StartFldOrder;
             }
