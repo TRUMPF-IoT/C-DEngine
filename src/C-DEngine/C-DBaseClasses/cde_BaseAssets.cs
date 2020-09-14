@@ -49,26 +49,58 @@ namespace nsCDEngine.BaseClasses
             {
                 if (string.IsNullOrEmpty(pDLLName))
                     pDLLName = "cdeCryptoLib.dll";
-                if (MyCodeSigner == null)
-                    MyCodeSigner = new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
-                if (!bDontVerifyTrust && string.IsNullOrEmpty(MyCodeSigner.GetAppCert(bDontVerifyTrust, pFromFile, bVerifyTrustPath, bDontVerifyIntegrity)))
+                Dictionary<string, string> tL = new Dictionary<string, string>();
+                Assembly tCryptoAssembly=null;
+                if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch") //Android and IOS
                 {
-                    return CryptoLoadMessage = $"No code-signing certificate found but required";
-                }
-                if (!pDLLName.Contains(Path.DirectorySeparatorChar))
-                    pDLLName = Path.Combine(AppDomain.CurrentDomain.RelativeSearchPath != null ? AppDomain.CurrentDomain.RelativeSearchPath : AppDomain.CurrentDomain.BaseDirectory, pDLLName);
-                AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
-                var pLoader = new CryptoReferenceLoader();
+                    if (MyCodeSigner == null)
+                        MyCodeSigner = new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
+                    if (!bDontVerifyTrust && string.IsNullOrEmpty(MyCodeSigner.GetAppCert(bDontVerifyTrust, pFromFile, bVerifyTrustPath, bDontVerifyIntegrity)))
+                    {
+                        return CryptoLoadMessage = $"No code-signing certificate found but required";
+                    }
+                    if (!pDLLName.Contains(Path.DirectorySeparatorChar))
+                        pDLLName = Path.Combine(AppDomain.CurrentDomain.RelativeSearchPath != null ? AppDomain.CurrentDomain.RelativeSearchPath : AppDomain.CurrentDomain.BaseDirectory, pDLLName);
+                    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
+                    var pLoader = new CryptoReferenceLoader();
 
-                Dictionary<string, string> tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM);
-                if (tTSM != null)
-                    TheSystemMessageLog.ToCo($"{tTSM.TXT} {tTSM.PLS}");
-                if (bDontVerifyTrust || MyCodeSigner.IsTrusted(pDLLName))
+                    tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM);
+                    if (tTSM != null)
+                        TheSystemMessageLog.ToCo($"{tTSM.TXT} {tTSM.PLS}");
+                }
+                else
                 {
-                    Assembly tAss = Assembly.LoadFrom(pDLLName);
+                    var types = AppDomain.CurrentDomain.GetAssemblies();
+                    tCryptoAssembly = types.FirstOrDefault(g => g.Location.Contains(pDLLName));
+                    if (tCryptoAssembly != null)
+                    {
+                        var CDEPlugins = from t in tCryptoAssembly.GetTypes()
+                                         let ifs = t.GetInterfaces()
+                                         where ifs != null && ifs.Length > 0 && (ifs.Any(s => _KnownInterfaces.Contains(s.Name)))
+                                         select new { Type = t, t.Namespace, t.Name, t.FullName };
+                        foreach (var Plugin in CDEPlugins)
+                        {
+                            if (!(Plugin?.Type?.IsAbstract == true))
+                            {
+                                var ints = Plugin.Type.GetInterfaces();
+                                foreach (var tI in ints)
+                                {
+                                    if (_KnownInterfaces.Contains(tI.Name))
+                                    {
+                                        tL[tI.Name] = Plugin.FullName;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if ((bDontVerifyTrust || MyCodeSigner?.IsTrusted(pDLLName)==true) && tL?.Count>0)
+                {
+                    if (tCryptoAssembly==null)
+                        tCryptoAssembly = Assembly.LoadFrom(pDLLName);
                     if (tL.ContainsKey("ICDESecrets"))
                     {
-                        var tSecType = tAss.GetTypes().First(s => s.FullName == tL["ICDESecrets"]);
+                        var tSecType = tCryptoAssembly.GetTypes().First(s => s.FullName == tL["ICDESecrets"]);
                         MySecrets = Activator.CreateInstance(tSecType) as ICDESecrets;
                     }
                     else
@@ -77,7 +109,7 @@ namespace nsCDEngine.BaseClasses
                     {
                         if (tL?.ContainsKey(tInter) == true)
                         {
-                            var tNType = tAss.GetTypes().First(s => s.FullName == tL[tInter]);
+                            var tNType = tCryptoAssembly.GetTypes().First(s => s.FullName == tL[tInter]);
                             try
                             {
                                 switch (tInter)

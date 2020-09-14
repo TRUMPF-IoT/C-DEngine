@@ -337,6 +337,8 @@ namespace nsCDEngine.ISM
                 TheBaseAssets.MyServiceHostInfo.BaseDirectory = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash();
             }
             var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
+            if (tpiFile == null)
+                return false;
             if (File.Exists(tpiFile))    //Does not exist with RandomDeviceID=true
             {
                 byte[] tBuf = File.ReadAllBytes(tpiFile);
@@ -456,7 +458,7 @@ namespace nsCDEngine.ISM
                         catch { }
                     }
                 }
-                if (appSettings == null)
+                if (appSettings == null && Assembly.GetEntryAssembly()?.Location != null) //android or ios dont have this
                 {
                     var appSettingsCollection = new System.Collections.Specialized.NameValueCollection();
                     // Read settings ourselves

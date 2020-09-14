@@ -896,7 +896,7 @@ namespace nsCDEngine.Engines.NMIService
                             {
                                 EngineName = eEngineName.NMIService,
                                 DeviceType = eKnownDeviceTypes.TheNMIScene,
-                                FriendlyName = "Home Scene",
+                                FriendlyName = $"Home Scene: {tScene.FriendlyName}",
                                 UID = pMsg.CurrentUserID
                             };
                             tSceneThing.SetProperty("IsHomeScene", true);

@@ -192,12 +192,14 @@ namespace nsCDEngine.BaseClasses
                 TheCommCore.MyHttpService = new TheHttpService();
                 TheBaseAssets.MySYSLOG.WriteToLog(4141, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "HttpService created", eMsgLevel.l3_ImportantMessage));
 
-                if (TheBaseAssets.MyServiceHostInfo.StartISM && MyISMRoot==null)
+                if (TheBaseAssets.MyServiceHostInfo.StartISM && MyISMRoot == null && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.BaseDirectory))
                 {
                     MyISMRoot = new TheISMManager { eventShutdownRequired = sinkAppShutdown };
                     MyISMRoot.InitISM("", "", "", TheBaseAssets.MyServiceHostInfo.CurrentVersion, TheBaseAssets.MyServiceHostInfo.ISMScanForUpdatesOnUSB, TheBaseAssets.MyServiceHostInfo.ISMScanOnStartup);
                     TheBaseAssets.MySYSLOG.WriteToLog(4142, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "ISM Started", eMsgLevel.l3_ImportantMessage));
                 }
+                else
+                    TheBaseAssets.MyServiceHostInfo.StartISM = false;
                 if (!TheBaseAssets.MasterSwitch) return false;
 
                 if (MyCommonDisco == null)
