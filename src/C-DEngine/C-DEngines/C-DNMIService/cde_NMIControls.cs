@@ -88,6 +88,14 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public string Background { get; set; }
         /// <summary>
+        /// Shows the form in fullscreen
+        /// </summary>
+        public bool? ShowFullScreen { get; set; }
+        /// <summary>
+        /// Allows to drag and drop a form
+        /// </summary>
+        public bool? AllowDrag { get; set; }
+        /// <summary>
         /// Hides the caption of a form
         /// </summary>
         public bool? HideCaption { get; set; }
@@ -167,7 +175,6 @@ namespace nsCDEngine.Engines.NMIService
         /// The URL of the IFrame content
         /// </summary>
         public string Source { get; set; }
-
         /// <summary>
         /// Adds a header to the request in the source. syntax: Name=value
         /// </summary>
@@ -1448,6 +1455,15 @@ namespace nsCDEngine.Engines.NMIService
     /// </summary>
     public class nmiDashboardTile : TheNMIBaseControl
     {
+        /// <summary>
+        /// Shows the form in fullscreen
+        /// </summary>
+        public bool? ShowFullScreen { get; set; }
+        /// <summary>
+        /// Class Name for the Container screen
+        /// </summary>
+        public string ScreenClassName { get; set; }
+
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// <summary>   Sets a subtitle to a dashicon </summary>
         ////////////////////////////////////////////////////////////////////////////////////////////////////

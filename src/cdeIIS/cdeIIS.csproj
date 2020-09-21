@@ -45,10 +45,6 @@
         <Reference Include="System.Configuration" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="call &quot;$(ProjectDir)..\..\BuildTools\signmeSha.bat&quot; &quot;$(TargetPath)&quot; &quot;$(ProjectDir)..\..\..\BuildTools&quot;" />
   </Target>

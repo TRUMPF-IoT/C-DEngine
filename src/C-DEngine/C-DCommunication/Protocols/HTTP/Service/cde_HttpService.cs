@@ -772,7 +772,7 @@ namespace nsCDEngine.Communication.HttpService
         internal static bool IsTokenValid(TheRequestData pData, Dictionary<string, string> tQ)
         {
             string token = TheBaseAssets.MySettings.GetSetting("StatusToken");
-            if ((string.IsNullOrEmpty(token) && !TheBaseAssets.MyServiceHostInfo.IsCloudService) || (tQ != null && tQ.ContainsKey(token.ToUpperInvariant()))) //new in 4.0121 - StatusToken in cdeAppConfig blocks cdestatus.aspx access if token was not added to URL
+            if ((string.IsNullOrEmpty(token) && !TheBaseAssets.MyServiceHostInfo.IsCloudService) || (tQ != null && tQ.ContainsKey(token?.ToUpperInvariant()))) //new in 4.0121 - StatusToken in cdeAppConfig blocks cdestatus.aspx access if token was not added to URL
                 return true;
             pData.StatusCode = 404;
             pData.ResponseBuffer = TheCommonUtils.CUTF8String2Array("Access denied");

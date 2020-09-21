@@ -1285,7 +1285,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static string cdeFixupFileName(string pFilePath, bool AllowCacheAccess)
         {
-            if (pFilePath == null)
+            if (pFilePath == null || string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.BaseDirectory))
             {
                 return null;
             }
