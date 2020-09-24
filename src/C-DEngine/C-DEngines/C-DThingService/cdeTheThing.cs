@@ -794,20 +794,65 @@ namespace nsCDEngine.Engines.ThingService
         private object ThingObject;
 
         /// <summary>
-        /// This method sets and internal "object" in TheThing. The object is NOT serialized in TheThingRegistry but can be used to store any arbitrary class/object associated with TheThing
+        /// This methods provides thread-safe access to the IThingObject.
+        /// </summary>
+        /// <typeparam name="T">Type of the desired IThingObject. If the existing object is of a different type, it will be updated to a new instance of this type.</typeparam>
+        /// <param name="createThingObjectAction">Function that returns the desired IThingObject. Typically callers invoke the constructor of the class in this function. This function is run under a lock, so no long running operations should be performed here.</param>
+        /// <param name="bCreated">Indicates if a new IThingObject was created or if an existing one was returned. Useful for performing one-time initializations on the IThingObject.</param>
+        /// <returns>An existing or newly created IThingObject of type T, or null if another caller </returns>
+        public T GetOrCreateIThingObject<T>(Func<TheThing, T> createThingObjectAction, out bool bCreated) where T : class
+        {
+            T thingObject = null;
+            bCreated = false;
+            lock (initOrUxLock)
+            {
+                if ((ThingObject as T) != null)
+                {
+                    return ThingObject as T;
+                }
+                if (!HasLiveObject)
+                {
+                    try
+                    {
+                        thingObject = createThingObjectAction(this);
+                        SetIThingObject(thingObject);
+                        bCreated = true;
+                    }
+                    catch (Exception e)
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(7691, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingService", "Failed to created IThingObject", eMsgLevel.l2_Warning, $"{this.EngineName} {this.FriendlyName}: callback exception '{e.Message}'."));
+                    }
+                }
+            }
+            if (thingObject != null)
+            {
+                TheThingRegistry.RegisterThing(this);
+            }
+            return thingObject;
+        }
+
+        /// <summary>
+        /// This method sets an internal "object" in TheThing. The object is NOT serialized in TheThingRegistry but can be used to store any arbitrary class/object associated with TheThing
         /// </summary>
         /// <param name="pObj"></param>
         public void SetIThingObject(object pObj)
         {
-            if (pObj == null && ThingObject != null)
+            lock (initOrUxLock)
             {
-                FireEvent(eThingEvents.ThingLive, this, false, true);
+                if (pObj == null && ThingObject != null)
+                {
+                    FireEvent(eThingEvents.ThingLive, this, false, true);
+                }
+                if (ThingObject == null && pObj != null)
+                {
+                    FireEvent(eThingEvents.ThingLive, this, true, true);
+                }
+                if (ThingObject != null && pObj != ThingObject)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(7691, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingService", "Switching IThingObject", eMsgLevel.l2_Warning, $"{this.EngineName} {this.FriendlyName}: IThingObject replaced with a different one. Race condition in plug-in instance creation?"));
+                }
+                ThingObject = pObj;
             }
-            if (ThingObject == null && pObj != null)
-            {
-                FireEvent(eThingEvents.ThingLive, this, true, true);
-            }
-            ThingObject = pObj;
         }
 
         /// <summary>
@@ -2093,13 +2138,15 @@ namespace nsCDEngine.Engines.ThingService
         public void RegisterEvent(string pEventName, Action<ICDEThing, object> pCallback)
         {
             if (pCallback == null || string.IsNullOrEmpty(pEventName)) return;
-            if (MyRegisteredEvents.ContainsKey(pEventName))
+            MyRegisteredEvents.AddOrUpdate(pEventName, (key) => new Action<ICDEThing, object>(pCallback), (key, existingAction) =>
             {
-                MyRegisteredEvents[pEventName] -= pCallback;
-                MyRegisteredEvents[pEventName] += pCallback;
-            }
-            else
-                MyRegisteredEvents.TryAdd(pEventName, pCallback);
+                lock (existingAction)
+                {
+                    existingAction -= pCallback;
+                    existingAction += pCallback;
+                }
+                return existingAction;
+            });
         }
 
         /// <summary>
@@ -2114,7 +2161,15 @@ namespace nsCDEngine.Engines.ThingService
                 if (pCallback == null)
                     MyRegisteredEvents[pEventName] = null;
                 else
-                    MyRegisteredEvents[pEventName] -= pCallback;
+                {
+                    if (MyRegisteredEvents.TryGetValue(pEventName, out var action))
+                    {
+                        lock (action)
+                        {
+                            action -= pCallback;
+                        }
+                    }
+                }
             }
         }
 
@@ -2129,11 +2184,11 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="FireAsync">If set to true, the callback is running on a new Thread</param>
         public void FireEvent(string pEventName, ICDEThing sender, object pPara, bool FireAsync)
         {
-            if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName))
+            if (!string.IsNullOrEmpty(pEventName))
             {
-                if (MyRegisteredEvents[pEventName] != null)
+                if (MyRegisteredEvents.TryGetValue(pEventName, out var action))
                 {
-                    TheCommonUtils.DoFireEvent<ICDEThing>(MyRegisteredEvents[pEventName], sender, pPara, FireAsync,-1); //TODO: Check if we can work with a small timeout here
+                    TheCommonUtils.DoFireEvent<ICDEThing>(action, sender, pPara, FireAsync, -1); //TODO: Check if we can work with a small timeout here
                     //if (sender == null) sender = this;
                     //if (FireAsync) //V3B3
                     //    TheCommonUtils.cdeRunAsync(string.Format("ThingEvent Fired:{0}", pEventName), true, false, o =>
