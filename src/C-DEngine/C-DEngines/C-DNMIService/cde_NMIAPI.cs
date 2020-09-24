@@ -3253,6 +3253,16 @@ namespace nsCDEngine.Engines.NMIService
         }
 
         /// <summary>
+        /// returns true if the NMI UX is initialized
+        /// </summary>
+        /// <returns></returns>
+        public static bool IsUXInitialized()
+        {
+            if (TheCDEngines.MyNMIService != null && TheCDEngines.MyNMIService.IsUXInit()) return true;
+            return false;
+        }
+
+        /// <summary>
         /// Returns true if the NMI Model is ready
         /// </summary>
         public static bool IsModelReady

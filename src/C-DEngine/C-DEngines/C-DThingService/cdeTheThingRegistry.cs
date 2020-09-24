@@ -395,7 +395,7 @@ namespace nsCDEngine.Engines.ThingService
                         TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("ThingInit for {0} Failed", pThing), eMsgLevel.l1_Error, e.ToString()));
                     }
                 }
-                if (TheNMIEngine.IsInitialized() && !(pThing.GetBaseThing()?.IsDisabled == true) && !pThing.IsUXInit())
+                if (TheNMIEngine.IsInitialized() && TheNMIEngine.IsUXInitialized() && !(pThing.GetBaseThing()?.IsDisabled == true) && !pThing.IsUXInit())
                 {
                     try
                     {
@@ -990,7 +990,7 @@ namespace nsCDEngine.Engines.ThingService
                     }
                     else
                     {
-                        TheSystemMessageLog.WriteLog(1000, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("Thing Registry", $"Thing not initialized in WaitForInitializeAsync: timeout or failure from thing.", eMsgLevel.l2_Warning, $"{tThing}"), false);
+                        TheSystemMessageLog.WriteLog(1000, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("Thing Registry", $"Thing not initialized in WaitForInitializeAsync: timeout or failure from thing.", eMsgLevel.l2_Warning, $"{tThing}"), false);
                         tcsInitialized.TrySetResult(null);
                     }
                 });
@@ -1000,11 +1000,19 @@ namespace nsCDEngine.Engines.ThingService
                     TheCommonUtils.TaskWaitTimeout(tcsInitialized.Task, timeout).ContinueWith((t) =>
                     {
                         tThing.UnregisterEvent(eThingEvents.Initialized, initializeCallback);
-                        if (tThing.IsInit() && !tcsInitialized.Task.IsCompleted)
+                        bool bInit = tThing.IsInit();
+                        if (bInit)
                         {
-                            TheSystemMessageLog.WriteLog(1000, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("Thing Registry", $"Thing found initialized during timeout of WaitForInitializeAsync. No Initialized event fired or received.", eMsgLevel.l2_Warning, $"{tThing}"), false);
+                            if (!tcsInitialized.Task.IsCompleted)
+                            {
+                                TheSystemMessageLog.WriteLog(1000, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("Thing Registry", $"Thing found initialized during timeout of WaitForInitializeAsync. No Initialized event fired or received.", eMsgLevel.l2_Warning, $"{tThing}"), false);
+                            }
                         }
-                        initializeCallback(tThing, tThing.IsInit());
+                        else
+                        {
+                            TheSystemMessageLog.WriteLog(1000, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("Thing Registry", $"Thing not initialized in timeout of WaitForInitializeAsync.", eMsgLevel.l2_Warning, $"{tThing}"), false);
+                        }
+                        initializeCallback(tThing, bInit);
                     });
                 }
                 else
