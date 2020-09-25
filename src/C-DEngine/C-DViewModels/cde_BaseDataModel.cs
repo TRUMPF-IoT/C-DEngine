@@ -146,7 +146,8 @@ namespace nsCDEngine.ViewModels
         }
 
         #region NEW 3.121: Register and Fire Event on any Element Derived from TheMetaBase - new in 4.110 moved here for better low level support of telegrams
-        private cdeConcurrentDictionary<string, Action<object, TheProcessMessage>> TMDBRegisteredEventsOLD;
+        // CODE REVIEW: Do we need this still? Has been obsolete for a long time now
+        private TheCommonUtils.RegisteredEventHelper<object, TheProcessMessage> TMDBRegisteredEventsOLD;
 
         /// <summary>
         /// Register a callback that will be fired on a Property Event
@@ -158,15 +159,9 @@ namespace nsCDEngine.ViewModels
         {
             if (pCallback == null || string.IsNullOrEmpty(pEventName)) return null;
             if (TMDBRegisteredEventsOLD == null)
-                TMDBRegisteredEventsOLD = new cdeConcurrentDictionary<string, Action<object, TheProcessMessage>>();
-            if (TMDBRegisteredEventsOLD.ContainsKey(pEventName))
-            {
-                TMDBRegisteredEventsOLD[pEventName] -= pCallback;
-                TMDBRegisteredEventsOLD[pEventName] += pCallback;
-            }
-            else
-                TMDBRegisteredEventsOLD.TryAdd(pEventName, pCallback);
-            return pCallback;
+                TMDBRegisteredEventsOLD = new TheCommonUtils.RegisteredEventHelper<object, TheProcessMessage>();
+
+            return TMDBRegisteredEventsOLD.RegisterEvent(pEventName, pCallback);
         }
 
         /// <summary>
@@ -177,15 +172,7 @@ namespace nsCDEngine.ViewModels
         [Obsolete("Do not use anymore! Please us UnregisterEvent2(string pEventName, Action<TheProcessMessage,object> pCallback) instead")]
         public virtual bool UnregisterEvent(string pEventName, Action<object, TheProcessMessage> pCallback)
         {
-            if (TMDBRegisteredEventsOLD != null && !string.IsNullOrEmpty(pEventName) && TMDBRegisteredEventsOLD.ContainsKey(pEventName))
-            {
-                if (pCallback == null)
-                    TMDBRegisteredEventsOLD[pEventName] = null;
-                else
-                    TMDBRegisteredEventsOLD[pEventName] -= pCallback;
-                return true;
-            }
-            return false;
+            return TMDBRegisteredEventsOLD?.UnregisterEvent(pEventName, pCallback) ?? false;
         }
 
         /// <summary>
@@ -202,29 +189,23 @@ namespace nsCDEngine.ViewModels
             bool HasFired = false;
             if (TMDBRegisteredEventsOLD != null)
             {
-                if (TMDBRegisteredEventsOLD.TryGetValue(pEventName, out Action<object, TheProcessMessage> action) && action != null)
+                try
                 {
-                    try
-                    {
-                        TheCommonUtils.DoFireEventTPM(action, this, pMsg, FireAsync, pFireEventTimeout);
-                    }
-                    catch (Exception e)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheThing", string.Format("Error during Event Fire:{0}", pEventName), e.ToString()));
-                    }
-                    HasFired = true;
+                    TMDBRegisteredEventsOLD.FireEvent(pEventName, this, pMsg, FireAsync, pFireEventTimeout);
                 }
+                catch (Exception e)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheThing", string.Format("Error during Event Fire:{0}", pEventName), e.ToString()));
+                }
+                HasFired = true;
             }
             if (TMDBRegisteredEvents != null && !HasFired)
             {
-                if (TMDBRegisteredEvents.TryGetValue(pEventName, out Action<TheProcessMessage, object> action) && action != null)
-                {
-                    TheCommonUtils.DoFireEvent<TheProcessMessage>(action, pMsg, this, FireAsync, pFireEventTimeout);
-                }
+                TMDBRegisteredEvents.FireEvent(pEventName, pMsg, this, FireAsync, pFireEventTimeout);
             }
         }
 
-        private cdeConcurrentDictionary<string, Action<TheProcessMessage, object>> TMDBRegisteredEvents;
+        private TheCommonUtils.RegisteredEventHelper<TheProcessMessage, object> TMDBRegisteredEvents;
 
         /// <summary>
         /// Register a callback that will be fired on a Property Event
@@ -235,15 +216,9 @@ namespace nsCDEngine.ViewModels
         {
             if (pCallback == null || string.IsNullOrEmpty(pEventName)) return null;
             if (TMDBRegisteredEvents == null)
-                TMDBRegisteredEvents = new cdeConcurrentDictionary<string, Action<TheProcessMessage, object>>();
-            if (TMDBRegisteredEvents.ContainsKey(pEventName))
-            {
-                TMDBRegisteredEvents[pEventName] -= pCallback;
-                TMDBRegisteredEvents[pEventName] += pCallback;
-            }
-            else
-                TMDBRegisteredEvents.TryAdd(pEventName, pCallback);
-            return pCallback;
+                TMDBRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<TheProcessMessage, object>();
+
+            return TMDBRegisteredEvents.RegisterEvent(pEventName, pCallback);
         }
 
         /// <summary>
@@ -253,15 +228,7 @@ namespace nsCDEngine.ViewModels
         /// <param name="pCallback">The callback to unregister</param>
         public virtual bool UnregisterEvent2(string pEventName, Action<TheProcessMessage, object> pCallback)
         {
-            if (TMDBRegisteredEvents != null && !string.IsNullOrEmpty(pEventName) && TMDBRegisteredEvents.ContainsKey(pEventName))
-            {
-                if (pCallback == null)
-                    TMDBRegisteredEvents[pEventName] = null;
-                else
-                    TMDBRegisteredEvents[pEventName] -= pCallback;
-                return true;
-            }
-            return false;
+            return TMDBRegisteredEvents?.UnregisterEvent(pEventName, pCallback) ?? false;
         }
 
         /// <summary>
@@ -271,7 +238,7 @@ namespace nsCDEngine.ViewModels
         /// <returns>True if the event has callbacks</returns>
         public bool IsEventRegistered(string pEventName)
         {
-            return (TMDBRegisteredEvents?.ContainsKey(pEventName) == true && TMDBRegisteredEvents[pEventName] != null);
+            return TMDBRegisteredEvents?.HasRegisteredEvents(pEventName) ?? false;
         }
         #endregion
         /// <summary>

@@ -841,7 +841,7 @@ namespace nsCDEngine.BaseClasses
 
         #endregion
 
-        internal static void DoFireEventTPM<T>(Action<T, TheProcessMessage> action, T Para1, TheProcessMessage pMsg, bool FireAsync, int pFireEventTimeout = 0)
+        internal static void DoFireEvent<T>(Action<T, TheProcessMessage> action, T Para1, TheProcessMessage pMsg, bool FireAsync, int pFireEventTimeout = 0)
         {
             if (FireAsync)
             {
