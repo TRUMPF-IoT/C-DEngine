@@ -2112,22 +2112,18 @@ namespace nsCDEngine.Engines.ThingService
         }
         internal List<string> GetKnownEvents()
         {
-            return MyRegisteredEvents.Keys.ToList();
+            return MyRegisteredEvents.GetKnownEvents();
         }
 #region Event Handling
 
-        private readonly cdeConcurrentDictionary<string, Action<ICDEThing, object>> MyRegisteredEvents = null;
+        private readonly TheCommonUtils.RegisteredEventHelper<ICDEThing, object> MyRegisteredEvents = null;
 
         /// <summary>
         /// Removes all Events from TheThing
         /// </summary>
         public void ClearAllEvents()
         {
-            foreach (var tEventName in MyRegisteredEvents.Keys)
-            {
-                MyRegisteredEvents[tEventName] = null;
-            }
-            MyRegisteredEvents.Clear();
+            MyRegisteredEvents.ClearAllEvents();
         }
         /// <summary>
         /// Registers a new Event with TheThing
@@ -2137,16 +2133,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pCallback">Callback called when the event fires</param>
         public void RegisterEvent(string pEventName, Action<ICDEThing, object> pCallback)
         {
-            if (pCallback == null || string.IsNullOrEmpty(pEventName)) return;
-            MyRegisteredEvents.AddOrUpdate(pEventName, (key) => new Action<ICDEThing, object>(pCallback), (key, existingAction) =>
-            {
-                lock (existingAction)
-                {
-                    existingAction -= pCallback;
-                    existingAction += pCallback;
-                }
-                return existingAction;
-            });
+            MyRegisteredEvents.RegisterEvent(pEventName, pCallback);
         }
 
         /// <summary>
@@ -2156,21 +2143,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pCallback">Callback to unregister</param>
         public void UnregisterEvent(string pEventName, Action<ICDEThing, object> pCallback)
         {
-            if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                if (pCallback == null)
-                    MyRegisteredEvents[pEventName] = null;
-                else
-                {
-                    if (MyRegisteredEvents.TryGetValue(pEventName, out var action))
-                    {
-                        lock (action)
-                        {
-                            action -= pCallback;
-                        }
-                    }
-                }
-            }
+            MyRegisteredEvents.UnregisterEvent(pEventName, pCallback);
         }
 
         /// <summary>
@@ -2184,30 +2157,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="FireAsync">If set to true, the callback is running on a new Thread</param>
         public void FireEvent(string pEventName, ICDEThing sender, object pPara, bool FireAsync)
         {
-            if (!string.IsNullOrEmpty(pEventName))
-            {
-                if (MyRegisteredEvents.TryGetValue(pEventName, out var action))
-                {
-                    TheCommonUtils.DoFireEvent<ICDEThing>(action, sender, pPara, FireAsync, -1); //TODO: Check if we can work with a small timeout here
-                    //if (sender == null) sender = this;
-                    //if (FireAsync) //V3B3
-                    //    TheCommonUtils.cdeRunAsync(string.Format("ThingEvent Fired:{0}", pEventName), true, false, o =>
-                    //    {
-                    //        MyRegisteredEvents[pEventName]?.Invoke(sender, pPara);
-                    //    });
-                    //else
-                    //{
-                    //    try
-                    //    {
-                    //        MyRegisteredEvents[pEventName]?.Invoke(sender, pPara);
-                    //    }
-                    //    catch (Exception e)
-                    //    {
-                    //        TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheThing", string.Format("Error during Event Fire:{0}", pEventName), e.ToString()));
-                    //    }
-                    //}
-                }
-            }
+            MyRegisteredEvents.FireEvent(pEventName, sender, pPara, FireAsync);
         }
 
         /// <summary>
@@ -2217,7 +2167,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool HasRegisteredEvents(string pEventName)
         {
-            return (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName) && MyRegisteredEvents[pEventName] != null);
+            return MyRegisteredEvents.HasRegisteredEvents(pEventName);
         }
         #endregion
 
@@ -2460,7 +2410,7 @@ namespace nsCDEngine.Engines.ThingService
         public TheThing()
         {
             MyPropertyBag = new cdeConcurrentDictionary<string, cdeP>();
-            MyRegisteredEvents = new cdeConcurrentDictionary<string, Action<ICDEThing, object>>();
+            MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<ICDEThing, object>();
             RegisterEvent(eThingEvents.ThingUpdated, null);
         }
 
@@ -2492,10 +2442,10 @@ namespace nsCDEngine.Engines.ThingService
             }
             var tProgMsg = new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback, CurrentUserID = ((tCurrentUser == null) ? Guid.Empty : tCurrentUser.cdeMID) };
             tProgMsg.ClientInfo=TheCommonUtils.GetClientInfo(tProgMsg);
-            if (tThing.MyRegisteredEvents.ContainsKey(tSendMessage.TXT))
+            if (tThing.MyRegisteredEvents.HasRegisteredEvents(tSendMessage.TXT))
             {
                 if (tSendMessage.TXT.StartsWith(eUXEvents.OnClick)) TheCommonUtils.SleepOneEye(200, 200); //REVIEW: Bug#1098 this will make "TAP and HOLD" impossible...but that should be a different event anyway...shall we keep it here or force plugins to add this individually?
-                tThing.MyRegisteredEvents[tSendMessage.TXT](tThing, tProgMsg); //.PLS);
+                tThing.MyRegisteredEvents.FireEvent(tSendMessage.TXT, tThing, tProgMsg, false); //.PLS);
             }
             else
                 tThing.HandleMessage(tThing, tProgMsg);
