@@ -437,21 +437,17 @@ namespace nsCDEngine.Engines.ThingService
         #region Event Handling
         internal List<string> GetKnownEvents()
         {
-            return MyRegisteredEvents.Keys.ToList();
+            return MyRegisteredEvents.GetKnownEvents();
         }
 
-        private cdeConcurrentDictionary<string, Action<cdeP>> MyRegisteredEvents = new cdeConcurrentDictionary<string, Action<cdeP>>();
+        private TheCommonUtils.RegisteredEventHelper<cdeP> MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<cdeP>();
 
         /// <summary>
         /// Removes all Events from cdeP
         /// </summary>
         public void ClearAllEvents()
         {
-            foreach (var tEventName in MyRegisteredEvents.Keys)
-            {
-                MyRegisteredEvents[tEventName] = null;
-            }
-            MyRegisteredEvents.Clear();
+            MyRegisteredEvents.ClearAllEvents();
         }
         /// <summary>
         /// Register a callback that will be fired on a Property Event
@@ -460,14 +456,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pCallback">A Callback that will be called when the eThingEvents.XXX fires</param>
         public void RegisterEvent(string pEventName, Action<cdeP> pCallback)
         {
-            if (pCallback == null || string.IsNullOrEmpty(pEventName)) return;
-            if (MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                MyRegisteredEvents[pEventName] -= pCallback;
-                MyRegisteredEvents[pEventName] += pCallback;
-            }
-            else
-                MyRegisteredEvents.TryAdd(pEventName, pCallback);
+            MyRegisteredEvents.RegisterEvent(pEventName, pCallback);
             cdeFOC |= 4;
         }
 
@@ -478,15 +467,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pCallback">The callback to unregister</param>
         public void UnregisterEvent(string pEventName, Action<cdeP> pCallback)
         {
-            if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                if (pCallback == null)
-                    MyRegisteredEvents[pEventName] = null;
-                else
-                    MyRegisteredEvents[pEventName] -= pCallback;
-                if (MyRegisteredEvents[pEventName] == null)
-                    cdeFOC &= 0xFFFB;
-            }
+            MyRegisteredEvents.UnregisterEvent(pEventName, pCallback);
+            if (MyRegisteredEvents.HasRegisteredEvents(pEventName))
+                cdeFOC &= 0xFFFB;
         }
         /// <summary>
         /// Fire an Event on a property
@@ -497,23 +480,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <remarks></remarks>
         public void FireEvent(string pEventName, bool FireAsync, int pFireEventTimeout = 0)
         {
-            if (!string.IsNullOrEmpty(pEventName))
-            {
-                Action<cdeP> action = null;
-                if (MyRegisteredEvents?.TryGetValue(pEventName, out action) == true && action != null)
-                {
-                    // CODE REVIEW: Do we want to continue to effectively block callers until all events are processed or timedout?
-                    // Makes for a more predictable system (ordering, pushback on callers when consumers can't keep up), but also slower
-                    //try
-                    //{
-                    TheCommonUtils.DoFireEvent<cdeP>(action, this, FireAsync, pFireEventTimeout);
-                    //}
-                    //catch (Exception e)
-                    //{
-                    //    TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheThing", string.Format("Error during Event Fire:{0}", pEventName), e.ToString()));
-                    //}
-                }
-            }
+            MyRegisteredEvents.FireEvent(pEventName, this, FireAsync, pFireEventTimeout);
         }
 
         internal void MoveEventsTo(cdeP pProp)
@@ -535,7 +502,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>True if the event has callbacks</returns>
         public bool HasRegisteredEvents(string pEventName)
         {
-            return (MyRegisteredEvents.ContainsKey(pEventName) && MyRegisteredEvents[pEventName] != null);
+            return MyRegisteredEvents.HasRegisteredEvents(pEventName);
         }
 
         /// <summary>
@@ -544,7 +511,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool HasRegisteredEvents()
         {
-            return (MyRegisteredEvents.Count > 0);
+            return MyRegisteredEvents.HasRegisteredEvents();
         }
 
         #endregion
