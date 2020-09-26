@@ -395,7 +395,7 @@ namespace nsCDEngine.Engines.ThingService
                         TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("ThingInit for {0} Failed", pThing), eMsgLevel.l1_Error, e.ToString()));
                     }
                 }
-                if (TheNMIEngine.IsInitialized() && TheNMIEngine.IsUXInitialized() && !(pThing.GetBaseThing()?.IsDisabled == true) && !pThing.IsUXInit())
+                if (TheNMIEngine.IsInitialized() && !(pThing.GetBaseThing()?.IsDisabled == true) && !pThing.IsUXInit())
                 {
                     try
                     {
