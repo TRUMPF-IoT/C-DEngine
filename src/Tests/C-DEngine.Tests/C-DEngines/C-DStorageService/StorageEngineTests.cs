@@ -606,7 +606,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #endregion
         }
-#if !NETCOREAPP2_2
+#if !NETCOREAPP3_1
         [Test]
         [Description("This is a primitive test to evaluate whether or not the insertion of multiple TSMs cause the AvgCPU/AvgRAM to exceed preset limits.")]
         [Category("Optimization")]

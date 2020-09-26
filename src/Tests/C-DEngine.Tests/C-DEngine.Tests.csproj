@@ -5,7 +5,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.2;net35;net45</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net35;net45</TargetFrameworks>
     <RootNamespace>C_DEngine.Tests</RootNamespace>
 
     <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
