@@ -3,6 +3,10 @@ Upstream-Name: C-DEngine
 Upstream-Contact:  <>
 Source: https://github.com/TRUMPF-IoT/C-DEngine
 
+Files:  .github/ISSUE_TEMPLATE/*
+Copyright: 2020 C-Labs
+License: CC0-1.0
+
 Files:  readme.md
 Copyright: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
 License: MPL-2.0
