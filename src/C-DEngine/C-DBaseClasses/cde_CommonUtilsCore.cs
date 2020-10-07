@@ -74,7 +74,7 @@ namespace nsCDEngine.BaseClasses
                 return TheBaseAssets.MyServiceHostInfo.MonoRTActive;
             TheBaseAssets.MyServiceHostInfo.MonoRTActive = (Type.GetType("Mono.Runtime") != null);
             TheBaseAssets.MyServiceHostInfo.MonoRTDetected = true;
-            TheBaseAssets.MySYSLOG?.WriteToLog(new TSM("CommonUtilsCore",$"Is MonoRT Active:{TheBaseAssets.MyServiceHostInfo.MonoRTActive}",eMsgLevel.l6_Debug),5019);
+            TheBaseAssets.MySYSLOG?.WriteToLog(new TSM("CommonUtilsCore", $"Is MonoRT Active:{TheBaseAssets.MyServiceHostInfo.MonoRTActive}", eMsgLevel.l6_Debug), 5019);
             return TheBaseAssets.MyServiceHostInfo.MonoRTActive;
         }
         #endregion
@@ -1390,6 +1390,11 @@ namespace nsCDEngine.BaseClasses
         /// <param name="pFireEventTimeout">if larger </param>
         public static void DoFireEvent<T>(Action<T, object> action, T para, object Para2, bool FireAsync, int pFireEventTimeout = 0)
         {
+            DoFireEvent<T, object>(action, para, Para2, FireAsync, pFireEventTimeout);
+        }
+
+        public static void DoFireEvent<T1, T2>(Action<T1, T2> action, T1 para, T2 Para2, bool FireAsync, int pFireEventTimeout = 0)
+        {
             if (action == null) return;
             if (FireAsync)
             {
@@ -1405,7 +1410,7 @@ namespace nsCDEngine.BaseClasses
                     {
                         DoFireEventParallelInternal(action, a =>
                         {
-                            var innerAction = (a as Action<T, object>);
+                            var innerAction = (a as Action<T1, T2>);
                             if (innerAction == null)
                             {
                                 // This should never happen
@@ -1444,7 +1449,7 @@ namespace nsCDEngine.BaseClasses
         public static Task cdeRunTaskAsync(string pThreadName, cdeWaitCallback callBack, object pState = null, bool longRunning = false)
         {
             PendingTask pendingTask = null;
-            if (TheBaseAssets.MyServiceHostInfo?.EnableTaskKPIs==true)
+            if (TheBaseAssets.MyServiceHostInfo?.EnableTaskKPIs == true)
             {
                 pendingTask = new PendingTask { createTime = DateTime.UtcNow };
             }
