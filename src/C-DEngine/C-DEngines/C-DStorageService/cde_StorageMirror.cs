@@ -186,50 +186,23 @@ namespace nsCDEngine.Engines.StorageService
 
         #region Event Handling
 
-        private readonly cdeConcurrentDictionary<string, Action<StoreEventArgs>> MyRegisteredEvents = new cdeConcurrentDictionary<string, Action<StoreEventArgs>>();
+        private readonly TheCommonUtils.RegisteredEventHelper<StoreEventArgs> MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<StoreEventArgs>();
         public Action<StoreEventArgs> RegisterEvent(string pEventName, Action<StoreEventArgs> pCallback)
         {
-            if (MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                MyRegisteredEvents[pEventName] -= pCallback;
-                MyRegisteredEvents[pEventName] += pCallback;
-            }
-            else
-                MyRegisteredEvents.TryAdd(pEventName, pCallback);
-            return pCallback;
+            return MyRegisteredEvents.RegisterEvent(pEventName, pCallback);
         }
         public void UnregisterEvent(string pEventName, Action<StoreEventArgs> pCallback)
         {
-            if (MyRegisteredEvents.ContainsKey(pEventName))
-                MyRegisteredEvents[pEventName] -= pCallback;
+            MyRegisteredEvents.UnregisterEvent(pEventName, pCallback);
         }
         public void FireEvent(string pEventName, StoreEventArgs pPara, bool FireAsync)
         {
-            if (MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                TheCommonUtils.DoFireEvent<StoreEventArgs>(MyRegisteredEvents[pEventName], pPara, FireAsync, -1); //Can we live with a timeout here?
-                //if (MyRegisteredEvents[pEventName] != null)
-                //{
-                //    if (FireAsync)
-                //        TheCommonUtils.cdeRunAsync(string.Format("StoreEvent Fired:{0}", pEventName), true, false, o => MyRegisteredEvents[pEventName](pPara));
-                //    else
-                //    {
-                //        try
-                //        {
-                //            MyRegisteredEvents[pEventName](pPara);
-                //        }
-                //        catch (Exception e)
-                //        {
-                //            TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheThing", string.Format("Error during Event Fire:{0}", pEventName), e.ToString()));
-                //        }
-                //    }
-                //}
-            }
+            MyRegisteredEvents.FireEvent(pEventName, pPara, FireAsync);
         }
 
         public bool HasRegisteredEvents(string pEventName)
         {
-            return (MyRegisteredEvents.ContainsKey(pEventName) && MyRegisteredEvents[pEventName] != null);
+            return MyRegisteredEvents.HasRegisteredEvents(pEventName);
         }
         #endregion
         public bool IsReady { get; internal set; } // CODE REVIEW: Should this be internal set? CM: YES!

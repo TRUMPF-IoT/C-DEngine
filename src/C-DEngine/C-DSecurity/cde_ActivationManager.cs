@@ -1096,20 +1096,15 @@ namespace nsCDEngine.Activation
 
 
         #region Event Handling
-        // CODE REVIEW: Lifted from TheThing - should we make this shared code? Use the Content Engine for this? Make the activation manager it's own engine?
 
-        private readonly cdeConcurrentDictionary<string, Action<object, object>> MyRegisteredEvents = new cdeConcurrentDictionary<string, Action<object, object>>();
+        private readonly TheCommonUtils.RegisteredEventHelper<object, object> MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<object, object>();
 
         /// <summary>
         /// Removes all Events from TheThing
         /// </summary>
         public void ClearAllEvents()
         {
-            foreach (var tEventName in MyRegisteredEvents.Keys)
-            {
-                MyRegisteredEvents[tEventName] = null;
-            }
-            MyRegisteredEvents.Clear();
+            MyRegisteredEvents.ClearAllEvents();
         }
         /// <summary>
         /// Registers a new Event with TheThing
@@ -1119,14 +1114,7 @@ namespace nsCDEngine.Activation
         /// <param name="pCallback">Callback called when the event fires</param>
         public void RegisterEvent(string pEventName, Action<object, object> pCallback)
         {
-            if (pCallback == null || string.IsNullOrEmpty(pEventName)) return;
-            if (MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                MyRegisteredEvents[pEventName] -= pCallback;
-                MyRegisteredEvents[pEventName] += pCallback;
-            }
-            else
-                MyRegisteredEvents.TryAdd(pEventName, pCallback);
+            MyRegisteredEvents.RegisterEvent(pEventName, pCallback);
         }
 
         /// <summary>
@@ -1136,13 +1124,7 @@ namespace nsCDEngine.Activation
         /// <param name="pCallback">Callback to unregister</param>
         public void UnregisterEvent(string pEventName, Action<object, object> pCallback)
         {
-            if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                if (pCallback == null)
-                    MyRegisteredEvents[pEventName] = null;
-                else
-                    MyRegisteredEvents[pEventName] -= pCallback;
-            }
+            MyRegisteredEvents.UnregisterEvent(pEventName, pCallback);
         }
 
         /// <summary>
@@ -1156,33 +1138,7 @@ namespace nsCDEngine.Activation
         /// <param name="FireAsync">If set to true, the callback is running on a new Thread</param>
         public void FireEvent(string pEventName, ICDEThing sender, object pPara, bool FireAsync)
         {
-            if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName))
-            {
-                if (MyRegisteredEvents[pEventName] != null)
-                {
-                    TheCommonUtils.DoFireEvent<object>(MyRegisteredEvents[pEventName], sender, pPara, FireAsync, -1); //Can we use a timeout here?
-                    //if (sender == null) sender = null;
-                    //if (FireAsync) //V3B3
-                    //{
-                    //    TheCommonUtils.cdeRunAsync(string.Format("ThingEvent Fired:{0}", pEventName), true, false, o =>
-                    //    {
-                    //        var action = MyRegisteredEvents[pEventName];
-                    //        action?.Invoke(sender, pPara);
-                    //    });
-                    //}
-                    //else
-                    //{
-                    //    try
-                    //    {
-                    //        MyRegisteredEvents[pEventName]?.Invoke(sender, pPara);
-                    //    }
-                    //    catch (Exception e)
-                    //    {
-                    //        TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheThing", string.Format("Error during Event Fire:{0}", pEventName), e.ToString()));
-                    //    }
-                    //}
-                }
-            }
+            MyRegisteredEvents.FireEvent(pEventName, sender, pPara, FireAsync);
         }
 
         /// <summary>
@@ -1192,7 +1148,7 @@ namespace nsCDEngine.Activation
         /// <returns></returns>
         public bool HasRegisteredEvents(string pEventName)
         {
-            return (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName) && MyRegisteredEvents[pEventName] != null);
+            return MyRegisteredEvents.HasRegisteredEvents(pEventName);
         }
         #endregion
 

@@ -709,7 +709,139 @@ namespace nsCDEngine.BaseClasses
             return taskKPIs;
         }
 
-        internal static void DoFireEventTPM<T>(Action<T, TheProcessMessage> action, T Para1, TheProcessMessage pMsg, bool FireAsync, int pFireEventTimeout = 0)
+        #region internal Event helpers
+        internal abstract class RegisteredEventHelperBase<T> where T : System.MulticastDelegate
+        {
+            private readonly ViewModels.cdeConcurrentDictionary<string, T> MyRegisteredEvents = new ViewModels.cdeConcurrentDictionary<string, T>();
+
+            internal List<string> GetKnownEvents()
+            {
+                return MyRegisteredEvents.Keys.ToList();
+            }
+
+            /// <summary>
+            /// Removes all Events
+            /// </summary>
+            public void ClearAllEvents()
+            {
+                foreach (var tEventName in MyRegisteredEvents.Keys)
+                {
+                    MyRegisteredEvents[tEventName] = null;
+                }
+                MyRegisteredEvents.Clear();
+            }
+
+            /// <summary>
+            /// Registers a new Event with TheThing
+            /// New Events can be registerd and Fired at Runtime
+            /// </summary>
+            /// <param name="pEventName">Name of the Event to Register</param>
+            /// <param name="pCallback">Callback called when the event fires</param>
+            public T RegisterEvent(string pEventName, T pCallback)
+            {
+                if (pCallback == null || string.IsNullOrEmpty(pEventName)) return null;
+                return MyRegisteredEvents.AddOrUpdate(pEventName, (key) => pCallback, (key, existingAction) =>
+                {
+                    existingAction = Delegate.Remove(existingAction, pCallback) as T;
+                    existingAction = Delegate.Combine(existingAction, pCallback) as T;
+                    return existingAction;
+                });
+            }
+
+            /// <summary>
+            /// Unregisters a callback for a given Event Name
+            /// </summary>
+            /// <param name="pEventName">Name of the Event to unregister</param>
+            /// <param name="pCallback">Callback to unregister</param>
+            public bool UnregisterEvent(string pEventName, T pCallback)
+            {
+                if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName))
+                {
+                    if (pCallback == null)
+                        MyRegisteredEvents[pEventName] = null;
+                    else
+                    {
+                        MyRegisteredEvents.AddOrUpdate(pEventName, (key) => null, (key, action) =>
+                        {
+                            action = Delegate.Remove(action, pCallback) as T;
+                            return action;
+                        });
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            /// <summary>
+            /// Returns true if the event specified exists in the Eventing System of TheThing
+            /// </summary>
+            /// <param name="pEventName"></param>
+            /// <returns></returns>
+            public bool HasRegisteredEvents(string pEventName)
+            {
+                return (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.ContainsKey(pEventName) && MyRegisteredEvents[pEventName] != null);
+            }
+
+            internal bool HasRegisteredEvents()
+            {
+                return MyRegisteredEvents.Any();
+            }
+
+            /// <summary>
+            /// Fires the given Event.
+            /// Every TheThing can register and Fire any Event on any event.
+            /// New Events can be defined at Runtime, registered and fired
+            /// </summary>
+            /// <param name="pEventName">Name of the Event to Fire</param>
+            /// <param name="doFire">Action that will invoke the actual action for the event. This allows for the caller to provide arguments to the invokation.</param>
+            protected void FireEvent(string pEventName, Action<T> doFire)
+            {
+                if (!string.IsNullOrEmpty(pEventName))
+                {
+                    if (MyRegisteredEvents.TryGetValue(pEventName, out var action))
+                    {
+                        doFire(action);
+                    }
+                }
+            }
+        }
+        internal class RegisteredEventHelper<T1> : RegisteredEventHelperBase<Action<T1>>
+        {
+            /// <summary>
+            /// Fires the given Event.
+            /// Every TheThing can register and Fire any Event on any event.
+            /// New Events can be defined at Runtime, registered and fired
+            /// </summary>
+            /// <param name="pEventName">Name of the Event to Fire</param>
+            /// <param name="sender">this pointer or any other ICDETHing that will be handed to the callback. If set to null, "this" will be used </param>
+            /// <param name="pPara">Parameter to be handed with the Event</param>
+            /// <param name="FireAsync">If set to true, the callback is running on a new Thread</param>
+            public void FireEvent(string pEventName, T1 sender, bool FireAsync, int pFireEventTimeout = -1)
+            {
+                base.FireEvent(pEventName, (action) => TheCommonUtils.DoFireEvent(action, sender, FireAsync, pFireEventTimeout));
+            }
+
+        }
+        internal class RegisteredEventHelper<T1, T2> : RegisteredEventHelperBase<Action<T1, T2>>
+        {
+            /// <summary>
+            /// Fires the given Event.
+            /// Every TheThing can register and Fire any Event on any event.
+            /// New Events can be defined at Runtime, registered and fired
+            /// </summary>
+            /// <param name="pEventName">Name of the Event to Fire</param>
+            /// <param name="sender">this pointer or any other ICDETHing that will be handed to the callback. If set to null, "this" will be used </param>
+            /// <param name="pPara">Parameter to be handed with the Event</param>
+            /// <param name="FireAsync">If set to true, the callback is running on a new Thread</param>
+            public void FireEvent(string pEventName, T1 sender, T2 pPara, bool FireAsync, int pFireEventTimeout = -1)
+            {
+                base.FireEvent(pEventName, (action) => TheCommonUtils.DoFireEvent(action, sender, pPara, FireAsync, pFireEventTimeout));
+            }
+        }
+
+        #endregion
+
+        internal static void DoFireEvent<T>(Action<T, TheProcessMessage> action, T Para1, TheProcessMessage pMsg, bool FireAsync, int pFireEventTimeout = 0)
         {
             if (FireAsync)
             {

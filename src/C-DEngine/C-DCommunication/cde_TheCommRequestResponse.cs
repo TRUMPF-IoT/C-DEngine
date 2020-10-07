@@ -299,9 +299,9 @@ namespace nsCDEngine.Communication
             if (originatorEngine != null)
             {
                 originatorEngine.RegisterEvent(eEngineEvents.IncomingMessage, callback);
+                return originatorEngine;
             }
-
-            return originatorEngine;
+            return null;
         }
 
         private static void UnregisterRequestCallback(object originatorThingOrEngine, Action<ICDEThing, object> callback)

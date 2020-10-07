@@ -943,7 +943,7 @@ namespace nsCDEngine.Engines.StorageService
                     if (bIsLocked)
                     {
                         // Don't write non-critical stores if they are locked by other writers (performance over correctness)
-                        TheBaseAssets.MySYSLOG.WriteToLog(4801, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Skipping Save of {typeof(T)} {MyStoreID} as it is non-critical store", eMsgLevel.l2_Warning));
+                        TheBaseAssets.MySYSLOG.WriteToLog(4801, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Skipping Save of {typeof(T)} {MyStoreID} as it is non-critical store", eMsgLevel.l4_Message));
                         return false;
                     }
                 }
@@ -951,7 +951,7 @@ namespace nsCDEngine.Engines.StorageService
                 if (waitCount > 1)
                 {
                     // One other thread is already waiting to save the contents of the cache. Any changes up to this point will be saved by that thread, so we can avoid taking another lock and attempting another write for this thread
-                    TheBaseAssets.MySYSLOG.WriteToLog(4816, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Skipping Save of {typeof(T)} {MyStoreID} as another write is already queued", eMsgLevel.l2_Warning, $"Count: {waitCount}"));
+                    TheBaseAssets.MySYSLOG.WriteToLog(4816, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Skipping Save of {typeof(T)} {MyStoreID} as another write is already queued", eMsgLevel.l4_Message, $"Count: {waitCount}"));
                     return false;
                 }
             }
@@ -1024,11 +1024,11 @@ namespace nsCDEngine.Engines.StorageService
                     if (waitForSave)
                     {
                         var delay = timeBetweenSaves - (int)timeSinceLastSave.TotalMilliseconds + 15; // 15ms: timer precision in .Net/Windows - adding this to ensure that the measured time on the re-save will be outside of the time window
-                        TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Scheduled Save for {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l2_Warning, $"Delay: {delay}"));
+                        TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Scheduled Save for {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l4_Message, $"Delay: {delay}"));
                         // Don't save too often: wait until the store interval or 10s
                         TheCommonUtils.TaskDelayOneEye(delay, 100).ContinueWith(t =>
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Running Scheduled Save for {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l2_Warning));//, $"Count: {waitCountOnEnter}. Delay: {delay}"));
+                            TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Running Scheduled Save for {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l4_Message));//, $"Count: {waitCountOnEnter}. Delay: {delay}"));
                             DoSaveCacheToDisk(waitForSave, false);
                             Interlocked.Decrement(ref TheBaseAssets.DelayShutDownCount);
                         });
@@ -1159,11 +1159,11 @@ namespace nsCDEngine.Engines.StorageService
                         }
                         if (waitCountOnEnter > 1)
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Completed Save of {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l2_Warning, $"Count: {waitCountOnEnter}. Time: {elapsed}"));
+                            TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Completed Save of {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l4_Message, $"Count: {waitCountOnEnter}. Time: {elapsed}"));
                         }
                         else
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4819, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Completed Save of {typeof(T)} {MyStoreID}", eMsgLevel.l2_Warning, $"Count: {waitCountOnEnter}. Time: {elapsed}"));
+                            TheBaseAssets.MySYSLOG.WriteToLog(4819, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Completed Save of {typeof(T)} {MyStoreID}", eMsgLevel.l4_Message, $"Count: {waitCountOnEnter}. Time: {elapsed}"));
                         }
                     }
                 }
