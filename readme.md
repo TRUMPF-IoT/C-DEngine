@@ -12,6 +12,12 @@ The C-DEngine can automatically generate a modern Natural Machine Interface (NMI
 
 To get started with step-by-step tutorials and overview documentation visit http://docs.C-Labs.com.
 
+TLDR: 
+1) Create a .Net project and reference the [C-DEngine NuGet package](https://www.nuget.org/packages/C-DEngine/). 
+2) Write code to start the C-DEngine: call [TheBaseApplication.StartBaseApplication](http://docs.c-labs.com/Coding/HelloWorld.html).
+3) Optionally add the [NMI NuGet package](https://www.nuget.org/packages/CDMyNMIHtml5RT/) and one or more plugins on NuGet (Example: [Network Pinger](https://www.nuget.org/packages/C-DMyNetwork/)).
+
+
 ## Go deeper
 
 [This repository](src/readme.md) contains the core C-DEngine and the fundamental tooling that goes with it.
