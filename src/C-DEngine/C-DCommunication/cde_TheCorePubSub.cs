@@ -405,7 +405,7 @@ namespace nsCDEngine.Communication
                                     {
                                         // Message is part of a CDE_CONNECT: Republish it to enable single-post message sending (i.e. MSB/Service Gateway scenario)
                                         TheCDEKPIs.IncrementKPI(eKPINames.CCTSMsRelayed); // TODO SHould we have a separate KPI for this
-                                        TheCommCore.PublishCentral(recvMessage, true);
+                                        TheCommCore.PublishCentral(recvMessage, true, pQSender.MyTargetNodeChannel.IsTrustedSender);
                                     }
                                 }
                             }

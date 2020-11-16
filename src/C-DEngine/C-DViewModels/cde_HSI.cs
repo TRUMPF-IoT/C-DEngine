@@ -901,6 +901,14 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         public int ClientCertificateUsage { get; internal set; }
 
+        public bool OneWayRelayMode { get; internal set; }
+
+        /// <summary>
+        /// Filter indicating which outgoing TSMs should be allowed into a OneWay channel. Each filter entry is a string that is matched against the TSM.TXT field. 
+        /// The filter entry can contain at most one wildcard ('*' character).
+        /// </summary>
+        public string[] OneWayTSMFilter { get; internal set; }
+
         /// <summary>
         /// Thumbprint of a client certificate to use for mesh communication
         /// </summary>
@@ -2091,6 +2099,20 @@ namespace nsCDEngine.ViewModels
         public cdeSenderType SenderType { get; set; }
 
         /// <summary>
+        /// Messages from this channel will go to channels marked IsOneWay if they match the OneWayTSMFilter
+        /// </summary>
+        public bool IsTrustedSender { get; set; }
+        /// <summary>
+        /// Channel does not allow outgoing messages (except for optional TSM filter)
+        /// </summary>
+        public bool IsOneWay { get; set; }
+        /// <summary>
+        /// Filter indicating which outgoing TSMs should be allowed into a OneWay channel. Each filter entry is a string that is matched against the TSM.TXT field. 
+        /// The filter entry can contain at most one wildcard ('*' character).
+        /// </summary>
+        public string[] OneWayTSMFilter { get; set; }
+
+        /// <summary>
         /// Timestamp when this Channel was created
         /// </summary>
         public DateTimeOffset CreationTime { get; set; }
@@ -2127,21 +2149,6 @@ namespace nsCDEngine.ViewModels
         }
 
         public string QStatus { get; set; }
-
-        public TheChannelInfo() { }
-        public TheChannelInfo(TheChannelInfo pc)
-        {
-            this.cdeMID = pc.cdeMID;
-            this.cdeCTIM = pc.cdeCTIM;
-            this.TargetUrl = pc.TargetUrl;
-            this.SenderType = pc.SenderType;
-            this.CreationTime = pc.CreationTime;
-            this.LastInsertTime = pc.LastInsertTime;
-            this.References = pc.References;
-            this.IsWebSocket = pc.IsWebSocket;
-            this.ScopeIDHash = pc.ScopeIDHash;
-        }
-
 
         /// <summary>
         /// Returns a friendly representation of TheChannelInfo
@@ -2188,12 +2195,52 @@ namespace nsCDEngine.ViewModels
                 mClientCertificateThumb = value;
             }
         }
+
+        public TheChannelInfo()
+        {
+            IsOneWay = TheBaseAssets.MyServiceHostInfo.OneWayRelayMode;
+            if (IsOneWay)
+            {
+                OneWayTSMFilter = TheBaseAssets.MyServiceHostInfo.OneWayTSMFilter;
+            }
+        }
+
+        public TheChannelInfo(TheChannelInfo pc)
+        {
+            this.cdeMID = pc.cdeMID;
+            this.cdeCTIM = pc.cdeCTIM;
+            this.TargetUrl = pc.TargetUrl;
+            this.SenderType = pc.SenderType;
+            this.CreationTime = pc.CreationTime;
+            this.LastInsertTime = pc.LastInsertTime;
+            this.References = pc.References;
+            this.IsWebSocket = pc.IsWebSocket;
+            this.ScopeIDHash = pc.ScopeIDHash;
+            this.IsOneWay = pc.IsOneWay;
+            this.OneWayTSMFilter = pc.OneWayTSMFilter.ToArray();
+        }
+
         internal TheChannelInfo(Guid pDeviceID)
         {
             cdeMID = pDeviceID;
         }
 
-        internal TheChannelInfo(Guid pDeviceID, string pScopeID, cdeSenderType pSenderType, string pTargetUrl)
+        /// <summary>
+        /// Creates an unscoped channel
+        /// </summary>
+        /// <param name="pcdeN"></param>
+        /// <param name="pSenderType"></param>
+        /// <param name="targetUrl"></param>
+        internal TheChannelInfo(Guid pDeviceID, cdeSenderType pSenderType, string targetUrl) : this(pDeviceID, null, pSenderType, targetUrl)
+        {
+        }
+
+        public TheChannelInfo(Guid pDeviceID, cdeSenderType pSenderType, TheSessionState sessionState) : this(pDeviceID, null, pSenderType, null)
+        {
+            this.MySessionState = sessionState;
+        }
+
+        internal TheChannelInfo(Guid pDeviceID, string pScopeID, cdeSenderType pSenderType, string pTargetUrl) : this()
         {
             cdeMID = pDeviceID;
             SenderType = pSenderType;
@@ -2202,19 +2249,23 @@ namespace nsCDEngine.ViewModels
             if (cdeMID == Guid.Empty)
             {
                 if (string.IsNullOrEmpty(TargetUrl) || TheCommonUtils.IsUrlLocalhost(TargetUrl))
+                {
                     cdeMID = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID;
+                }
                 else
                 {
                     cdeMID = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(pSenderType);
                 }
             }
-            if (pSenderType==cdeSenderType.CDE_BACKCHANNEL && string.IsNullOrEmpty(pScopeID) && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(pDeviceID))
+            if (pSenderType == cdeSenderType.CDE_BACKCHANNEL && string.IsNullOrEmpty(pScopeID) && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(pDeviceID))
             {
                 TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, $"Allowed Cloud-2-Cloud unscoped Node connected: {pDeviceID}!", eMsgLevel.l3_ImportantMessage);
                 TheCDEKPIs.IncrementKPI("UnscopedNodeConnects");
             }
             else
+            {
                 SetRealScopeID(pScopeID);
+            }
         }
 
         internal void SetRealScopeID(string pRealScopeID)
@@ -2274,23 +2325,14 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         /// <param name="pSenderType">Requested Sender Type of the Channel</param>
         /// <param name="pTargetUrl">Requested URL of the Sender</param>
-        public TheChannelInfo(cdeSenderType pSenderType, string pTargetUrl)
+        public TheChannelInfo(cdeSenderType pSenderType, string pTargetUrl) : this(Guid.Empty, pSenderType, pTargetUrl)
         {
-            SenderType = pSenderType;
-            TargetUrl = pTargetUrl;
-            //TheChannelInfo tC = nsCDEngine.Communication.TheQueuedSenderRegistry.GetChannelInfoByUrl(TargetUrl);
-            if (string.IsNullOrEmpty(TargetUrl) || TheCommonUtils.IsUrlLocalhost(TargetUrl))
-                cdeMID = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID;
-            else
-            {
-                cdeMID = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(pSenderType);
-            }
         }
         /// <summary>
         /// Creates a new Channel Info from a Target URL
         /// </summary>
         /// <param name="pTargetUrl">Requested URL of the Sender</param>
-        public TheChannelInfo(string pTargetUrl)
+        public TheChannelInfo(string pTargetUrl) : this()
         {
             if (pTargetUrl == null)
             {
@@ -2331,7 +2373,8 @@ namespace nsCDEngine.ViewModels
                 cdeMID = this.cdeMID,
                 ScopeIDHash = this.RealScopeID?.Substring(0, 4).ToUpper(),
                 References = this.References,
-                QStatus = this.QStatus
+                QStatus = this.QStatus,
+                IsOneWay = this.IsOneWay,
             };
         }
 
