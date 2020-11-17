@@ -817,6 +817,15 @@ namespace nsCDEngine.ISM
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage = CU.CInt(temp);
 
+            temp = GetArgOrEnv(CmdArgs, nameof(TheBaseAssets.MyServiceHostInfo.OneWayRelayMode));
+            if (!string.IsNullOrEmpty(temp))
+                TheBaseAssets.MyServiceHostInfo.OneWayRelayMode = CU.CBool(temp);
+
+            temp = GetArgOrEnv(CmdArgs, nameof(TheBaseAssets.MyServiceHostInfo.OneWayTSMFilter));
+            if (!string.IsNullOrEmpty(temp))
+                TheBaseAssets.MyServiceHostInfo.OneWayTSMFilter = CU.CStringToList(temp, ';').ToArray();
+
+
             temp = GetArgOrEnv(CmdArgs, "Access-Control-Allow-Origin");
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.AccessControlAllowOrigin = temp;

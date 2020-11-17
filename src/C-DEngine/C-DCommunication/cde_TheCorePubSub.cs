@@ -399,7 +399,7 @@ namespace nsCDEngine.Communication
                                     if (!tTopic.StartsWith("CDE_CONNECT") || !TheBaseAssets.MyServiceHostInfo.AllowMessagesInConnect) // Should never get here if AllowMessagesInConnect is false, but avoid global publish just in case...
                                     {
                                         TheCDEKPIs.IncrementKPI(eKPINames.CCTSMsRelayed);
-                                        TheCommCore.PublishCentral(tTopic, recvMessage, false, null);
+                                        TheCommCore.PublishCentral(tTopic, recvMessage, false, null, false, pQSender?.MyTargetNodeChannel?.IsTrustedSender??false);
                                     }
                                     else
                                     {
