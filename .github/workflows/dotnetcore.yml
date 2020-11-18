@@ -44,7 +44,7 @@ jobs:
 
     - name: Use GitVersion
       id: gitversion # step id used as reference for output values
-      uses: gittools/actions/gitversion/execute@v0.9.3
+      uses: gittools/actions/gitversion/execute@v0.9.6
 
     - name: Gitversion info
       run: |
