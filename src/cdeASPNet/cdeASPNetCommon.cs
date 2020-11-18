@@ -24,6 +24,7 @@ namespace cdeASPNetMiddleware
                 UserAgent = pContext.Request.Headers[HeaderNames.UserAgent],
                 ResponseMimeType = pContext.Request.ContentType,
                 ClientCert = tCon.ClientCertificate,
+                RemoteAddress=tCon.RemoteIpAddress.ToString()
             };
             if (TheCommCore.MyHttpService != null && TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage > 1) //If CDE requires a certificate, terminate all incoming requests before any processing
             {

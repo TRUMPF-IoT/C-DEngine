@@ -98,9 +98,11 @@ namespace cdeASPNetMiddleware
                         Response.Headers.Add("cdeDeviceID", TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString());
                         Response.ContentType = tReq.ResponseMimeType;
                         await Response.Body.WriteAsync(tReq.ResponseBuffer);
+                        return;
                     }
                 }
             }
+            await _next.Invoke(pContext);
         }
     }
 
