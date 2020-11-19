@@ -897,7 +897,7 @@ namespace nsCDEngine.Communication
             return true;
         }
 
-        internal static bool DoPublish(string pTopic, TSM pMsg,bool AddScopeToTopic, Action<TSM> pLocalCallback)
+        internal static bool DoPublish(string pTopic, TSM pMsg,bool AddScopeToTopic, Action<TSM> pLocalCallback, bool IsTrustedSender)
         {
             if (string.IsNullOrEmpty(pTopic))
                 pTopic = string.Empty;
@@ -923,8 +923,9 @@ namespace nsCDEngine.Communication
                 TheCDEKPIs.IncrementKPI("ScopeUpdated");
                 TheBaseAssets.MySYSLOG.WriteToLog(2827, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QSRegistry", $"No Scope Found in TSM - SID updated with TopicScope:{!string.IsNullOrEmpty(tTopicRScope)}", eMsgLevel.l7_HostDebugMessage));
             }
-            if (MyQueuedSenderList.Count > 0)
+            if (!MyQueuedSenderList.IsEmpty)
             {
+                List<TheQueuedSender> targetQueues = null;
                 //NEWV4: Route Optimization if GRO parameter contains known route to originator - even with CDE_SYSTEMWIDE this is more effective and prevents checking all nodes for a CDE_SYSTEMWIDEs target
                 if (pMsg != null && !string.IsNullOrEmpty(pMsg.GRO))
                 {
@@ -934,41 +935,49 @@ namespace nsCDEngine.Communication
                         TheQueuedSender tSend = MyQueuedSenderList.GetEntryByID(tNextNode);
                         if (tSend != null && tSend.IsAlive)
                         {
-                            if (!ScopedAdded && AddScopeToTopic)
-                            {
-                                ScopedAdded = true;
-                                pTopic = TheBaseAssets.MyScopeManager.AddScopeID(pTopic, ref pMsg.SID, true);
-                                tTopicRScope = TheBaseAssets.MyScopeManager.ScopeID;
-                            }
-                            var res = tSend.SendQueued(pTopic, pMsg, true, tDirectGuid, tTopicNameOnly, tTopicRScope, pLocalCallback);
+                            targetQueues = new List<TheQueuedSender> { tSend };
                             TheBaseAssets.MySYSLOG.WriteToLog(2827, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QSRegistry", $"GRO Node Found - Message only sent to {tSend.MyTargetNodeChannel}", eMsgLevel.l7_HostDebugMessage));
-                            return res;
                         }
                     }
                 }
 
-                if (pTopic.StartsWith("CDE_SYSTEMWIDE") && hasDirectGuid)
+                if (targetQueues == null && pTopic.StartsWith("CDE_SYSTEMWIDE") && hasDirectGuid)
                 {
                     TheQueuedSender tSend = MyQueuedSenderList.GetEntryByFunc(s => s.IsAlive && s.MyTargetNodeChannel?.cdeMID == tDirectGuid);
                     if (tSend != null)
                     {
-                        if (!ScopedAdded && AddScopeToTopic)
-                        {
-                            ScopedAdded = true;
-                            pTopic = TheBaseAssets.MyScopeManager.AddScopeID(pTopic, ref pMsg.SID, true);
-                            tTopicRScope = TheBaseAssets.MyScopeManager.ScopeID;
-                        }
-                        var res = tSend.SendQueued(pTopic, pMsg, true, tDirectGuid, tTopicNameOnly, tTopicRScope, pLocalCallback);
+                        targetQueues = new List<TheQueuedSender> { tSend };
                         TheBaseAssets.MySYSLOG.WriteToLog(2827, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QSRegistry", $"DirectPub of TXT:{pMsg.TXT} to Target Node {tSend?.MyTargetNodeChannel?.ToMLString()} is connected to this Node!", eMsgLevel.l7_HostDebugMessage));
-                        return res;
                     }
                 }
-                bool MightnotRelay = (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.DontRelayNMI && pTopic.StartsWith(eEngineName.NMIService));
-                bool IsFromJS=MightnotRelay && pMsg.GetOriginator().ToString().Substring(29,1)=="7";
-                foreach (TheQueuedSender tSend in MyQueuedSenderList.TheValues)
+                bool MightnotRelay;
+                bool IsFromJS;
+                if (targetQueues == null)
+                {
+                    targetQueues = MyQueuedSenderList.TheValues;
+                    MightnotRelay = (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.DontRelayNMI && pTopic.StartsWith(eEngineName.NMIService));
+                    IsFromJS = MightnotRelay && pMsg.GetOriginator().ToString().Substring(29, 1) == "7";
+                }
+                else
+                {
+                    // CODE REVIEW: Should we do the test also for GRO and hadDirectGuid cases? Keeping like this for compatibility for now
+                    MightnotRelay = false;
+                    IsFromJS = false;
+                }
+
+                foreach (TheQueuedSender tSend in targetQueues)
                 {
                     if (tSend != null && tSend.IsAlive)
                     {
+                        var targetNodeChannel = tSend.MyTargetNodeChannel;
+                        if (targetNodeChannel?.IsOneWay == true)
+                        {
+                            if (!IsTrustedSender || targetNodeChannel.OneWayTSMFilter == null || !MatchTSMFilter(pMsg, targetNodeChannel.OneWayTSMFilter))
+                            {
+                                // Don't send to this channel
+                                continue;
+                            }
+                        }
                         if (MightnotRelay && !tSend.MyTargetNodeChannel.IsDeviceType && !IsFromJS)
                         {
                             TheCDEKPIs.IncrementKPI(eKPINames.QSNotRelayed);
@@ -987,6 +996,22 @@ namespace nsCDEngine.Communication
                 }
             }
             return false;
+        }
+
+        static char[] wildcard = {'*'};
+        private static bool MatchTSMFilter(TSM pMsg, string[] TSMFilter)
+        {
+            bool match = false;
+            foreach(var filter in TSMFilter)
+            {
+                var filterParts = filter.Split(wildcard, 2);
+                if (pMsg.TXT.StartsWith(filterParts[0], StringComparison.Ordinal) && (filterParts.Length<1 || pMsg.TXT.EndsWith(filterParts[1], StringComparison.Ordinal)))
+                {
+                    match = true;
+                    break;
+                }
+            }
+            return match;
         }
 
         private static DateTimeOffset LastMeshCount = DateTimeOffset.MinValue;
@@ -1362,7 +1387,7 @@ namespace nsCDEngine.Communication
         /// <returns></returns>
         public static Task<Guid> ConnectToUnconfiguredRelayAsync(Guid nodeId, string targetUrl, CancellationToken token)
         {
-            var channel = new TheChannelInfo(nodeId) { SenderType = cdeSenderType.CDE_SERVICE, TargetUrl = targetUrl };
+            var channel = new TheChannelInfo(nodeId, cdeSenderType.CDE_SERVICE, targetUrl);
             TheQueuedSender tSend = new TheQueuedSender();
             if (tSend.StartSender(channel, null, false))    //CODEREVIEW: @Markus: you might have to subscribe to the MeshManager Topic?
             {
@@ -1484,11 +1509,7 @@ namespace nsCDEngine.Communication
             }
             pRequestData.SessionState.MyDevice = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(pSenderType);
             TheQueuedSender tSend = new TheQueuedSender();
-            if (tSend.StartSender(new TheChannelInfo(pRequestData.SessionState.MyDevice)
-            {
-                SenderType = pSenderType,
-                MySessionState = pRequestData.SessionState
-            }, null, true))
+            if (tSend.StartSender(new TheChannelInfo(pRequestData.SessionState.MyDevice, pSenderType, pRequestData.SessionState), null, true))
             {
                 tSend.eventErrorDuringUpload += TheCommCore.OnCommError;
                 tRes.NPA = TheBaseAssets.MyScopeManager.GetISBPath(TheBaseAssets.MyServiceHostInfo.RootDir, pSenderType, TheCommonUtils.GetOriginST(tSend.MyTargetNodeChannel), pRequestData.SessionState.GetNextSerial(), pRequestData.SessionState.cdeMID, pRequestData.WebSocket != null);

@@ -407,6 +407,12 @@ namespace nsCDEngine.Communication
         {
             PublishCentral(pMessage.ENG, pMessage, true, null, IncludeLocalNode);
         }
+
+        internal static void PublishCentral(TSM pMessage, bool IncludeLocalNode, bool IsTrustedSender)
+        {
+            PublishCentral(pMessage.ENG, pMessage, true, null, IncludeLocalNode, IsTrustedSender);
+        }
+
         /// <summary>
         /// Use this method to send a message to all nodes in the solution that have an active subscription for the pTopic
         /// </summary>
@@ -429,7 +435,7 @@ namespace nsCDEngine.Communication
             PublishCentral(pTopic, pMessage, false, null);
         }
 
-        internal static void PublishCentral(string pTopic, TSM pMessage, bool AddScopeToTopic, Action<TSM> pLocalCallback, bool IncludeLocal = false)
+        internal static void PublishCentral(string pTopic, TSM pMessage, bool AddScopeToTopic, Action<TSM> pLocalCallback, bool IncludeLocal = false, bool IsTrustedSender = false)
         {
             if (!TheBaseAssets.MasterSwitch || pMessage == null) return;
             //if (AddScopeToTopic)
@@ -443,7 +449,7 @@ namespace nsCDEngine.Communication
                 if (tEng?.HasRegisteredEvents("PublishCentraled")==true)
                     tEng?.FireEvent("PublishCentraled",tEng, new TheProcessMessage { Topic = pTopic, Message = TSM.Clone(pMessage,false) }, true);
 
-                TheQueuedSenderRegistry.DoPublish(pTopic, pMessage,AddScopeToTopic, pLocalCallback);
+                TheQueuedSenderRegistry.DoPublish(pTopic, pMessage,AddScopeToTopic, pLocalCallback, IsTrustedSender);
                 //return; // Must go through local as well
 #if !JC_COMMDEBUG
             }
@@ -1059,7 +1065,14 @@ namespace nsCDEngine.Communication
                         TheCommonUtils.IsDeviceSenderType(tSenderType) ? tSenderType : cdeSenderType.CDE_BACKCHANNEL,  //IDST-OK: This will record incoming device-nodes with their senderType else "assumes" BackChannel
                         (!TheBaseAssets.MyServiceHostInfo.IsCloudService && tSenderType == cdeSenderType.CDE_SERVICE ? pRequestData.SessionState.InitReferer : null));
                     if (TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage > 0 && pRequestData.SessionState?.CertScopes?.Count > 0)
+                    {
                         TCI.AddAltScopes(pRequestData.SessionState.CertScopes);
+
+                        // TODO Add additional check for authorization statement in client cert? Or is trusted cert sufficient?
+                        TCI.IsOneWay = false;
+                        TCI.OneWayTSMFilter = null;
+                        TCI.IsTrustedSender = true;
+                    }
                     if (tSend.StartSender(TCI, isbConnect, true))  //Subscribing here is faster then below with StartEngineWithNewUrl
                     {
 
