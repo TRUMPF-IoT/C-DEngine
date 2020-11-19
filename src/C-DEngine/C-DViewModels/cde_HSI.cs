@@ -2375,6 +2375,7 @@ namespace nsCDEngine.ViewModels
                 References = this.References,
                 QStatus = this.QStatus,
                 IsOneWay = this.IsOneWay,
+                // TSMFilter is not exposed here as it would give away information about potential attack surface area and is not usually needed for diagnostics (Filter comes from config for now).
             };
         }
 
