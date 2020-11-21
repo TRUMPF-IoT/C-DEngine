@@ -399,13 +399,13 @@ namespace nsCDEngine.Communication
                                     if (!tTopic.StartsWith("CDE_CONNECT") || !TheBaseAssets.MyServiceHostInfo.AllowMessagesInConnect) // Should never get here if AllowMessagesInConnect is false, but avoid global publish just in case...
                                     {
                                         TheCDEKPIs.IncrementKPI(eKPINames.CCTSMsRelayed);
-                                        TheCommCore.PublishCentral(tTopic, recvMessage, false, null);
+                                        TheCommCore.PublishCentral(tTopic, recvMessage, false, null, false, pQSender?.MyTargetNodeChannel?.IsTrustedSender??false);
                                     }
                                     else
                                     {
                                         // Message is part of a CDE_CONNECT: Republish it to enable single-post message sending (i.e. MSB/Service Gateway scenario)
                                         TheCDEKPIs.IncrementKPI(eKPINames.CCTSMsRelayed); // TODO SHould we have a separate KPI for this
-                                        TheCommCore.PublishCentral(recvMessage, true);
+                                        TheCommCore.PublishCentral(recvMessage, true, pQSender.MyTargetNodeChannel.IsTrustedSender);
                                     }
                                 }
                             }
