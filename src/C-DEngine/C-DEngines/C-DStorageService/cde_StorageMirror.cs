@@ -2150,7 +2150,7 @@ namespace nsCDEngine.Engines.StorageService
                                             {
                                                 if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
                                                     AuditLog += $"{tPropName}:({tOld})-({tTargetP.GetValue()}) ";
-                                                tTargetP.FireEvent(eThingEvents.PropertyChangedByUX, true, -1);
+                                                tTargetP.FireEvent(eThingEvents.PropertyChangedByUX, (tTargetP.cdeFOC&256)==0, -1);
                                             }
                                             if (tFoundOne && !FoundOne)
                                                 FoundOne = true;

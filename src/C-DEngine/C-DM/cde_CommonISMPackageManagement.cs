@@ -159,6 +159,7 @@ namespace nsCDEngine.PluginManagement
                 {
                     foreach (string tFile in tInfo.FilesManifest)
                     {
+                        if (tFile == null) continue;
                         string tFinalFile = tFile;
                         try
                         {

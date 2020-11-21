@@ -1154,9 +1154,9 @@ namespace nsCDEngine.Communication
                 int tHash = pMessage.GetHash(tTopicNameOnly + tDirectGuid.ToString());
 
                 //NEWV4: NMIService SETP: and SETNP: Optimization
-                if (pMessage.ENG == eEngineName.NMIService)
+                if (pMessage.ENG == eEngineName.NMIService && pMessage.TXT!=null) //Strange crash in next line...TXT was null
                 {
-                    bool IsSetpWithTHing = (pMessage.TXT.StartsWith("SETP:") && pMessage.TXT.Length > 40);
+                    bool IsSetpWithTHing = (pMessage.TXT?.StartsWith("SETP:")==true && pMessage.TXT?.Length > 40);
                     if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
                     {
                         if (pMessage.TXT.StartsWith("NMI_SCREENMETA") || pMessage.TXT.StartsWith("NMI_LIVESCREENMETA"))// && !string.IsNullOrEmpty(pMessage.PLS) && pMessage.PLS.Length>2)

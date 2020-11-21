@@ -1576,8 +1576,24 @@ namespace nsCDEngine.Engines.NMIService
                                 //TODO: Show a list of all updates available...maybe as a toast?
                                 tMyDashPanels.Add(new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing(), new Guid("{6193A416-2511-4ECA-BFC4-B328D48E06F8}"),
                                     $"Updates ready to install!", "cdeUpdater")
-                                { FldOrder = 9900, Category = "Updates" });
+                                {
+                                    PropertyBag = new nmiDashboardTile { Thumbnail = "FA5:f3a5", ClassName="cdeUpdaterTile", TileWidth = 3, TileHeight = 3, Caption = "Updates/New Installs ready" },
+                                    FldOrder = 9900,
+                                    Category = "Updates"
+                                });
                             }
+                            tMyDashPanels.Add(
+                        new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing())
+                        {
+                            cdeMID = new Guid("{0A3F93CE-4C1A-457A-811A-6679AF4DEE9E}"),
+                            cdeA = 128,
+                            Flags = 3,
+                            FldOrder = 9901,
+                            PanelTitle = "Check for Updates",
+                            ControlClass = "jsAction:CFU",
+                            Category = "Updates",
+                            PropertyBag = new nmiCtrlTileButton { Thumbnail = "FA5:f01c" }
+                        });
                         }
                     }
                 }

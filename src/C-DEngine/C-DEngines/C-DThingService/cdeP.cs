@@ -338,7 +338,7 @@ namespace nsCDEngine.Engines.ThingService
 #if CDE_SYNC
                 bool FireAsync=false;
 #else
-            bool FireAsync = true;
+            bool FireAsync = (cdeFOC&256)==0; //true
 #endif
             if (hasChanged)
             {
@@ -594,6 +594,20 @@ namespace nsCDEngine.Engines.ThingService
                 cdeFOC |= 0x1;
             else
                 cdeFOC &= 0xFFFE;
+            return this;
+        }
+
+        /// <summary>
+        /// Allows to request synchronous firing of OnChange events. BEWARE: If you stay too long in the OnChange callback you can stall the system!
+        /// </summary>
+        /// <param name="SyncOn"></param>
+        /// <returns></returns>
+        public cdeP SetFireSync(bool SyncOn)
+        {
+            if (SyncOn)
+                cdeFOC |= 0x100;
+            else
+                cdeFOC &= 0xFEFF;
             return this;
         }
 
