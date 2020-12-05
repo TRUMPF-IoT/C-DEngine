@@ -648,7 +648,7 @@ namespace nsCDEngine.ISM
 
             if (TheCommonUtils.IsOnLinux())
             {
-#if CDE_CORE    //TODO: Need to dynamically load the required ZipArchive dependencies
+#if !CDE_NET4 && !CDE_NET35    //TODO: Need to dynamically load the required ZipArchive dependencies
                 TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"Updating files: {pSourceFile} to: {uDir}"));
 
                 string[] NewFiles = TheCommonUtils.cdeSplit(pSourceFile, ";:;", true, true);
@@ -780,72 +780,46 @@ namespace nsCDEngine.ISM
             }
             if (eventShutdownRequired != null)
             {
-#if CDE_CORE //TODO: This needs verification on NETCORE. We are staring the same process that is currently running
+                //New 5.105: We are now recommending to use PM2 for autostart and auto - restart
+                bool FireShutdown = false;
                 if (TheCommonUtils.IsOnLinux())
                 {
-                    var process = new Process()
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = "/bin/bash",
-                            Arguments = $"-c \"sudo startcde\"",
-                            RedirectStandardOutput = false,
-                            UseShellExecute = false,
-                            CreateNoWindow = true,
-                        }
-                    };
-                    process.Start();
+                    FireShutdown = true;
                 }
                 else
                 {
-                    var process = new Process()
+                    ExtractUpdater(ISMUpdateDirectory);
+
+                    try
                     {
-                        StartInfo = new ProcessStartInfo
+                        Process mainProcess = new Process();
+                        mainProcess.StartInfo.FileName = Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".exe");
+                        mainProcess.StartInfo.WorkingDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
+                        switch (TheBaseAssets.MyServiceHostInfo.cdeHostingType)
                         {
-                            FileName = "startcde.cmd",
-                            Arguments = $"\"{ISMMainExecutable}.dll\"",
-                            RedirectStandardOutput = false,
-                            UseShellExecute = true,
-                            CreateNoWindow = false,
+                            case cdeHostType.IIS:
+                                mainProcess.StartInfo.Arguments = $"\"{(doWipe ? "WIPENODE" : "RESTART")}\" \"{ISMUpdateDirectory}\" \"{ISMMainExecutable}\" \"3\"";
+                                break;
+                            case cdeHostType.Service:
+                                mainProcess.StartInfo.Arguments = $"\"{(doWipe ? "WIPENODE" : "RESTART")}\" \"{ISMUpdateDirectory}\" \"{ISMMainExecutable}\" \"2\"";
+                                break;
+                            default:
+                                Process currentProcess = Process.GetCurrentProcess();
+                                int pid = currentProcess.Id;
+                                mainProcess.StartInfo.Arguments = $"\"{(doWipe ? "WIPENODE" : "START")}\" \"{ISMUpdateDirectory}\" \"{(pid > 0 ? $"{pid}:" : "")}{ISMMainExecutable}\"";
+                                FireShutdown = true;
+                                break;
                         }
-                    };
-                    process.Start();
-                }
-                eventShutdownRequired?.Invoke(ForceQuitt, ISMCurrentVersion);
-#else
-                ExtractUpdater(ISMUpdateDirectory);
-                bool FireShutdown = false;
-
-                try
-                {
-                    Process mainProcess = new Process();
-                    mainProcess.StartInfo.FileName = Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".exe");
-                    mainProcess.StartInfo.WorkingDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
-                    switch (TheBaseAssets.MyServiceHostInfo.cdeHostingType)
-                    {
-                        case cdeHostType.IIS:
-                            mainProcess.StartInfo.Arguments = $"\"{(doWipe ? "WIPENODE" : "RESTART")}\" \"{ISMUpdateDirectory}\" \"{ISMMainExecutable}\" \"3\"";
-                            break;
-                        case cdeHostType.Service:
-                            mainProcess.StartInfo.Arguments = $"\"{(doWipe ? "WIPENODE" : "RESTART")}\" \"{ISMUpdateDirectory}\" \"{ISMMainExecutable}\" \"2\"";
-                            break;
-                        default:
-                            Process currentProcess = Process.GetCurrentProcess();
-                            int pid = currentProcess.Id;
-                            mainProcess.StartInfo.Arguments = $"\"{(doWipe ? "WIPENODE" : "START")}\" \"{ISMUpdateDirectory}\" \"{(pid > 0 ? $"{pid}:" : "")}{ISMMainExecutable}\"";
-                            FireShutdown = true;
-                            break;
+                        mainProcess.Start();
                     }
-                    mainProcess.Start();
-                }
-                catch (Exception e)
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", " Start if updater failed " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l1_Error, e.ToString())); //Log Entry that service has been started
+                    catch (Exception e)
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", " Start if updater failed " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l1_Error, e.ToString())); //Log Entry that service has been started
 
+                    }
                 }
                 if (FireShutdown)
                     eventShutdownRequired?.Invoke(ForceQuitt, ISMCurrentVersion);
-#endif
             }
         }
 
