@@ -364,7 +364,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             var tRes = magicMethod.Invoke(MyStorageMirror, new[] { tTableInsert, (object)pMsg.Message.PLS, tClientInfo, null });
                                             if (cmd.Length > 2 && TheCommonUtils.CBool(tRes))
-                                                SendNMIData(pMsg.Message, tClientInfo, cmd.Length > 3 ? cmd[3] : tTableName2, "CMyTable", tTableName2, cmd[2], false, false);
+                                                SendNMIData(pMsg.Message, tClientInfo, (cmd.Length > 3 && TheCommonUtils.CGuid(cmd[3])!= TheCommonUtils.CGuid(tTableInsert.AddTemplateType)) ? cmd[3] : tTableName2, "CMyTable", tTableName2, cmd[2], false, false);
                                             //TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_SET_DATA:{" + tTableName2 + "}", TheUserManager.SendUserList(pMsg.CurrentUser)));
                                         }
                                     }
