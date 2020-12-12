@@ -778,7 +778,7 @@ namespace nsCDEngine.Engines
             TheBaseAssets.LocalHostQSender.Subscribe(TheBaseAssets.MyScopeManager.AddScopeID(tBase.GetEngineName())); //NEW:2.06 LocalHost subscribes to all Plugins-Services
 
             if ((TheBaseAssets.MyServiceHostInfo.FallbackToSimulation && !TheBaseAssets.MyServiceHostInfo.SimulatedEngines.Contains(tBase.GetEngineName())) || (!TheBaseAssets.MyServiceHostInfo.FallbackToSimulation && TheBaseAssets.MyServiceHostInfo.SimulatedEngines.Contains(tBase.GetEngineName())))
-                tBase.StartEngine(new TheChannelInfo(TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(cdeSenderType.CDE_SIMULATION)) { SenderType = cdeSenderType.CDE_SIMULATION, TargetUrl = "SIMULATION" });  //ALLOWED ONLY-ONE
+                tBase.StartEngine(new TheChannelInfo(TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(cdeSenderType.CDE_SIMULATION), cdeSenderType.CDE_SIMULATION, "SIMULATION"));  //ALLOWED ONLY-ONE
             else
             {
                 tBase.StartEngine(null);
@@ -899,7 +899,7 @@ namespace nsCDEngine.Engines
                         if (tInfo == null)
                         {
                             cdeSenderType tS = cdeSenderType.CDE_SERVICE; //Found UPnP Devices are ALWAYS Services!
-                            tInfo = new TheChannelInfo(pOriginator) { SenderType = tS, TargetUrl = tTargetUrl };
+                            tInfo = new TheChannelInfo(pOriginator, tS, tTargetUrl);
                             tInfo.SetRealScopeID(tStationRole.Length > 1 ? TheBaseAssets.MyScopeManager.GetRealScopeIDFromEasyID(tStationRole[1]) : TheBaseAssets.MyScopeManager.ScopeID);        //GRSI: rare
                         }
                         TheBaseAssets.MySYSLOG.WriteToLog(4171, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("TheCDEngines", string.Format("Starting/Adding URL: {0} for Engine {1}", tTargetUrl, tTargetStation), eMsgLevel.l7_HostDebugMessage));
