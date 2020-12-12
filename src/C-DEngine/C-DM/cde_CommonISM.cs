@@ -780,7 +780,7 @@ namespace nsCDEngine.ISM
             }
             if (eventShutdownRequired != null)
             {
-                //New 5.105: We are now recommending to use PM2 for autostart and auto - restart
+                //New 5.112: We are now recommending to use PM2 for autostart and auto - restart
                 bool FireShutdown = false;
                 if (TheCommonUtils.IsOnLinux())
                 {
