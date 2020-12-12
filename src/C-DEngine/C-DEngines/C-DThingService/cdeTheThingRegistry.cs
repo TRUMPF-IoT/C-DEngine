@@ -1841,6 +1841,8 @@ namespace nsCDEngine.Engines.ThingService
             List<PropertyInfo> PropInfoArray = MyValue.GetType().GetProperties().OrderBy(x => x.Name).ToList();
             foreach (PropertyInfo finfo in PropInfoArray)
             {
+                if (finfo.Name.StartsWith("cde")) //our internal variables must not be put into the propertybag
+                    continue;
                 fType = finfo.PropertyType;
                 try
                 {
