@@ -1524,7 +1524,8 @@ namespace nsCDEngine.Communication
                 }
                 else
                 {
-                    ThePageDefinition tPageDefinition = pRequestData?.SessionState?.CurrentURL == null ? null : TheNMIEngine.GetPageByRealPage(pRequestData.SessionState.CurrentURL.EndsWith("/") ? pRequestData.SessionState.CurrentURL.Substring(0, pRequestData.SessionState.CurrentURL.Length - 1) : pRequestData.SessionState.CurrentURL);
+                    var tUriPath = TheCommonUtils.CUri(pRequestData?.SessionState?.InitReferer, true);
+                    ThePageDefinition tPageDefinition = tUriPath == null ? null : TheNMIEngine.GetPageByRealPage(tUriPath.PathAndQuery);
                     if (tPageDefinition != null && tPageDefinition.IncludeCDE && (TheUserManager.HasSessionValidUser(pRequestData?.SessionState) || (tPageDefinition.IsPublic && !tPageDefinition.RequireLogin)))
                     {
                         pRequestData.SessionState.SScopeID = TheBaseAssets.MyScopeManager.GetScrambledScopeID();     //GRSI: rare
