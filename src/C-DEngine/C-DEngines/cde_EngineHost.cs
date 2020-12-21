@@ -1325,6 +1325,9 @@ namespace nsCDEngine.Engines
         public string[] Categories;
         public string CopyRights;
 
+        public bool AllowIsolation;
+        public bool AllowNodeHop;
+
         public static bool ApplyEngineAssetAttributes(Type pluginType, IBaseEngine tIBase)
         {
             bool bResult = false;
@@ -1384,6 +1387,8 @@ namespace nsCDEngine.Engines
                         tIBase.AddCapability(cap);
                     }
                 }
+
+                tIBase.SetIsolationFlags(info.AllowIsolation, info.AllowNodeHop);
 
                 if (info.ManifestFiles?.Length > 0)
                 {

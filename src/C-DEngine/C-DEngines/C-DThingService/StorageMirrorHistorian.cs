@@ -263,7 +263,7 @@ namespace nsCDEngine
             registration = ConsumerRegistration.Create(tThing, token, registrationParameters, store);
             if (registrationParameters.IgnoreExistingHistory == true)
             {
-                registration.SequenceNumberTruncated = _thingStream.GetLastSequenceNumber();
+                registration.SequenceNumberTruncated = _thingStream?.GetLastSequenceNumber() ?? 0;
                 registration.LastSequenceNumberRead = registration.SequenceNumberTruncated;
             }
             AddOrUpdateRegistration(registration);
@@ -273,7 +273,8 @@ namespace nsCDEngine
             }
             if (registrationParameters.ReportInitialValues == true)
             {
-                foreach (var prop in tThing.GetAllProperties(10))
+                var initialProps = tThing.GetAllProperties(10);
+                foreach (var prop in initialProps)
                 {
                     AddPropertySnapshotInternal(tThing, cdeP.GetPropertyPath(prop), prop.Value, prop.cdeCTIM, prop.cdeSEQ, true);
                 }
