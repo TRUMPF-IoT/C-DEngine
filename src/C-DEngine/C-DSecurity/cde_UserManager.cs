@@ -1600,11 +1600,14 @@ namespace nsCDEngine.Security
 
             if (mIsInitialized)
             {
-                for (int i = listAddRoles.Count - 1; i >= 0; i--)
+                while (listAddRoles.Any())
                 {
-                    if (!MyUserRoles.ContainsID(listAddRoles[i].cdeMID)  && !MyUserRoles.MyMirrorCache.TheValues.Any(s=>s.RoleName==listAddRoles[i].RoleName))
-                        MyUserRoles.AddAnItem(listAddRoles[i],null);
-                    listAddRoles.RemoveAt(i);
+                    var roleToAdd = listAddRoles.Last();
+                    if (!MyUserRoles.ContainsID(roleToAdd.cdeMID) && !MyUserRoles.MyMirrorCache.TheValues.Any(s => s.RoleName == roleToAdd.RoleName))
+                    {
+                        MyUserRoles.AddAnItem(roleToAdd, null);
+                    }
+                    listAddRoles.Remove(roleToAdd);
                 }
             }
         }
