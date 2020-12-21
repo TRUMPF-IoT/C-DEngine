@@ -123,6 +123,7 @@ jobs:
 
     - name: REUSE Compliance Check
       run: |
+        pip install pip==20.3 # workaround 20.3.1 upgrade in runner (https://github.com/actions/virtual-environments/commit/fc8402e007bc3b7ae4a449edd57dee7a151a331e#diff-816219d3c9f30fcc1c40f88ca826c1662bf99eded781c1b419dd2dfb577ae227)
         pip3 install reuse
         reuse lint
 
