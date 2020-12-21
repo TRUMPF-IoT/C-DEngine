@@ -1128,7 +1128,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Returns the names of properties in this thing that match the provided inclusion and exclusion lists.
         /// </summary>
-        /// <param name="propertiesToInclude">List of property names to include. If a name starts with "!" it is matched using a regular expression. If the parameter is all properties are included.</param>
+        /// <param name="propertiesToInclude">List of property names to include. If a name starts with "!" it is matched using a regular expression. If the parameter is null all properties are included.</param>
         /// <param name="propertiesToExclude">List of property names to exclude. If a name start with "!" it is matched using a regular experssion. If the parameters is null no property is excluded.</param>
         /// <returns></returns>
         public IEnumerable<string> GetMatchingProperties(IEnumerable<string> propertiesToInclude, IEnumerable<string> propertiesToExclude)
