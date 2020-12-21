@@ -21,7 +21,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.0'
+        python-version: '3.x'
 
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
@@ -123,7 +123,7 @@ jobs:
 
     - name: REUSE Compliance Check
       run: |
-        pip3 install --user reuse
+        pip3 install reuse
         reuse lint
 
     - name: Push NuGet Packages
