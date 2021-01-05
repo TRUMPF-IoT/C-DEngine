@@ -829,6 +829,24 @@ namespace nsCDEngine.Engines.NMIService
                                 else
                                     tTargetDir = $"scenes\\{pMsg.CurrentUserID}\\{tSceneThing.cdeMID}.cdescene";
                             }
+                            else //If Home Screen is not a scene but a Thing Dashboard or Screen
+                            {
+                                var tDash = GetDashboardById(TheCommonUtils.CGuid(pMsg.Message.PLS));
+                                if (tDash != null)
+                                {
+                                    TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
+                                    return;
+                                }
+                                TheFormInfo tForm = GetFormById(TheCommonUtils.CGuid(pMsg.Message.PLS));
+                                if (tForm != null)
+                                {
+                                    TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
+                                    return;
+                                }
+                                TSM ErrTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Requested Scene, Dashboard or Form not found###"));
+                                TheCommCore.PublishToOriginator(pMsg.Message, ErrTsm);
+                                return;
+                            }
                         }
                         string tPlS = TheCommonUtils.LoadStringFromDisk(tTargetDir, null);
                         if (!string.IsNullOrEmpty(tPlS))
