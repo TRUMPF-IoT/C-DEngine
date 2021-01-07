@@ -771,15 +771,28 @@ namespace nsCDEngine.Engines.NMIService
         public int StrokeThickness { get; set; }
         public string Fill { get; set; }
         public string Foreground { get; set; }
-        public int Left { get; set; }
-        public int Top { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
+        public float Left { get; set; }
+        public float Top { get; set; }
+        public float Width { get; set; }
+        public float Height { get; set; }
         public bool Visibility { get; set; }
         public object ComplexData { get; set; }
         public bool HasEnded { get; set; }
         public bool IsTemp { get; set; }
         public string ID { get; set; }
+
+        public TheDrawingObject(string id, string fillcolor, float x, float y, float xl, float yl)
+        {
+            Fill = fillcolor;
+            Type = 1;
+            Left = x;
+            Top = y;
+            Width = xl;
+            Height = yl;
+            StrokeThickness = 1;
+            Visibility = true;
+            ID = id;
+        }
     }
 
     ///C-DMyForms Definitions
