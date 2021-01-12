@@ -257,6 +257,24 @@ namespace nsCDEngine.Engines.ThingService
         public virtual void HandleMessage(ICDEThing sender, object pIncoming)
         {
         }
+
+        /// <summary>
+        /// Sets the LastMessage UX Property and allows to automatically set LastUpdate and WriteToLog
+        /// </summary>
+        /// <param name="pMessage">Message to show in LastMessage of the DeviceStatus</param>
+        /// <param name="SetLastUpdate">Shows the current TimeStamp</param>
+        /// <param name="LogID">If this message is also going to the systemlog, add a log ID here</param>
+        /// <param name="pMsgLevel">If a log ID is set, a Message Level can be set, too</param>
+        public virtual void SetMessage(string pMessage, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel= eMsgLevel.l4_Message)
+        {
+            if (string.IsNullOrEmpty(pMessage) || MyBaseThing == null)
+                return;
+            MyBaseThing.LastMessage = pMessage;
+            if (SetLastUpdate != null)
+                MyBaseThing.LastUpdate = TheCommonUtils.CDate(SetLastUpdate);
+            if (LogID > 0)
+                TheBaseAssets.MySYSLOG?.WriteToLog(LogID, new TSM(MyBaseThing.EngineName, pMessage, pMsgLevel));
+        }
         #endregion
     }
 

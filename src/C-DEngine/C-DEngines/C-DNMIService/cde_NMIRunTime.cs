@@ -829,6 +829,24 @@ namespace nsCDEngine.Engines.NMIService
                                 else
                                     tTargetDir = $"scenes\\{pMsg.CurrentUserID}\\{tSceneThing.cdeMID}.cdescene";
                             }
+                            else //If Home Screen is not a scene but a Thing Dashboard or Screen
+                            {
+                                var tDash = GetDashboardById(TheCommonUtils.CGuid(pMsg.Message.PLS));
+                                if (tDash != null)
+                                {
+                                    TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
+                                    return;
+                                }
+                                TheFormInfo tForm = GetFormById(TheCommonUtils.CGuid(pMsg.Message.PLS));
+                                if (tForm != null)
+                                {
+                                    TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
+                                    return;
+                                }
+                                TSM ErrTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Requested Scene, Dashboard or Form not found###"));
+                                TheCommCore.PublishToOriginator(pMsg.Message, ErrTsm);
+                                return;
+                            }
                         }
                         string tPlS = TheCommonUtils.LoadStringFromDisk(tTargetDir, null);
                         if (!string.IsNullOrEmpty(tPlS))
@@ -976,6 +994,15 @@ namespace nsCDEngine.Engines.NMIService
                             if (tForm != null)
                             {
                                 tThing = TheThingRegistry.GetThingByMID(tForm.cdeO);
+                                if (tThing == null)
+                                {
+                                    var tDash = TheCommonUtils.CGuid(ThePropertyBag.PropBagGetValue(tForm.PropertyBag, "InDashboard"));
+                                    if (tDash != Guid.Empty)
+                                    {
+                                        SendScreenMeta(cmd[0], tDash, tClientInfo, pMsg, TheCommonUtils.CGuid(pMsg.Message.PLS));
+                                        break;
+                                    }
+                                }
                             }
                             else
                             {
@@ -1405,7 +1432,7 @@ namespace nsCDEngine.Engines.NMIService
 
         private static bool IsDashboardEmpty(TheDashboardInfo tDash, TheClientInfo pClientInfo)
         {
-            if (tDash == null)
+            if (tDash?.colPanels == null || tDash.colPanels.Count==0)   //Fix crash if plugin has only dashboard but no content
                 return false;
             List<TheDashPanelInfo> tMyDashPanels = new List<TheDashPanelInfo>();
             foreach (string tDID in tDash.colPanels.ToList())
