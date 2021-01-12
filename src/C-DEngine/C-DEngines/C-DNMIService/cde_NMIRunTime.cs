@@ -994,6 +994,15 @@ namespace nsCDEngine.Engines.NMIService
                             if (tForm != null)
                             {
                                 tThing = TheThingRegistry.GetThingByMID(tForm.cdeO);
+                                if (tThing == null)
+                                {
+                                    var tDash = TheCommonUtils.CGuid(ThePropertyBag.PropBagGetValue(tForm.PropertyBag, "InDashboard"));
+                                    if (tDash != Guid.Empty)
+                                    {
+                                        SendScreenMeta(cmd[0], tDash, tClientInfo, pMsg, TheCommonUtils.CGuid(pMsg.Message.PLS));
+                                        break;
+                                    }
+                                }
                             }
                             else
                             {
@@ -1423,7 +1432,7 @@ namespace nsCDEngine.Engines.NMIService
 
         private static bool IsDashboardEmpty(TheDashboardInfo tDash, TheClientInfo pClientInfo)
         {
-            if (tDash == null)
+            if (tDash?.colPanels == null || tDash.colPanels.Count==0)   //Fix crash if plugin has only dashboard but no content
                 return false;
             List<TheDashPanelInfo> tMyDashPanels = new List<TheDashPanelInfo>();
             foreach (string tDID in tDash.colPanels.ToList())

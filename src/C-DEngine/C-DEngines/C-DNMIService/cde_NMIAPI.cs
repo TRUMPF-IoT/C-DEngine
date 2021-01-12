@@ -1985,6 +1985,7 @@ namespace nsCDEngine.Engines.NMIService
                 pPropertyBag = new ThePropertyBag();
             bool pIsAlwaysEmpty = !TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pPropertyBag, "AllowReuse", "="));
             ThePropertyBag.PropBagUpdateValue(pPropertyBag, "IsTemplate", "=", "true");
+            ThePropertyBag.PropBagUpdateValue(pPropertyBag, "InDashboard", "=", tDash.cdeMID.ToString());
             bool bIsPopup = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pPropertyBag, "IsPopup", "="));
             if (bIsPopup)
             {
