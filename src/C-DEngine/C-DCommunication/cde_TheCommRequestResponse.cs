@@ -737,5 +737,34 @@ namespace nsCDEngine.Communication
 
         }
 
+        public interface IMsgResponse
+        {
+            string Error { get; set; }
+        }
+
+        public static void DoHandleMessage<requestT, responseT>(TSM requestTSM, Action<requestT, responseT> handler)
+            where requestT : class, new()
+            where responseT : class, IMsgResponse, new()
+        {
+            var response = new responseT();
+            try
+            {
+                var request = TheCommRequestResponse.ParseRequestMessageJSON<requestT>(requestTSM);
+                if (request == null)
+                {
+                    response.Error = "Error parsing request message";
+                }
+                else
+                {
+                    handler(request, response);
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Error = $"Internal error: {ex.Message}";
+            }
+            TheCommRequestResponse.PublishResponseMessageJson(requestTSM, response);
+        }
+
     }
 }
