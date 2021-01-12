@@ -1530,6 +1530,7 @@ namespace nsCDEngine.Engines.NMIService
                         var tCate = ThePropertyBag.PropBagGetValue(tDash.PropertyBag, "Category", "=");
                         if (string.IsNullOrEmpty(tCate))
                             tCate = GetNodeForCategory();
+                        var tControl = ThePropertyBag.PropBagGetValue(tDash.PropertyBag, "ControlClass", "=");
                         TheDashPanelInfo tD = new TheDashPanelInfo(tOwnerEngine)
                         {
                             cdeMID = tDash.cdeMID,
@@ -1538,7 +1539,7 @@ namespace nsCDEngine.Engines.NMIService
                             FldOrder = tDash.FldOrder,
                             Description = ThePropertyBag.PropBagGetValue(tDash.PropertyBag, "FriendlyName", "="),
                             PanelTitle = tDash.DashboardTitle,
-                            ControlClass = "CMyDashboard:" + tDash.cdeMID.ToString(),
+                            ControlClass = string.IsNullOrEmpty(tControl) ? "CMyDashboard:" + tDash.cdeMID.ToString() : tControl,
                             Category = tCate
                         };
                         if (string.IsNullOrEmpty(tD.Description))

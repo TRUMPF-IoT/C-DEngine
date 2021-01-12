@@ -1441,6 +1441,11 @@ namespace nsCDEngine.Engines.NMIService
         /// adds a Thumbnail to the Plugin Tile
         /// </summary>
         public string Thumbnail { get; set; }
+
+        /// <summary>
+        /// Overrides the default control class of a Dashboard Tile
+        /// </summary>
+        public string ControlClass { get; set; }
     }
     public class nmiScreen : TheNMIBaseControl
     {
