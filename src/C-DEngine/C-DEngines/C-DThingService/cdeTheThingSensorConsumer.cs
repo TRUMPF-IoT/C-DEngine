@@ -499,7 +499,11 @@ namespace nsCDEngine.Engines.ThingService
                 _unsubscribeHandler = unsubscribeHandler;
             }
 
-            public async void HandleMessage(TSM message)
+            public
+#if !CDE_NET4
+                async
+#endif
+                void HandleMessage(TSM message)
             {
                 var cmd = TheCommonUtils.cdeSplit(message.TXT, ":", false, false);
 
@@ -507,7 +511,11 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     case nameof(TheThing.MsgSubscribeToThings):
                         {
-                            TheCommRequestResponse.DoHandleMessage<MsgSubscribeToThings<TSubscription>, MsgSubscribeToThingsResponse>(message, async (request, response) => 
+                            TheCommRequestResponse.DoHandleMessage<MsgSubscribeToThings<TSubscription>, MsgSubscribeToThingsResponse>(message,
+#if !CDE_NET4
+                                async
+#endif
+                                (request, response) => 
                                 {
                                     response.SubscriptionStatus = new List<TheThing.TheThingSubscriptionStatus>();
                                     foreach (var subscription in request.SubscriptionRequests)
