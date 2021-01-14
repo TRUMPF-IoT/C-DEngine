@@ -21,13 +21,11 @@ namespace nsCDEngine.Engines.ThingService
 
         public class TheSensorMeta
         {
-            public string Kind { get; set; } // Analog, binary, state ??
             public string SourceType { get; set; }
             public string Units { get; set; }
             public string SourceUnits { get; set; }
             public double? RangeMin { get; set; }
             public double? RangeMax { get; set; }
-            public double? RangeAverage { get; set; }
 
             // TODO Add custom info support
 
@@ -39,8 +37,6 @@ namespace nsCDEngine.Engines.ThingService
                 SourceUnits = sensorMeta.SourceUnits;
                 RangeMin = sensorMeta.RangeMin;
                 RangeMax = sensorMeta.RangeMax;
-                RangeAverage = sensorMeta.RangeAverage;
-                Kind = sensorMeta.Kind;
             }
         }
 
@@ -49,7 +45,6 @@ namespace nsCDEngine.Engines.ThingService
             var sensorMetaProp = this.GetProperty(strSensor);
             var rangeMinProp = sensorMetaProp?.GetProperty(nameof(TheSensorMeta.RangeMin));
             var rangeMaxProp = sensorMetaProp?.GetProperty(nameof(TheSensorMeta.RangeMax));
-            var rangeAvgProp = sensorMetaProp?.GetProperty(nameof(TheSensorMeta.RangeAverage));
             var sensorMeta = new TheSensorMeta
             {
                 SourceType = TheCommonUtils.CStrNullable(sensorMetaProp?.GetProperty(nameof(TheSensorMeta.SourceType))),
@@ -57,8 +52,6 @@ namespace nsCDEngine.Engines.ThingService
                 SourceUnits = TheCommonUtils.CStrNullable(sensorMetaProp?.GetProperty(nameof(TheSensorMeta.SourceUnits))),
                 RangeMin = rangeMinProp != null ? (double?)TheCommonUtils.CDbl(rangeMinProp) : null,
                 RangeMax = rangeMaxProp != null ? (double?)TheCommonUtils.CDbl(rangeMaxProp) : null,
-                RangeAverage = rangeAvgProp != null ? (double?)TheCommonUtils.CDbl(rangeAvgProp) : null,
-                Kind = TheCommonUtils.CStrNullable(sensorMetaProp?.GetProperty(nameof(TheSensorMeta.Kind))),
             };
             return sensorMeta;
         }
@@ -105,14 +98,6 @@ namespace nsCDEngine.Engines.ThingService
             else
             {
                 sensorMetaProp.RemoveProperty(nameof(TheSensorMeta.RangeMax));
-            }
-            if (value.RangeAverage.HasValue)
-            {
-                sensorMetaProp.SetProperty(nameof(TheSensorMeta.RangeAverage), value.RangeAverage, ePropertyTypes.TNumber);
-            }
-            else
-            {
-                sensorMetaProp.RemoveProperty(nameof(TheSensorMeta.RangeAverage));
             }
             var ownerThing = this.OwnerThing.GetBaseThing();
             if (ownerThing != null)
