@@ -726,12 +726,13 @@ namespace nsCDEngine.ISM
                     }
                     catch (Exception e)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", " Start if updater failed " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l1_Error, e.ToString())); //Log Entry that service has been started
-
+                        TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", "Start of updater failed " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l1_Error, e.ToString())); //Log Entry that service has been started
                     }
                     if (eventShutdownRequired != null && ShutdownRequired && (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.Application || TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.Device))
                         eventShutdownRequired(false, pVersion);
                 }
+                else
+                    TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", "Extraction of updater failed " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l1_Error));
             }
         }
 

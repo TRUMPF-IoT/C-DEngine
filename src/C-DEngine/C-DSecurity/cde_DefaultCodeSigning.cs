@@ -528,8 +528,9 @@ namespace nsCDEngine.Security
                             {
                                 signedCms.Decode(certificateBytes);
                             }
-                            catch
+                            catch (Exception failed)
                             {
+                                TheBaseAssets.MySYSLOG?.WriteToLog(eDEBUG_LEVELS.OFF, 666, "ReadPECertificateFromBinaryImage", failed.ToString(), eMsgLevel.l1_Error);
                                 return null;
                             }
                             try
