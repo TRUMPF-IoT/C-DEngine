@@ -304,11 +304,12 @@ namespace nsCDEngine.ISM
                     ISMNameStart = TheBaseAssets.MyServiceHostInfo.ApplicationName;
 
                 CleanupOldFiles();
-                if (ScanAtStartup)
+                bool FirstBootInstall = (TheBaseAssets.MyServiceHostInfo.RequiresConfiguration && TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("InstallUpdatesOnFirstBoot")));
+                if (ScanAtStartup || FirstBootInstall)
                 {
                     ScanForISMUpdate(true, true, false);
-                    if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("InstallUpdatesOnStart")))
-                        LaunchUpdater(null, null, true);
+                    if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("InstallUpdatesOnStart")) || FirstBootInstall)
+                        LaunchUpdater(null, null, false);
                 }
                 IsReady = true;
                 TheBaseEngine.WaitForEnginesStarted(sinkEnginesReady); //Must wait for ContentService to be ready
@@ -646,9 +647,9 @@ namespace nsCDEngine.ISM
             if (!string.IsNullOrEmpty(pUpdateDir)) uDir += pUpdateDir;
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.IIS) uDir += "\\bin";
 
-            if (TheCommonUtils.IsOnLinux())
-            {
 #if !CDE_NET4 && !CDE_NET35    //TODO: Need to dynamically load the required ZipArchive dependencies
+            if (TheCommonUtils.IsOnLinux() || !ShutdownRequired)
+            {
                 TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"Updating files: {pSourceFile} to: {uDir}"));
 
                 string[] NewFiles = TheCommonUtils.cdeSplit(pSourceFile, ";:;", true, true);
@@ -695,11 +696,12 @@ namespace nsCDEngine.ISM
                         TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"File: {tFile} failed to upgrade: {ee.ToString()}"));
                     }
                 }
-                Restart(true);
+                if (ShutdownRequired)
+                    Restart(true);
                 UpdaterStarted = false;
-#endif
             }
             else
+#endif
             {
                 if (ExtractUpdater(uDir))
                 {
