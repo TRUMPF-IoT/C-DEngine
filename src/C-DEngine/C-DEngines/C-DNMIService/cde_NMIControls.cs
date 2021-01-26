@@ -155,6 +155,7 @@ namespace nsCDEngine.Engines.NMIService
 
         public int? FldOrder { get; set; }
         public int? Flags { get; set; }
+        public int? ACL { get; set; }
 
         public bool? AllowReuse { get; set; }
 

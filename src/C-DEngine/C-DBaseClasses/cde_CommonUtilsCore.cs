@@ -94,8 +94,8 @@ namespace nsCDEngine.BaseClasses
         /// </remarks>
         public static bool CBool(object inObj)
         {
-            if (inObj is bool) return (bool)inObj;
             if (inObj == null) return false;
+            if (inObj is bool) return (bool)inObj;
             if (inObj is string strInObj)
             {
                 if (string.IsNullOrEmpty(strInObj)) return false;
@@ -137,12 +137,12 @@ namespace nsCDEngine.BaseClasses
         public static ushort CUShort(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is ushort) return (ushort)inObj;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return 0;
             ushort retVal;
             try
             {
-                if (inObj is ushort) return (ushort)inObj;
                 if (inObj is string && inObjStr.StartsWith("0x"))
                     retVal = ushort.Parse(inObjStr.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
@@ -175,12 +175,12 @@ namespace nsCDEngine.BaseClasses
         public static int CInt(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is int) return (int)inObj;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return 0;
             int retVal;
             try
             {
-                if (inObj is int) return (int)inObj;
                 if (inObj is string && inObjStr.StartsWith("0x"))
                     retVal = int.Parse(inObjStr.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
@@ -271,12 +271,12 @@ namespace nsCDEngine.BaseClasses
         public static float CFloat(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is float) return (float)inObj;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return 0;
             float retVal;
             try
             {
-                if (inObj is float) return (float)inObj;
                 if (inObj is string && inObjStr.StartsWith("0x"))
                     retVal = (float)double.Parse(inObjStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
@@ -403,11 +403,11 @@ namespace nsCDEngine.BaseClasses
         public static Char CChar(object inObj)
         {
             if (inObj == null) return (char)0;
+            if (inObj is Char) return (Char)inObj;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return (char)0;
 
             Char retVal;
-            if (inObj is Char) return (Char)inObj;
             try
             {
                 retVal = Convert.ToChar(inObj, CultureInfo.InvariantCulture);
@@ -433,12 +433,12 @@ namespace nsCDEngine.BaseClasses
         public static Byte CByte(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is Byte) return (Byte)inObj;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             Byte retVal;
             try
             {
-                if (inObj is Byte) return (Byte)inObj;
                 int tIn = CInt(inObj);
                 retVal = Convert.ToByte(tIn % 256, CultureInfo.InvariantCulture);
             }
@@ -465,12 +465,12 @@ namespace nsCDEngine.BaseClasses
         public static SByte CSByte(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is SByte) return (SByte)inObj;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             SByte retVal;
             try
             {
-                if (inObj is SByte) return (SByte)inObj;
                 int tIn = CInt(inObj);
                 retVal = Convert.ToSByte(tIn % 128, CultureInfo.InvariantCulture);
             }
@@ -496,12 +496,12 @@ namespace nsCDEngine.BaseClasses
         public static short CShort(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is short) return (short)inObj;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             short retVal;
             try
             {
-                if (inObj is short) return (short)inObj;
                 if (inObj is string && inObjStr.StartsWith("0x"))
                     retVal = short.Parse(inObjStr.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
@@ -693,12 +693,12 @@ namespace nsCDEngine.BaseClasses
         public static uint CUInt(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is uint) return (uint)inObj;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             uint retVal;
             try
             {
-                if (inObj is uint) return (uint)inObj;
                 if (inObj is string && inObjStr.StartsWith("0x"))
                     retVal = uint.Parse(inObjStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
@@ -733,12 +733,12 @@ namespace nsCDEngine.BaseClasses
         public static ulong CULng(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is ulong) return (ulong)inObj;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             ulong retVal;
             try
             {
-                if (inObj is ulong) return (ulong)inObj;
                 if (inObj is string && inObjStr.StartsWith("0x"))
                     retVal = ulong.Parse(inObjStr, NumberStyles.HexNumber);
                 else
@@ -781,12 +781,12 @@ namespace nsCDEngine.BaseClasses
         public static long CLng(object inObj)
         {
             if (inObj == null) return 0;
+            if (inObj is long) return (long)inObj;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             long retVal;
             try
             {
-                if (inObj is long) return (long)inObj;
                 if (inObj is string && inObjStr.StartsWith("0x"))
                     retVal = long.Parse(inObjStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
