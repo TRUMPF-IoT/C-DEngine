@@ -226,6 +226,10 @@ namespace cdePackager
                         logger.WriteLine(error);
                         return 3;
                     }
+                    if (MyCDEPluginTypes.Count == 0)
+                    {
+                        return 4;
+                    }
                 }
                 catch (Exception eee)
                 {
