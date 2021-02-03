@@ -481,6 +481,10 @@ namespace nsCDEngine.Engines.ThingService
 
 
         static DateTimeOffset _lastGlobalThingRequest = DateTimeOffset.MinValue;
+        /// <summary>
+        /// Requests that other nodes in the mesh send any things that are marked as global. Resulting things will arrive asynchronously from this call.
+        /// </summary>
+        /// <returns>true if request was sent. false if called more once per minute.</returns>
         public static bool RequestGlobalThings()
         {
             if (DateTimeOffset.Now.Subtract(_lastGlobalThingRequest).TotalSeconds < 60000)
