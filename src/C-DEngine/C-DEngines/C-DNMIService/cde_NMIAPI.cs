@@ -2408,7 +2408,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="pDeviceTypeDefault">List of device types for the table of things</param>
         /// <param name="pDeviceTypeOptions">Default Device Type for new entries in the table of things</param>
         /// <returns></returns>
-        public static cdeConcurrentDictionary<string,TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, bool AddAddress, string pDeviceTypeOptions = null, string pDeviceTypeDefault = null)
+        public static cdeConcurrentDictionary<string,TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, bool AddAddress, string pDeviceTypeOptions = null, string pDeviceTypeDefault = null, bool AddNodeName = false)
         {
             TheDashboardInfo tDash = GetEngineDashBoardByThing(pBaseThing);
             if (tDash == null || pBaseThing == null) return null;
@@ -2426,7 +2426,7 @@ namespace nsCDEngine.Engines.NMIService
             TheFormInfo tAllDevices = new TheFormInfo() { cdeMID = pID, FormTitle = pTitle, defDataSource = "TheThing;:;0;:;True;:;" + pFilter, DefaultView = 0, cdeO = pBaseThing.cdeMID, cdeA = pACL };
             tRes["Form"] = tAllDevices;
             tRes["DashIcon"] = AddFormToThingUX(pBaseThing, tAllDevices, "CMyTable",pTitle, pFldOrder, pFlag, pACL, category, null, pTitle.StartsWith("<i")?null:new ThePropertyBag { "TileThumbnail=FA5:f0ce" });
-            var tCols=AddCommonTableColumns(pBaseThing, tAllDevices, pDeviceTypeOptions, pDeviceTypeDefault, AddAddress);
+            var tCols=AddCommonTableColumns(pBaseThing, tAllDevices, pDeviceTypeOptions, pDeviceTypeDefault, AddAddress, AddNodeName:AddNodeName);
             foreach (var t in tCols.Keys)
                 tRes[t] = tCols[t];
             tRes["About"]= AddAboutButton(pBaseThing, tDash, null, true, pCustomCommand, pACL);
@@ -2448,7 +2448,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="pFlags"></param>
         /// <param name="pACL"></param>
         /// <returns></returns>
-        public static cdeConcurrentDictionary<string,TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, string pDeviceTypeOptions=null,string pDeviceTypeDefault=null,bool AddAddress=true, bool AddDetailsButton = true, int pFldOrder = 1000, int pFlags = 0xA2, int pACL = 0x80)
+        public static cdeConcurrentDictionary<string,TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, string pDeviceTypeOptions=null,string pDeviceTypeDefault=null,bool AddAddress=true, bool AddDetailsButton = true, int pFldOrder = 1000, int pFlags = 0xA2, int pACL = 0x80, bool AddNodeName = false)
         {
             var tList = new cdeConcurrentDictionary<string, TheFieldInfo>();
             if (pTargetForm == null || MyBaseThing==null) return tList;
@@ -2461,6 +2461,10 @@ namespace nsCDEngine.Engines.NMIService
                     tList["DeviceType"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ComboBox, 30, !string.IsNullOrEmpty(pDeviceTypeOptions)?2:0, pACL, "###Device Type###", "DeviceType", new nmiCtrlComboBox { WriteOnce=true, Options = pDeviceTypeOptions, DefaultValue = pDeviceTypeDefault, FldWidth = 2 });
                 if (AddAddress)
                     tList["Address"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 40, 2, pACL, "###Address###", "Address", new nmiCtrlSingleEnded { FldWidth = 2 });
+                if (AddNodeName)
+                {
+                    tList["NodeName"] = TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 41, 0, 0xFE, "###Managed on Node###", null, new nmiCtrlSingleEnded { DataItem = "cdeN", FldWidth = 2 });
+                }
             }
             var tFlds=TheNMIEngine.AddTableButtons(pTargetForm, AddDetailsButton , pFldOrder, pFlags, pACL);
             if (tFlds != null)
@@ -2901,7 +2905,7 @@ namespace nsCDEngine.Engines.NMIService
             tFlds["LastMessage"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.TextArea, StartFldOrder + 3, 0, 0, null, "LastMessage", new nmiCtrlSingleEnded() { NoTE = true, ParentFld = pParentFld, TileWidth = 4, TileHeight = UseBigStatus ? 2 : 1 });
             tFlds["LastUpdate"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.DateTime, StartFldOrder + 4, 0, 0, "###Last Update###", "LastUpdate", new nmiCtrlDateTime() { ParentFld = pParentFld, TileFactorY = tTFY, TileWidth = 6, TileHeight = 1 });
             tFlds["Value"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.Number, StartFldOrder + 5, 0, 0xFE, "###Current Value###", "Value", new nmiCtrlNumber() { ParentFld = pParentFld, TileFactorY = tTFY, TileWidth = 6, TileHeight = 1 });
-            tFlds["NodeName"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.SingleEnded, StartFldOrder + 6, 0, 0xFE, "###Managed on Node###", null, new nmiCtrlSingleEnded() { DataItem="cdeN", TileFactorY = tTFY, ParentFld = pParentFld, TileWidth = 6, TileHeight = 1 });
+            tFlds["NodeName"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.SingleEnded, StartFldOrder + 6, 0, 0, "###Managed on Node###", null, new nmiCtrlSingleEnded() { DataItem="cdeN", TileFactorY = tTFY, ParentFld = pParentFld, TileWidth = 6, TileHeight = 1 });
             return tFlds;
         }
 
@@ -3132,7 +3136,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static string GetNodeForCategory()
         {
-            return "###Node###: " + TheBaseAssets.MyServiceHostInfo.MyStationName;
+            return "###Node###: " + (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.NodeName) ? TheBaseAssets.MyServiceHostInfo.NodeName : TheBaseAssets.MyServiceHostInfo.MyStationName);
         }
 
         /// <summary>
