@@ -2388,7 +2388,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static TheFormInfo CreateEngineForms(ICDEThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand)
         {
-            var tFlds=CreateEngineForms(pBaseThing?.GetBaseThing(), pID, pTitle, pFilter, pFldOrder, pFlag, pACL, category, pCustomCommand, false);
+            var tFlds=CreateEngineForms(pBaseThing?.GetBaseThing(), pID, pTitle, pFilter, pFldOrder, pFlag, pACL, category, pCustomCommand, null);
             return tFlds?.cdeSafeGetValue("Form") as TheFormInfo;
         }
 
@@ -2408,7 +2408,17 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="pDeviceTypeDefault">List of device types for the table of things</param>
         /// <param name="pDeviceTypeOptions">Default Device Type for new entries in the table of things</param>
         /// <returns></returns>
-        public static cdeConcurrentDictionary<string,TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, bool AddAddress, string pDeviceTypeOptions = null, string pDeviceTypeDefault = null, bool AddNodeName = false)
+        public static cdeConcurrentDictionary<string,TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, bool AddAddress, string pDeviceTypeOptions = null, string pDeviceTypeDefault = null)
+        {
+            return CreateEngineForms(pBaseThing, pID, pTitle, pFilter, pFldOrder, pFlag, pACL, category, pCustomCommand, new TheTableParameters
+            {
+                AddAddress = AddAddress,
+                DeviceTypeOptions = pDeviceTypeOptions,
+                DeviceTypeDefault = pDeviceTypeDefault,
+            }); ;
+        }
+
+        public static cdeConcurrentDictionary<string, TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, TheTableParameters formParams)
         {
             TheDashboardInfo tDash = GetEngineDashBoardByThing(pBaseThing);
             if (tDash == null || pBaseThing == null) return null;
@@ -2426,7 +2436,7 @@ namespace nsCDEngine.Engines.NMIService
             TheFormInfo tAllDevices = new TheFormInfo() { cdeMID = pID, FormTitle = pTitle, defDataSource = "TheThing;:;0;:;True;:;" + pFilter, DefaultView = 0, cdeO = pBaseThing.cdeMID, cdeA = pACL };
             tRes["Form"] = tAllDevices;
             tRes["DashIcon"] = AddFormToThingUX(pBaseThing, tAllDevices, "CMyTable",pTitle, pFldOrder, pFlag, pACL, category, null, pTitle.StartsWith("<i")?null:new ThePropertyBag { "TileThumbnail=FA5:f0ce" });
-            var tCols=AddCommonTableColumns(pBaseThing, tAllDevices, pDeviceTypeOptions, pDeviceTypeDefault, AddAddress, AddNodeName:AddNodeName);
+            var tCols=AddCommonTableColumns(pBaseThing, tAllDevices, formParams);
             foreach (var t in tCols.Keys)
                 tRes[t] = tCols[t];
             tRes["About"]= AddAboutButton(pBaseThing, tDash, null, true, pCustomCommand, pACL);
@@ -2448,25 +2458,58 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="pFlags"></param>
         /// <param name="pACL"></param>
         /// <returns></returns>
-        public static cdeConcurrentDictionary<string,TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, string pDeviceTypeOptions=null,string pDeviceTypeDefault=null,bool AddAddress=true, bool AddDetailsButton = true, int pFldOrder = 1000, int pFlags = 0xA2, int pACL = 0x80, bool AddNodeName = false)
+        public static cdeConcurrentDictionary<string,TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, string pDeviceTypeOptions=null,string pDeviceTypeDefault=null,bool AddAddress=true, bool AddDetailsButton = true, int pFldOrder = 1000, int pFlags = 0xA2, int pACL = 0x80)
+        {
+            return AddCommonTableColumns(MyBaseThing, pTargetForm, new TheTableParameters 
+            { 
+                DeviceTypeOptions = pDeviceTypeOptions,
+                DeviceTypeDefault = pDeviceTypeDefault,
+                AddAddress = AddAddress,
+                AddDetailsButton = AddDetailsButton,
+                FldOrder = pFldOrder,
+                Flags = pFlags,
+                ACL = pACL,
+            });
+        }
+
+        public class TheTableParameters
+        {
+            public string DeviceTypeOptions { get; set; }
+            public string DeviceTypeDefault { get; set; }
+            /// <summary>
+            /// Shows the name of the node on which the things in the table are located. Useful primarily in conjunction with global/remote things.
+            /// </summary>
+            public bool AddAddress { get; set; }
+            public bool AddNodeName { get; set; }
+            public int ACL { get; set; } = 0x80;
+            public bool AddDetailsButton { get; set; } = true;
+            public int FldOrder { get; set; } = 1000;
+            public int Flags { get; set; } = 0xA2;
+        }
+
+        public static cdeConcurrentDictionary<string, TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, TheTableParameters formParams)
         {
             var tList = new cdeConcurrentDictionary<string, TheFieldInfo>();
             if (pTargetForm == null || MyBaseThing==null) return tList;
+            if (formParams == null)
+            {
+                formParams = new TheTableParameters(); // sets default values
+            }
             if (MyBaseThing != null)
             {
                 tList["Status"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.StatusLight, 20, 0x40, 0x0, "Status", "StatusLevel", new TheNMIBaseControl() { FldWidth = 1 });
 
                 tList["Name"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 10, 2, 0, "###Friendly Name###", "FriendlyName", new nmiCtrlSingleEnded { FldWidth = 3 });
-                if (!string.IsNullOrEmpty(pDeviceTypeOptions) || !string.IsNullOrEmpty(pDeviceTypeDefault))
-                    tList["DeviceType"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ComboBox, 30, !string.IsNullOrEmpty(pDeviceTypeOptions)?2:0, pACL, "###Device Type###", "DeviceType", new nmiCtrlComboBox { WriteOnce=true, Options = pDeviceTypeOptions, DefaultValue = pDeviceTypeDefault, FldWidth = 2 });
-                if (AddAddress)
-                    tList["Address"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 40, 2, pACL, "###Address###", "Address", new nmiCtrlSingleEnded { FldWidth = 2 });
-                if (AddNodeName)
+                if (!string.IsNullOrEmpty(formParams.DeviceTypeOptions) || !string.IsNullOrEmpty(formParams.DeviceTypeDefault))
+                    tList["DeviceType"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ComboBox, 30, !string.IsNullOrEmpty(formParams.DeviceTypeOptions)?2:0, formParams.ACL, "###Device Type###", "DeviceType", new nmiCtrlComboBox { WriteOnce=true, Options = formParams.DeviceTypeOptions, DefaultValue = formParams.DeviceTypeDefault, FldWidth = 2 });
+                if (formParams.AddAddress)
+                    tList["Address"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 40, 2, formParams.ACL, "###Address###", "Address", new nmiCtrlSingleEnded { FldWidth = 2 });
+                if (formParams.AddNodeName)
                 {
                     tList["NodeName"] = TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 41, 0, 0xFE, "###Managed on Node###", null, new nmiCtrlSingleEnded { DataItem = "cdeN", FldWidth = 2 });
                 }
             }
-            var tFlds=TheNMIEngine.AddTableButtons(pTargetForm, AddDetailsButton , pFldOrder, pFlags, pACL);
+            var tFlds=TheNMIEngine.AddTableButtons(pTargetForm, formParams.AddDetailsButton, formParams.FldOrder, formParams.Flags, formParams.ACL);
             if (tFlds != null)
             {
                 foreach (TheFieldInfo tf in tFlds)
