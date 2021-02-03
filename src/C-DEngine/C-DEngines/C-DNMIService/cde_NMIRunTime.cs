@@ -544,7 +544,8 @@ namespace nsCDEngine.Engines.NMIService
                                     }
                                     if (tThing != null)
                                     {
-                                        SetUXProperty(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(tSP[0]), $"ThingFriendlyName={tThing.FriendlyName}", cmd[2], tSP.Length > 1 ? $"{tSP[1]};-1" : null);
+                                        string friendlyName = tThing.cdeN == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID ? tThing.FriendlyName : $"{tThing.FriendlyName} on ({tThing.cdeN})";
+                                        SetUXProperty(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(tSP[0]), $"ThingFriendlyName={friendlyName}", cmd[2], tSP.Length > 1 ? $"{tSP[1]};-1" : null);
                                     }
                                 }
                                 break;
@@ -659,6 +660,10 @@ namespace nsCDEngine.Engines.NMIService
                                             var tFN = tT.FriendlyName;
                                             if (string.IsNullOrEmpty(tFN))
                                                 tFN = $"no Name:{tT.cdeMID}";
+                                            if (bInclRemotes)
+                                            {
+                                                tFN += $" on ({tT.cdeN})";
+                                            }
                                             var tVal = $"{tT.cdeMID}";
                                             if (!string.IsNullOrEmpty(ValueProperty))
                                             {
