@@ -614,7 +614,7 @@ namespace nsCDEngine.Engines.NMIService
                                     SetUXProperty(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(tSP[0]), $"LiveOptions={tList}", cmd[2], tSP.Length > 1 ? $"{tSP[1]};-1" : null);
                                 }
                                 break;
-                            case "THINGPICKER": //Syntax of TXT: "NMI_GET_DATA:THINGPICKER:<OwnerMID>:<ControlMID>;<FldOrder>"
+                            case "THINGPICKER": //Syntax of TXT: "NMI_GET_DATA:THINGPICKER:<OwnerMID>:<ControlMID>;<FldOrder>:<includeEngines>:<includeRemotes>:<filter>"
                                 if (!pMsg.Message.IsFirstNode() || !TheUserManager.HasUserAccess(pMsg.CurrentUserID, 0xF0) || cmd.Length < 4) return;
                                 {
                                     bool bInclEngines = false;
@@ -631,6 +631,12 @@ namespace nsCDEngine.Engines.NMIService
                                         if (cmd[6].IndexOf('=') > 0)
                                             tPV = cmd[6].Substring(cmd[6].IndexOf('=') + 1);
                                     }
+                                    
+                                    if (bInclRemotes)
+                                    {
+                                        TheThingRegistry.RequestGlobalThings();
+                                    }
+
                                     List<TheThing> tThings = null;
                                     if (tPN != "DeviceTypes")
                                         tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
