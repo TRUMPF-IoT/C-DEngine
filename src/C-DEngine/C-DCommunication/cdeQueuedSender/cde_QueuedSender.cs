@@ -268,7 +268,7 @@ namespace nsCDEngine.Communication
         internal TheNodeDiagInfo GetNodeDiagInfo()
         {
             TheNodeDiagInfo nodeDiagInfo = null;
-            if (!(MyNodeInfo.MyServices?.Count > 0) && MyTargetNodeChannel != null && TheCommonUtils.IsLocalhost(MyTargetNodeChannel.cdeMID))
+            if (!(MyNodeInfo?.MyServices?.Count > 0) && MyTargetNodeChannel != null && TheCommonUtils.IsLocalhost(MyTargetNodeChannel.cdeMID))
             {
                 List<IBaseEngine> tList3 = TheThingRegistry.GetBaseEngines(false);
                 foreach (IBaseEngine tBase in tList3)

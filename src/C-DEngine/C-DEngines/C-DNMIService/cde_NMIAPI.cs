@@ -2388,7 +2388,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static TheFormInfo CreateEngineForms(ICDEThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand)
         {
-            var tFlds=CreateEngineForms(pBaseThing?.GetBaseThing(), pID, pTitle, pFilter, pFldOrder, pFlag, pACL, category, pCustomCommand, false);
+            var tFlds=CreateEngineForms(pBaseThing?.GetBaseThing(), pID, pTitle, pFilter, pFldOrder, pFlag, pACL, category, pCustomCommand, null);
             return tFlds?.cdeSafeGetValue("Form") as TheFormInfo;
         }
 
@@ -2405,10 +2405,34 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="category">a Category for the dashboard</param>
         /// <param name="pCustomCommand">if this is set, the Refresh Dashboard fires this command to the owner plugin</param>
         /// <param name="AddAddress">if true the Table of things contains an address field</param>
-        /// <param name="pDeviceTypeDefault">List of device types for the table of things</param>
-        /// <param name="pDeviceTypeOptions">Default Device Type for new entries in the table of things</param>
+        /// <param name="pDeviceTypeOptions">List of device types for the table of things. Semicolon separated.</param>
+        /// <param name="pDeviceTypeDefault">Default Device Type for new entries in the table of things</param>
         /// <returns></returns>
         public static cdeConcurrentDictionary<string,TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, bool AddAddress, string pDeviceTypeOptions = null, string pDeviceTypeDefault = null)
+        {
+            return CreateEngineForms(pBaseThing, pID, pTitle, pFilter, pFldOrder, pFlag, pACL, category, pCustomCommand, new TheTableParameters
+            {
+                AddAddress = AddAddress,
+                DeviceTypeOptions = pDeviceTypeOptions,
+                DeviceTypeDefault = pDeviceTypeDefault,
+            }); ;
+        }
+
+        /// <summary>
+        /// This method creates an essential dashboard for plugins that have multiple sub-devices and a table that allows to add and remove new devices.
+        /// </summary>
+        /// <param name="pBaseThing">TheThing that owns this Dashboard</param>
+        /// <param name="pID">A unique ID for the Dashboard. Can be the pBaseThing.cdeMID if its the only dashboard of the owner plugin</param>
+        /// <param name="pTitle">A title for the dashboard</param>
+        /// <param name="pFilter">A custom filter for the plugin. If omitted (set to zero) all items of the owner plugin will be used</param>
+        /// <param name="pFldOrder">A ordering idex for the items in the plugin</param>
+        /// <param name="pFlag">Flags of the Dashboard (see TheFormInfo Flags)</param>
+        /// <param name="pACL">Access Level for the Dashboard</param>
+        /// <param name="category">a Category for the dashboard</param>
+        /// <param name="pCustomCommand">if this is set, the Refresh Dashboard fires this command to the owner plugin</param>
+        /// <param name="tableParams">Additional parameters to customize the table that lists all things for this plugin. Can be null to use defaults.</param>
+        /// <returns></returns>
+        public static cdeConcurrentDictionary<string, TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, TheTableParameters tableParams)
         {
             TheDashboardInfo tDash = GetEngineDashBoardByThing(pBaseThing);
             if (tDash == null || pBaseThing == null) return null;
@@ -2426,7 +2450,7 @@ namespace nsCDEngine.Engines.NMIService
             TheFormInfo tAllDevices = new TheFormInfo() { cdeMID = pID, FormTitle = pTitle, defDataSource = "TheThing;:;0;:;True;:;" + pFilter, DefaultView = 0, cdeO = pBaseThing.cdeMID, cdeA = pACL };
             tRes["Form"] = tAllDevices;
             tRes["DashIcon"] = AddFormToThingUX(pBaseThing, tAllDevices, "CMyTable",pTitle, pFldOrder, pFlag, pACL, category, null, pTitle.StartsWith("<i")?null:new ThePropertyBag { "TileThumbnail=FA5:f0ce" });
-            var tCols=AddCommonTableColumns(pBaseThing, tAllDevices, pDeviceTypeOptions, pDeviceTypeDefault, AddAddress);
+            var tCols=AddCommonTableColumns(pBaseThing, tAllDevices, tableParams);
             foreach (var t in tCols.Keys)
                 tRes[t] = tCols[t];
             tRes["About"]= AddAboutButton(pBaseThing, tDash, null, true, pCustomCommand, pACL);
@@ -2438,31 +2462,101 @@ namespace nsCDEngine.Engines.NMIService
         /// Adds the common table columns to a table: "Details (if not disabled), FriendlyName, StatusLevel,DeviceType (if set), Address (if not disabled), Delete Button"
         /// Only tables based on TheThings are supported
         /// </summary>
-        /// <param name="MyBaseThing"></param>
-        /// <param name="pTargetForm"></param>
-        /// <param name="pDeviceTypeOptions"></param>
-        /// <param name="pDeviceTypeDefault"></param>
+        /// <param name="MyBaseThing">>TheThing that owns this Dashboard</param>
+        /// <param name="pTargetForm">The form that holds the table.</param>
+        /// <param name="pDeviceTypeOptions">List of device types for the table of things. Semicolon separated.</param>
+        /// <param name="pDeviceTypeDefault">Default Device Type for new entries in the table of things</param>
         /// <param name="AddAddress">If False, Address column will not be included</param>
         /// <param name="AddDetailsButton">If False, a Details button will not be included</param>
-        /// <param name="pFldOrder"></param>
-        /// <param name="pFlags"></param>
-        /// <param name="pACL"></param>
-        /// <returns></returns>
+        /// <param name="pFldOrder">A ordering idex for the items in the plugin</param>
+        /// <param name="pFlags">Flags of the Dashboard (see TheFormInfo Flags)</param>
+        /// <param name="pACL">Access Level for the Dashboard</param>
+        /// <returns>A dictionary with the fields that have been added.</returns>
         public static cdeConcurrentDictionary<string,TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, string pDeviceTypeOptions=null,string pDeviceTypeDefault=null,bool AddAddress=true, bool AddDetailsButton = true, int pFldOrder = 1000, int pFlags = 0xA2, int pACL = 0x80)
+        {
+            return AddCommonTableColumns(MyBaseThing, pTargetForm, new TheTableParameters 
+            { 
+                DeviceTypeOptions = pDeviceTypeOptions,
+                DeviceTypeDefault = pDeviceTypeDefault,
+                AddAddress = AddAddress,
+                AddDetailsButton = AddDetailsButton,
+                FldOrder = pFldOrder,
+                Flags = pFlags,
+                ACL = pACL,
+            });
+        }
+
+        /// <summary>
+        /// Specifies optional parameters to AddCommonTableColumns.
+        /// </summary>
+        public class TheTableParameters
+        {
+            /// <summary>
+            /// List of device types for the table of things.
+            /// </summary>
+            public string DeviceTypeOptions { get; set; }
+            /// <summary>
+            /// Default Device Type for new entries in the table of things
+            /// </summary>
+            public string DeviceTypeDefault { get; set; }
+            /// <summary>
+            /// If true the Table of things contains an address field.
+            /// </summary>
+            public bool AddAddress { get; set; }
+            /// <summary>
+            /// If true, adds a column with the name of the node on which the things in the table are located. Useful primarily in conjunction with global/remote things.
+            /// </summary>
+            public bool AddNodeName { get; set; }
+            /// <summary>
+            /// Access Level for the Dashboard
+            /// </summary>
+            public int ACL { get; set; } = 0x80;
+            /// <summary>
+            /// If true, the table will have a details button that leads to the thing's form/dashboard
+            /// </summary>
+            public bool AddDetailsButton { get; set; } = true;
+            /// <summary>
+            /// A ordering idex for the items in the plugin
+            /// </summary>
+            public int FldOrder { get; set; } = 1000;
+            /// <summary>
+            /// Flags of the Dashboard (see TheFormInfo Flags)
+            /// </summary>
+            public int Flags { get; set; } = 0xA2;
+        }
+
+
+        /// <summary>
+        /// Adds the common table columns to a table: "Details (if not disabled), FriendlyName, StatusLevel,DeviceType (if set), Address (if not disabled), Delete Button"
+        /// Only tables based on TheThings are supported
+        /// </summary>
+        /// <param name="MyBaseThing">>TheThing that owns this Dashboard</param>
+        /// <param name="pTargetForm">The form that holds the table.</param>
+        /// <param name="tableParams">Additional parameters to customize the table. Can be null to use defaults.</param>
+        /// <returns>A dictionary with the fields that have been added.</returns>
+        public static cdeConcurrentDictionary<string, TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, TheTableParameters tableParams)
         {
             var tList = new cdeConcurrentDictionary<string, TheFieldInfo>();
             if (pTargetForm == null || MyBaseThing==null) return tList;
+            if (tableParams == null)
+            {
+                tableParams = new TheTableParameters(); // sets default values
+            }
             if (MyBaseThing != null)
             {
                 tList["Status"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.StatusLight, 20, 0x40, 0x0, "Status", "StatusLevel", new TheNMIBaseControl() { FldWidth = 1 });
 
                 tList["Name"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 10, 2, 0, "###Friendly Name###", "FriendlyName", new nmiCtrlSingleEnded { FldWidth = 3 });
-                if (!string.IsNullOrEmpty(pDeviceTypeOptions) || !string.IsNullOrEmpty(pDeviceTypeDefault))
-                    tList["DeviceType"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ComboBox, 30, !string.IsNullOrEmpty(pDeviceTypeOptions)?2:0, pACL, "###Device Type###", "DeviceType", new nmiCtrlComboBox { WriteOnce=true, Options = pDeviceTypeOptions, DefaultValue = pDeviceTypeDefault, FldWidth = 2 });
-                if (AddAddress)
-                    tList["Address"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 40, 2, pACL, "###Address###", "Address", new nmiCtrlSingleEnded { FldWidth = 2 });
+                if (!string.IsNullOrEmpty(tableParams.DeviceTypeOptions) || !string.IsNullOrEmpty(tableParams.DeviceTypeDefault))
+                    tList["DeviceType"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ComboBox, 30, !string.IsNullOrEmpty(tableParams.DeviceTypeOptions)?2:0, tableParams.ACL, "###Device Type###", "DeviceType", new nmiCtrlComboBox { WriteOnce=true, Options = tableParams.DeviceTypeOptions, DefaultValue = tableParams.DeviceTypeDefault, FldWidth = 2 });
+                if (tableParams.AddAddress)
+                    tList["Address"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 40, 2, tableParams.ACL, "###Address###", "Address", new nmiCtrlSingleEnded { FldWidth = 2 });
+                if (tableParams.AddNodeName)
+                {
+                    tList["NodeName"] = TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 41, 0, 0xFE, "###Managed on Node###", null, new nmiCtrlSingleEnded { DataItem = "cdeN", FldWidth = 2 });
+                }
             }
-            var tFlds=TheNMIEngine.AddTableButtons(pTargetForm, AddDetailsButton , pFldOrder, pFlags, pACL);
+            var tFlds=TheNMIEngine.AddTableButtons(pTargetForm, tableParams.AddDetailsButton, tableParams.FldOrder, tableParams.Flags, tableParams.ACL);
             if (tFlds != null)
             {
                 foreach (TheFieldInfo tf in tFlds)
@@ -2901,7 +2995,7 @@ namespace nsCDEngine.Engines.NMIService
             tFlds["LastMessage"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.TextArea, StartFldOrder + 3, 0, 0, null, "LastMessage", new nmiCtrlSingleEnded() { NoTE = true, ParentFld = pParentFld, TileWidth = 4, TileHeight = UseBigStatus ? 2 : 1 });
             tFlds["LastUpdate"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.DateTime, StartFldOrder + 4, 0, 0, "###Last Update###", "LastUpdate", new nmiCtrlDateTime() { ParentFld = pParentFld, TileFactorY = tTFY, TileWidth = 6, TileHeight = 1 });
             tFlds["Value"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.Number, StartFldOrder + 5, 0, 0xFE, "###Current Value###", "Value", new nmiCtrlNumber() { ParentFld = pParentFld, TileFactorY = tTFY, TileWidth = 6, TileHeight = 1 });
-            tFlds["NodeName"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.SingleEnded, StartFldOrder + 6, 0, 0xFE, "###Managed on Node###", null, new nmiCtrlSingleEnded() { DataItem="cdeN", TileFactorY = tTFY, ParentFld = pParentFld, TileWidth = 6, TileHeight = 1 });
+            tFlds["NodeName"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.SingleEnded, StartFldOrder + 6, 0, 0, "###Managed on Node###", null, new nmiCtrlSingleEnded() { DataItem="cdeN", TileFactorY = tTFY, ParentFld = pParentFld, TileWidth = 6, TileHeight = 1 });
             return tFlds;
         }
 
@@ -3132,7 +3226,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static string GetNodeForCategory()
         {
-            return "###Node###: " + TheBaseAssets.MyServiceHostInfo.MyStationName;
+            return "###Node###: " + (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.NodeName) ? TheBaseAssets.MyServiceHostInfo.NodeName : TheBaseAssets.MyServiceHostInfo.MyStationName);
         }
 
         /// <summary>

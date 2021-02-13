@@ -479,6 +479,22 @@ namespace nsCDEngine.Engines.ThingService
             return true;
         }
 
+
+        static DateTimeOffset _lastGlobalThingRequest = DateTimeOffset.MinValue;
+        /// <summary>
+        /// Requests that other nodes in the mesh send any things that are marked as global. Resulting things will arrive asynchronously from this call.
+        /// </summary>
+        /// <returns>true if request was sent. false if called more once per minute.</returns>
+        public static bool RequestGlobalThings()
+        {
+            if (DateTimeOffset.Now.Subtract(_lastGlobalThingRequest).TotalSeconds < 60000)
+            {
+                return false;
+            }
+            TheCommCore.PublishCentral(new TSM(eEngineName.ContentService, "CDE_SEND_GLOBAL_THINGS"));
+            return true;
+        }
+
         /// <summary>
         /// Synchronizes all Global Things
         /// </summary>
@@ -488,9 +504,14 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         internal static bool SyncGlobalThings(Guid nodeId, List<TheThing> things, bool OnlyMerge=false)
         {
-            if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null || things == null ||
-                TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null)
+            if (things == null || nodeId == TheBaseAssets.MyServiceHostInfo?.MyDeviceInfo?.DeviceID || TheCDEngines.MyThingEngine?.MyThingRegistry?.MyThings == null)
                 return false;
+
+            if (things.Any((t) => t.cdeN != nodeId)) // Don't take things from nodes that are not the originator: assume malicious sender and reject entire list
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, $"Received invalid global thing list for node {nodeId}. Rejecting list.", eMsgLevel.l1_Error, ""));
+                return false;
+            }
 
             if (!OnlyMerge)
             {
@@ -515,7 +536,7 @@ namespace nsCDEngine.Engines.ThingService
                     TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.UpdateItem(thing, null);    //New 3.215: updates all properties
                     _thingByIdCache = null;
                     //if (eventThingUpdated != null)  TheCommonUtils.cdeRunAsync(eThingEvents.ThingUpdated, true, o => eventThingUpdated(thing)); //Internal Only for RulesEngine
-                    TheCDEngines.MyThingEngine.FireEvent(eThingEvents.ThingUpdated,thing,null,true);    //For plugins to register for ThingUpdates.
+                    TheCDEngines.MyThingEngine.FireEvent(eThingEvents.ThingUpdated, thing, null, true);    //For plugins to register for ThingUpdates.
                 }
             }
             return true;
