@@ -1571,6 +1571,11 @@ namespace nsCDEngine.Engines.NMIService
         /// The referenced screen is a popup
         /// </summary>
         public bool? IsPopup { get; set; }
+
+        /// <summary>
+        /// If true, the dashboard Tile is no using a button but a standard div and allows for a faceplate to take over the tile
+        /// </summary>
+        public bool? IsCustomTile { get; set; }
     }
 
 
