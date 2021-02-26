@@ -27,7 +27,7 @@ namespace cdePackager
     {
         public static Dictionary<string, Type> MyCDEPluginTypes = new Dictionary<string, Type>();       //DIC-Allowed   STRING
 
-        public static int PackagePlugIn(string pluginFilePath, string binDirectoryPath, string storeDirectoryPath,string pPlatform, ILogger logger, bool bDiagnostics, out string error)
+        public static int PackagePlugIn(string pluginFilePath, string binDirectoryPath, string storeDirectoryPath,string pPlatform, ILogger logger, bool bDiagnostics, bool bCheckForFileOverwrite, out string error)
         {
             if (!binDirectoryPath.EndsWith(Path.DirectorySeparatorChar.ToString()))// && !binDirectoryPath.EndsWith("."))
             {
@@ -97,7 +97,7 @@ namespace cdePackager
                     var tInfo = TheCommonUtils.DeserializeJSONStringToObject<ThePluginInfo>(File.ReadAllText(pluginFilePath));
                     if (tPluginPlatform > 0)
                         tInfo.Platform = tPluginPlatform;
-                    error = CreateCDEX(storeDirectoryPath, tInfo, logger, out var cdesPath);
+                    error = CreateCDEX(storeDirectoryPath, tInfo, logger, bCheckForFileOverwrite, out var cdesPath);
                     if (!String.IsNullOrEmpty(error))
                     {
                         logger.WriteLine($"Error creating package: {error}");
@@ -291,7 +291,7 @@ namespace cdePackager
                         //}
                         //else
                         {
-                            error = CreateCDEX(storeDirectoryPath, tInfo, logger, out cdexPath);
+                            error = CreateCDEX(storeDirectoryPath, tInfo, logger, bCheckForFileOverwrite, out cdexPath);
                         }
                     }
                     catch (Exception e)
@@ -313,7 +313,7 @@ namespace cdePackager
             return 0;
         }
 
-        private static string CreateCDEX(string storeDirectoryPath, ThePluginInfo tInfo, ILogger logger, out string cdexPath)
+        private static string CreateCDEX(string storeDirectoryPath, ThePluginInfo tInfo, ILogger logger, bool bCheckForFileOverwrite, out string cdexPath)
         {
             var pluginTempDirectory = Path.Combine(storeDirectoryPath, $"newCDEX_{Guid.NewGuid()}"); // ensure each plug-in/packging operation gets it's own directory if packaging overlaps for different platforms/flavors of the same plug-in
             var error = ThePluginPackager.CreatePluginPackage(tInfo, null, pluginTempDirectory, false, out cdexPath);
@@ -325,8 +325,11 @@ namespace cdePackager
                 byte[] oldContent = null;
                 if (File.Exists(cdepFilePath))
                 {
-                    logger.WriteLine($"WARNING: File conflict: {cdepFilePath} already existed. Replacing.");
-                    oldContent = File.ReadAllBytes(cdepFilePath);
+                    if (bCheckForFileOverwrite)
+                    {
+                        logger.WriteLine($"WARNING: File conflict: {cdepFilePath} already existed. Replacing.");
+                        oldContent = File.ReadAllBytes(cdepFilePath);
+                    }
                     File.Delete(cdepFilePath);
                 }
                 else
@@ -362,8 +365,11 @@ namespace cdePackager
                 {
                     if (File.Exists(finalPluginPath))
                     {
-                        logger.WriteLine($"WARNING: File conflict: {finalPluginPath} already existed.");
-                        oldContent = File.ReadAllBytes(finalPluginPath);
+                        if (bCheckForFileOverwrite)
+                        {
+                            logger.WriteLine($"WARNING: File conflict: {finalPluginPath} already existed.");
+                            oldContent = File.ReadAllBytes(finalPluginPath);
+                        }
                         File.Delete(finalPluginPath);
                     }
                     else
