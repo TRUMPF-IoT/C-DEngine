@@ -73,6 +73,8 @@ namespace nsCDEngine.Engines.ThingService
                 Required = requiredProp != null && requiredProp.Value != null ? (bool?)TheCommonUtils.CBool(requiredProp.GetValue()) : null,
                 Secure = secureProp != null && secureProp.Value != null ? (bool?)TheCommonUtils.CBool(secureProp.GetValue()) : null, // TODO Do we really want to decrypt here?
                 Description = TheCommonUtils.CStrNullable(configMetaProp?.GetProperty(nameof(TheThing.TheConfigurationProperty.Description))),
+                FriendlyName = TheCommonUtils.CStrNullable(configMetaProp?.GetProperty(nameof(TheThing.TheConfigurationProperty.FriendlyName))),
+                SemanticTypes = TheCommonUtils.CStrNullable(configMetaProp?.GetProperty(nameof(TheThing.TheConfigurationProperty.SemanticTypes))),
                 Units = TheCommonUtils.CStrNullable(configMetaProp?.GetProperty(nameof(TheThing.TheConfigurationProperty.Units))),
                 RangeMin = rangeMinProp != null && rangeMinProp.Value != null ? (double?)TheCommonUtils.CDbl(rangeMinProp) : null,
                 RangeMax = rangeMaxProp != null && rangeMaxProp.Value != null ? (double?)TheCommonUtils.CDbl(rangeMaxProp) : null,
@@ -159,6 +161,22 @@ namespace nsCDEngine.Engines.ThingService
             else
             {
                 configMetaProp.RemoveProperty(nameof(TheThing.TheConfigurationProperty.Description));
+            }
+            if (configMeta.FriendlyName != null)
+            {
+                configMetaProp.SetProperty(nameof(TheThing.TheConfigurationProperty.FriendlyName), configMeta.FriendlyName, ePropertyTypes.TString);
+            }
+            else
+            {
+                configMetaProp.RemoveProperty(nameof(TheThing.TheConfigurationProperty.FriendlyName));
+            }
+            if (configMeta.SemanticTypes != null)
+            {
+                configMetaProp.SetProperty(nameof(TheThing.TheConfigurationProperty.SemanticTypes), configMeta.SemanticTypes, ePropertyTypes.TString);
+            }
+            else
+            {
+                configMetaProp.RemoveProperty(nameof(TheThing.TheConfigurationProperty.SemanticTypes));
             }
             if (configMeta.Units != null)
             {
@@ -327,6 +345,8 @@ namespace nsCDEngine.Engines.ThingService
             public bool? Required { get; set; }
             public bool? Secure { get; set; }
             public string Description { get; set; }
+            public string FriendlyName { get; set; }
+            public string SemanticTypes { get; set; }
             public string Units { get; set; }
             public double? RangeMin { get; set; }
             public double? RangeMax { get; set; }
@@ -349,6 +369,8 @@ namespace nsCDEngine.Engines.ThingService
                 Required = cp.Required;
                 Secure = cp.Secure;
                 Description = cp.Description;
+                FriendlyName = cp.FriendlyName;
+                SemanticTypes = cp.SemanticTypes;
                 Units = cp.Units;
                 RangeMin = cp.RangeMin;
                 RangeMax = cp.RangeMax;
@@ -386,6 +408,8 @@ namespace nsCDEngine.Engines.ThingService
                 Required = configAttribute.Required;
                 Secure = configAttribute.Secure;
                 Description = configAttribute.Description;
+                FriendlyName = configAttribute.FriendlyName;
+                SemanticTypes = configAttribute.SemanticTypes;
                 Units = configAttribute.Units;
                 if (configAttribute.RangeMin != 0)
                 {
@@ -413,6 +437,8 @@ namespace nsCDEngine.Engines.ThingService
                         nameof(TheThing.TheConfigurationProperty.Required),
                         nameof(TheThing.TheConfigurationProperty.Secure),
                         nameof(TheThing.TheConfigurationProperty.Description),
+                        nameof(TheThing.TheConfigurationProperty.FriendlyName),
+                        nameof(TheThing.TheConfigurationProperty.SemanticTypes),
                         nameof(TheThing.TheConfigurationProperty.Units),
                         nameof(TheThing.TheConfigurationProperty.RangeMin),
                         nameof(TheThing.TheConfigurationProperty.RangeMax),
@@ -576,7 +602,7 @@ namespace nsCDEngine.Engines.ThingService
             }
             return thingConfig;
         }
-        #endif
+#endif
         private TheThingReference GeneralizeThingReference(TheThingReference thingReference)
         {
             // TODO also generalize other parts of the reference (Address?)
@@ -928,6 +954,16 @@ namespace nsCDEngine.Engines.ThingService
                     if (configMeta.Description == null && configProp.Description != null)
                     {
                         configMeta.Description = configProp.Description;
+                        bUpdated = true;
+                    }
+                    if (configMeta.FriendlyName == null && configProp.FriendlyName != null)
+                    {
+                        configMeta.FriendlyName = configProp.FriendlyName;
+                        bUpdated = true;
+                    }
+                    if (configMeta.SemanticTypes == null && configProp.SemanticTypes != null)
+                    {
+                        configMeta.SemanticTypes = configProp.SemanticTypes;
                         bUpdated = true;
                     }
                     if (configMeta.RangeMax == null && configProp.RangeMax != null)

@@ -31,8 +31,8 @@ namespace cdePackagerTask
             {
                 storePath = OutputPath;
             }
-            string error;
-            ThePackager.PackagePlugIn(PluginFilePath, OutputPath, storePath,pPlatform, this, Diagnostics, out error);
+            bool bCheckForFileOverwrite = Diagnostics || Environment.GetEnvironmentVariable("cdePackagerCheckOverwrite") != null;
+            ThePackager.PackagePlugIn(PluginFilePath, OutputPath, storePath,pPlatform, this, Diagnostics, bCheckForFileOverwrite, out var error);
             return string.IsNullOrEmpty(error);
         }
 

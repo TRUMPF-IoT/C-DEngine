@@ -2228,7 +2228,7 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Creates an unscoped channel
         /// </summary>
-        /// <param name="pcdeN"></param>
+        /// <param name="pDeviceID"></param>
         /// <param name="pSenderType"></param>
         /// <param name="targetUrl"></param>
         internal TheChannelInfo(Guid pDeviceID, cdeSenderType pSenderType, string targetUrl) : this(pDeviceID, null, pSenderType, targetUrl)

@@ -31,8 +31,9 @@ namespace cdePackager
             }
 
             bool diag = (args.Length > 4 && args[4].ToLowerInvariant() == "-diag") || Environment.GetEnvironmentVariable("cdePackagerDiag") != null;
+            bool bCheckForFileOverwrite = diag || Environment.GetEnvironmentVariable("cdePackagerCheckOverwrite") != null;
             string error;
-            return ThePackager.PackagePlugIn(args[0], args[1], args.Length > 2 ? args[2] : null, args.Length > 3 ? args[3] : null, new ConsoleLogger(), diag, out error);
+            return ThePackager.PackagePlugIn(args[0], args[1], args.Length > 2 ? args[2] : null, args.Length > 3 ? args[3] : null, new ConsoleLogger(), diag, bCheckForFileOverwrite, out error);
         }
 
     }

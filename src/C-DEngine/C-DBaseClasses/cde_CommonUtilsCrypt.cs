@@ -153,6 +153,12 @@ namespace nsCDEngine.BaseClasses
         /********************************************************************************************
          * Encryption Algorytms.
          * ******************************************************************************************/
+        /// <summary>
+        /// Encrypts a buffer into a base64 string using a provided and internal key
+        /// </summary>
+        /// <param name="OrgBuffer">buffer to encrypt.</param>
+        /// <param name="AI">provided key</param>
+        /// <returns>base64 encoded, encrypted string</returns>
         public static string cdeEncrypt(byte [] OrgBuffer, byte[] AI)
         {
             string SIDPost = Convert.ToBase64String(TheBaseAssets.MyCrypto.Encrypt(OrgBuffer, TheBaseAssets.MySecrets.GetAK(), AI));
@@ -161,6 +167,12 @@ namespace nsCDEngine.BaseClasses
             return SIDPost;
         }
 
+        /// <summary>
+        /// Encrypts a string into a base64 string using an internal key
+        /// </summary>
+        /// <param name="OrgBuffer">string to encrypt.</param>
+        /// <param name="AI">provided key</param>
+        /// <returns>base64 encoded, encrypted string</returns>
         public static string cdeEncrypt(string OrgBuffer, byte[] AI)
         {
             if (string.IsNullOrEmpty(OrgBuffer)) return null;

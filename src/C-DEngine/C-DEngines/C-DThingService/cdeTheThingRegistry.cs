@@ -357,6 +357,13 @@ namespace nsCDEngine.Engines.ThingService
                             tThing.DeclareConfigProperty(configProperty);
                         }
                     }
+                    if (deviceTypeInfo?.SensorProperties?.Count > 0)
+                    {
+                        foreach (var sensorProperty in deviceTypeInfo.SensorProperties)
+                        {
+                            tThing.DeclareSensorProperty(sensorProperty);
+                        }
+                    }
                     if (deviceTypeInfo?.Capabilities?.Length > 0)
                     {
                         foreach (var cap in deviceTypeInfo.Capabilities)
