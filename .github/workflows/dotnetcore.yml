@@ -15,6 +15,9 @@ jobs:
 
     runs-on: windows-latest
 
+    env: 
+        cdePackagerCheckOverwrite : true
+
     steps:
     - uses: actions/checkout@v2
 
@@ -40,7 +43,7 @@ jobs:
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v0.9.6
       with:
-          versionSpec: '5.3.2'
+          versionSpec: '5.6.6'
 
     - name: Use GitVersion
       id: gitversion # step id used as reference for output values
@@ -97,13 +100,13 @@ jobs:
 
     # Workaround for gitversiontask lock exception: build a single targetframework first
     - name: Build cdeUpdater Net45
-      run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --framework net45 --configuration Release --no-restore --disable-parallel
+      run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --framework net45 --configuration Release --no-restore --disable-parallel /nowarn:nu5105
 
     - name: Build cdeUpdater
-      run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --configuration Release --no-restore --disable-parallel
+      run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --configuration Release --no-restore --disable-parallel /nowarn:nu5105
 
     - name: Build
-      run: dotnet build './src/C-DEngine.sln' --configuration Release --no-restore --disable-parallel /nowarn:CS1591
+      run: dotnet build './src/C-DEngine.sln' --configuration Release --no-restore --disable-parallel /nowarn:CS1591 /nowarn:nu5105
 
     - name: Create C-DEngine.CDEX
       run: .\src\C-DEngine\packagecde.cmd Release

@@ -499,11 +499,7 @@ namespace nsCDEngine.Engines.ThingService
                 _unsubscribeHandler = unsubscribeHandler;
             }
 
-            public
-#if !CDE_NET4
-                async
-#endif
-                void HandleMessage(TSM message)
+            public void HandleMessage(TSM message)
             {
                 var cmd = TheCommonUtils.cdeSplit(message.TXT, ":", false, false);
 

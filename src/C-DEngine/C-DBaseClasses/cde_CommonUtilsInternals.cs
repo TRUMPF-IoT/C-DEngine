@@ -814,8 +814,8 @@ namespace nsCDEngine.BaseClasses
             /// </summary>
             /// <param name="pEventName">Name of the Event to Fire</param>
             /// <param name="sender">this pointer or any other ICDETHing that will be handed to the callback. If set to null, "this" will be used </param>
-            /// <param name="pPara">Parameter to be handed with the Event</param>
             /// <param name="FireAsync">If set to true, the callback is running on a new Thread</param>
+            /// <param name="pFireEventTimeout">Timeout after which the event call is abandoned. -1 for infinite</param>
             public void FireEvent(string pEventName, T1 sender, bool FireAsync, int pFireEventTimeout = -1)
             {
                 base.FireEvent(pEventName, (action) => TheCommonUtils.DoFireEvent(action, sender, FireAsync, pFireEventTimeout));
@@ -833,6 +833,7 @@ namespace nsCDEngine.BaseClasses
             /// <param name="sender">this pointer or any other ICDETHing that will be handed to the callback. If set to null, "this" will be used </param>
             /// <param name="pPara">Parameter to be handed with the Event</param>
             /// <param name="FireAsync">If set to true, the callback is running on a new Thread</param>
+            /// <param name="pFireEventTimeout">Timeout after which the event call is abandoned. -1 for infinite</param>
             public void FireEvent(string pEventName, T1 sender, T2 pPara, bool FireAsync, int pFireEventTimeout = -1)
             {
                 base.FireEvent(pEventName, (action) => TheCommonUtils.DoFireEvent(action, sender, pPara, FireAsync, pFireEventTimeout));

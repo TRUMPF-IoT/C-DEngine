@@ -7,6 +7,12 @@ using nsCDEngine.ViewModels;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System;
+#if CDE_INTNEWTON
+using cdeNewtonsoft.Json;
+#else
+using Newtonsoft.Json;
+#endif
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
@@ -20,14 +26,18 @@ namespace nsCDEngine.Engines.ThingService
         public bool IsSensor { get { return this.GetProperty(strSensor) != null; } }
 
         public class TheSensorMeta
-        {
+        { 
             public string SourceType { get; set; }
             public string Units { get; set; }
             public string SourceUnits { get; set; }
             public double? RangeMin { get; set; }
             public double? RangeMax { get; set; }
+            public string Description { get; set; }
+            public string FriendlyName { get; set; }
+            public string SemanticTypes { get; set; }
 
-            // TODO Add custom info support
+            [JsonExtensionData(ReadData = true, WriteData = true)]
+            public Dictionary<string, object> ExtensionData { get; set; }
 
             public TheSensorMeta() { }
             public TheSensorMeta(TheSensorMeta sensorMeta)
@@ -37,7 +47,38 @@ namespace nsCDEngine.Engines.ThingService
                 SourceUnits = sensorMeta.SourceUnits;
                 RangeMin = sensorMeta.RangeMin;
                 RangeMax = sensorMeta.RangeMax;
+                Description = sensorMeta.Description;
+                FriendlyName = sensorMeta.FriendlyName;
+                SemanticTypes = sensorMeta.SemanticTypes;
+                if (sensorMeta.ExtensionData != null)
+                {
+                    ExtensionData = new Dictionary<string, object>(sensorMeta.ExtensionData);
+                }
             }
+            static HashSet<string> _knownProperties;
+            [IgnoreDataMember]
+            static internal HashSet<string> KnownProperties
+            {
+                get
+                {
+                    if (_knownProperties == null)
+                    {
+                        _knownProperties = new HashSet<string>
+                        {
+                            nameof(TheSensorMeta.RangeMin),
+                            nameof(TheSensorMeta.RangeMax),
+                            nameof(TheSensorMeta.SourceType),
+                            nameof(TheSensorMeta.SourceUnits),
+                            nameof(TheSensorMeta.Units),
+                            nameof(TheSensorMeta.Description),
+                            nameof(TheSensorMeta.SemanticTypes),
+                            nameof(TheSensorMeta.FriendlyName),
+                        };
+                    }
+                    return _knownProperties;
+                }
+            }
+
         }
 
         public TheSensorMeta GetSensorMeta()
@@ -52,6 +93,10 @@ namespace nsCDEngine.Engines.ThingService
                 SourceUnits = TheCommonUtils.CStrNullable(sensorMetaProp?.GetProperty(nameof(TheSensorMeta.SourceUnits))),
                 RangeMin = rangeMinProp != null ? (double?)TheCommonUtils.CDbl(rangeMinProp) : null,
                 RangeMax = rangeMaxProp != null ? (double?)TheCommonUtils.CDbl(rangeMaxProp) : null,
+                Description = TheCommonUtils.CStrNullable(sensorMetaProp?.GetProperty(nameof(TheSensorMeta.Description))),
+                FriendlyName = TheCommonUtils.CStrNullable(sensorMetaProp?.GetProperty(nameof(TheSensorMeta.FriendlyName))),
+                SemanticTypes = TheCommonUtils.CStrNullable(sensorMetaProp?.GetProperty(nameof(TheSensorMeta.SemanticTypes))),
+                ExtensionData = ReadDictionaryFromProperties(sensorMetaProp, TheSensorMeta.KnownProperties),
             };
             return sensorMeta;
         }
@@ -99,6 +144,35 @@ namespace nsCDEngine.Engines.ThingService
             {
                 sensorMetaProp.RemoveProperty(nameof(TheSensorMeta.RangeMax));
             }
+            if (!string.IsNullOrEmpty(value.Description))
+            {
+                sensorMetaProp.SetProperty(nameof(TheSensorMeta.Description), value.Description, ePropertyTypes.TString);
+            }
+            else
+            {
+                sensorMetaProp.RemoveProperty(nameof(TheSensorMeta.Description));
+            }
+            if (!string.IsNullOrEmpty(value.FriendlyName))
+            {
+                sensorMetaProp.SetProperty(nameof(TheSensorMeta.FriendlyName), value.FriendlyName, ePropertyTypes.TString);
+            }
+            else
+            {
+                sensorMetaProp.RemoveProperty(nameof(TheSensorMeta.FriendlyName));
+            }
+            if (!string.IsNullOrEmpty(value.SemanticTypes))
+            {
+                sensorMetaProp.SetProperty(nameof(TheSensorMeta.SemanticTypes), value.SemanticTypes, ePropertyTypes.TString);
+            }
+            else
+            {
+                sensorMetaProp.RemoveProperty(nameof(TheSensorMeta.SemanticTypes));
+            }
+            if (value.ExtensionData != null)
+            {
+                sensorMetaProp.SetProperties(value.ExtensionData, DateTimeOffset.MinValue);
+            }
+
             var ownerThing = this.OwnerThing.GetBaseThing();
             if (ownerThing != null)
             {
@@ -132,12 +206,52 @@ namespace nsCDEngine.Engines.ThingService
         {
             public TheSensorPropertyMeta() : base() { }
             public TheSensorPropertyMeta(cdeP.TheSensorMeta sensorMeta) : base(sensorMeta) { }
+
+            public TheSensorPropertyMeta(string name, Type type, SensorPropertyAttribute sensorAttribute)
+            {
+                if (string.IsNullOrEmpty(sensorAttribute.NameOverride))
+                {
+                    Name = name;
+                }
+                else
+                {
+                    Name = sensorAttribute.NameOverride;
+                }
+                if (sensorAttribute.cdeT != ePropertyTypes.NOCHANGE)
+                {
+                    cdeT = sensorAttribute.cdeT;
+                }
+                else if (type != null)
+                {
+                    var mappedType = cdeP.GetCDEType(type);
+                    if (mappedType != ePropertyTypes.NOCHANGE)
+                    {
+                        cdeT = mappedType;
+                    }
+                }
+
+                SourceType = sensorAttribute.SourceType;
+                Units = sensorAttribute.Units;
+                SourceUnits = sensorAttribute.SourceUnits;
+                if (sensorAttribute.RangeMin != 0)
+                {
+                    RangeMin = sensorAttribute.RangeMin;
+                }
+                if (sensorAttribute.RangeMax != 0)
+                {
+                    RangeMax = sensorAttribute.RangeMax;
+                }
+                Description = sensorAttribute.Description;
+                FriendlyName = sensorAttribute.FriendlyName;
+                SemanticTypes = sensorAttribute.SemanticTypes;
+            }
+
             public string Name;
             public ePropertyTypes cdeT;
             public int cdeA;
         }
         /// <summary>
-        /// Described instance-dependent meta-data about a property, including potential provider info
+        /// Describes instance-dependent meta-data about a property, including potential provider info
         /// </summary>
         public class TheSensorInstancePropertyMeta : TheSensorPropertyMeta
         {
@@ -173,6 +287,10 @@ namespace nsCDEngine.Engines.ThingService
             tProp.cdeE |= 0x04; // cdeCTIM should be updated with changetime
             tProp.SetSensorMeta(sensorMeta);
             return tProp;
+        }
+        internal void DeclareSensorProperty(TheSensorPropertyMeta sensorProperty)
+        {
+            DeclareSensorProperty(sensorProperty.Name, sensorProperty.cdeT, sensorProperty);
         }
 
         #endregion

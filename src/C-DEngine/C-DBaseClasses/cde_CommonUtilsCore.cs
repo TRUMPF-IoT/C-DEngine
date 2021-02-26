@@ -1393,6 +1393,16 @@ namespace nsCDEngine.BaseClasses
             DoFireEvent<T, object>(action, para, Para2, FireAsync, pFireEventTimeout);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T1">Type of the first callback parameter.</typeparam>
+        /// <typeparam name="T2">Type of the second callback parameter.</typeparam>
+        /// <param name="action">Callback to be fired by the Event. Both parameters are generic</param>
+        /// <param name="para">First parameter given to the callback.</param>
+        /// <param name="Para2">Second parameter given to the callback.</param>
+        /// <param name="FireAsync">if true, the event is fired asynch</param>
+        /// <param name="pFireEventTimeout">if larger </param>
         public static void DoFireEvent<T1, T2>(Action<T1, T2> action, T1 para, T2 Para2, bool FireAsync, int pFireEventTimeout = 0)
         {
             if (action == null) return;
