@@ -1441,54 +1441,10 @@ namespace nsCDEngine.Engines
                             continue;
                         }
                         var dt = new TheDeviceTypeInfo(dta);
-                        foreach (var prop in thingType.GetProperties())
-                        {
-                            ConfigPropertyAttribute configAttribute = null;
-                            try
-                            {
-                                configAttribute = prop.GetCustomAttributes(typeof(ConfigPropertyAttribute), true).FirstOrDefault() as ConfigPropertyAttribute;
-                            }
-                            catch { }
-                            if (configAttribute != null)
-                            {
-                                if (dt.ConfigProperties == null)
-                                {
-                                    dt.ConfigProperties = new List<TheThing.TheConfigurationProperty>();
-                                }
-                                dt.ConfigProperties.Add(new TheThing.TheConfigurationProperty(prop.Name, prop.PropertyType, configAttribute));
-                            }
-                        }
-                        try
-                        {
-                            foreach (var configAttribute in thingType.GetCustomAttributes(typeof(ConfigPropertyAttribute), true).Select(a => a as ConfigPropertyAttribute))
-                            {
-                                if (configAttribute != null)
-                                {
-                                    if (!string.IsNullOrEmpty(configAttribute.NameOverride))
-                                    {
-                                        if (configAttribute.cdeT != ePropertyTypes.NOCHANGE)
-                                        {
-                                            if (dt.ConfigProperties == null)
-                                            {
-                                                dt.ConfigProperties = new List<TheThing.TheConfigurationProperty>();
-                                            }
-                                            dt.ConfigProperties.Add(new TheThing.TheConfigurationProperty(configAttribute.NameOverride, null, configAttribute));
-                                        }
-                                        else
-                                        {
-                                            TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has ConfigProperty attribute without cdeT", eMsgLevel.l1_Error, $"{thingType.FullName}: {configAttribute.NameOverride}"));
-                                        }
-                                    }
-                                    else
-                                    {
-                                        TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has ConfigProperty attribute without NameOverride", eMsgLevel.l1_Error, thingType.FullName));
-                                    }
-                                }
-                            }
-
-                            deviceTypeInfos[dt.DeviceType] = dt;
-                        }
-                        catch { }
+                        var thingTypeProps = thingType.GetProperties();
+                        ApplyConfigPropertyAttributes(thingType, dt, thingTypeProps);
+                        ApplySensorPropertyAttributes(thingType, dt, thingTypeProps);
+                        deviceTypeInfos[dt.DeviceType] = dt;
                     }
                 }
             }
@@ -1500,6 +1456,179 @@ namespace nsCDEngine.Engines
             }
             return false;
         }
+
+        private static void ApplyConfigPropertyAttributes(Type thingType, TheDeviceTypeInfo dt, PropertyInfo[] thingTypeProps)
+        {
+            foreach (var prop in thingTypeProps)
+            {
+                ConfigPropertyAttribute configAttribute = null;
+                try
+                {
+                    configAttribute = prop.GetCustomAttributes(typeof(ConfigPropertyAttribute), true).FirstOrDefault() as ConfigPropertyAttribute;
+                }
+                catch { }
+                if (configAttribute != null)
+                {
+                    if (dt.ConfigProperties == null)
+                    {
+                        dt.ConfigProperties = new List<TheThing.TheConfigurationProperty>();
+                    }
+                    dt.ConfigProperties.Add(new TheThing.TheConfigurationProperty(prop.Name, prop.PropertyType, configAttribute));
+                }
+            }
+            try
+            {
+                foreach (var configAttribute in thingType.GetCustomAttributes(typeof(ConfigPropertyAttribute), true).Select(a => a as ConfigPropertyAttribute))
+                {
+                    if (configAttribute != null)
+                    {
+                        if (!string.IsNullOrEmpty(configAttribute.NameOverride))
+                        {
+                            if (configAttribute.cdeT != ePropertyTypes.NOCHANGE)
+                            {
+                                if (dt.ConfigProperties == null)
+                                {
+                                    dt.ConfigProperties = new List<TheThing.TheConfigurationProperty>();
+                                }
+                                dt.ConfigProperties.Add(new TheThing.TheConfigurationProperty(configAttribute.NameOverride, null, configAttribute));
+                            }
+                            else
+                            {
+                                TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has ConfigProperty attribute without cdeT", eMsgLevel.l1_Error, $"{thingType.FullName}: {configAttribute.NameOverride}"));
+                            }
+                        }
+                        else
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has ConfigProperty attribute without NameOverride", eMsgLevel.l1_Error, thingType.FullName));
+                        }
+                    }
+                }
+            }
+            catch { }
+            foreach (var prop in thingTypeProps)
+            {
+                SensorPropertyAttribute sensorAttribute = null;
+                try
+                {
+                    sensorAttribute = prop.GetCustomAttributes(typeof(SensorPropertyAttribute), true).FirstOrDefault() as SensorPropertyAttribute;
+                }
+                catch { }
+                if (sensorAttribute != null)
+                {
+                    if (dt.SensorProperties == null)
+                    {
+                        dt.SensorProperties = new List<TheThing.TheSensorPropertyMeta>();
+                    }
+                    dt.SensorProperties.Add(new TheThing.TheSensorPropertyMeta(prop.Name, prop.PropertyType, sensorAttribute));
+                }
+            }
+        }
+
+        private static void ApplySensorPropertyAttributes(Type thingType, TheDeviceTypeInfo dt, PropertyInfo[] thingTypeProps)
+        {
+            foreach (var prop in thingTypeProps)
+            {
+                SensorPropertyAttribute sensorAttribute = null;
+                try
+                {
+                    sensorAttribute = prop.GetCustomAttributes(typeof(SensorPropertyAttribute), true).FirstOrDefault() as SensorPropertyAttribute;
+                }
+                catch { }
+                if (sensorAttribute != null)
+                {
+                    if (dt.SensorProperties == null)
+                    {
+                        dt.SensorProperties = new List<TheThing.TheSensorPropertyMeta>();
+                    }
+                    dt.SensorProperties.Add(new TheThing.TheSensorPropertyMeta(prop.Name, prop.PropertyType, sensorAttribute));
+                }
+            }
+            try
+            {
+                foreach (var sensorAttribute in thingType.GetCustomAttributes(typeof(SensorPropertyAttribute), true).Select(a => a as SensorPropertyAttribute))
+                {
+                    if (sensorAttribute != null)
+                    {
+                        if (!string.IsNullOrEmpty(sensorAttribute.NameOverride))
+                        {
+                            if (sensorAttribute.cdeT != ePropertyTypes.NOCHANGE)
+                            {
+                                if (dt.SensorProperties == null)
+                                {
+                                    dt.SensorProperties = new List<TheThing.TheSensorPropertyMeta>();
+                                }
+                                dt.SensorProperties.Add(new TheThing.TheSensorPropertyMeta(sensorAttribute.NameOverride, null, sensorAttribute));
+                            }
+                            else
+                            {
+                                TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorProperty attribute without cdeT", eMsgLevel.l1_Error, $"{thingType.FullName}: {sensorAttribute.NameOverride}"));
+                            }
+                        }
+                        else
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorProperty attribute without NameOverride", eMsgLevel.l1_Error, thingType.FullName));
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void ApplySensorPropertyExtensionAttributes(Type thingType, TheDeviceTypeInfo dt, PropertyInfo[] thingTypeProps)
+        {
+            foreach (var prop in thingTypeProps)
+            {
+                SensorPropertyExtensionAttribute sensorExtensionAttribute = null;
+                try
+                {
+                    sensorExtensionAttribute = prop.GetCustomAttributes(typeof(SensorPropertyExtensionAttribute), true).FirstOrDefault() as SensorPropertyExtensionAttribute;
+                }
+                catch { }
+                if (sensorExtensionAttribute != null)
+                {
+                    var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == prop.Name);
+                    if (sensorProp != null)
+                    {
+                        if (sensorProp.ExtensionData == null)
+                        {
+                            sensorProp.ExtensionData = new Dictionary<string, object>();
+                        }
+                        sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
+                    }
+                }
+            }
+            try
+            {
+                foreach (var sensorExtensionAttribute in thingType.GetCustomAttributes(typeof(SensorPropertyExtensionAttribute), true).Select(a => a as SensorPropertyExtensionAttribute))
+                {
+                    if (sensorExtensionAttribute != null)
+                    {
+                        if (!string.IsNullOrEmpty(sensorExtensionAttribute.NameOverride))
+                        {
+                            var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == sensorExtensionAttribute.NameOverride);
+                            if (sensorProp != null)
+                            {
+                                if (sensorProp.ExtensionData == null)
+                                {
+                                    sensorProp.ExtensionData = new Dictionary<string, object>();
+                                }
+                                sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
+                            }
+                            else
+                            {
+                                TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorPropertyExtension attribute without a SensorProperty attribute", eMsgLevel.l1_Error, $"{thingType.FullName}: {sensorExtensionAttribute.NameOverride}"));
+                            }
+                        }
+                        else
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorPropertyExtension attribute without NameOverride", eMsgLevel.l1_Error, thingType.FullName));
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
@@ -1520,9 +1649,32 @@ namespace nsCDEngine.Engines
         public bool IsThingReference { get; set; }
         public bool Required;
         public string Description;
+        public string FriendlyName;
+        public string SemanticTypes;
         public string Units;
         public double RangeMin;
         public double RangeMax;
+        public string NameOverride;
+    }
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true)]
+    public class SensorPropertyAttribute : Attribute
+    {
+        public ePropertyTypes cdeT = ePropertyTypes.NOCHANGE;
+        public string SourceType;
+        public string Units;
+        public string SourceUnits;
+        public double? RangeMin;
+        public double? RangeMax;
+        public string Description;
+        public string FriendlyName;
+        public string SemanticTypes;
+        public string NameOverride;
+    }
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true)]
+    public class SensorPropertyExtensionAttribute : Attribute
+    {
+        public string Name;
+        public string Value;
         public string NameOverride;
     }
 }

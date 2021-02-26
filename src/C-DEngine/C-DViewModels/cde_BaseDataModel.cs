@@ -1369,6 +1369,11 @@ namespace nsCDEngine.ViewModels
         public List<TheThing.TheConfigurationProperty> ConfigProperties;
 
         /// <summary>
+        /// List of sensor properties used by this Device Type
+        /// </summary>
+        public List<TheThing.TheSensorPropertyMeta> SensorProperties;
+
+        /// <summary>
         /// Default constructor
         /// </summary>
         public TheDeviceTypeInfo() { }
@@ -1396,6 +1401,10 @@ namespace nsCDEngine.ViewModels
             if (deviceType.ConfigProperties != null)
             {
                 this.ConfigProperties = deviceType.ConfigProperties.Select(cp => new TheThing.TheConfigurationProperty(cp)).ToList();
+            }
+            if (deviceType.SensorProperties != null)
+            {
+                this.SensorProperties = deviceType.SensorProperties.Select(sp => new TheThing.TheSensorPropertyMeta(sp)).ToList();
             }
         }
 
