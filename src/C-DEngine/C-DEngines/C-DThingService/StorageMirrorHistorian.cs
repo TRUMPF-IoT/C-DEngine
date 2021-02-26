@@ -438,7 +438,7 @@ namespace nsCDEngine
                 }
 
                 ClearAllHistory();
-                _thingStream.RemoveStore(false);
+                _thingStream?.RemoveStore(false);
                 success = true;
             }
             catch { }
