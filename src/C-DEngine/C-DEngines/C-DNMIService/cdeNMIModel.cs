@@ -781,6 +781,11 @@ namespace nsCDEngine.Engines.NMIService
         public bool IsTemp { get; set; }
         public string ID { get; set; }
 
+        public TheDrawingObject()
+        {
+
+        }
+
         public TheDrawingObject(string id, string fillcolor, float x, float y, float xl, float yl)
         {
             Fill = fillcolor;

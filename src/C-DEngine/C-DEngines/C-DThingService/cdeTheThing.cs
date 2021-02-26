@@ -258,22 +258,47 @@ namespace nsCDEngine.Engines.ThingService
         {
         }
 
+
         /// <summary>
-        /// Sets the LastMessage UX Property and allows to automatically set LastUpdate and WriteToLog
+        /// Convenience Function to set LastMessage UX Property and allows to automatically set LastUpdate and WriteToLog
         /// </summary>
         /// <param name="pMessage">Message to show in LastMessage of the DeviceStatus</param>
         /// <param name="SetLastUpdate">Shows the current TimeStamp</param>
         /// <param name="LogID">If this message is also going to the systemlog, add a log ID here</param>
         /// <param name="pMsgLevel">If a log ID is set, a Message Level can be set, too</param>
-        public virtual void SetMessage(string pMessage, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel= eMsgLevel.l4_Message)
+        public virtual void SetMessage(string pMessage, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        {
+            SetMessage(pMessage, SetLastUpdate, LogID, pMsgLevel);
+        }
+
+        /// <summary>
+        /// Convenience Function to set LastMessage UX Property and allows to automatically set LastUpdate and WriteToLog
+        /// </summary>
+        /// <param name="pMessage">Message to show in LastMessage of the DeviceStatus</param>
+        /// <param name="pStatusLevel">Sets the status Level of MyBaseThing if set to >=0</param>
+        /// <param name="SetLastUpdate">Shows the current TimeStamp</param>
+        /// <param name="LogID">If this message is also going to the systemlog, add a log ID here</param>
+        /// <param name="pMsgLevel">If a log ID is set, a Message Level can be set, too</param>
+        public virtual void SetMessage(string pMessage, int pStatusLevel=-1, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
         {
             if (string.IsNullOrEmpty(pMessage) || MyBaseThing == null)
                 return;
-            MyBaseThing.LastMessage = pMessage;
             if (SetLastUpdate != null)
+            {
                 MyBaseThing.LastUpdate = TheCommonUtils.CDate(SetLastUpdate);
+                pMessage = $"{TheCommonUtils.GetDateTimeString(MyBaseThing.LastUpdate,-1)} - {pMessage}";
+            }
+            if (pStatusLevel >= 0)
+                MyBaseThing.SetStatus(pStatusLevel, pMessage);
+            else
+                MyBaseThing.LastMessage = pMessage;
             if (LogID > 0)
-                TheBaseAssets.MySYSLOG?.WriteToLog(LogID, new TSM(MyBaseThing.EngineName, pMessage, pMsgLevel));
+            {
+                TSM toLog = new TSM(MyBaseThing.EngineName, pMessage, pMsgLevel);
+                if (SetLastUpdate != null)
+                    toLog.TIM = TheCommonUtils.CDate(SetLastUpdate);
+                TheBaseAssets.MySYSLOG?.WriteToLog(LogID, toLog);
+            }
         }
         #endregion
     }
@@ -1928,7 +1953,7 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
-        /// Convience method to set StatusLevel and LastMessage in one call. LastMessage will be prefixed with the current date/time. The message will also be logged in the C-DEngine EventLog.
+        /// Convenience method to set StatusLevel and LastMessage in one call. LastMessage will be prefixed with the current date/time. The message will also be logged in the C-DEngine EventLog.
         /// </summary>
         /// <param name="statusLevel"></param>
         /// <param name="lastMessage"></param>
@@ -1938,7 +1963,7 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
-        /// Convience method to set StatusLevel and LastMessage in one call. LastMessage will be prefixed with the current date/time, using the session (user's) locale settings. The message will also be logged in the C-DEngine EventLog.
+        /// Convenience method to set StatusLevel and LastMessage in one call. LastMessage will be prefixed with the current date/time, using the session (user's) locale settings. The message will also be logged in the C-DEngine EventLog.
         /// </summary>
         /// <param name="statusLevel"></param>
         /// <param name="lastMessage"></param>
