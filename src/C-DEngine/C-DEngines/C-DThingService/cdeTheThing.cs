@@ -268,7 +268,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pMsgLevel">If a log ID is set, a Message Level can be set, too</param>
         public virtual void SetMessage(string pMessage, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
         {
-            SetMessage(pMessage, SetLastUpdate, LogID, pMsgLevel);
+            SetMessage(pMessage, -1, SetLastUpdate, LogID, pMsgLevel);
         }
 
         /// <summary>
