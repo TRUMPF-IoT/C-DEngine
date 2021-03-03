@@ -1,21 +1,20 @@
-# SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+# SPDX-FileCopyrightText: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
 # SPDX-License-Identifier: MPL-2.0
 
 mode: ContinuousDelivery
 assembly-informational-format: '{SemVer}+{env:cdeBuildDate ?? private}.{FullBuildMetaData}'
-branches: {}
 ignore:
   sha: []
 merge-message-formats: {}
 
 branches:
-  master:
+  main:
     mode: ContinuousDelivery
     tag: beta
     increment: Patch
     prevent-increment-of-merged-branch-version: true
     track-merge-target: false
-    regex: ^master$
+    regex: ^master$|^main$
     source-branches:
     - develop
     - release
@@ -25,7 +24,7 @@ branches:
     pre-release-weight: 55000
   pull-request:
     mode: ContinuousDelivery
-    tag: beta.PullRequest
+    tag: PullRequest
     increment: Inherit
     prevent-increment-of-merged-branch-version: false
     tag-number-pattern: '[/-](?<number>\d+)'
@@ -33,7 +32,7 @@ branches:
     regex: ^(pull|pull\-requests|pr)[/-]
     source-branches:
     - develop
-    - master
+    - main
     - release
     - feature
     - support
@@ -44,14 +43,14 @@ branches:
     pre-release-weight: 30000
   feature:
     mode: ContinuousDelivery
-    tag: alpha
+    tag: beta
     increment: Patch
     prevent-increment-of-merged-branch-version: true
     track-merge-target: false
     regex: ^.*$ # ^features?[/-]
     source-branches:
     - develop
-    - master
+    - main
     - release
     - feature
     - support
