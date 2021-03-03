@@ -172,6 +172,10 @@ namespace nsCDEngine.Engines.ThingService
             HistoryStoreParameters = r.HistoryStoreParameters;
         }
 
+        public TheHistoryParameters(ThePropertyFilter r) : base(r)
+        {
+        }
+
         internal void MergeRegistration(TheHistoryParameters r)
         {
             if (r.ReportUnchangedProperties)

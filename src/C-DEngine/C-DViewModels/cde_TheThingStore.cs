@@ -44,7 +44,7 @@ namespace nsCDEngine.ViewModels
         [Obsolete("Use the overload with ThePropertyFilter instead.")]
         public TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, IEnumerable<string> propertiesToInclude, List<string> propertiesToExclude, bool forExternalConsumption)
         {
-            return CloneForThingSnapshot(null, baseItem, ResetBase, new ThePropertyFilter { Properties = propertiesToInclude?.ToList(), PropertiesToExclude = propertiesToExclude?.ToList() } , forExternalConsumption, out _);
+            return CloneForThingSnapshot(null, baseItem, ResetBase, new TheHistoryParameters(new ThePropertyFilter { Properties = propertiesToInclude?.ToList(), PropertiesToExclude = propertiesToExclude?.ToList() }), forExternalConsumption, out _);
         }
         /// <summary>
         /// Creates a copy of a TheThingStore with a selectable subset of properties.
@@ -56,7 +56,7 @@ namespace nsCDEngine.ViewModels
         /// <returns>The copy of the baseItem TheThingStore</returns>
         public TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, ThePropertyFilter propFilter, bool forExternalConsumption)
         {
-            return CloneForThingSnapshot(null, baseItem, ResetBase, propFilter, forExternalConsumption, out _);
+            return CloneForThingSnapshot(null, baseItem, ResetBase, new TheHistoryParameters(propFilter), forExternalConsumption, out _);
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace nsCDEngine.ViewModels
         /// <param name="forExternalConsumption">Set a flag that is used by the Historian mechanism internally.</param>
         /// <param name="bUpdated">Returns true if an of the baseItem properties overwrote properties in the TheThingStore.</param>
         /// <returns>The copy of the baseItem TheThingStore</returns>
-        internal TheThingStore CloneForThingSnapshot(TheThing thingWithMeta, TheThingStore baseItem, bool ResetBase, ThePropertyFilter propFilter, bool forExternalConsumption, out bool bUpdated)
+        internal TheThingStore CloneForThingSnapshot(TheThing thingWithMeta, TheThingStore baseItem, bool ResetBase, TheHistoryParameters propFilter, bool forExternalConsumption, out bool bUpdated)
         {
             TheThingStore tThing = new TheThingStore();
             if (ResetBase)
@@ -99,7 +99,30 @@ namespace nsCDEngine.ViewModels
             tThing.cdeO = cdeO;
             tThing.cdeSEQ = cdeSEQ;
 
-            IEnumerable<string> propertiesToInclude = thingWithMeta?.GetMatchingProperties(propFilter);
+            IEnumerable<string> propertiesToInclude = null;
+            if (propFilter?.Properties != null || propFilter.FilterToSensorProperties == true || propFilter.FilterToConfigProperties == true)
+            {
+                propertiesToInclude = thingWithMeta?.GetMatchingProperties(propFilter);
+                if (propertiesToInclude != null)
+                {
+                    if (propFilter.ComputeMax)
+                    {
+                        propertiesToInclude = propertiesToInclude.Concat(propertiesToInclude.Select(propName => $"[{propName}].Max"));
+                    }
+                    if (propFilter.ComputeAvg)
+                    {
+                        propertiesToInclude = propertiesToInclude.Concat(propertiesToInclude.Select(propName => $"[{propName}].Avg"));
+                    }
+                    if (propFilter.ComputeMin)
+                    {
+                        propertiesToInclude = propertiesToInclude.Concat(propertiesToInclude.Select(propName => $"[{propName}].Min"));
+                    }
+                    if (propFilter.ComputeN)
+                    {
+                        propertiesToInclude = propertiesToInclude.Concat(propertiesToInclude.Select(propName => $"[{propName}].N"));
+                    }
+                }
+            }
             if (propertiesToInclude == null)
             {
                 propertiesToInclude = baseItem != null ? baseItem.PB.Keys.Union(PB.Keys) : PB.Keys;

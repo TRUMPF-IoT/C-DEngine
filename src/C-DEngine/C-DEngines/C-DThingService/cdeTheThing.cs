@@ -1190,8 +1190,8 @@ namespace nsCDEngine.Engines.ThingService
             if (propertyFilter?.Properties == null)
             {
                 propertiesToInclude = this.GetAllProperties(10)
-                    .Where(p => 
-                           (propertyFilter.FilterToSensorProperties == true && p.IsSensor)
+                    .Where(p => (propertyFilter.FilterToConfigProperties != true && propertyFilter.FilterToSensorProperties != true)
+                        || (propertyFilter.FilterToSensorProperties == true && p.IsSensor)
                         || (propertyFilter.FilterToConfigProperties == true && p.IsConfig))
                     .Select(p => cdeP.GetPropertyPath(p)).Where(propertyNamePath => !cdeP.IsMetaProperty(propertyNamePath)
                 );
