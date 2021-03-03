@@ -563,6 +563,17 @@ namespace nsCDEngine.Engines.ThingService
             return GetParentPath(pProp, "");
         }
 
+        internal static bool IsMetaProperty(cdeP pProp)
+        {
+            return IsMetaProperty(cdeP.GetPropertyPath(pProp));
+        }
+
+
+        internal static bool IsMetaProperty(string propertyNamePath)
+        {
+            return propertyNamePath.Contains(".[cdeSensor]") || propertyNamePath.Contains(".[cdeSource]") || propertyNamePath.Contains(".[cdeConfig]");
+        }
+
         static private string GetParentPath(cdeP pProp, string pRes)
         {
             var tRes = $"[{pProp.mName}]";  //TODOV4: Validate with OPC Client/Server and Markus

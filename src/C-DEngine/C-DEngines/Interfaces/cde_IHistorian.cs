@@ -18,7 +18,36 @@ using nsCDEngine.Engines.StorageService;
 
 namespace nsCDEngine.Engines.ThingService
 {
-    public class TheHistoryParameters : TheDataBase
+    public class ThePropertyFilter : TheDataBase
+    {
+        /// <summary>
+        /// List of properties for which changes are to be recorded. If null, changes for all properties of the thing will be recorded. If empty, no changes will be recorded.
+        /// </summary>
+        public List<string> Properties { get; set; }
+        /// <summary>
+        /// If all properties are included (Properties == null), this flag indicates that only properties marked as IsSensor should be used.
+        /// </summary>
+        public bool? FilterToSensorProperties { get; set; }
+        /// <summary>
+        /// If all properties are included (Properties == null), this flag indicates that only properties marked as IsConfig should be used.
+        /// </summary>
+        public bool? FilterToConfigProperties { get; set; }
+        /// <summary>
+        /// List of properties for which changes are not to be recorded. Typically used in conjunction with Properties == null.
+        /// </summary>
+        public List<string> PropertiesToExclude { get; set; } // null indicates don't exclude any properties
+        public ThePropertyFilter() { }
+        public ThePropertyFilter(ThePropertyFilter r)
+        {
+            Properties = r.Properties != null && r.Properties.Count > 0 ? new List<string>(r.Properties) : null;
+            PropertiesToExclude = r.PropertiesToExclude != null && r.PropertiesToExclude.Count > 0 ? new List<string>(r.PropertiesToExclude) : null;
+            FilterToConfigProperties = r.FilterToConfigProperties;
+            FilterToSensorProperties = r.FilterToSensorProperties;
+        }
+
+    }
+
+    public class TheHistoryParameters : ThePropertyFilter
     {
         /// <summary>
         /// Timespan over which property changes are to be sampled or aggregated. At most one history entry per sampling window is generated.
@@ -40,14 +69,6 @@ namespace nsCDEngine.Engines.ThingService
         /// Keep history items across restarts of the C-DEngine host. All changes to the thing during shutdown and startup will be recorded.
         /// </summary>
         public bool Persistent { get; set; }
-        /// <summary>
-        /// List of properties for which changes are to be recorded. If null, changes for all properties of the thing will be recorded. If empty, no changes will be recorded.
-        /// </summary>
-        public List<string> Properties { get; set; }
-        /// <summary>
-        /// List of properties for which changes are not to be recorded. Typically used in conjunction with Properties == null.
-        /// </summary>
-        public List<string> PropertiesToExclude { get; set; } // null indicates don't exclude any properties
         /// <summary>
         /// If true, each history entry will contain all property values (as per the Properties/PropertiesToExclude parameters) as current at the end of the sample window, regardless if they were updated or not. If false, only changed properties will be included in history entries.
         /// </summary>
@@ -129,7 +150,7 @@ namespace nsCDEngine.Engines.ThingService
         internal bool ComputeAggregates { get { return ComputeAvg || ComputeMax || ComputeMin || ComputeN;  } }
 
         public TheHistoryParameters() { }
-        public TheHistoryParameters(TheHistoryParameters r)
+        public TheHistoryParameters(TheHistoryParameters r) : base(r)
         {
             ReportUnchangedProperties = r.ReportUnchangedProperties;
             ReportInitialValues = r.ReportInitialValues;
@@ -138,8 +159,6 @@ namespace nsCDEngine.Engines.ThingService
             MaxCount = r.MaxCount;
             MaxAge = r.MaxAge;
             Persistent = r.Persistent;
-            Properties = r.Properties != null && r.Properties.Count > 0 ? new List<string>(r.Properties) : null;
-            PropertiesToExclude = r.PropertiesToExclude != null && r.PropertiesToExclude.Count > 0 ? new List<string>(r.PropertiesToExclude) : null;
             MaintainHistoryStore = r.MaintainHistoryStore;
             ExternalHistoryStore = r.ExternalHistoryStore;
 
@@ -151,6 +170,10 @@ namespace nsCDEngine.Engines.ThingService
             OwnerThingMID = r.OwnerThingMID;
             OwnerName = r.OwnerName;
             HistoryStoreParameters = r.HistoryStoreParameters;
+        }
+
+        public TheHistoryParameters(ThePropertyFilter r) : base(r)
+        {
         }
 
         internal void MergeRegistration(TheHistoryParameters r)
@@ -210,6 +233,14 @@ namespace nsCDEngine.Engines.ThingService
                     // Remove any properties from the exclusion list that are not also excluded by the new registration (intersection)
                     PropertiesToExclude = new List<string>(PropertiesToExclude.Intersect(r.PropertiesToExclude));
                 }
+            }
+            if (r.FilterToSensorProperties != true)
+            {
+                FilterToSensorProperties = r.FilterToSensorProperties;
+            }
+            if (r.FilterToConfigProperties != true)
+            {
+                FilterToConfigProperties = r.FilterToConfigProperties;
             }
 
             if (r.ComputeN) ComputeN = true;
@@ -276,6 +307,8 @@ namespace nsCDEngine.Engines.ThingService
                 && param.Persistent == this.Persistent
                 && IsListEquivalent(param.Properties, this.Properties)
                 && IsListEquivalent(param.PropertiesToExclude, this.PropertiesToExclude)
+                && (param.FilterToSensorProperties ?? false) == (this.FilterToSensorProperties ?? false)
+                && (param.FilterToConfigProperties??false) == (this.FilterToConfigProperties??false)
                 && param.ReportUnchangedProperties == this.ReportUnchangedProperties
                 && param.ReportInitialValues == this.ReportInitialValues
                 && param.SamplingWindow == this.SamplingWindow
@@ -407,6 +440,16 @@ namespace nsCDEngine.Engines.ThingService
         public override string ToString()
         {
             return $"{Token} {ThingMid} {OwnerName} {OwnerThing?.FriendlyName ?? TheCommonUtils.cdeGuidToString(OwnerThingMID ?? Guid.Empty) ?? string.Empty}";
+        }
+
+        TheThing _thing;
+        internal TheThing GetThing()
+        {
+            if (_thing == null)
+            {
+                _thing = TheThingRegistry.GetThingByMID(ThingMid, true);
+            }
+            return _thing;
         }
     }
 
