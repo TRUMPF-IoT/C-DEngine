@@ -1176,12 +1176,29 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public IEnumerable<string> GetMatchingProperties(IEnumerable<string> propertiesToInclude, IEnumerable<string> propertiesToExclude)
         {
-            if (propertiesToInclude == null)
+            var filter = new ThePropertyFilter { Properties = propertiesToInclude.ToList(), PropertiesToExclude = propertiesToExclude.ToList() };
+            return GetMatchingProperties(filter);
+        }
+        /// <summary>
+        /// Returns the names of properties in this thing that match the property filter.
+        /// </summary>
+        /// <param name="propertyFilter">Indicate which properties of a thing should be returned.</param>
+        /// <returns></returns>
+        public IEnumerable<string> GetMatchingProperties(ThePropertyFilter propertyFilter)
+        { 
+            IEnumerable<string> propertiesToInclude;
+            if (propertyFilter?.Properties == null)
             {
-                propertiesToInclude = this.GetAllProperties(10).Select(p => cdeP.GetPropertyPath(p));
+                propertiesToInclude = this.GetAllProperties(10)
+                    .Where(p => 
+                           (propertyFilter.FilterToSensorProperties == true && p.IsSensor)
+                        || (propertyFilter.FilterToConfigProperties == true && p.IsConfig))
+                    .Select(p => cdeP.GetPropertyPath(p)).Where(propertyNamePath => !cdeP.IsMetaProperty(propertyNamePath)
+                );
             }
             else
             {
+                propertiesToInclude = propertyFilter.Properties;
                 IEnumerable<string> allProps = null;
                 List<string> propsToAdd = null;
                 foreach (var prop in propertiesToInclude)
@@ -1215,10 +1232,10 @@ namespace nsCDEngine.Engines.ThingService
                     propertiesToInclude = propertiesToInclude.Where(p=>!p.StartsWith("!")).Union(propsToAdd);
                 }
             }
-            if (propertiesToExclude != null && propertiesToExclude.Count() > 0)
+            if (propertyFilter?.PropertiesToExclude?.Any() == true)
             {
                 var tempList = new List<string>(propertiesToInclude);
-                foreach (var prop in propertiesToExclude)
+                foreach (var prop in propertyFilter.PropertiesToExclude)
                 {
                     if (!prop.StartsWith("!"))
                     {

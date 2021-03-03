@@ -32,12 +32,44 @@ namespace nsCDEngine.ViewModels
             PB = new Dictionary<string, object>();
         }
 
+        /// <summary>
+        /// Creates a copy of a TheThingStore with a selectable subset of properties.
+        /// </summary>
+        /// <param name="baseItem">Optional TheThingStore with additional properties to copy into the clone.</param>
+        /// <param name="ResetBase">Creates a new cdeMID and timestamp. Otherwise the item will have the same cdeMID and timestamp as the baseItem. </param>
+        /// <param name="propertiesToInclude">Properties to copy.</param>
+        /// <param name="propertiesToExclude">Properties to not include in the clone.</param>
+        /// <param name="forExternalConsumption">Set a flag that is used by the Historian mechanism internally.</param>
+        /// <returns>The copy of the baseItem TheThingStore</returns>
+        [Obsolete("Use the overload with ThePropertyFilter instead.")]
         public TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, IEnumerable<string> propertiesToInclude, List<string> propertiesToExclude, bool forExternalConsumption)
         {
-            return CloneForThingSnapshot(baseItem, ResetBase, propertiesToInclude, propertiesToExclude, forExternalConsumption, out _);
+            return CloneForThingSnapshot(null, baseItem, ResetBase, new ThePropertyFilter { Properties = propertiesToInclude?.ToList(), PropertiesToExclude = propertiesToExclude?.ToList() } , forExternalConsumption, out _);
+        }
+        /// <summary>
+        /// Creates a copy of a TheThingStore with a selectable subset of properties.
+        /// </summary>
+        /// <param name="baseItem">TheThingStore to copy.</param>
+        /// <param name="ResetBase">Creates a new cdeMID and timestamp. Otherwise the item will have the same cdeMID and timestamp as the baseItem. </param>
+        /// <param name="propFilter">Specification of which properties to copy. If null, all properties will be copied.</param>
+        /// <param name="forExternalConsumption">Set a flag that is used by the Historian mechanism internally.</param>
+        /// <returns>The copy of the baseItem TheThingStore</returns>
+        public TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, ThePropertyFilter propFilter, bool forExternalConsumption)
+        {
+            return CloneForThingSnapshot(null, baseItem, ResetBase, propFilter, forExternalConsumption, out _);
         }
 
-        internal TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, IEnumerable<string> propertiesToInclude, List<string> propertiesToExclude, bool forExternalConsumption, out bool bUpdated)
+        /// <summary>
+        /// Creates a copy of a TheThingStore with a selectable subset of properties.
+        /// </summary>
+        /// <param name="thingWithMeta">An optional thing with meta information like Sensor or Config property information.</param>
+        /// <param name="baseItem">Optional TheThingStore with additional properties to copy into the clone.</param>
+        /// <param name="ResetBase">Creates a new cdeMID and timestamp. Otherwise the item will have the same cdeMID and timestamp as the baseItem. </param>
+        /// <param name="propFilter">Specification of which properties to copy. If null, all properties will be copied.</param>
+        /// <param name="forExternalConsumption">Set a flag that is used by the Historian mechanism internally.</param>
+        /// <param name="bUpdated">Returns true if an of the baseItem properties overwrote properties in the TheThingStore.</param>
+        /// <returns>The copy of the baseItem TheThingStore</returns>
+        internal TheThingStore CloneForThingSnapshot(TheThing thingWithMeta, TheThingStore baseItem, bool ResetBase, ThePropertyFilter propFilter, bool forExternalConsumption, out bool bUpdated)
         {
             TheThingStore tThing = new TheThingStore();
             if (ResetBase)
@@ -67,21 +99,21 @@ namespace nsCDEngine.ViewModels
             tThing.cdeO = cdeO;
             tThing.cdeSEQ = cdeSEQ;
 
+            IEnumerable<string> propertiesToInclude = thingWithMeta?.GetMatchingProperties(propFilter);
             if (propertiesToInclude == null)
             {
                 propertiesToInclude = baseItem != null ? baseItem.PB.Keys.Union(PB.Keys) : PB.Keys;
-            }
 
-            if (propertiesToExclude != null && propertiesToExclude.Count > 0)
-            {
-                var tempList = new List<string>(propertiesToInclude);
-                foreach (var prop in propertiesToExclude)
+                if (propFilter?.PropertiesToExclude?.Any() == true)
                 {
-                    tempList.Remove(prop);
+                    var tempList = new List<string>(propertiesToInclude);
+                    foreach (var prop in propFilter.PropertiesToExclude)
+                    {
+                        tempList.Remove(prop);
+                    }
+                    propertiesToInclude = tempList;
                 }
-                propertiesToInclude = tempList;
             }
-
             bUpdated = false;
 
             foreach (string key in propertiesToInclude)
@@ -159,17 +191,32 @@ namespace nsCDEngine.ViewModels
 
 
         /// <summary>
-        /// Clones all public properties and returns a TheThingStore class
+        /// Clones all TheThing properties and returns a TheThingStore class
         /// </summary>
         /// <param name="iThing">The Thing to clone.</param>
         /// <param name="ResetBase">Use current time instead of Thing timestamp</param>
-        /// <param name="bUsePropertyTimestamp"></param>
-        /// <param name="cloneProperties"></param>
-        /// <param name="propertiesToInclude"></param>
-        /// <param name="propertiesToExclude"></param>
+        /// <param name="bUsePropertyTimestamp">Use latest timestamp of any of the properties</param>
+        /// <param name="cloneProperties">Indiciates if current properties and their of the iThing should be added to TheThingStore.PB of only an empty PB should be returned.</param>
+        /// <param name="propertiesToInclude">When cloning, indicates which properties to include. If null, all properties of the thing are included.</param>
+        /// <param name="propertiesToExclude">When cloning, indicates which properties not to return.</param>
         /// <returns></returns>
         internal static TheThingStore CloneFromTheThingInternal(ICDEThing iThing, bool ResetBase, bool bUsePropertyTimestamp, bool cloneProperties, IEnumerable<string> propertiesToInclude = null, IEnumerable<string> propertiesToExclude = null)
         {
+            var filter = new ThePropertyFilter { Properties = propertiesToInclude?.ToList(), PropertiesToExclude  = propertiesToExclude?.ToList() };
+            return CloneFromTheThingInternal(iThing, ResetBase, bUsePropertyTimestamp, cloneProperties, filter);
+        }
+
+        /// <summary>
+        /// Clones all TheThing properties and returns a TheThingStore class
+        /// </summary>
+        /// <param name="iThing">The Thing to clone.</param>
+        /// <param name="ResetBase">Use current time instead of Thing timestamp</param>
+        /// <param name="bUsePropertyTimestamp">Use latest timestamp of any of the properties</param>
+        /// <param name="cloneProperties">Indiciates if current properties and their of the iThing should be added to TheThingStore.PB of only an empty PB should be returned.</param>
+        /// <param name="cloneFilter">When cloning, indicates which properties to include. If null, all properties of the thing are included.</param>
+        /// <returns></returns>
+        internal static TheThingStore CloneFromTheThingInternal(ICDEThing iThing, bool ResetBase, bool bUsePropertyTimestamp, bool cloneProperties, ThePropertyFilter cloneFilter)
+        { 
             TheThingStore tThing = new TheThingStore();
             if (iThing == null) return tThing;
             TheThing pThing = iThing.GetBaseThing();
@@ -199,7 +246,7 @@ namespace nsCDEngine.ViewModels
 
                 if (cloneProperties)
                 {
-                    propertiesToInclude = pThing.GetMatchingProperties(propertiesToInclude, propertiesToExclude);
+                    var propertiesToInclude = pThing.GetMatchingProperties(cloneFilter);
 
                     int propsIncludeCount = 0;
                     foreach (string key in propertiesToInclude)

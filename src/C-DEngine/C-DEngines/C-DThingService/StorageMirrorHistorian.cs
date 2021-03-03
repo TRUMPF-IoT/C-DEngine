@@ -580,7 +580,7 @@ namespace nsCDEngine
                             }
                             if (item != null)
                             {
-                                var newBaseLine = item.CloneForThingSnapshot(_combinedRegistration.ReportUnchangedProperties ? baseLine : null, false, _combinedRegistration.Properties, _combinedRegistration.PropertiesToExclude, false);
+                                var newBaseLine = item.CloneForThingSnapshot(null, _combinedRegistration.ReportUnchangedProperties ? baseLine : null, false, _combinedRegistration, false, out var _);
                                 if (newBaseLine != null)
                                 {
                                     bBaseLineUpdated = true;
@@ -771,7 +771,7 @@ namespace nsCDEngine
                                             consumer._highestInitialValueSequenceNumber = sequenceNumberToProcess;
                                         }
                                     }
-                                    var itemToReturn = item.CloneForThingSnapshot(consumer.ReportUnchangedProperties ? baseItem : null, false, consumer.Properties, consumer.PropertiesToExclude, true, out var bUpdated);
+                                    var itemToReturn = item.CloneForThingSnapshot(consumer.GetThing(), consumer.ReportUnchangedProperties ? baseItem : null, false, consumer, true, out var bUpdated);
                                     // Ignore items while we are establishing the snapshot baseline
                                     if (bHaveBaseline)
                                     {
@@ -1103,8 +1103,7 @@ namespace nsCDEngine
 
             if (string.IsNullOrEmpty(propertyNamePath))
                 return;
-            // TODO Should we offer a cdeP method for this check?
-            if (propertyNamePath.Contains(".[cdeSensor]") || propertyNamePath.Contains(".[cdeSource]") || propertyNamePath.Contains(".[cdeConfig]"))
+            if (cdeP.IsMetaProperty(propertyNamePath))
             {
                 return;
             }
@@ -1144,8 +1143,7 @@ namespace nsCDEngine
                 {
                     snapshot = TheThingStore.CloneFromTheThingInternal(tThing, true, true,
                             false, // Only take full snapshot for first baseline record. subsequent are deltas only to save memory
-                            _combinedRegistration.Properties,
-                            _combinedRegistration.PropertiesToExclude);
+                            _combinedRegistration);
                     if (bIsInitialValue)
                     {
                         snapshot.IsInitialValue = true;
@@ -1315,8 +1313,7 @@ namespace nsCDEngine
                 {
                     thingSnapshot = TheThingStore.CloneFromTheThingInternal(tThing, true, true,
                             true, // Only take full snapshot for first baseline record. subsequent are deltas only to save memory
-                            _combinedRegistration.Properties,
-                            _combinedRegistration.PropertiesToExclude);
+                            _combinedRegistration);
                 }
                 thingSnapshot.cdeEXP = -2; // This marks the entry as not subject to expiration due to size nor time constraints, and as to be ignored by consumers with ReportUnchangedProperties = false. This is critical because this snapshot can have properties with timestamps that were never generated
                 thingStream.AddAnItem(thingSnapshot);
