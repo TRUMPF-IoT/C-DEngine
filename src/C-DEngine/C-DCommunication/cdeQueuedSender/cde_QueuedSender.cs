@@ -935,6 +935,12 @@ namespace nsCDEngine.Communication
                                 if (TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.GetOriginator() == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
                                     tTopicRealScope = myTargetNodeChannel.RealScopeID;  //RScope-OK: If Scope is not set on a topic but sent from the cloud to this target node, the target RScope has to be added
                             }
+                            if (myTargetNodeChannel.SenderType==cdeSenderType.CDE_CUSTOMISB && tDirectGuid==myTargetNodeChannel.cdeMID && MyISBlock!=null)
+                            {
+                                //CM: 5.123.0: This is required to handle PublishToOriginator, PublishToNode and any other publishes with direct GUID and ISBConnects
+                                MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
+                                return true;
+                            }
                             if (pMessage.GetOriginator() != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID && tDirectGuid == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
                             {
                                 List<TheQueuedSender> tISBSender = TheQueuedSenderRegistry.GetISBConnectSender(tTopicRealScope);
@@ -1414,12 +1420,12 @@ namespace nsCDEngine.Communication
                     tQue.OrgMessage = tFinalTSM;
                     if (tQue.OrgMessage.ORG == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString())   //Performance Boost
                     {
-                        //if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB)  //If ISB we need to use the cdeMID of the TNC instead of the DeviceID
-                        //{
-                        //    tQue.OrgMessage.ORG = MyTargetNodeChannel.cdeMID.ToString();
-                        //    if (TheBaseAssets.MyServiceHostInfo.EnableCosting)
-                        //        TheCDEngines.updateCosting(tQue.OrgMessage);
-                        //}
+                        if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB)  //If ISB we need to use the cdeMID of the TNC instead of the DeviceID
+                        {
+                            tQue.OrgMessage.ORG = MyTargetNodeChannel.cdeMID.ToString();
+                            if (TheBaseAssets.MyServiceHostInfo.EnableCosting)
+                                TheCDEngines.updateCosting(tQue.OrgMessage);
+                        }
                     }
                     else
                         tQue.OrgMessage.AddHopToOrigin();
