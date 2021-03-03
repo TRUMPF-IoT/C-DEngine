@@ -136,6 +136,7 @@ namespace nsCDEngine.Communication
         private string mSScope;
         private string mURL;
         private string mInitSubs;
+        internal bool OnThisNode = false;   //5.123.0: Ensures that the ISBConnect originated from this node
 
         /// <summary>
         /// Reconnects this route with the same parameter set in "Connect"
@@ -215,6 +216,7 @@ namespace nsCDEngine.Communication
             {
                 FNI = MyQSender.MyTargetNodeChannel.cdeMID.ToString();
                 SID = tSessionState.SScopeID;
+                OnThisNode = true;
             }
             else
             {

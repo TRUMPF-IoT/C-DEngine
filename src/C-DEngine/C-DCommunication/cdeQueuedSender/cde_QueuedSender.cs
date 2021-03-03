@@ -935,7 +935,7 @@ namespace nsCDEngine.Communication
                                 if (TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.GetOriginator() == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
                                     tTopicRealScope = myTargetNodeChannel.RealScopeID;  //RScope-OK: If Scope is not set on a topic but sent from the cloud to this target node, the target RScope has to be added
                             }
-                            if (myTargetNodeChannel.SenderType==cdeSenderType.CDE_CUSTOMISB && tDirectGuid==myTargetNodeChannel.cdeMID && MyISBlock!=null)
+                            if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB && tDirectGuid == myTargetNodeChannel.cdeMID && MyISBlock?.OnThisNode == true)
                             {
                                 //CM: 5.123.0: This is required to handle PublishToOriginator, PublishToNode and any other publishes with direct GUID and ISBConnects
                                 MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
@@ -1148,11 +1148,12 @@ namespace nsCDEngine.Communication
                             else
                                 tBase.ProcessMessage(new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback });
                         }
-                        MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback });
+                        if (MyISBlock?.OnThisNode == true)
+                            MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback });
                     });
                     return true;
                 }
-                if (!tHasDirectAddress && MyISBlock != null && TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID != pMessage.GetOriginator())
+                if (!tHasDirectAddress && MyISBlock?.OnThisNode == true && TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID != pMessage.GetOriginator())
                 {
                     MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                     //return true; This prevents relaying of ISB Messages messages
