@@ -136,6 +136,7 @@ namespace nsCDEngine.Communication
         private string mSScope;
         private string mURL;
         private string mInitSubs;
+        internal bool OnThisNode = false;   //5.123.0: Ensures that the ISBConnect originated from this node
 
         /// <summary>
         /// Reconnects this route with the same parameter set in "Connect"
@@ -215,6 +216,7 @@ namespace nsCDEngine.Communication
             {
                 FNI = MyQSender.MyTargetNodeChannel.cdeMID.ToString();
                 SID = tSessionState.SScopeID;
+                OnThisNode = true;
             }
             else
             {
@@ -344,7 +346,7 @@ namespace nsCDEngine.Communication
                 TargetMessage.OWN = tOriginatorThing.ToString();
             }
             if (IncludeLocalNode)
-                TheBaseAssets.LocalHostQSender.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, null,ref sourceMessage.SID, true, false), TargetMessage, false, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, "CDE_SYSTEMWIDE", RS, null);     //GRSI: rare
+                TheBaseAssets.LocalHostQSender.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + FNI, null,ref sourceMessage.SID, true, false), TargetMessage, false, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, "CDE_SYSTEMWIDE", RS, null);     //GRSI: rare
             return MyQSender.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + tOrg, null,ref sourceMessage.SID, true,false), TargetMessage, false, tOrg, "CDE_SYSTEMWIDE", RS, null);     //GRSI: rare
         }
 
@@ -374,7 +376,7 @@ namespace nsCDEngine.Communication
             if (string.IsNullOrEmpty(TargetMessage.SID))
                 TargetMessage.SID = mSScope;
             if (IncludeLocalNode)
-                TheBaseAssets.LocalHostQSender.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID,true, RS), TargetMessage, false, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, "CDE_SYSTEMWIDE", RS, null);     //GRSI: rare
+                TheBaseAssets.LocalHostQSender.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + FNI,true, RS), TargetMessage, false, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, "CDE_SYSTEMWIDE", RS, null);     //GRSI: rare
             return MyQSender.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + tOrg,true, RS), TargetMessage,false,tOrg, "CDE_SYSTEMWIDE", RS, null);     //GRSI: rare
         }
         //02X6QJ7E
