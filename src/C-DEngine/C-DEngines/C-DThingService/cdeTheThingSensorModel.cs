@@ -198,6 +198,14 @@ namespace nsCDEngine.Engines.ThingService
         {
             return GetAllProperties(10).Where(p => p.IsSensor== true).ToList();
         }
+        /// <summary>
+        /// Returns all properties that are marked as Sensors.
+        /// </summary>
+        /// <returns></returns>
+        public List<cdeP> GetConfigProperties()
+        {
+            return GetAllProperties(10).Where(p => p.IsConfig == true).ToList();
+        }
 
         /// <summary>
         /// Describes instance independent meta-data about a property, including sensor meta data.
