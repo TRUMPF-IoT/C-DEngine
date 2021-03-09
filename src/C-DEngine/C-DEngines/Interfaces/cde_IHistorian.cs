@@ -39,10 +39,10 @@ namespace nsCDEngine.Engines.ThingService
         public ThePropertyFilter() { }
         public ThePropertyFilter(ThePropertyFilter r)
         {
-            Properties = r.Properties != null && r.Properties.Count > 0 ? new List<string>(r.Properties) : null;
-            PropertiesToExclude = r.PropertiesToExclude != null && r.PropertiesToExclude.Count > 0 ? new List<string>(r.PropertiesToExclude) : null;
-            FilterToConfigProperties = r.FilterToConfigProperties;
-            FilterToSensorProperties = r.FilterToSensorProperties;
+            Properties = r?.Properties != null ? new List<string>(r.Properties) : null;
+            PropertiesToExclude = r?.PropertiesToExclude != null ? new List<string>(r.PropertiesToExclude) : null;
+            FilterToConfigProperties = r?.FilterToConfigProperties;
+            FilterToSensorProperties = r?.FilterToSensorProperties;
         }
 
     }
