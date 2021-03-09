@@ -246,7 +246,8 @@ namespace nsCDEngine
                             {
                                 foreach (var consumer in consumers)
                                 {
-                                    historian.AddOrUpdateRegistration(consumer);
+                                    var createdConsumer = ConsumerRegistration.Create<TheThingStore>(consumer, null);
+                                    historian.AddOrUpdateRegistration(createdConsumer);
                                 }
                             }
                             tThing.Historian = historian;
@@ -378,16 +379,20 @@ namespace nsCDEngine
 
         public void UnregisterConsumer(Guid token)
         {
+            UnregisterConsumerInternal(token, false);
+        }
+        public void UnregisterConsumer(Guid token, bool keepHistoryStore)
+        {
             ClearHistory(token);
-            UnregisterConsumerInternal(token);
+            UnregisterConsumerInternal(token, keepHistoryStore);
         }
 
-        public void UnregisterConsumerInternal(Guid token)
+        public void UnregisterConsumerInternal(Guid token, bool keepHistoryStore)
         {
             lock (this)
             {
                 _permanentConsumers.RemoveAnItemByID(token, null);
-                if (_consumerRegistrations.TryGetValue(token, out ConsumerRegistration registration))
+                if (!keepHistoryStore && _consumerRegistrations.TryGetValue(token, out ConsumerRegistration registration))
                 {
                     registration.Delete();
                 }
@@ -434,7 +439,7 @@ namespace nsCDEngine
                 ClearAllHistory();
                 foreach (var consumer in _consumerRegistrations.GetDynamicEnumerable())
                 {
-                    UnregisterConsumerInternal(consumer.Key);
+                    UnregisterConsumerInternal(consumer.Key, false);
                 }
 
                 ClearAllHistory();
@@ -465,7 +470,7 @@ namespace nsCDEngine
             // Go back to the last truncated item so it will be re-offerd on the next GetHistory call
             consumer.LastSequenceNumberRead = consumer.SequenceNumberTruncated;
             consumer.LastAccess = DateTimeOffset.Now;
-            if (consumer.MaintainHistoryStore)
+            if (consumer.MaintainHistoryStore && !(consumer is ConsumerRegistrationWithStore<T>))
             {
                 var consumerWithStore = new ConsumerRegistrationWithStore<T>(consumer, store);
                 _permanentConsumers.UpdateItem(consumerWithStore);
@@ -538,7 +543,7 @@ namespace nsCDEngine
                     if (consumer.LastAccess.Add(tokenExpiration) < now && TheBaseAssets.MyServiceHostInfo.cdeCTIM.AddSeconds(5 * 60) < now)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(7692, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "History Token expired", eMsgLevel.l2_Warning, $"Consumer: {consumer.Token}. Expiration: {consumer.TokenExpiration}. Last Access: {consumer.LastAccess}"));
-                        UnregisterConsumerInternal(consumer.Token);
+                        UnregisterConsumerInternal(consumer.Token, false);
                     }
                 }
             }
