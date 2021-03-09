@@ -2068,6 +2068,10 @@ namespace nsCDEngine.Engines.NMIService
         /// Title for the new property/setting (default: "Property")
         /// </summary>
         public string ToAddName { get; set; }
+        /// <summary>
+        /// Does not add the UX section for adding ore deleting properties
+        /// </summary>
+        public bool? NoPropertyAddDelete { get; set; }
     }
 
     /// <summary>
