@@ -196,7 +196,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public List<cdeP> GetSensorProperties()
         {
-            return GetAllProperties(10).Where(p => p.IsSensor== true).ToList();
+            return GetAllProperties(10)?.Where(p => p.IsSensor== true)?.ToList();
         }
         /// <summary>
         /// Returns all properties that are marked as Sensors.
@@ -204,7 +204,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public List<cdeP> GetConfigProperties()
         {
-            return GetAllProperties(10).Where(p => p.IsConfig == true).ToList();
+            return GetAllProperties(10)?.Where(p => p.IsConfig == true)?.ToList();
         }
 
         /// <summary>
