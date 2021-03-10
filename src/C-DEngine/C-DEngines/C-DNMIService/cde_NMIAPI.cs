@@ -3006,45 +3006,49 @@ namespace nsCDEngine.Engines.NMIService
         {
             cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
 
-            var tTitle = ThePropertyBag.PropBagGetValue(pProperties, "ToAddName", "=");
-            if (string.IsNullOrEmpty(tTitle))
-                tTitle = "Property";
-            tFlds["Group"] = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.CollapsibleGroup, StartFldOrder, 2, pACL, $"Add new {tTitle}...", null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true, DoClose = true, ParentFld = pParentFld });
+            var bNoPropAddDelete = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pProperties, nameof(nmiDynamicProperty.NoPropertyAddDelete)));
+            if (bNoPropAddDelete != true)
+            {
+                var tTitle = ThePropertyBag.PropBagGetValue(pProperties, "ToAddName", "=");
+                if (string.IsNullOrEmpty(tTitle))
+                    tTitle = "Property";
+                tFlds["Group"] = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.CollapsibleGroup, StartFldOrder, 2, pACL, $"Add new {tTitle}...", null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true, DoClose = true, ParentFld = pParentFld });
 
-            var tOptions = ThePropertyBag.PropBagGetValue(pProperties, "Options", "=");
-            if (!string.IsNullOrEmpty(tOptions))
-                tFlds["Scratch"] = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.ComboOption, StartFldOrder + 1, IsLocked ? 0 : 2, pACL, $"New {tTitle}", $"ScratchName_{pPropPrefix}", new nmiCtrlComboBox() { ParentFld = StartFldOrder, Options = tOptions });
-            else
-                tFlds["Scratch"] = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.SingleEnded, StartFldOrder + 1, IsLocked ? 0 : 2, pACL, $"New {tTitle}", $"ScratchName_{pPropPrefix}", new nmiCtrlSingleEnded() { ParentFld = StartFldOrder });
+                var tOptions = ThePropertyBag.PropBagGetValue(pProperties, "Options", "=");
+                if (!string.IsNullOrEmpty(tOptions))
+                    tFlds["Scratch"] = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.ComboOption, StartFldOrder + 1, IsLocked ? 0 : 2, pACL, $"New {tTitle}", $"ScratchName_{pPropPrefix}", new nmiCtrlComboBox() { ParentFld = StartFldOrder, Options = tOptions });
+                else
+                    tFlds["Scratch"] = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.SingleEnded, StartFldOrder + 1, IsLocked ? 0 : 2, pACL, $"New {tTitle}", $"ScratchName_{pPropPrefix}", new nmiCtrlSingleEnded() { ParentFld = StartFldOrder });
 
-            TheFieldInfo tBut = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.TileButton, StartFldOrder + 2, IsLocked ? 0 : 2, pACL, $"Add {tTitle}", false, null, null, new nmiCtrlTileButton() { ParentFld = StartFldOrder, TileFactorY = 2, NoTE = true, ClassName = "cdeGoodActionButton" });
-            tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "AddProp", (pThing, pObj) =>
-                        {
-                            TheProcessMessage pMsg = pObj as TheProcessMessage;
-                            if (pMsg?.Message == null) return;
-                            string[] parts = pMsg.Message.PLS.Split(':');
-                            TheThing tOrg = pThing.GetBaseThing();
-                            string tNewPropName = TheThing.GetSafePropertyString(tOrg, $"ScratchName_{pPropPrefix}");
-                            if (string.IsNullOrEmpty(tNewPropName))
-                                TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Please specify a new {tTitle}"));
-                            else
+                TheFieldInfo tBut = AddSmartControl(MyBaseThing, MyStatusForm, eFieldType.TileButton, StartFldOrder + 2, IsLocked ? 0 : 2, pACL, $"Add {tTitle}", false, null, null, new nmiCtrlTileButton() { ParentFld = StartFldOrder, TileFactorY = 2, NoTE = true, ClassName = "cdeGoodActionButton" });
+                tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "AddProp", (pThing, pObj) =>
                             {
-                                if (tOrg.GetProperty($"{tNewPropName}") != null)
-                                {
-                                    TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"{tTitle} already exists"));
-                                }
+                                TheProcessMessage pMsg = pObj as TheProcessMessage;
+                                if (pMsg?.Message == null) return;
+                                string[] parts = pMsg.Message.PLS.Split(':');
+                                TheThing tOrg = pThing.GetBaseThing();
+                                string tNewPropName = TheThing.GetSafePropertyString(tOrg, $"ScratchName_{pPropPrefix}");
+                                if (string.IsNullOrEmpty(tNewPropName))
+                                    TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Please specify a new {tTitle}"));
                                 else
                                 {
-                                    cdeP p = tOrg.GetProperty($"{tNewPropName}", true);
-                                    p.cdeM = pPropPrefix;
-                                    TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"{tTitle} added"));
-                                    UpdateDynamicSection(MyBaseThing, MyStatusForm, pPropPrefix, StartFldOrder + 10, pParentFld,IsLocked, pProperties);
-                                    MyStatusForm.Reload(pMsg, true);
+                                    if (tOrg.GetProperty($"{tNewPropName}") != null)
+                                    {
+                                        TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"{tTitle} already exists"));
+                                    }
+                                    else
+                                    {
+                                        cdeP p = tOrg.GetProperty($"{tNewPropName}", true);
+                                        p.cdeM = pPropPrefix;
+                                        TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"{tTitle} added"));
+                                        UpdateDynamicSection(MyBaseThing, MyStatusForm, pPropPrefix, StartFldOrder + 10, pParentFld, IsLocked, pProperties);
+                                        MyStatusForm.Reload(pMsg, true);
+                                    }
+                                    tOrg.SetProperty($"ScratchName_{pPropPrefix}", "");
                                 }
-                                tOrg.SetProperty($"ScratchName_{pPropPrefix}", "");
-                            }
-                        });
-            tFlds["AddButton"] = tBut;
+                            });
+                tFlds["AddButton"] = tBut;
+            }
             UpdateDynamicSection(MyBaseThing, MyStatusForm, pPropPrefix, StartFldOrder + 10, pParentFld,IsLocked, pProperties);
             return tFlds;
         }
@@ -3055,6 +3059,8 @@ namespace nsCDEngine.Engines.NMIService
                 return;
             if (pForm != null)
             {
+                var bNoPropAddDelete = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pProperties, nameof(nmiDynamicProperty.NoPropertyAddDelete)));
+
                 List<TheFieldInfo> tLst = GetFieldsByFunc(s => s.FormID == pForm.cdeMID);
                 foreach (TheFieldInfo tInfo in tLst)
                 {
@@ -3066,7 +3072,20 @@ namespace nsCDEngine.Engines.NMIService
                     }
                 }
 
-                List<cdeP> props = MyBaseThing.GetPropertiesMetaStartingWith(pPropPrefix).OrderBy(s => s.Name).ToList();
+                List<cdeP> props;
+                switch (pPropPrefix)
+                {
+                    case "[cdeSensor]":
+                        props = MyBaseThing.GetSensorProperties();
+                        break;
+                    case "[cdeConfig]":
+                        props = MyBaseThing.GetConfigProperties();
+                        break;
+                    default:
+                        props = MyBaseThing.GetPropertiesMetaStartingWith(pPropPrefix).OrderBy(s => s.Name).ToList();
+                        break;
+                }
+                
                 int fldCnt = StartFldOrder;
                 List<string> tProtectedEntries = new List<string>();
                 tProtectedEntries.AddRange(TheCommonUtils.cdeSplit(ThePropertyBag.PropBagGetValue(pProperties, "SecureOptions", "="), ";", true, true));
@@ -3076,16 +3095,19 @@ namespace nsCDEngine.Engines.NMIService
                     if (tProtectedEntries.Contains(p.Name))
                         flags |= 1;
                     AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, fldCnt++, flags, 0, p.Name, p.Name, new nmiCtrlSingleEnded() { TileWidth = 5, ParentFld = pParentFld, TileFactorY = 2 });
-                    var tDelBut = AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, fldCnt++, IsLocked ? 0 : 2, 0, "", null, new nmiCtrlTileButton() { Thumbnail="FA5:f2ed", Cookie = p.Name, TileWidth = 1, TileFactorX = 2, TileFactorY = 2, ClassName = "cdeBadActionButton", TileHeight = 1, ParentFld = pParentFld });
-                    tDelBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, p.Name, (sender, pObj) =>
+                    if (bNoPropAddDelete != true)
                     {
-                        TheProcessMessage pMsg = pObj as TheProcessMessage;
-                        if (pMsg?.Message == null) return;
-                        string tP = pMsg.Message.PLS.Split(':')[1];
-                        MyBaseThing.RemoveProperty(tP);
-                        UpdateDynamicSection(MyBaseThing, pForm, pPropPrefix, StartFldOrder, pParentFld, IsLocked, pProperties);
-                        pForm.Reload(pMsg, true);
-                    });
+                        var tDelBut = AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, fldCnt++, IsLocked ? 0 : 2, 0, "", null, new nmiCtrlTileButton() { Thumbnail = "FA5:f2ed", Cookie = p.Name, TileWidth = 1, TileFactorX = 1, TileFactorY = 1, ClassName = "cdeBadActionButton", TileHeight = 1, ParentFld = pParentFld });
+                        tDelBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, p.Name, (sender, pObj) =>
+                        {
+                            TheProcessMessage pMsg = pObj as TheProcessMessage;
+                            if (pMsg?.Message == null) return;
+                            string tP = pMsg.Message.PLS.Split(':')[1];
+                            MyBaseThing.RemoveProperty(tP);
+                            UpdateDynamicSection(MyBaseThing, pForm, pPropPrefix, StartFldOrder, pParentFld, IsLocked, pProperties);
+                            pForm.Reload(pMsg, true);
+                        });
+                    }
                 }
             }
         }

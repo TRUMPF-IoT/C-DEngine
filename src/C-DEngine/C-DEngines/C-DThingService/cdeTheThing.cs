@@ -2317,6 +2317,18 @@ namespace nsCDEngine.Engines.ThingService
                 this.Historian.UnregisterConsumer(historyToken);
             }
         }
+        /// <summary>
+        /// Removes the history filter for the historyToken. Call this to free up system resources. Subsequent calls to any APIs with this token will fail.
+        /// </summary>
+        /// <param name="historyToken">The token returned by RegisterForUpdateHistory.</param>
+        /// <param name="keepHistoryStore">Preserves the history store if one was requested using TheHistoryParameters.MaintainHistoryStore</param>
+        public void UnregisterUpdateHistory(Guid historyToken, bool keepHistoryStore)
+        {
+            if (this.Historian != null)
+            {
+                this.Historian.UnregisterConsumer(historyToken, keepHistoryStore);
+            }
+        }
 
         internal static List<TheThing> EnumerateThingsWithHistory()
         {

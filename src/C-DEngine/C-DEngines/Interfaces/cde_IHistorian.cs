@@ -39,10 +39,10 @@ namespace nsCDEngine.Engines.ThingService
         public ThePropertyFilter() { }
         public ThePropertyFilter(ThePropertyFilter r)
         {
-            Properties = r.Properties != null && r.Properties.Count > 0 ? new List<string>(r.Properties) : null;
-            PropertiesToExclude = r.PropertiesToExclude != null && r.PropertiesToExclude.Count > 0 ? new List<string>(r.PropertiesToExclude) : null;
-            FilterToConfigProperties = r.FilterToConfigProperties;
-            FilterToSensorProperties = r.FilterToSensorProperties;
+            Properties = r?.Properties != null ? new List<string>(r.Properties) : null;
+            PropertiesToExclude = r?.PropertiesToExclude != null ? new List<string>(r.PropertiesToExclude) : null;
+            FilterToConfigProperties = r?.FilterToConfigProperties;
+            FilterToSensorProperties = r?.FilterToSensorProperties;
         }
 
     }
@@ -351,6 +351,7 @@ namespace nsCDEngine.Engines.ThingService
         Guid RegisterConsumer<T>(TheThing theThing, TheHistoryParameters consumerRegistrationParameters, TheStorageMirror<T> store) where T : TheDataBase, INotifyPropertyChanged, new();
         TheHistoryParameters GetHistoryParameters(Guid historyToken);
         void UnregisterConsumer(Guid historyToken);
+        void UnregisterConsumer(Guid historyToken, bool keepHistoryStore);
         void ClearHistory(Guid historyToken);
         bool RestartHistory<T>(Guid token, TheHistoryParameters historyParameters, TheStorageMirror<T> store) where T : TheDataBase, INotifyPropertyChanged, new();
         Task<TheHistoryResponse> GetHistoryAsync(Guid token, int maxCount, int minCount, TimeSpan timeout, CancellationToken? cancelToken, bool clearHistory);
@@ -410,6 +411,19 @@ namespace nsCDEngine.Engines.ThingService
         public bool IsCompatible(TheHistoryParameters param)
         {
             return this.IsEqual(param);
+        }
+
+        internal static ConsumerRegistration Create<T>(ConsumerRegistration registration, TheStorageMirror<T> store) where T : TheDataBase, INotifyPropertyChanged, new()
+        {
+            if (registration.MaintainHistoryStore && !registration.ExternalHistoryStore)
+            {
+                registration = new TheStorageMirrorHistorian.ConsumerRegistrationWithStore<T>(registration, store);
+            }
+            else
+            {
+                registration = new ConsumerRegistration(registration);
+            }
+            return registration;
         }
 
         internal static ConsumerRegistration Create<T>(TheThing tThing, Guid token, TheHistoryParameters registrationParameters, TheStorageMirror<T> store) where T : TheDataBase, INotifyPropertyChanged, new()
