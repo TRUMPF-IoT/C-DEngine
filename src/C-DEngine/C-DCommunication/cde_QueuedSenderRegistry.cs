@@ -1175,7 +1175,7 @@ namespace nsCDEngine.Communication
             TheWSProcessor8 tProcessor = null;
             try
             {
-                if (pRequestData?.RequestUri?.PathAndQuery?.StartsWith("/ISB")==false)
+                if (pRequestData?.RequestUri?.PathAndQuery?.StartsWith("/ISB")!=true)
                     return;
                 TheCDEKPIs.IncrementKPI(eKPINames.KPI3);
                 tProcessor = new TheWSProcessor8(wsSocket);

@@ -1127,7 +1127,7 @@ namespace nsCDEngine.Engines
                             if (tThing!=null)
                             {
                                 IsThing = true;
-                                tThing.FireEvent(eEngineEvents.FileReceived, GetBaseThing(), new TheProcessMessage() { Topic = Command[0], CurrentUserID = pMessage.CurrentUserID, Message = new TSM(pMessage.Message.ENG, tFileName) { ORG = pMessage.Message.ORG } }, true);
+                                tThing.FireEvent(eEngineEvents.FileReceived, GetBaseThing(), new TheProcessMessage() { Topic = Command[0], Cookie=(Command.Length>3?Command[3]:null), CurrentUserID = pMessage.CurrentUserID, Message = new TSM(pMessage.Message.ENG, tFileName) { ORG = pMessage.Message.ORG } }, true);
                             }
                         }
                         if (!IsThing)

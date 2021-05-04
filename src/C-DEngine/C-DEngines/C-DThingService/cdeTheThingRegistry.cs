@@ -599,7 +599,7 @@ namespace nsCDEngine.Engines.ThingService
                 }
                 else
                 {
-                    if (IsIsolated && tThing.cdeN != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+                    if (IsIsolated && tThing.cdeN != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID)
                     {
                         tThing.cdeN = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID;
                         tThing.cdeO = tThing.cdeN;
@@ -660,7 +660,7 @@ namespace nsCDEngine.Engines.ThingService
             var thing = GetThingByMID(thingAddress.ThingMID);
             if (thing == null)
             {
-                if (thingAddress.Node != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+                if (thingAddress.Node != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID)
                 {
                     //return new TheRemoteThing(thingAddress).GetBaseThing(); // TODO create a thing proxy that uses messages to implement thing functionality
                 }
@@ -1339,7 +1339,7 @@ namespace nsCDEngine.Engines.ThingService
                 return TheCDEngines.MyThingEngine.MyThingRegistry.mEngineCache[pEngineName];
             TheCDEKPIs.IncrementKPI(eKPINames.KPI6);
             TheThing tResEngine = null;
-            tResEngine= TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntryByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && pEngineName.Equals(TheThing.GetSafePropertyString(s, "EngineName"), StringComparison.OrdinalIgnoreCase));
+            tResEngine= TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntryByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && pEngineName.Equals(TheThing.GetSafePropertyString(s, "EngineName"), StringComparison.OrdinalIgnoreCase));
             if (tResEngine != null)
                 TheCDEngines.MyThingEngine.MyThingRegistry.mEngineCache[pEngineName] = tResEngine;
             return tResEngine;
@@ -1364,7 +1364,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null ||
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return new List<TheThing>();
-            return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && (!AlivesOnly || (s.GetObject()!=null && !s.IsDisabled)));
+            return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && (!AlivesOnly || (s.GetObject()!=null && !s.IsDisabled)));
         }
 
         /// <summary>
@@ -1402,9 +1402,9 @@ namespace nsCDEngine.Engines.ThingService
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return new List<TheThing>();
 
             if (string.IsNullOrEmpty(pEngineName) || "*".Equals(pEngineName))
-                return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID));
+                return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID));
             else
-                return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID) && TheThing.GetSafePropertyString(s, "EngineName") == pEngineName && (IncludeEngine || !eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType"))));
+                return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && TheThing.GetSafePropertyString(s, "EngineName") == pEngineName && (IncludeEngine || !eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType"))));
         }
 
         /// <summary>
@@ -1423,7 +1423,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             TheThing tThing = null;
             if (TheCDEngines.MyThingEngine != null)
-                tThing = GetThingByFunc(pEngineName, s =>s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID && TheThing.GetSafePropertyString(s, pPropName) == pPropValue);
+                tThing = GetThingByFunc(pEngineName, s =>s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID && TheThing.GetSafePropertyString(s, pPropName) == pPropValue);
             return tThing;
         }
 
@@ -1453,7 +1453,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             TheThing tThing = null;
             if (TheCDEngines.MyThingEngine != null)
-                tThing = GetThingByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue && (s.UID==Guid.Empty || s.UID==pUID));
+                tThing = GetThingByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue && (s.UID==Guid.Empty || s.UID==pUID));
             return tThing;
         }
 
@@ -1470,7 +1470,7 @@ namespace nsCDEngine.Engines.ThingService
             List<TheThing> tThings = null;
             if (TheCDEngines.MyThingEngine != null)
             {
-                tThings = GetThingsByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue);
+                tThings = GetThingsByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue);
             }
             else
                 tThings = new List<TheThing>();
@@ -1503,7 +1503,7 @@ namespace nsCDEngine.Engines.ThingService
             List<TheThing> tThings = null;
             if (TheCDEngines.MyThingEngine != null)
             {
-                tThings = GetThingsByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue && (s.UID == Guid.Empty || s.UID == pUID), AllowRemoteEngine);
+                tThings = GetThingsByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue && (s.UID == Guid.Empty || s.UID == pUID), AllowRemoteEngine);
             }
             else
                 tThings = new List<TheThing>();
@@ -1594,7 +1594,7 @@ namespace nsCDEngine.Engines.ThingService
                 return null;
 
             var tThing=TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntryByID(pID);
-            if (!AllowRemoteEngine && tThing != null && tThing.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+            if (!AllowRemoteEngine && tThing != null && tThing.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID)
             {
                 tThing = null;
             }
