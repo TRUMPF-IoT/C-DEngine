@@ -854,6 +854,12 @@ namespace nsCDEngine.Engines.NMIService
                                     TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
                                     return;
                                 }
+                                var tDashPanel = GetDashPanelById(TheCommonUtils.CGuid(pMsg.Message.PLS));
+                                if (tDashPanel != null)
+                                {
+                                    TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
+                                    return;
+                                }
                                 TSM ErrTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Requested Scene, Dashboard or Form not found###"));
                                 TheCommCore.PublishToOriginator(pMsg.Message, ErrTsm);
                                 return;

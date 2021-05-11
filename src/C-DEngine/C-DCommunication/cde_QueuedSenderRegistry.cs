@@ -1175,7 +1175,7 @@ namespace nsCDEngine.Communication
             TheWSProcessor8 tProcessor = null;
             try
             {
-                if (pRequestData?.RequestUri?.PathAndQuery?.StartsWith("/ISB")==false)
+                if (pRequestData?.RequestUri?.PathAndQuery?.StartsWith("/ISB")!=true)
                     return;
                 TheCDEKPIs.IncrementKPI(eKPINames.KPI3);
                 tProcessor = new TheWSProcessor8(wsSocket);
@@ -1346,14 +1346,17 @@ namespace nsCDEngine.Communication
         /// </summary>
         public static void UnregisterCloudRoutes()
         {
-            List<TheQueuedSender> tlst = MyQueuedSenderList.TheValues;
-            foreach (TheQueuedSender tSender in tlst)
+            List<TheQueuedSender> tlst = MyQueuedSenderList?.TheValues;
+            if (tlst?.Count > 0)
             {
-                if (tSender != null && tSender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE)
+                foreach (TheQueuedSender tSender in tlst)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(28210, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QSRegistry", "Forced Removal of QSender for UnregisterCloudRoutes", eMsgLevel.l4_Message));
-                    tSender.DisposeSender(true);
-                    tSender.eventConnected -= sinkCloudUp;
+                    if (tSender != null && tSender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE)
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(28210, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QSRegistry", "Forced Removal of QSender for UnregisterCloudRoutes", eMsgLevel.l4_Message));
+                        tSender.DisposeSender(true);
+                        tSender.eventConnected -= sinkCloudUp;
+                    }
                 }
             }
         }
