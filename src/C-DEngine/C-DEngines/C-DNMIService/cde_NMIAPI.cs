@@ -949,6 +949,8 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static bool DeleteFieldsByRange(TheFormInfo pFormInfo, int pStart, int pEnd=-1)
         {
+            if (pFormInfo == null)
+                return false;
             List<TheFieldInfo> tLst = TheNMIEngine.GetFieldsByFunc(s => s.FormID == pFormInfo.cdeMID);
             foreach (TheFieldInfo tInfo in tLst)
             {
@@ -967,6 +969,8 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static bool DeleteFieldsOfParent(TheFormInfo pFormInfo, int pParentFld, int pStartNo = 0)
         {
+            if (pFormInfo == null)
+                return false;
             List<TheFieldInfo> tLst = TheNMIEngine.GetFieldsByFunc(s => s.FormID == pFormInfo.cdeMID);
             foreach (TheFieldInfo tInfo in tLst)
             {
