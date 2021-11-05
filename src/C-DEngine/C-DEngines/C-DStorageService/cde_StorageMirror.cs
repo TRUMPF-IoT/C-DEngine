@@ -1285,7 +1285,7 @@ namespace nsCDEngine.Engines.StorageService
             {
 
             }
-            if (tRecords == null || !tRecords.UID.Equals(m_StoreID))
+            if (tRecords?.UID == null || !tRecords.UID.Equals(m_StoreID))
                 return;
 
             string[] cmds = pMsg.TXT.Split(':');
