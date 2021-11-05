@@ -1660,11 +1660,13 @@ namespace nsCDEngine.Engines
     public class SensorPropertyAttribute : Attribute
     {
         public ePropertyTypes cdeT = ePropertyTypes.NOCHANGE;
+        public string Kind;
         public string SourceType;
         public string Units;
         public string SourceUnits;
         public double? RangeMin;
         public double? RangeMax;
+        public double? RangeAverage;
         public string Description;
         public string FriendlyName;
         public string SemanticTypes;
