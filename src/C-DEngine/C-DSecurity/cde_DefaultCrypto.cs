@@ -71,15 +71,10 @@ namespace nsCDEngine.Security
             if (toDecrypt == null || AK == null || AI == null)
                 return null;
             AesManaged myRijndael = new AesManaged();
-            byte[] fromEncrypt;
             ICryptoTransform decryptor = myRijndael.CreateDecryptor(AK, AI);
-            MemoryStream msDecrypt = new MemoryStream(toDecrypt);
-            using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-            {
-                fromEncrypt = new byte[toDecrypt.Length];
-                csDecrypt.Read(fromEncrypt, 0, fromEncrypt.Length);
-            }
-            return fromEncrypt;
+            byte[] resultArray = decryptor.TransformFinalBlock(toDecrypt, 0, toDecrypt.Length);
+            myRijndael.Clear();
+            return resultArray;
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
