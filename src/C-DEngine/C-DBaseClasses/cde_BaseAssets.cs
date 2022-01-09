@@ -64,7 +64,7 @@ namespace nsCDEngine.BaseClasses
                     AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
                     var pLoader = new CryptoReferenceLoader();
 
-                    tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM);
+                    tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM, out tCryptoAssembly);
                     if (tTSM != null)
                         TheSystemMessageLog.ToCo($"{tTSM.TXT} {tTSM.PLS}");
                 }
@@ -154,10 +154,14 @@ namespace nsCDEngine.BaseClasses
         {
             public Dictionary<string, string> ScanLibrary(string assemblyPath, out TSM resTSM)
             {
+                return ScanLibrary(assemblyPath, out resTSM, out _);
+            }
+            public Dictionary<string, string> ScanLibrary(string assemblyPath, out TSM resTSM, out Assembly tAss)
+            {
                 resTSM = null;
                 Dictionary<string, string> mList =new Dictionary<string, string>();
 
-                Assembly tAss = null;
+                tAss = null;
                 if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
@@ -171,7 +175,33 @@ namespace nsCDEngine.BaseClasses
                 }
                 if (_platformDoesNotSupportReflectionOnlyLoadFrom)
                 {
-                    tAss = Assembly.LoadFrom(assemblyPath);
+                    try
+                    {
+                        tAss = Assembly.LoadFrom(assemblyPath);
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        var t=AppDomain.CurrentDomain.GetAssemblies();
+                        foreach (var assembly in t)
+                        {
+                            try
+                            {
+                                var CDEPlugins = from tt in assembly.GetTypes()
+                                                 let ifs = tt.GetInterfaces()
+                                                 where ifs != null && ifs.Length > 0 && (ifs.Any(s => _KnownInterfaces.Contains(s.Name)))
+                                                 select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
+                                if (CDEPlugins?.Any() == true)
+                                {
+                                    tAss = assembly;
+                                    break;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                //ignore
+                            }
+                        }
+                    }
                 }
 
                 if (tAss != null)
