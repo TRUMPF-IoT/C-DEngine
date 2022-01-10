@@ -19,11 +19,6 @@ namespace nsCDEngine.Interfaces
         string CryptoVersion(); //used
 
         /// <summary>
-        /// Returns true on XBox with Native Tool Chain
-        /// </summary>
-        /// <returns></returns>
-        bool IsXBoxNative();
-        /// <summary>
         /// Determines whether [is in application scope] [the specified p application identifier].
         /// </summary>
         /// <param name="pAppID">The p application identifier.</param>
