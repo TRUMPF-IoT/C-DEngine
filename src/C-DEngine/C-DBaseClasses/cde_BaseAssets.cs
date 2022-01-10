@@ -47,6 +47,7 @@ namespace nsCDEngine.BaseClasses
                 return CryptoLoadMessage = "LoadCrypto is not allowed after the Node has been started";
             try
             {
+                var inDLLName = pDLLName;
                 if (string.IsNullOrEmpty(pDLLName))
                     pDLLName = "cdeCryptoLib.dll";
                 Dictionary<string, string> tL = new Dictionary<string, string>();
@@ -64,7 +65,7 @@ namespace nsCDEngine.BaseClasses
                     AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
                     var pLoader = new CryptoReferenceLoader();
 
-                    tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM);
+                    tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM, out tCryptoAssembly);
                     if (tTSM != null)
                         TheSystemMessageLog.ToCo($"{tTSM.TXT} {tTSM.PLS}");
                 }
@@ -154,10 +155,14 @@ namespace nsCDEngine.BaseClasses
         {
             public Dictionary<string, string> ScanLibrary(string assemblyPath, out TSM resTSM)
             {
+                return ScanLibrary(assemblyPath, out resTSM, out _);
+            }
+            public Dictionary<string, string> ScanLibrary(string assemblyPath,out TSM resTSM, out Assembly tAss)
+            {
                 resTSM = null;
                 Dictionary<string, string> mList =new Dictionary<string, string>();
 
-                Assembly tAss = null;
+                tAss = null;
                 if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
@@ -171,7 +176,43 @@ namespace nsCDEngine.BaseClasses
                 }
                 if (_platformDoesNotSupportReflectionOnlyLoadFrom)
                 {
-                    tAss = Assembly.LoadFrom(assemblyPath);
+                    try
+                    {
+                        tAss = Assembly.LoadFrom(assemblyPath);
+                    }
+                    catch (PlatformNotSupportedException)
+                    {
+                        //If we end up here, the assembly was compiled with the Native Tool Chain (i.e. XBox Store)
+                        //all names are stripped out and identification of a assembly can only be made by its "interface footprint"
+                        var t=AppDomain.CurrentDomain.GetAssemblies();
+                        foreach (var assembly in t)
+                        {
+                            try
+                            {
+                                var CDEPlugins = from tt in assembly.GetTypes()
+                                                 let ifs = tt.GetInterfaces()
+                                                 where ifs != null && ifs.Length > 0 && (ifs.Any(s => _KnownInterfaces.Contains(s.Name)))
+                                                 select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
+                                if (CDEPlugins?.Any() == true)
+                                {
+                                    var IsCDEAss = from tt in assembly.GetTypes()
+                                                   let ifs = tt.GetInterfaces()
+                                                   where ifs != null && ifs.Length > 0 && (ifs.Any(s => "IBaseEngine".Equals(s.Name)))
+                                                   select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
+
+                                    if (IsCDEAss.Any()==false)
+                                    {
+                                        tAss = assembly;
+                                        break;
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                //ignore
+                            }
+                        }
+                    }
                 }
 
                 if (tAss != null)

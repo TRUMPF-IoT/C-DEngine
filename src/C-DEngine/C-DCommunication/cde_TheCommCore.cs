@@ -996,7 +996,7 @@ namespace nsCDEngine.Communication
                         List<TheDeviceMessage> tDev = TheDeviceMessage.DeserializeJSONToObject(tPostDataString);
                         if (tDev == null || tDev.Count == 0 || tDev[0].TOP == null || (!tDev[0].TOP.StartsWith("CDE_CONNECT") && !tDev[0].TOP.StartsWith("CDE_INITWS")))
                         {
-                            SendError($"1713:Illegal Post - Invalid or missing TDM {tDev?[0]?.TOP}", pRequestData, eHttpStatusCode.AccessDenied);
+                            SendError($"1713:Illegal Post - Invalid or missing TDM ({(tDev?.Count == 0 ? "No Telegrams Sent" : tDev?[0]?.TOP)})", pRequestData, eHttpStatusCode.AccessDenied);
                             return IsValidISB;
                         }
                         if (TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage > 2 && pRequestData.SessionState?.CertScopes?.Count > 0 && tSenderType != cdeSenderType.CDE_JAVAJASON)  //Use the ScopeID in the Certificate as the ScopeID for the QSender if Usage>2
@@ -1015,6 +1015,7 @@ namespace nsCDEngine.Communication
                             if (!(TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay && TheBaseAssets.MyServiceHostInfo.AllowForeignScopeIDRouting))
                             {
                                 TheBaseAssets.MySYSLOG.WriteToLog(2991, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", "ProcessISBRequest: Access from Node with differnet Scope not allowed", eMsgLevel.l2_Warning));
+                                SendError("1715:Access from Node with differnet Scope not allowed", pRequestData, eHttpStatusCode.AccessDenied);
                                 return IsValidISB;
                             }
                         }
@@ -1023,6 +1024,12 @@ namespace nsCDEngine.Communication
                             if (pRequestData.DeviceID != Guid.Empty)
                                 TheBaseAssets.MySYSLOG.WriteToLog(5057, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("CoreComm", $"2-DeviceIDs Different: {tDev[0].DID} != Re:{pRequestData.DeviceID}", eMsgLevel.l2_Warning));
                             pRequestData.DeviceID = TheCommonUtils.CGuid(tDev[0].DID);
+                        }
+                        if (pRequestData.DeviceID==Guid.Empty)
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(2996, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", "ProcessISBRequest: No DeviceID Set - access denied", eMsgLevel.l1_Error));
+                            SendError("1716:No DeviceID Set - access denied", pRequestData, eHttpStatusCode.AccessDenied);
+                            return IsValidISB;
                         }
                         string[] tParts = TheCommonUtils.cdeSplit(tDev[0].TOP, ";:;", true, false);
                         if (tParts.Length > 1)
@@ -1103,7 +1110,7 @@ namespace nsCDEngine.Communication
                 if (tSend != null)
                 {
                     tSend.SetWebSocketProcessor(pRequestData.WebSocket); // CODE REVIEW Markus: This should not be called if a new QueuedSender was created but StartSender failed? CM: if StartSender Failed tSend==null therfore its not getting here; optimize: return IsValidISB above
-                    if (!string.IsNullOrEmpty(tServices))
+                    if (!string.IsNullOrEmpty(tServices) && tSend?.MyTargetNodeChannel != null)
                     {
                         TheQueuedSender newQSender = tSend;
                         TheCommonUtils.cdeRunAsync("Starting Engines from ISB", true, o =>
