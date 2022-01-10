@@ -101,10 +101,10 @@
     <SolutionPath>$(SolutionDir)$(SolutionName).SLN</SolutionPath>
   </PropertyGroup>
 
-  <!--<PropertyGroup>
+  <PropertyGroup>
     <UpdaterInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\cdeUpdater.csproj'))</UpdaterInSolution>
     <NewtonsoftSharedInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\cdeNewtonsoft.JSON'))</NewtonsoftSharedInSolution>
-  </PropertyGroup>-->
+  </PropertyGroup>
   <PropertyGroup Condition="'$(NewtonsoftSharedInSolution)' == 'True'">
     <DefineConstants>CDE_INTNEWTON;$(DefineConstants)</DefineConstants>
   </PropertyGroup>

@@ -68,6 +68,7 @@ Global
 		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{3ef53a99-b09d-43e3-8f75-e5600d2f47e2}*SharedItemsImports = 13
 		Utilities\cdeZLIB\cdeZLIB.projitems*{605aff65-944e-4174-b92c-8180b3fa93c1}*SharedItemsImports = 13
 		Utilities\cdeZLIB\cdeZLIB.projitems*{91c5c704-4777-46b5-9dc8-70d111dc4e23}*SharedItemsImports = 5
+		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{eeef4ccb-7687-40b6-8762-73d1b292b8c7}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
