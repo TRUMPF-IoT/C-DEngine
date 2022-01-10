@@ -47,6 +47,7 @@ namespace nsCDEngine.BaseClasses
                 return CryptoLoadMessage = "LoadCrypto is not allowed after the Node has been started";
             try
             {
+                var inDLLName = pDLLName;
                 if (string.IsNullOrEmpty(pDLLName))
                     pDLLName = "cdeCryptoLib.dll";
                 Dictionary<string, string> tL = new Dictionary<string, string>();
@@ -156,7 +157,7 @@ namespace nsCDEngine.BaseClasses
             {
                 return ScanLibrary(assemblyPath, out resTSM, out _);
             }
-            public Dictionary<string, string> ScanLibrary(string assemblyPath, out TSM resTSM, out Assembly tAss)
+            public Dictionary<string, string> ScanLibrary(string assemblyPath,out TSM resTSM, out Assembly tAss)
             {
                 resTSM = null;
                 Dictionary<string, string> mList =new Dictionary<string, string>();
@@ -181,6 +182,8 @@ namespace nsCDEngine.BaseClasses
                     }
                     catch (PlatformNotSupportedException)
                     {
+                        //If we end up here, the assembly was compiled with the Native Tool Chain (i.e. XBox Store)
+                        //all names are stripped out and identification of a assembly can only be made by its "interface footprint"
                         var t=AppDomain.CurrentDomain.GetAssemblies();
                         foreach (var assembly in t)
                         {
@@ -192,8 +195,16 @@ namespace nsCDEngine.BaseClasses
                                                  select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
                                 if (CDEPlugins?.Any() == true)
                                 {
-                                    tAss = assembly;
-                                    break;
+                                    var IsCDEAss = from tt in assembly.GetTypes()
+                                                   let ifs = tt.GetInterfaces()
+                                                   where ifs != null && ifs.Length > 0 && (ifs.Any(s => "IBaseEngine".Equals(s.Name)))
+                                                   select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
+
+                                    if (IsCDEAss.Any()==false)
+                                    {
+                                        tAss = assembly;
+                                        break;
+                                    }
                                 }
                             }
                             catch (Exception ex)
