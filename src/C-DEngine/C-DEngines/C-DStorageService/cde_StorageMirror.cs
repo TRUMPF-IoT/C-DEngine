@@ -1215,14 +1215,6 @@ namespace nsCDEngine.Engines.StorageService
                 pCallBack?.Invoke(tResponse);
                 NotifyOfUpdate(tResponse);
             }
-            if (AppendOnly)
-            {
-                MyMirrorCache.MyRecordsRWLock.RunUnderWriteLock(() =>
-                {
-                    MyMirrorCache.AppendRecordsToDisk(pDetails, true, false);
-                });
-                // Should anything happen after this? Callbacks, etc.
-            }
             if (!mIsRAMStore)
             {
                 string Magix = "";
@@ -1233,6 +1225,14 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         InsertUpdateEdgeStorageProperties(pDetails, pMsg, ItemWasAddedOrUpdated);
                     }, CacheTableName);
+            }
+            else if (AppendOnly) //only for RAM stores
+            {
+                MyMirrorCache.MyRecordsRWLock.RunUnderWriteLock(() =>
+                {
+                    MyMirrorCache.AppendRecordsToDisk(pDetails, true, false);
+                });
+                // Should anything happen after this? Callbacks, etc.
             }
         }
 

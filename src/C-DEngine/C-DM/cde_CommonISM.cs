@@ -1288,6 +1288,8 @@ namespace nsCDEngine.ISM
                     startFromNow = DateTimeOffset.Now.Subtract(TheCommonUtils.CDate(TheThingRegistry.GetHostProperty("LastAutoBackup")));
                     startFromNow = period.Subtract(startFromNow);
                 }
+                if (startFromNow.TotalMinutes < 0)
+                    startFromNow = new TimeSpan();
                 Timer AutoBackupTimer = new Timer(timerAutoBackup, null, startFromNow, period);
                 TheBaseAssets.MySYSLOG.WriteToLog(466, new TSM("ISMManager", $"Auto Backup Started every {period.TotalMinutes} minutes", eMsgLevel.l4_Message));
             }
