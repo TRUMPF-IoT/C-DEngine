@@ -108,19 +108,15 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
-        /// RETIRED IN V4: Use override!
+        /// RETIRED IN V5: Use override!
         /// </summary>
         /// <param name="pEventName"></param>
         /// <param name="tTrigger"></param>
         /// <param name="tAction"></param>
-        [Obsolete("Please use other override")]
+        [Obsolete("Retired in 5.142: Please use TheLoggerFactory")]
         public static void LogEvent(string pEventName, string tTrigger, string tAction)
         {
-            InitRR();
-            if (MyRulesRegistry != null)
-            {
-                MyRulesRegistry.LogEvent(pEventName, tTrigger, tAction);
-            }
+            LogEvent(pEventName,eMsgLevel.l4_Message,null, tTrigger, tAction);
         }
 
         /// <summary>
@@ -131,23 +127,21 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pEventText">Optional: Long text of the event</param>
         /// <param name="pEventTrigger">Optional: Who/What triggered the Event</param>
         /// <param name="pEventAction">Optional: What action was triggered by the Event</param>
+        [Obsolete("Retired in 5.142: Please use TheLoggerFactory")]
         public static void LogEvent(string pEventName, eMsgLevel pEventLevel, string pEventText = null, string pEventTrigger = null, string pEventAction = null)
         {
-            InitRR();
-            if (MyRulesRegistry != null)
+            TheEventLogData tSec = new TheEventLogData
             {
-                TheEventLogData tSec = new TheEventLogData
-                {
-                    EventTime = DateTimeOffset.Now,
-                    StationName = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false),
-                    EventName = pEventName,
-                    EventString = pEventText,
-                    EventTrigger = pEventTrigger,
-                    EventLevel=pEventLevel,
-                    ActionObject = pEventAction
-                };
-                MyRulesRegistry.LogEvent(tSec);
-            }
+                EventCategory=eLoggerCategory.RuleEvent,
+                EventTime = DateTimeOffset.Now,
+                StationName = TheBaseAssets.MyServiceHostInfo?.GetPrimaryStationURL(false),
+                EventName = pEventName,
+                EventString = pEventText,
+                EventTrigger = pEventTrigger,
+                EventLevel = pEventLevel,
+                ActionObject = pEventAction
+            };
+            TheLoggerFactory.LogEvent(tSec);
         }
 
         /// <summary>

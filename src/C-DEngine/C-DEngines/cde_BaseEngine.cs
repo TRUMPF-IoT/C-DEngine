@@ -1123,7 +1123,7 @@ namespace nsCDEngine.Engines
                         bool IsThing = false;
                         if (Command.Length>2)
                         {
-                            TheThing tThing = TheThingRegistry.GetThingByMID(GetEngineName(), TheCommonUtils.CGuid(Command[2]));
+                            TheThing tThing = TheThingRegistry.GetThingByMID("*", TheCommonUtils.CGuid(Command[2]));
                             if (tThing!=null)
                             {
                                 IsThing = true;

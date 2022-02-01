@@ -207,7 +207,7 @@ namespace nsCDEngine.BaseClasses
                                     }
                                 }
                             }
-                            catch (Exception ex)
+                            catch (Exception)
                             {
                                 //ignore
                             }

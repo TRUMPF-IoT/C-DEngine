@@ -742,7 +742,13 @@ namespace nsCDEngine.Engines.ContentService
                         TheCommCore.PublishToOriginator(pMsg.Message, tTsmUpdates);
                     }
                     break;
-
+                case eEngineEvents.NewEventLogEntry:
+                    {
+                        var tLog = TheCommonUtils.DeserializeJSONStringToObject<TheEventLogData>(pMsg?.Message?.PLS);
+                        if (tLog != null)
+                            MyBaseThing.FireEvent(eEngineEvents.NewEventLogEntry, this, tLog, true);
+                    }
+                    break;
                 default:
                     MyBaseThing.FireEvent(eEngineEvents.CustomTSMMessage, this, pMsg, true);
                     break;

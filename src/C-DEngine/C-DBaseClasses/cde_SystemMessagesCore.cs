@@ -69,6 +69,22 @@ namespace nsCDEngine.BaseClasses
     public class eLoggerCategory
     {
         /// <summary>
+        /// Event fired by an IBaseEngine, Plugin or service
+        /// </summary>
+        public const string EngineEvent = "Engine Event";
+        /// <summary>
+        /// Event fired by a Rule
+        /// </summary>
+        public const string RuleEvent = "Rule Event";
+        /// <summary>
+        /// Logger for User related events
+        /// </summary>
+        public const string UserEvent = "User Event";
+        /// <summary>
+        /// Logger for Thing related events
+        /// </summary>
+        public const string ThingEvent = "Thing Event";
+        /// <summary>
         /// Logger for NMI Changes
         /// </summary>
         public const string NMIAudit = "NMI Audit";

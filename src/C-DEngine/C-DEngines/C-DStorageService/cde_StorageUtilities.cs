@@ -764,13 +764,13 @@ namespace nsCDEngine.Engines.StorageService
                                     {
                                         orgValue = new string((Char[])orgValue);
                                     }
-                                    //else
-                                    //{
-                                    //    if (IsEnum(fType)) // fType.IsEnum) //.BaseType.Name.Equals("Enum"))
-                                    //    {
-                                    //        orgValue = orgValue;
-                                    //    }
-                                    //}
+                                    else
+                                    {
+                                        if (fType.IsEnum)
+                                        {
+                                            orgValue = TheCommonUtils.CInt(orgValue);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -835,9 +835,9 @@ namespace nsCDEngine.Engines.StorageService
                                     }
                                     else
                                     {
-                                        if (IsEnum(fType)) // fType.IsEnum) //.BaseType.Name.Equals("Enum"))
+                                        if (fType.IsEnum) 
                                         {
-                                            if (orgValue != null) orgValue = (int)orgValue;
+                                            orgValue =  TheCommonUtils.CInt(orgValue);
                                         }
                                     }
                                 }

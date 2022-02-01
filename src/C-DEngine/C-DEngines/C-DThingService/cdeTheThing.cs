@@ -268,7 +268,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pMsgLevel">If a log ID is set, a Message Level can be set, too</param>
         public virtual void SetMessage(string pMessage, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
         {
-            SetMessage(pMessage, -1, SetLastUpdate, LogID, pMsgLevel);
+            SetMessage(pMessage, null, -1, SetLastUpdate, LogID, pMsgLevel);
         }
 
         /// <summary>
@@ -279,14 +279,28 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="SetLastUpdate">Shows the current TimeStamp</param>
         /// <param name="LogID">If this message is also going to the systemlog, add a log ID here</param>
         /// <param name="pMsgLevel">If a log ID is set, a Message Level can be set, too</param>
-        public virtual void SetMessage(string pMessage, int pStatusLevel=-1, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        public virtual void SetMessage(string pMessage, int pStatusLevel = -1, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        {
+            SetMessage(pMessage, null, pStatusLevel, SetLastUpdate, LogID, pMsgLevel);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="pMessage">Message to show in LastMessage of the DeviceStatus</param>
+        /// <param name="EventLogEntryName">If set, the pmessage is also added to the Event Log</param>
+        /// <param name="pStatusLevel">Sets the status Level of MyBaseThing if set to >=0</param>
+        /// <param name="SetLastUpdate">Shows the current TimeStamp</param>
+        /// <param name="LogID">If this message is also going to the systemlog, add a log ID here</param>
+        /// <param name="pMsgLevel">If a log ID is set, a Message Level can be set, too</param>
+        public virtual void SetMessage(string pMessage, string EventLogEntryName = null, int pStatusLevel = -1, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
         {
             if (string.IsNullOrEmpty(pMessage) || MyBaseThing == null)
                 return;
             if (SetLastUpdate != null)
             {
                 MyBaseThing.LastUpdate = TheCommonUtils.CDate(SetLastUpdate);
-                pMessage = $"{TheCommonUtils.GetDateTimeString(MyBaseThing.LastUpdate,-1)} - {pMessage}";
+                pMessage = $"{TheCommonUtils.GetDateTimeString(MyBaseThing.LastUpdate, -1)} - {pMessage}";
             }
             if (pStatusLevel >= 0)
                 MyBaseThing.SetStatus(pStatusLevel, pMessage);
@@ -298,6 +312,10 @@ namespace nsCDEngine.Engines.ThingService
                 if (SetLastUpdate != null)
                     toLog.TIM = TheCommonUtils.CDate(SetLastUpdate);
                 TheBaseAssets.MySYSLOG?.WriteToLog(LogID, toLog);
+            }
+            if (!string.IsNullOrEmpty(EventLogEntryName))
+            {
+                TheLoggerFactory.LogEvent(eLoggerCategory.ThingEvent, EventLogEntryName, pMsgLevel, pMessage);
             }
         }
         #endregion

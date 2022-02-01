@@ -774,6 +774,14 @@ namespace nsCDEngine.Engines.NMIService
         public string Title { get; set; }
 
         /// <summary>
+        /// Check Box Width
+        /// </summary>
+        public int CheckWidth { get; set; }
+        /// <summary>
+        /// Sets a label above the switch
+        /// </summary>
+        public string Label { get; set; }
+        /// <summary>
         /// sets an image instead of the standard checkicon
         /// </summary>
         public string CheckImage { get; set; }

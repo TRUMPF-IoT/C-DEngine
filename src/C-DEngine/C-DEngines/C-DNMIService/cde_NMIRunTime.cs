@@ -526,7 +526,10 @@ namespace nsCDEngine.Engines.NMIService
                                     if (string.IsNullOrEmpty(ValueProperty))
                                         tThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(cmd[4]), true);
                                     else
-                                        tThing = TheThingRegistry.GetThingByProperty("*", Guid.Empty, ValueProperty, cmd[4]);
+                                    {
+                                        if (ValueProperty != "EngineName")
+                                            tThing = TheThingRegistry.GetThingByProperty("*", Guid.Empty, ValueProperty, cmd[4]);
+                                    }
                                     if (tThing == null && TheCommonUtils.CGuid(cmd[4]) == Guid.Empty)
                                     {
                                         var tThings = TheThingRegistry.GetThingsByProperty("*", Guid.Empty, "DeviceType", "IBaseEngine");
