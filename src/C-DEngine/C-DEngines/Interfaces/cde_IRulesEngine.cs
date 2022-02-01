@@ -27,7 +27,7 @@ namespace nsCDEngine.Engines.ThingService
         TheThing GetBaseThing();
 
         /// <summary>
-        /// Logs a new event
+        /// Retired as of 5.142.0: Please use ICDELoggerEngine interface instead
         /// </summary>
         /// <param name="pEventName"></param>
         /// <param name="pTrigger"></param>
@@ -35,7 +35,7 @@ namespace nsCDEngine.Engines.ThingService
         bool LogEvent(string pEventName, string pTrigger, string pAction);
 
         /// <summary>
-        /// Logs a new event
+        /// Retired as of 5.142.0: Please use ICDELoggerEngine interface instead
         /// </summary>
         /// <param name="pItem"></param>
         bool LogEvent(TheEventLogData pItem);
