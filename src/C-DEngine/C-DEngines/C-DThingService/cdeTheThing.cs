@@ -315,7 +315,7 @@ namespace nsCDEngine.Engines.ThingService
             }
             if (!string.IsNullOrEmpty(EventLogEntryName))
             {
-                TheLoggerFactory.LogEvent(eLoggerCategory.ThingEvent, EventLogEntryName, pMsgLevel, pMessage);
+                TheLoggerFactory.LogEvent(eLoggerCategory.ThingEvent, EventLogEntryName, pMsgLevel, pMessage, MyBaseThing.FriendlyName);
             }
         }
         #endregion
