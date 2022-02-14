@@ -2693,7 +2693,7 @@ namespace nsCDEngine.Engines.NMIService
                     tGu[tGu.Length - 1] = (byte)((tGu[tGu.Length - 1] + 3) % 255);
                 TheFormInfo tAboutForm = AddForm(new TheFormInfo() { cdeMID = TheCommonUtils.CGuid(tGu), defDataSource = string.Format("TheThing;:;0;:;True;:;cdeMID={0}", pBaseThing.cdeMID), DefaultView = eDefaultView.Form });
                 tFld["Form"] = tAboutForm;
-                TheDashPanelInfo tAboutDPInfo = AddFormToThingUX(pDash, pBaseThing, tAboutForm, "CMyForm", tTitle, 1000, 0x0B, 0, pCate ?? ".###Status###", null, new ThePropertyBag() { $"SubTitle={TheBaseAssets.MyServiceHostInfo.MyStationName}", "TileThumbnail=FA3:F05a", "TileWidth=2", "TileHeight=2", "ClassName=cde1PM cdeGlassButton", "Background=grey", "Foreground=white" });
+                TheDashPanelInfo tAboutDPInfo = AddFormToThingUX(pDash, pBaseThing, tAboutForm, "CMyForm", tTitle, 1000, 0x0B, 0, pCate ?? ".###Status###", null, new ThePropertyBag() { $"SubTitle={TheCommonUtils.GetMyNodeName()}", "TileThumbnail=FA3:F05a", "TileWidth=2", "TileHeight=2", "ClassName=cde1PM cdeGlassButton", "Background=grey", "Foreground=white" });
                 tFld["DashIcon"] = tAboutDPInfo;
 
                 TheFieldInfo tInfoButInStatus = AddSmartControl(pBaseThing, GetFormById(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID), eFieldType.TileButton, StatusFldOrder += 10, 2, 0, null, null,
