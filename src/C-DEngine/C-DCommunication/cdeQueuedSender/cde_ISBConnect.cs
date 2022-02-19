@@ -274,12 +274,22 @@ namespace nsCDEngine.Communication
         /// <returns></returns>
         public bool Unsubscribe(string pTopics)
         {
+            return Unsubscribe(pTopics, false);
+        }
+        /// <summary>
+        /// Unsubscribes from Custom topics on this ISB Connection. The Topics will be scoped with the scope used during connect
+        /// </summary>
+        /// <param name="pTopics">List of topics to subscribe to separated by ;</param>
+        /// <param name="keepAlive">If true the QSender will not be destroyed if last subscription was removed</param>
+        /// <returns></returns>
+        public bool Unsubscribe(string pTopics, bool keepAlive)
+        {
             string noMSG = null;
             string strSubs = TheBaseAssets.MyScopeManager.AddScopeID(pTopics, RS, ref noMSG, false, true);     //GRSI: rare
             TSM tTSM = new TSM(eEngineName.ContentService, "CDE_UNSUBSCRIBE", strSubs);
             tTSM.SetNoDuplicates(true);
             tTSM.QDX = 2;
-            MyQSender.Unsubscribe(strSubs);
+            MyQSender.Unsubscribe(strSubs, keepAlive);
             return SendTSM(tTSM);
         }
 
