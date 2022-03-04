@@ -177,6 +177,18 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         TeslaXS = 5,
         /// <summary>
+        /// Samsung TV
+        /// </summary>
+        TizenTV=6,
+        /// <summary>
+        /// Samsung Fridge Family Hub
+        /// </summary>
+        TizenFamilyHub=7,
+        /// <summary>
+        /// Bots and other scraper
+        /// </summary>
+        Bot = 8,
+        /// <summary>
         /// Undefined or all platforms
         /// </summary>
         Any = 99,
