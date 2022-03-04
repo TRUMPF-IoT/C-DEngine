@@ -21,7 +21,7 @@ namespace nsCDEngine.BaseClasses
     public static partial class TheCommonUtils
     {
         private static readonly string[] holoDevices = new string[] { "hololens", "holographic", "edge/14.14342", "edge/14.14393" };
-
+        private static readonly string[] botDevices = new string[] { "prometheus" };
         private static readonly string[] mobileDevices = new string[] {"iphone","ppc", "iPad",
                                                       "windows ce","blackberry",
                                                       "opera mini","mobile","palm",

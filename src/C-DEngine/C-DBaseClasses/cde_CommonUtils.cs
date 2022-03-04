@@ -873,10 +873,16 @@ namespace nsCDEngine.BaseClasses
         {
             if (string.IsNullOrEmpty(userAgent)) return eWebPlatform.Desktop;
             userAgent = userAgent.ToLower();
+            if (botDevices.Any(x => userAgent.Contains(x)))
+                return eWebPlatform.Bot;
             if (userAgent.Contains("qtcarbrowser") || userAgent.Contains("tesla") || userAgent.Contains("linux; x86_64 gnu/linux"))
                 return eWebPlatform.TeslaXS;
-            if (userAgent.Contains("Xbox"))
+            if (userAgent.Contains("xbox"))
                 return eWebPlatform.XBox;
+            if (userAgent.Contains("samsung family hub"))
+                return eWebPlatform.TizenFamilyHub;
+            if (userAgent.Contains("tizen"))
+                return eWebPlatform.TizenTV;
             if (mobileDevices.Any(x => userAgent.Contains(x)))
                 return eWebPlatform.Mobile;
             if (holoDevices.Any(x => userAgent.Contains(x)))

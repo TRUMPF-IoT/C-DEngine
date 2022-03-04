@@ -36,11 +36,11 @@ namespace nsCDEngine.Communication
             return false;
         }
 
-        internal bool Unsubscribe(string pTopics)
+        internal bool Unsubscribe(string pTopics, bool keepAlive=false)
         {
             int len = MySubscriptions.Count;
             ReduceSubscriptions(pTopics); //, false);
-            if (MyTargetNodeChannel.SenderType != cdeSenderType.CDE_LOCALHOST && len > 0 && MySubscriptions.Count == 0)
+            if (!keepAlive && MyTargetNodeChannel.SenderType != cdeSenderType.CDE_LOCALHOST && len > 0 && MySubscriptions.Count == 0)
             {
                 FireSenderProblem(new TheRequestData() { ErrorDescription = "1307:No more subscriptions - QSender will be removed" });
                 return true;
@@ -78,7 +78,7 @@ namespace nsCDEngine.Communication
                 {
                     string tSubTopicRealScope = TheBaseAssets.MyScopeManager.GetRealScopeIDFromTopic(pTopics[i], out string tTopicName);       //Medium Frequency
                     if (string.IsNullOrEmpty(tTopicName)) continue;
-                    if (!MyTargetNodeChannel.HasRScope(tSubTopicRealScope))
+                    if (MyTargetNodeChannel?.HasRScope(tSubTopicRealScope)!=true)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(296, string.IsNullOrEmpty(tTopicName) || TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"New Subscription to Topic={pTopics[i]} not allowed due to different Scope", eMsgLevel.l2_Warning));
                         continue;
