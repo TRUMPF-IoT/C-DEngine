@@ -395,7 +395,7 @@ namespace nsCDEngine.Engines.ThingService
 
                     try
                     {
-                        if (!answerConfigs?.Any() == true)
+                        if (!answerConfigs?.Any() == true && !pipelines.Contains(pipelineConfig))
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Found no answer file for generalized config. Attempting to install the generalized config.", eMsgLevel.l2_Warning, $"File: {configFileNameForLog}. Config {pipelineConfig}"));
                             pipelines.Add(pipelineConfig);
