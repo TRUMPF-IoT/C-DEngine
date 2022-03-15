@@ -825,101 +825,104 @@ namespace nsCDEngine.Engines.ThingService
                      return response.ThingAddress;
                  });
         }
-
+        static object createOwnedThingLock = new object();
         internal static Task<TheThing> CreateOwnedThingLocalAsync(MsgCreateThingRequestV1 createParams, TimeSpan timeout)
         {
             if (createParams == null)
             {
                 return null;
             }
-            TheThing ownedThing = null;
-            if (createParams.ThingMID != null)
+            lock (createOwnedThingLock)
             {
-                ownedThing = TheThingRegistry.GetThingByMID(createParams.ThingMID.Value, true);
-            }
-            if (ownedThing == null)
-            {
-                List<TheThing> ownedThings;
-                if (createParams.OwnerAddress != null)
+                TheThing ownedThing = null;
+                if (createParams.ThingMID != null)
                 {
-                    ownedThings = GetThingsByProperty(createParams.EngineName, eOwnerProperties.cdeOwner, TheCommonUtils.cdeGuidToString(createParams.OwnerAddress.ThingMID), true);
+                    ownedThing = TheThingRegistry.GetThingByMID(createParams.ThingMID.Value, true);
                 }
-                else
+                if (ownedThing == null)
                 {
-                    ownedThings = GetThingsOfEngine(createParams.EngineName, true);
-                }
-
-                if (!string.IsNullOrEmpty(createParams.DeviceType))
-                {
-                    ownedThings = ownedThings.Where(t => t.DeviceType == createParams.DeviceType).ToList();
-                }
-
-                if (!string.IsNullOrEmpty(createParams.InstanceId))
-                {
-                    ownedThing = ownedThings.FirstOrDefault(t => TheThing.GetSafePropertyString(t, eOwnerProperties.cdeOwnerInstance) == createParams.InstanceId);
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(createParams.ID))
+                    List<TheThing> ownedThings;
+                    if (createParams.OwnerAddress != null)
                     {
-                        ownedThing = ownedThings.FirstOrDefault(t => t.ID == createParams.ID);
+                        ownedThings = GetThingsByProperty(createParams.EngineName, eOwnerProperties.cdeOwner, TheCommonUtils.cdeGuidToString(createParams.OwnerAddress.ThingMID), true);
                     }
                     else
                     {
-                        if (ownedThing == null)
+                        ownedThings = GetThingsOfEngine(createParams.EngineName, true);
+                    }
+
+                    if (!string.IsNullOrEmpty(createParams.DeviceType))
+                    {
+                        ownedThings = ownedThings.Where(t => t.DeviceType == createParams.DeviceType).ToList();
+                    }
+
+                    if (!string.IsNullOrEmpty(createParams.InstanceId))
+                    {
+                        ownedThing = ownedThings.FirstOrDefault(t => TheThing.GetSafePropertyString(t, eOwnerProperties.cdeOwnerInstance) == createParams.InstanceId);
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrEmpty(createParams.ID))
                         {
-                            ownedThing = ownedThings.FirstOrDefault(t => t.Address == createParams.Address || (string.IsNullOrEmpty(t.Address) && string.IsNullOrEmpty(createParams.Address)));
+                            ownedThing = ownedThings.FirstOrDefault(t => t.ID == createParams.ID);
                         }
-                        if (ownedThing == null)
+                        else
                         {
-                            var matchingThings = GetThingsOfEngine(createParams.EngineName, true, true)
-                                .Where(t => t.DeviceType == createParams.DeviceType || string.IsNullOrEmpty(createParams.DeviceType));
-                            if (matchingThings.Count() == 1)
+                            if (ownedThing == null)
                             {
-                                ownedThing = matchingThings.First();
+                                ownedThing = ownedThings.FirstOrDefault(t => t.Address == createParams.Address || (string.IsNullOrEmpty(t.Address) && string.IsNullOrEmpty(createParams.Address)));
+                            }
+                            if (ownedThing == null)
+                            {
+                                var matchingThings = GetThingsOfEngine(createParams.EngineName, true, true)
+                                    .Where(t => t.DeviceType == createParams.DeviceType || string.IsNullOrEmpty(createParams.DeviceType));
+                                if (matchingThings.Count() == 1)
+                                {
+                                    ownedThing = matchingThings.First();
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            if (ownedThing == null && createParams.DeviceType == eKnownDeviceTypes.IBaseEngine)
-            {
-                ownedThing = TheThingRegistry.GetBaseEngineAsThing(createParams.EngineName);
-            }
-
-            if (ownedThing != null)
-            {
-                if (createParams.DoNotModifyIfExists != true)
+                if (ownedThing == null && createParams.DeviceType == eKnownDeviceTypes.IBaseEngine)
                 {
-                    SetOwnedThingProperties(ownedThing, createParams);
+                    ownedThing = TheThingRegistry.GetBaseEngineAsThing(createParams.EngineName);
                 }
-                return WaitForInitializeAsync(ownedThing, timeout);
-            }
 
-            if (!createParams.CreateIfNotExist || createParams.DeviceType == eKnownDeviceTypes.IBaseEngine)
-            {
-                return TheCommonUtils.TaskFromResult<TheThing>(null);
-            }
+                if (ownedThing != null)
+                {
+                    if (createParams.DoNotModifyIfExists != true)
+                    {
+                        SetOwnedThingProperties(ownedThing, createParams);
+                    }
+                    return WaitForInitializeAsync(ownedThing, timeout);
+                }
 
-            TheThing tThing = new TheThing
-            {
-                DeviceType = createParams.DeviceType,
-                EngineName = createParams.EngineName,
-            };
-            if (createParams.ThingMID != null)
-            {
-                tThing.cdeMID = createParams.ThingMID.Value;
-            }
-            SetOwnedThingProperties(tThing, createParams);
+                if (!createParams.CreateIfNotExist || createParams.DeviceType == eKnownDeviceTypes.IBaseEngine)
+                {
+                    return TheCommonUtils.TaskFromResult<TheThing>(null);
+                }
 
-            var tRegisteredThing = RegisterThing(tThing);
-            if (tRegisteredThing != tThing)
-            {
-                // A thing with the same cdeMID already existed
-                return TheCommonUtils.TaskFromResult<TheThing>(null);
+                TheThing tThing = new TheThing
+                {
+                    DeviceType = createParams.DeviceType,
+                    EngineName = createParams.EngineName,
+                };
+                if (createParams.ThingMID != null)
+                {
+                    tThing.cdeMID = createParams.ThingMID.Value;
+                }
+                SetOwnedThingProperties(tThing, createParams);
+
+                var tRegisteredThing = RegisterThing(tThing);
+                if (tRegisteredThing != tThing)
+                {
+                    // A thing with the same cdeMID already existed
+                    return TheCommonUtils.TaskFromResult<TheThing>(null);
+                }
+                return WaitForInitializeAsync(tThing, timeout);
             }
-            return WaitForInitializeAsync(tThing, timeout);
         }
         private static void SetOwnedThingProperties(TheThing tThing, MsgCreateThingRequestV1 createParams)
         {
@@ -966,7 +969,10 @@ namespace nsCDEngine.Engines.ThingService
             {
                 foreach (var cdeProp in createParams.cdeProperties)
                 {
-                    tThing.SetProperty(cdeProp.Name, cdeProp.Value, (ePropertyTypes) cdeProp.cdeT, DateTimeOffset.Now);
+                    if (cdeProp.Name != nameof(createParams.ID) || string.IsNullOrEmpty(createParams.ID))
+                    {
+                        tThing.SetProperty(cdeProp.Name, cdeProp.Value, (ePropertyTypes)cdeProp.cdeT, DateTimeOffset.Now);
+                    }
                 }
             }
 
