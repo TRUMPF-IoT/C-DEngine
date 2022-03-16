@@ -118,7 +118,7 @@ namespace nsCDEngine
                         {
                             bSkippedLock = false;
                             updates = globalHistorian.GetHistoryInternalAsync(this, 100, 1, updateWaitTimeout, null, true).Result.HistoryItems;
-                            if (updates?.Count > 0)
+                            if (updates?.Any() == true)
                             {
                                 bUpdatesRead = true;
                                 if (typeof(T) == typeof(TheThingStore))
