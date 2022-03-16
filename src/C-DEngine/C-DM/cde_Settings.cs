@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-using nsCDEngine.Activation;
 using nsCDEngine.BaseClasses;
 using nsCDEngine.Discovery;
 using nsCDEngine.Engines.ThingService;
@@ -36,7 +35,7 @@ namespace nsCDEngine.ISM
         /// <returns></returns>
         public virtual bool SetSetting(string pSetting, string pValue, bool bIsHidden = false, Guid? pOwner = null, ePropertyTypes pType = ePropertyTypes.TString)
         {
-            return UpdateLocalSettings(new List<aCDESetting> { new aCDESetting { Name = pSetting, Value = pOwner!=null? CU.cdeEncrypt(pValue, TheBaseAssets.MySecrets.GetNodeKey()):pValue , IsHidden = bIsHidden, ValueType = pType, cdeO=pOwner } });
+            return UpdateLocalSettings(new List<aCDESetting> { new aCDESetting { Name = pSetting, Value = pOwner != null ? CU.cdeEncrypt(pValue, TheBaseAssets.MySecrets.GetNodeKey()) : pValue, IsHidden = bIsHidden, ValueType = pType, cdeO = pOwner } });
         }
 
         /// <summary>
@@ -56,14 +55,14 @@ namespace nsCDEngine.ISM
         /// <param name="pSetting">Key of the setting</param>
         /// <param name="pOwner">Owner Guid of the setting. gives access to a private setting</param>
         /// <returns></returns>
-        public virtual string GetSetting(string pSetting, Guid? pOwner=null)
+        public virtual string GetSetting(string pSetting, Guid? pOwner = null)
         {
             var tres = GetArgOrEnv(TheBaseAssets.MyCmdArgs, pSetting, pOwner);
             if (pOwner != null)
             {
                 try
                 {
-                    var tres2 = CU.cdeDecrypt(tres,TheBaseAssets.MySecrets.GetNodeKey(), true);
+                    var tres2 = CU.cdeDecrypt(tres, TheBaseAssets.MySecrets.GetNodeKey(), true);
                     if (!string.IsNullOrEmpty(tres2))
                         tres = tres2;
                 }
@@ -84,7 +83,7 @@ namespace nsCDEngine.ISM
         /// <param name="IsAltDefault">returns alt if key exists but is null or empty</param>
         /// <param name="pOwner">Owner Guid of the setting. gives access to a private setting</param>
         /// <returns></returns>
-        public virtual string GetAppSetting(string pSetting, string alt, bool IsEncrypted, bool IsAltDefault=false, Guid? pOwner = null)
+        public virtual string GetAppSetting(string pSetting, string alt, bool IsEncrypted, bool IsAltDefault = false, Guid? pOwner = null)
         {
             var settingsValue = GetArgOrEnv(TheBaseAssets.MyCmdArgs, pSetting, pOwner);
             if (settingsValue != null)
@@ -157,7 +156,7 @@ namespace nsCDEngine.ISM
                     tConfig.Save(0);
 #endif
                 }
-                if (pOwner!=null && TheBaseAssets.MyCmdArgs.ContainsKey(pKeyname))
+                if (pOwner != null && TheBaseAssets.MyCmdArgs.ContainsKey(pKeyname))
                 {
                     SetSetting(pKeyname, TheBaseAssets.MyCmdArgs[pKeyname], true, pOwner);
                     TheBaseAssets.MyCmdArgs.Remove(pKeyname);
@@ -234,14 +233,14 @@ namespace nsCDEngine.ISM
                             Value = x.Value,
                             IsHidden = MyPrivateSettings[x.Key].IsHidden,
                             ValueType = MyPrivateSettings[x.Key].ValueType,
-                            cdeO= MyPrivateSettings[x.Key].cdeO
+                            cdeO = MyPrivateSettings[x.Key].cdeO
                         } :
                         new aCDESetting
                         {
                             Value = x.Value,
                             Name = x.Key,
                             IsHidden = HiddenSettings.Contains(x.Key),
-                        }) ;
+                        });
 
                 //Step 4: add all incoming settings to either the private or public settings store
                 if (pSettings?.Count > 0)
@@ -250,7 +249,7 @@ namespace nsCDEngine.ISM
                     {
                         var tObfKey = t.Name;
                         if (t.cdeO != null)
-                            tObfKey= TheBaseAssets.MySecrets.CreatePasswordHash(t.cdeO.ToString());
+                            tObfKey = TheBaseAssets.MySecrets.CreatePasswordHash(t.cdeO.ToString());
                         tSettings[tObfKey] = t.Value;
                         if (t.IsHidden || t.cdeO != null)
                         {
@@ -263,7 +262,7 @@ namespace nsCDEngine.ISM
                                     Name = tObfKey,
                                     IsHidden = t.IsHidden,
                                     ValueType = MyPrivateSettings[tObfKey].ValueType,
-                                    cdeO= t.cdeO
+                                    cdeO = t.cdeO
                                 } :
                                 new aCDESetting
                                 {
@@ -271,7 +270,7 @@ namespace nsCDEngine.ISM
                                     Name = tObfKey,
                                     IsHidden = t.IsHidden,
                                     ValueType = t.ValueType,
-                                    cdeO=t.cdeO
+                                    cdeO = t.cdeO
                                 };
                             if (MyPrivateSettings.ContainsKey(t.Name))
                                 MyPrivateSettings.Remove(t.Name);
@@ -299,7 +298,7 @@ namespace nsCDEngine.ISM
                 }
 
                 //step 5: remove all incoming temporary settings  //[{"Name":"Administrator","UID":"Admin","Role":"NMIADMIN","HS":"","EMail":"z@z.zz","PWD":"zzzzzzzz","ACL":"255"}]
-                bool NoDelete =CU.CBool(GetArgOrEnv(TheBaseAssets.MyCmdArgs, "DontDeleteEasyScope"));    //Not a great setting name but has history
+                bool NoDelete = CU.CBool(GetArgOrEnv(TheBaseAssets.MyCmdArgs, "DontDeleteEasyScope"));    //Not a great setting name but has history
                 foreach (var s in RemovedSettings)
                 {
                     if (tSettings.ContainsKey(s))
@@ -343,7 +342,7 @@ namespace nsCDEngine.ISM
             {
                 byte[] tBuf = File.ReadAllBytes(tpiFile);
                 Dictionary<string, string> tSettings = TheBaseAssets.MyCrypto.DecryptKV(tBuf);
-                if (tBuf.Length>0 && !(tSettings?.Count>0))
+                if (tBuf.Length > 0 && !(tSettings?.Count > 0))
                 {
                     TheSystemMessageLog.ToCo("Local cdeTPI file has no entries. Most likely crypto lib is not matching, node will terminate"); //Syslog is not initiated at this point
                     TheBaseAssets.IsStarting = false;
@@ -356,7 +355,7 @@ namespace nsCDEngine.ISM
 #if !CDE_STANDARD
             var appSettings = ConfigurationManager.AppSettings;
 #else
-                dynamic appSettings = GetAppSettingsObject();
+            dynamic appSettings = GetAppSettingsObject();
             if (appSettings == null)
             {
                 return false;
@@ -418,7 +417,7 @@ namespace nsCDEngine.ISM
                 }
                 catch { }
             }
-            if (MyPrivateSettings?.Count>0)
+            if (MyPrivateSettings?.Count > 0)
             {
                 if (temp == null && MyPrivateSettings?.ContainsKey(name) == true)
                 {
@@ -466,7 +465,7 @@ namespace nsCDEngine.ISM
                     var exePath = Assembly.GetEntryAssembly().Location;
                     appConfig.Load($"{exePath}.config");
                     var appSettingsNodes = appConfig.SelectNodes("/configuration/appSettings/*");
-                    foreach(System.Xml.XmlElement appSettingNode in appSettingsNodes)
+                    foreach (System.Xml.XmlElement appSettingNode in appSettingsNodes)
                     {
                         if (appSettingNode.Name == "add")
                         {
@@ -548,7 +547,7 @@ namespace nsCDEngine.ISM
                     TheBaseAssets.MyServiceHostInfo.MyStationPort = (ushort)tStationURI.Port;
                 else
                 {
-                    var tSP= TheBaseAssets.MySettings.GetSetting("STATIONPORT");
+                    var tSP = TheBaseAssets.MySettings.GetSetting("STATIONPORT");
                     if (!string.IsNullOrEmpty(tSP))
                         TheBaseAssets.MyServiceHostInfo.MyStationPort = CU.CUShort(tSP);  //Overrides the Station Port with a value coming from the app.config
                 }
@@ -1106,7 +1105,10 @@ namespace nsCDEngine.ISM
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.DefHomePage = temp.ToUpper();
             else
-                TheBaseAssets.MyServiceHostInfo.DefHomePage = "/NMIPortal";
+            {
+                if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.DefHomePage))
+                    TheBaseAssets.MyServiceHostInfo.DefHomePage = "/NMIPortal";
+            }
 
             temp = GetArgOrEnv(CmdArgs, "RelayOnly");
             if (!string.IsNullOrEmpty(temp))
@@ -1332,7 +1334,7 @@ namespace nsCDEngine.ISM
             TheRequestData tRequest = new TheRequestData()
             {
                 RequestUri = CU.CUri($"{pProvService}/register-node", true),
-                PostData = TheBaseAssets.MyCrypto.Encrypt(CU.CUnicodeString2Array(CU.SerializeObjectToJSONString(tDevInfo)),TheBaseAssets.MySecrets.GetAK(), TheBaseAssets.MySecrets.GetAI()),
+                PostData = TheBaseAssets.MyCrypto.Encrypt(CU.CUnicodeString2Array(CU.SerializeObjectToJSONString(tDevInfo)), TheBaseAssets.MySecrets.GetAK(), TheBaseAssets.MySecrets.GetAI()),
                 ResponseMimeType = "application/json",
                 TimeOut = 15000
             };
