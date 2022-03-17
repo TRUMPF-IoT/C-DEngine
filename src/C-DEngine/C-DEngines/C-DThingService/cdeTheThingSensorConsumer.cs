@@ -84,7 +84,13 @@ namespace nsCDEngine.Engines.ThingService
 
 
             // Subscription using Thing Historian
+            /// <summary>
+            /// Sampling Window in ms.
+            /// </summary>
             public uint? SamplingWindow { get; set; }
+            /// <summary>
+            /// Cooldown period before closing sampling window, in ms. 
+            /// </summary>
             public uint? CooldownPeriod { get; set; }
             public bool? SendUnchangedValue { get; set; }
             public bool? SendInitialValues { get; set; }
