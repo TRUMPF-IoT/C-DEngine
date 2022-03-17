@@ -591,6 +591,8 @@ namespace nsCDEngine.Engines
                 {
                     foreach (var tEng in MyCustomEngines)
                     {
+                        if (tEng == null)
+                            continue;
                         if (pPluginName.Equals(tEng.GetType().FullName))
                         {
                             tIBase = tEng;

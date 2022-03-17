@@ -95,7 +95,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>True if all went well during startup</returns>
         public virtual bool StartBaseApplication(ICDEPlugin pPlugIn, IDictionary<string, string> ArgList)
         {
-            return StartBaseApplication(new List<ICDEPlugin> { pPlugIn }, ArgList);
+            return StartBaseApplication2(pPlugIn == null ? null : new List<ICDEPlugin> { pPlugIn }, ArgList);
         }
         /// <summary>
         /// Override to initalize the app with custom values but still call the base!
@@ -103,7 +103,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="pPlugInLst">List if ICDEPlugin instances</param>
         /// <param name="ArgList">Additional Parameters of the Application</param>
         /// <returns>True if all went well during startup</returns>
-        public virtual bool StartBaseApplication(List<ICDEPlugin> pPlugInLst, IDictionary<string, string> ArgList)
+        public virtual bool StartBaseApplication2(List<ICDEPlugin> pPlugInLst, IDictionary<string, string> ArgList)
         {
             if (TheBaseAssets.MasterSwitch) return false;   //SECURITY REVIEW: do not allow to call StartBaseApplication twice
             TheBaseAssets.MasterSwitch = true;
