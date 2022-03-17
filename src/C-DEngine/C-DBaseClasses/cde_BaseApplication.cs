@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #region USING
-using nsCDEngine.Activation;
 using nsCDEngine.Communication;
 using nsCDEngine.Communication.HttpService;
 using nsCDEngine.Discovery;
@@ -93,8 +92,18 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         /// <param name="pPlugIn">A pre-instantiated plugin Service</param>
         /// <param name="ArgList">Additional Parameters of the Application</param>
-        /// <returns></returns>
+        /// <returns>True if all went well during startup</returns>
         public virtual bool StartBaseApplication(ICDEPlugin pPlugIn, IDictionary<string, string> ArgList)
+        {
+            return StartBaseApplication(new List<ICDEPlugin> { pPlugIn }, ArgList);
+        }
+        /// <summary>
+        /// Override to initalize the app with custom values but still call the base!
+        /// </summary>
+        /// <param name="pPlugInLst">List if ICDEPlugin instances</param>
+        /// <param name="ArgList">Additional Parameters of the Application</param>
+        /// <returns>True if all went well during startup</returns>
+        public virtual bool StartBaseApplication(List<ICDEPlugin> pPlugInLst, IDictionary<string, string> ArgList)
         {
             if (TheBaseAssets.MasterSwitch) return false;   //SECURITY REVIEW: do not allow to call StartBaseApplication twice
             TheBaseAssets.MasterSwitch = true;
@@ -104,7 +113,7 @@ namespace nsCDEngine.BaseClasses
                 TheSystemMessageLog.ToCo("MyServiceHostInfo is not set! Exiting...");   //Will becalled because if MyServiceHostInfo==null TOCO will be called
                 return false;
             }
-            if (TheBaseAssets.CryptoLoadMessage!=null)
+            if (TheBaseAssets.CryptoLoadMessage != null)
             {
                 TheBaseAssets.MasterSwitch = false;
                 TheSystemMessageLog.ToCo($"Security initialization failed with {TheBaseAssets.CryptoLoadMessage}. Exiting...");
@@ -210,7 +219,7 @@ namespace nsCDEngine.BaseClasses
                 }
 
                 TheCDEngines.eventAllEnginesStarted += sinkEnginesStarted;
-                if (!TheCDEngines.StartEngines(pPlugIn, null))                                           //Starts all SubEngines and Plugins. MyCmdArgs is a copy of the tParas sent to the Init Assets Function and can be used to set parameters for each engine during startup
+                if (!TheCDEngines.StartEngines(pPlugInLst, null))                                           //Starts all SubEngines and Plugins. MyCmdArgs is a copy of the tParas sent to the Init Assets Function and can be used to set parameters for each engine during startup
                 {
                     Shutdown(true);
                     TheBaseAssets.MySYSLOG.WriteToLog(4149, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Failed to start engines", eMsgLevel.l3_ImportantMessage));
@@ -356,7 +365,7 @@ namespace nsCDEngine.BaseClasses
                     if (configManagerType != null)
                     {
                         var openConfigMethod = configManagerType.GetMethod("OpenExeConfiguration", System.Reflection.BindingFlags.Static);
-                        tConfig = openConfigMethod?.Invoke(null, new object[] { (int) 0 });
+                        tConfig = openConfigMethod?.Invoke(null, new object[] { (int)0 });
                     }
                 }
             }
@@ -409,7 +418,7 @@ namespace nsCDEngine.BaseClasses
                 return true;
         }
 
-                /// <summary>
+        /// <summary>
         /// Used to show an Alert. Override to plugin your own custom alert handler
         /// </summary>
         /// <param name="pMsg">Message with the Alert</param>

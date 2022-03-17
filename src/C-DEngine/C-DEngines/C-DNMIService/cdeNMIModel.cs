@@ -505,10 +505,16 @@ namespace nsCDEngine.Engines.NMIService
                     }
 
                     // ReSharper disable once SuspiciousTypeConversion.Global
-                    if (TheCDEngines.MyCustomType is ICDEPlugin)
+                    if (TheCDEngines.MyCustomTypes?.Count > 0)
                     {
-                        string tTempType = TheCDEngines.MyCustomType.FullName;
-                        MyCDEPluginUXTypes.Add(tTempType, TheCDEngines.MyCustomType);
+                        foreach (var tType in TheCDEngines.MyCustomTypes)
+                        {
+                            if (tType is ICDEPlugin)
+                            {
+                                string tTempType = tType.FullName;
+                                MyCDEPluginUXTypes.Add(tTempType, tType);
+                            }
+                        }
                     }
 
                     string temp = TheBaseAssets.MySettings.GetSetting("StartScreen");

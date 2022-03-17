@@ -9,7 +9,6 @@ using nsCDEngine.Engines.NMIService;
 using nsCDEngine.Engines.StorageService;
 using nsCDEngine.Engines.StorageService.Model;
 using nsCDEngine.Engines.ThingService;
-using nsCDEngine.Security;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -158,7 +157,7 @@ namespace nsCDEngine.Engines
         /// Returns a list of all Storage Mirrors with their key and friendly name
         /// </summary>
         /// <returns></returns>
-        public static List<KeyValuePair<string,string>> EnumerateStorageMirror()
+        public static List<KeyValuePair<string, string>> EnumerateStorageMirror()
         {
             List<KeyValuePair<string, string>> tPairList = new List<KeyValuePair<string, string>>();
             foreach (string key in MyStorageMirrorRepository.Keys)
@@ -175,7 +174,7 @@ namespace nsCDEngine.Engines
                     }
                 }
             }
-            return tPairList.GroupBy(o=>o.Value).Select(g=>g.First()).ToList();
+            return tPairList.GroupBy(o => o.Value).Select(g => g.First()).ToList();
         }
 
         /// <summary>
@@ -184,9 +183,13 @@ namespace nsCDEngine.Engines
         internal static TheStorageMirror<TheAccessStatistics> MyAccessStats;
         #endregion
         /// <summary>
-        /// A plugin class instantiated in the Host application - used for UWP, iOS and other locked down device types
+        /// First plugin class instantiated in the Host application - used for UWP, iOS and other locked down device types
         /// </summary>
         public static IBaseEngine MyPluginEngine;
+        /// <summary>
+        /// First plugin class instantiated in the Host application - used for UWP, iOS and other locked down device types
+        /// </summary>
+        public static List<IBaseEngine> MyPluginEngines;
         /// <summary>
         /// My content engine - quick access to the ContentEngine
         /// BREAKING CHAGE: Plugins using this Property have to be recompiled
@@ -201,11 +204,11 @@ namespace nsCDEngine.Engines
         /// <summary>
         /// My custom engine
         /// </summary>
-        internal static ICDEPlugin MyCustomEngine;
+        internal static List<ICDEPlugin> MyCustomEngines;
         /// <summary>
         /// My custom type
         /// </summary>
-        internal static Type MyCustomType;
+        internal static List<Type> MyCustomTypes;
 
         /// <summary>
         /// Fires when a new engine was installed and started
@@ -255,15 +258,15 @@ namespace nsCDEngine.Engines
         /// <summary>
         /// Starts the engines.
         /// </summary>
-        /// <param name="CustomEngine">The custom engine.</param>
-        /// <param name="pType">Type of the plugin</param>
+        /// <param name="CustomEngines">List of custom engine.</param>
+        /// <param name="pTypes">Type of the plugin (unused as of now)</param>
         /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
-        internal static bool StartEngines(ICDEPlugin CustomEngine, Type pType)
+        internal static bool StartEngines(List<ICDEPlugin> CustomEngines, List<Type> pTypes)
         {
             if (!TheBaseAssets.MasterSwitch) return false;
 
-            MyCustomEngine = CustomEngine;
-            MyCustomType = pType;
+            MyCustomEngines = CustomEngines;
+            MyCustomTypes = pTypes;
             if (MyServiceStates == null)
             {
                 MyServiceStates = new TheStorageMirror<TheEngineState>(null) { IsRAMStore = true };
@@ -343,17 +346,25 @@ namespace nsCDEngine.Engines
                 return;
             }
 
-            if (MyCustomEngine != null && !TheBaseAssets.MyCDEPlugins.ContainsKey(MyCustomEngine.GetType().FullName))
-                TheBaseAssets.MyCDEPlugins.Add(MyCustomEngine.GetType().FullName, new ThePluginInfo()
+            if (MyCustomEngines?.Count > 0)
+            {
+                foreach (var mEng in MyCustomEngines)
                 {
-                    PluginType = MyCustomEngine.GetType(),
-                    ServiceName = MyCustomEngine.GetType().FullName,
+                    if (!TheBaseAssets.MyCDEPlugins.ContainsKey(mEng.GetType().FullName))
+                    {
+                        TheBaseAssets.MyCDEPlugins.Add(mEng.GetType().FullName, new ThePluginInfo()
+                        {
+                            PluginType = mEng.GetType(),
+                            ServiceName = mEng.GetType().FullName,
 #if CDE_NET35 || CDE_NET4
-                    PluginPath = MyCustomEngine.GetType().Assembly.Location
+                            PluginPath = mEng.GetType().Assembly.Location
 #else
-                    PluginPath = MyCustomEngine.GetType().GetTypeInfo().Assembly.Location
+                            PluginPath = mEng.GetType().GetTypeInfo().Assembly.Location
 #endif
-                });
+                        });
+                    }
+                }
+            }
 
             if (TheBaseAssets.MyServiceHostInfo.IsIsolated && TheBaseAssets.MyCDEPlugins.Count == 0)
             {
@@ -561,8 +572,8 @@ namespace nsCDEngine.Engines
 
         static TheBaseEngine CreatePlugin(string pPluginName)
         {
-            if (TheBaseAssets.MyCDEPlugins.ContainsKey(pPluginName) && TheBaseAssets.MyCDEPlugins[pPluginName].PluginType!=null
-                && !pPluginName.Equals(MyCustomEngine?.GetType().FullName)
+            if (TheBaseAssets.MyCDEPlugins.ContainsKey(pPluginName) && TheBaseAssets.MyCDEPlugins[pPluginName].PluginType != null
+                && !pPluginName.Equals(MyCustomEngines?.GetType().FullName)
                 )
                 return null;    //new V4.106: Dont ever start a plugin twice! (StorageService already started)
             TheBaseEngine tBase = new TheBaseEngine();
@@ -575,13 +586,22 @@ namespace nsCDEngine.Engines
                     TheBaseAssets.MySYSLOG.WriteToLog(4110, new TSM("TheCDEngines", "StartEngines", eMsgLevel.l3_ImportantMessage, "Plugin-Service ignored by setting and will not start:" + pPluginName));
                     return null;
                 }
-                if (MyCustomEngine != null && pPluginName.Equals(MyCustomEngine.GetType().FullName))
+                bool IsCustomEngine = false;
+                if (MyCustomEngines?.Count > 0)
                 {
-                    tIBase = MyCustomEngine;
-                    tNType = MyCustomEngine.GetType();
-                    TheBaseAssets.MyCDEPluginTypes[pPluginName] = tNType;
+                    foreach (var tEng in MyCustomEngines)
+                    {
+                        if (pPluginName.Equals(tEng.GetType().FullName))
+                        {
+                            tIBase = tEng;
+                            tNType = tEng.GetType();
+                            TheBaseAssets.MyCDEPluginTypes[pPluginName] = tNType;
+                            IsCustomEngine = true;
+                            break;
+                        }
+                    }
                 }
-                else
+                if (!IsCustomEngine)
                 {
                     if (!TheBaseAssets.MyCDEPlugins.ContainsKey(pPluginName)) return null;
                     if (!TheBaseAssets.MyServiceHostInfo.IsIsolated)
@@ -652,8 +672,14 @@ namespace nsCDEngine.Engines
                 {
                     tBase.AddCapability(eThingCaps.DistributedStorage);
                 }
-                if (MyCustomEngine != null && MyPluginEngine == null)
-                    MyPluginEngine = MyCustomEngine.GetBaseEngine();
+                if (IsCustomEngine)
+                {
+                    if (MyPluginEngine == null)
+                        MyPluginEngine = tIBase.GetBaseEngine();
+                    if (MyPluginEngines == null)
+                        MyPluginEngines = new List<IBaseEngine>();
+                    MyPluginEngines.Add(tIBase.GetBaseEngine());
+                }
             }
             catch (Exception eee)
             {
@@ -678,7 +704,7 @@ namespace nsCDEngine.Engines
                 return null;
             if (TheBaseAssets.MyServiceHostInfo.RelayEngines.Contains(pTopicName)) return null;
             TheBaseAssets.MyServiceHostInfo.RelayEngines.Add(pTopicName);
-            var tRes=InitMiniRelay(pTopicName, false);
+            var tRes = InitMiniRelay(pTopicName, false);
             TheQueuedSenderRegistry.UpdateSubscriptionsOfConnectedNodes();
             return tRes;
         }
@@ -760,12 +786,12 @@ namespace nsCDEngine.Engines
                 return;
             if (tBase.GetBaseThing() == null || !tBase.GetBaseThing().HasLiveObject)
                 TheThingRegistry.RegisterEngine(tBase.GetBaseEngine(), IsIsolated);
-            if (tBase.GetBaseThing() == null || !tBase.GetBaseThing().HasLiveObject || tBase.GetEngineState()==null)
+            if (tBase.GetBaseThing() == null || !tBase.GetBaseThing().HasLiveObject || tBase.GetEngineState() == null)
                 return;
             if (MyServiceStates != null)
                 MyServiceStates.AddAnItem(tBase.GetEngineState());
             tBase.GetEngineState().ClassName = tBase.GetEngineName();
-            tBase.GetEngineState().FriendlyName = TheBaseAssets.MyLoc.GetLocalizedStringByKey(0,null, tBase.GetFriendlyName(),false);
+            tBase.GetEngineState().FriendlyName = TheBaseAssets.MyLoc.GetLocalizedStringByKey(0, null, tBase.GetFriendlyName(), false);
             tBase.GetEngineState().MyStationUrl = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false);
 
             if (tBase.GetEngineState().IsUnloaded || tBase.GetEngineState().IsDisabled)
@@ -858,11 +884,11 @@ namespace nsCDEngine.Engines
                         tJustSubscribe += tStationRole; //was tTargetStation which is without scope! scope must be there
                     }
                 }
-                if (TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay && !string.IsNullOrEmpty(tJustSubscribe) && pChannel!=null)
+                if (TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay && !string.IsNullOrEmpty(tJustSubscribe) && pChannel != null)
                 {
                     TheQueuedSender tQ = TheQueuedSenderRegistry.GetSenderByGuid(pChannel.cdeMID);
-                        if (tQ != null)
-                            tQ.Subscribe(tJustSubscribe);
+                    if (tQ != null)
+                        tQ.Subscribe(tJustSubscribe);
                 }
             }
         }
