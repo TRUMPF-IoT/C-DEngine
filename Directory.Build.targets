@@ -1,5 +1,5 @@
 <!--
- SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-FileCopyrightText: 2009-2022 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project>
@@ -8,6 +8,9 @@
     <GitVersionTaskExcludedProjects Condition="'$(GitVersionTaskExcludedProjects)' == ''">CertIssuerWeb;docker-compose;ActivationKeyPurchase;CDMyPowerMeter</GitVersionTaskExcludedProjects> <!-- Performance optimization: only look at certain package references -->
     <GitVersionTaskExcluded>$(GitVersionTaskExcludedProjects.Contains($(ProjectName)))</GitVersionTaskExcluded>
     <WriteVersionInfoToBuildLog>false</WriteVersionInfoToBuildLog> <!-- Prevent the Azure DevOps build number to be written twice and forced to semver: should only be done by gitversion task in the build pipeline -->
+
+    <!-- uncomment to build locally with bet nugets. For github build, add a pre-release tag (5.123.0-beta.1) to your branch -->
+    <!--<cdeUsePrereleasePackages>true</cdeUsePrereleasePackages>--> 
   </PropertyGroup>
   
   <!-- GitVersion-based auto-versioning -->
@@ -17,10 +20,35 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup Condition="'$(cdeUsePrereleasePackages)' == 'true'"> 
+    <PackageReference Update="C-DEngine" Version="5.*-*" />
+    <PackageReference Update="cdeASPNet" Version="5.*-*" />
+    <PackageReference Update="cdeIIS" Version="5.*-*" />
+    <PackageReference Update="cdePackager" Version="5.*-*" />
+    <PackageReference Update="cdePackagerTask" Version="5.*-*" />
+
+    <PackageReference Update="CDMyNMIHtml5RT" Version="5.*-*" />
+
+    <PackageReference Update="cdeThingMatcherShared" Version="5.*-*" />
+    <PackageReference Update="cdeSensorTemplateShared" Version="5.*-*" />
+    <PackageReference Update="cdeSenderBaseShared" Version="5.*-*" />
+    <PackageReference Update="cdeReceiverBaseShared" Version="5.*-*" />
+    <PackageReference Update="cdeOPCUAClientContractsShared" Version="5.*-*" />
+    <PackageReference Update="cdeOPCUAClientAPIShared" Version="5.*-*" />
+    <PackageReference Update="cdeLicenseTool" Version="5.*-*" />
+    <PackageReference Update="cdeEventConvertersShared" Version="5.*-*" />
+    <PackageReference Update="cdeConnectionBaseShared" Version="5.*-*" />
+    <PackageReference Update="cdeCommonMessageContractsShared" Version="5.*-*" />
+    <PackageReference Update="cdeCSVFileParserShared" Version="5.*-*" />
+    <PackageReference Update="cdeMeshManagerContractsShared" Version="5.*-*" />
+    <PackageReference Update="cdeOPCUAClientAPIShared" Version="5.*-*" />
+    <PackageReference Update="cdeTelnetShared" Version="5.*-*" />
+  </ItemGroup>
+  
   <!-- Package to  Project replacement: Based on https://github.com/dotnet/sdk/issues/1151#issuecomment-459275750 -->
   <PropertyGroup>
     <ReplacePackageReferences Condition="'$(ReplacePackageReferences)' == ''">true</ReplacePackageReferences>
-    <PackageReferenceFilter Condition="'$(PackageReferenceFilter)' == ''">C-DEngine;CDMyNMIHtml5RT</PackageReferenceFilter> <!-- Performance optimization: only look at certain package references -->
+    <PackageReferenceFilter Condition="'$(PackageReferenceFilter)' == ''"></PackageReferenceFilter> <!-- Performance optimization: only look at certain package references -->
     <ReplaceProjectReferences Condition="'$(ReplaceProjectReferences)' == ''">false</ReplaceProjectReferences>
    </PropertyGroup>
 
@@ -49,7 +77,7 @@
       <ItemGroup>
         <!-- Keep the identity of the  packagereference -->
         <SmartPackageReference Include="@(PackageReference)">
-          <PackageName>%(Identity)</PackageName>
+          <PackageName>%(Identity)</PackageName> 
           <InSolution>false</InSolution>
           <InSolution Condition = " '$(PackageReferenceFilter)' == '' OR '$(PackageReferenceFilter.Contains(%(Identity)))' == 'True' ">$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\%(Identity).csproj'))</InSolution>
         </SmartPackageReference>
