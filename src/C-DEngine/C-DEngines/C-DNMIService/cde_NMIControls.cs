@@ -12,7 +12,7 @@ using System.Collections.Generic;
 namespace nsCDEngine.Engines.NMIService
 {
 
-    public class nmiPlatBag :TheNMIBaseControl
+    public class nmiPlatBag : TheNMIBaseControl
     {
         /// <summary>
         /// Node side: Does not send the control to the client/browser
@@ -651,9 +651,9 @@ namespace nsCDEngine.Engines.NMIService
             //TODO: Not sure here!
         }
 
-        private cdeConcurrentDictionary<string, object> PropertyBag ;
+        private cdeConcurrentDictionary<string, object> PropertyBag;
         protected Guid MyScreenID;
-        protected TheTRF MyTRF ;
+        protected TheTRF MyTRF;
         protected TheFieldInfo MyFieldInfo;
         protected TheNMIBaseControl MyTarget;
         protected List<TheNMIBaseControl> MyChildren;
@@ -734,7 +734,7 @@ namespace nsCDEngine.Engines.NMIService
     /// <summary>
     /// Creates a hash-icon from the Value in the control
     /// </summary>
-    public class nmiCtrlHashIcon: TheNMIBaseControl
+    public class nmiCtrlHashIcon : TheNMIBaseControl
     {
         /// <summary>
         /// Creates a margin around the HashIcon
@@ -911,7 +911,7 @@ namespace nsCDEngine.Engines.NMIService
         public string ValidateErrorText { get; set; }
     }
 
-    public class nmiCtrlPassword: nmiCtrlSingleEnded
+    public class nmiCtrlPassword : nmiCtrlSingleEnded
     {
         /// <summary>
         /// Hides the Multi-Touch-Lock
@@ -940,6 +940,11 @@ namespace nsCDEngine.Engines.NMIService
         /// Minimum Value the Number will accept
         /// </summary>
         public int MinValue { get; set; }
+
+        /// <summary>
+        /// if larger than zero the number will only show this amount of digits
+        /// </summary>
+        public int Digits { get; set; }
     }
 
     public class nmiCtrlGauge : nmiCtrlNumber
@@ -1116,7 +1121,7 @@ namespace nsCDEngine.Engines.NMIService
     {
     }
 
-    public class nmiCtrlPropertyPicker: TheNMIBaseControl
+    public class nmiCtrlPropertyPicker : TheNMIBaseControl
     {
         /// <summary>
         /// If true, the property picker allows to select multiple properties and returns a string with the properties separated by the "Separator"
@@ -1158,16 +1163,16 @@ namespace nsCDEngine.Engines.NMIService
         public string Filter { get; set; }
     }
 
-    public class nmiCtrlThingPicker: TheNMIBaseControl
+    public class nmiCtrlThingPicker : TheNMIBaseControl
     {
         /// <summary>
         /// If this is set to another property of the Thing, the ThingPicker will show available properties and allows to pick thing + property in one swoop
         /// </summary>
         public string PropertyTarget { get; set; }
 
-         /// <summary>
-         /// If set, only things of this engine will be displayed
-         /// </summary>
+        /// <summary>
+        /// If set, only things of this engine will be displayed
+        /// </summary>
         public string EngineFilter { get; set; }
 
         /// <summary>
