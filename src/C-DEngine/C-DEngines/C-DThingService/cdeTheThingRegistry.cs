@@ -82,7 +82,7 @@ namespace nsCDEngine.Engines.ThingService
                     LoadSync = true
                 };
                 MyThings.MyMirrorCache.FastSaveLock = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("ThingRegistryFastSave"));
-                Task<bool> tRes=MyThings.InitializeStoreAsync(tStoreParams);
+                Task<bool> tRes = MyThings.InitializeStoreAsync(tStoreParams);
                 tRes.Wait();
                 Success = tRes.Result;
                 if (!Success)
@@ -92,7 +92,7 @@ namespace nsCDEngine.Engines.ThingService
                     return;
                 }
             }
-            MyThings.RegisterEvent(eStoreEvents.HasUpdates,sinkHasUpdates); //Can come after InitStore as only new updates should cause this event to fire
+            MyThings.RegisterEvent(eStoreEvents.HasUpdates, sinkHasUpdates); //Can come after InitStore as only new updates should cause this event to fire
             MyThings.AllowFireUpdates = true;   //can come after register event
             eventEngineReady?.Invoke(Success);
         }
@@ -166,7 +166,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>Return the deleted Thing</returns>
         public static TheThing DeleteThingByProperty(string pEngineName, Guid pUID, string pPropName, string pPropValue)
         {
-            TheThing t = GetThingByProperty(pEngineName,pUID, pPropName, pPropValue);
+            TheThing t = GetThingByProperty(pEngineName, pUID, pPropName, pPropValue);
             if (t != null)
             {
                 if (DeleteThing(pEngineName, t))
@@ -183,10 +183,10 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pPropName">Name of the Property</param>
         /// <param name="pPropValue">Value of the Property</param>
         /// <returns>Returns true if successful and false if no Things matching the Prop/Val were found</returns>
-        public static bool DeleteThingsByProperty(string pEngineName,Guid pUID, string pPropName, string pPropValue)
+        public static bool DeleteThingsByProperty(string pEngineName, Guid pUID, string pPropName, string pPropValue)
         {
-            List<TheThing> tList = GetThingsByProperty(pEngineName,pUID, pPropName, pPropValue);
-            if (tList!=null && tList.Count>0)
+            List<TheThing> tList = GetThingsByProperty(pEngineName, pUID, pPropName, pPropValue);
+            if (tList != null && tList.Count > 0)
             {
                 foreach (TheThing t in tList)
                     DeleteThing(pEngineName, t);
@@ -203,7 +203,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public static bool DeleteThing(string pEngineName, ICDEThing pThing)
         {
-            if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null || pThing==null || string.IsNullOrEmpty(pEngineName) ||
+            if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null || pThing == null || string.IsNullOrEmpty(pEngineName) ||
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return false;
 
             TheThing tThing = pThing.GetBaseThing();
@@ -213,7 +213,7 @@ namespace nsCDEngine.Engines.ThingService
 
             if (TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.ContainsID(tThing.cdeMID))
             {
-                TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.RemoveAnItemByID(tThing.cdeMID,null);
+                TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.RemoveAnItemByID(tThing.cdeMID, null);
                 _thingByIdCache = null;
                 IBaseEngine tBase = tThing.GetBaseEngine();
                 if (tBase != null)
@@ -252,7 +252,7 @@ namespace nsCDEngine.Engines.ThingService
 
             bool AllowFireOld = TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.AllowFireUpdates;
             if (!FireUpdate) TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.AllowFireUpdates = false;
-            TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.UpdateItem(tThing,null);
+            TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.UpdateItem(tThing, null);
             _thingByIdCache = null;
 
             if (!FireUpdate) TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.AllowFireUpdates = AllowFireOld;
@@ -476,7 +476,7 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         /// <param name="pThing">TheThing to unregister</param>
         /// <returns></returns>
-        public  static bool UnregisterThingGlobally(TheThing pThing)
+        public static bool UnregisterThingGlobally(TheThing pThing)
         {
             if (pThing == null) return false;
             TheThing.SetSafePropertyBool(pThing, "IsRegisteredGlobally", false);
@@ -509,7 +509,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="things">List of things to sync</param>
         /// <param name="OnlyMerge">If true, things not listed in "things" will not be deleted from current ThingRegistry</param>
         /// <returns></returns>
-        internal static bool SyncGlobalThings(Guid nodeId, List<TheThing> things, bool OnlyMerge=false)
+        internal static bool SyncGlobalThings(Guid nodeId, List<TheThing> things, bool OnlyMerge = false)
         {
             if (things == null || nodeId == TheBaseAssets.MyServiceHostInfo?.MyDeviceInfo?.DeviceID || TheCDEngines.MyThingEngine?.MyThingRegistry?.MyThings == null)
                 return false;
@@ -531,7 +531,7 @@ namespace nsCDEngine.Engines.ThingService
                     }
                 }
             }
-            foreach(var thing in things)
+            foreach (var thing in things)
             {
                 if (thing.cdeN == nodeId && GetThingByMID(thing.cdeMID, true) == null)
                 {
@@ -564,7 +564,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>Value of the property, or null if not found.</returns>
         public static object GetHostProperty(string pName)
         {
-            return MyNodeHost?.GetProperty(pName,false)?.Value;
+            return MyNodeHost?.GetProperty(pName, false)?.Value;
         }
 
         /// <summary>
@@ -572,12 +572,12 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         /// <param name="pName">Property name.</param>
         /// <param name="pValue">Property value</param>
-        public static void SetHostProperty(string pName,object pValue)
+        public static void SetHostProperty(string pName, object pValue)
         {
             MyNodeHost?.SetProperty(pName, pValue);
         }
 
-        internal static bool RegisterEngine(TheBaseEngine tBase, bool IsIsolated=false, bool WillBeIsolated=false)
+        internal static bool RegisterEngine(TheBaseEngine tBase, bool IsIsolated = false, bool WillBeIsolated = false)
         {
             // CODE REVIEW: Better way to allow Mini Relays? Or do we want to have a license check here as well?
             if (!(tBase.AssociatedPlugin is TheMiniRelayEngine) && !tBase.CheckEngineLicense())
@@ -1116,7 +1116,7 @@ namespace nsCDEngine.Engines.ThingService
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return resList;
 
             List<TheThing> tList = GetBaseEnginesAsThing(AlivesOnly);
-            if (tList!=null && tList.Count>0)
+            if (tList != null && tList.Count > 0)
             {
                 foreach (TheThing t in tList)
                 {
@@ -1133,7 +1133,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pCap">Capability to look for</param>
         /// <param name="IncludeRemote">if true, all engine even stopped and remote engines will be returned</param>
         /// <returns></returns>
-        public static List<IBaseEngine> GetBaseEnginesByCap(eThingCaps pCap, bool IncludeRemote=false)
+        public static List<IBaseEngine> GetBaseEnginesByCap(eThingCaps pCap, bool IncludeRemote = false)
         {
             List<IBaseEngine> resList = new List<IBaseEngine>();
             if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null ||
@@ -1217,7 +1217,7 @@ namespace nsCDEngine.Engines.ThingService
                 if (pThing.MyBaseEngine != null) return pThing.MyBaseEngine;
                 return (pThing.MyBaseEngine = GetBaseEngine(pThing.EngineName, false));
             }
-            return GetBaseEngine(pThing.EngineName,false);
+            return GetBaseEngine(pThing.EngineName, false);
         }
 
 
@@ -1242,7 +1242,7 @@ namespace nsCDEngine.Engines.ThingService
         public static IBaseEngine GetBaseEngine(string pEngineName, bool AllowRemoteEngine)
         {
             if (string.IsNullOrEmpty(pEngineName)) return null;
-            TheThing tThing = GetBaseEngineAsThing(pEngineName,AllowRemoteEngine);
+            TheThing tThing = GetBaseEngineAsThing(pEngineName, AllowRemoteEngine);
             if (tThing != null)
             {
                 if (tThing.GetObject() is ICDEPlugin tPLug)
@@ -1295,7 +1295,7 @@ namespace nsCDEngine.Engines.ThingService
             if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null || string.IsNullOrEmpty(pEngineName) ||
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return false;
             IBaseEngine tThing = GetBaseEngine(pEngineName, AllowRemoteEngine);
-            if (tThing== null) return false;
+            if (tThing == null) return false;
             if (tThing.GetBaseThing().GetObject() != null)
             {
                 if (tThing.GetEngineState().IsUnloaded || tThing.GetEngineState().IsDisabled)
@@ -1317,7 +1317,7 @@ namespace nsCDEngine.Engines.ThingService
             if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null || string.IsNullOrEmpty(pEngineName) ||
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return false;
             IBaseEngine tBase = GetBaseEngine(pEngineName, AllowRemoteEngine);
-            if (tBase == null || tBase.GetEngineState()==null) return false;
+            if (tBase == null || tBase.GetEngineState() == null) return false;
             return tBase.GetEngineState().IsInitialized;
         }
 
@@ -1345,7 +1345,7 @@ namespace nsCDEngine.Engines.ThingService
                 return TheCDEngines.MyThingEngine.MyThingRegistry.mEngineCache[pEngineName];
             TheCDEKPIs.IncrementKPI(eKPINames.KPI6);
             TheThing tResEngine = null;
-            tResEngine= TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntryByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && pEngineName.Equals(TheThing.GetSafePropertyString(s, "EngineName"), StringComparison.OrdinalIgnoreCase));
+            tResEngine = TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntryByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && pEngineName.Equals(TheThing.GetSafePropertyString(s, "EngineName"), StringComparison.OrdinalIgnoreCase));
             if (tResEngine != null)
                 TheCDEngines.MyThingEngine.MyThingRegistry.mEngineCache[pEngineName] = tResEngine;
             return tResEngine;
@@ -1370,7 +1370,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null ||
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return new List<TheThing>();
-            return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && (!AlivesOnly || (s.GetObject()!=null && !s.IsDisabled)));
+            return TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntriesByFunc(s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && eKnownDeviceTypes.IBaseEngine.Equals(TheThing.GetSafePropertyString(s, "DeviceType")) && (!AlivesOnly || (s.GetObject() != null && !s.IsDisabled)));
         }
 
         /// <summary>
@@ -1381,7 +1381,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public static List<TheThing> GetThingsOfEngine(string pEngineName)
         {
-            return GetThingsOfEngine(pEngineName, false,false);
+            return GetThingsOfEngine(pEngineName, false, false);
         }
 
         /// <summary>
@@ -1429,7 +1429,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             TheThing tThing = null;
             if (TheCDEngines.MyThingEngine != null)
-                tThing = GetThingByFunc(pEngineName, s =>s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID && TheThing.GetSafePropertyString(s, pPropName) == pPropValue);
+                tThing = GetThingByFunc(pEngineName, s => s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID && TheThing.GetSafePropertyString(s, pPropName) == pPropValue);
             return tThing;
         }
 
@@ -1459,7 +1459,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             TheThing tThing = null;
             if (TheCDEngines.MyThingEngine != null)
-                tThing = GetThingByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue && (s.UID==Guid.Empty || s.UID==pUID));
+                tThing = GetThingByFunc(pEngineName, s => (AllowRemoteEngine || s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID) && TheThing.GetSafePropertyString(s, pPropName) == pPropValue && (s.UID == Guid.Empty || s.UID == pUID));
             return tThing;
         }
 
@@ -1523,10 +1523,10 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pSelector">Selector function</param>
         /// <param name="AllowRemoteEngine">If True, the list includes TheThings on remote Nodes</param>
         /// <returns></returns>
-        public static List<TheThing> GetThingsByFunc(string pEngineName, Func<TheThing, bool> pSelector, bool AllowRemoteEngine=false)
+        public static List<TheThing> GetThingsByFunc(string pEngineName, Func<TheThing, bool> pSelector, bool AllowRemoteEngine = false)
         {
             List<TheThing> tList = GetThingsOfEngine(pEngineName, AllowRemoteEngine);
-            if (tList == null || tList.Count==0) return tList;
+            if (tList == null || tList.Count == 0) return tList;
             return tList.Where(pSelector).ToList();
         }
 
@@ -1599,7 +1599,7 @@ namespace nsCDEngine.Engines.ThingService
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null)
                 return null;
 
-            var tThing=TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntryByID(pID);
+            var tThing = TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.MyMirrorCache.GetEntryByID(pID);
             if (!AllowRemoteEngine && tThing != null && tThing.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID)
             {
                 tThing = null;
@@ -1615,7 +1615,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public static TheThing GetThingByMID(string pEngineName, Guid pID)
         {
-            return GetThingByMID(pEngineName, pID,false, false);
+            return GetThingByMID(pEngineName, pID, false, false);
         }
 
         /// <summary>
@@ -1713,10 +1713,10 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pEventName">The Event Name</param>
         /// <param name="AllowRemoteThings">Include Things on other Nodes</param>
         /// <param name="pCallBack">The callback to be called when the event fires</param>
-        public static void RegisterEventOfDeviceType(string pEngineName, string pDeviceType,string pEventName,bool AllowRemoteThings, Action<ICDEThing,object> pCallBack)
+        public static void RegisterEventOfDeviceType(string pEngineName, string pDeviceType, string pEventName, bool AllowRemoteThings, Action<ICDEThing, object> pCallBack)
         {
             List<TheThing> tList = GetThingsByProperty(pEngineName, "DeviceType", pDeviceType, AllowRemoteThings);
-            if (tList!=null)
+            if (tList != null)
             {
                 foreach (TheThing tThing in tList)
                 {
@@ -1759,13 +1759,13 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public static Guid PropertyMapper(Guid pSourceThing, string pSourcePropertyName, Guid pTargetThing, string pTargetPropertyName, bool pIsBiDirectional)
         {
-            if (TheCDEngines.MyThingEngine.MyThingRegistry==null || TheCDEngines.MyThingEngine.MyThingRegistry.MyPropertyMaps==null)
+            if (TheCDEngines.MyThingEngine.MyThingRegistry == null || TheCDEngines.MyThingEngine.MyThingRegistry.MyPropertyMaps == null)
                 return Guid.Empty;
             //TODO: How do we unregister the event in case the Thing is deleted?
             TheThing tThing = GetThingByMID("*", pSourceThing, true);
             if (tThing != null)
             {
-                cdeP tSourceProp = tThing.GetProperty(pSourcePropertyName);
+                cdeP tSourceProp = tThing.GetProperty(pSourcePropertyName, true); //New 5.143.2: Mapper will create the source property if it did not exist yet.
                 if (tSourceProp != null)
                 {
                     TheThing tTargetThing = GetThingByMID("*", pTargetThing, true);
@@ -1774,6 +1774,7 @@ namespace nsCDEngine.Engines.ThingService
                         cdeP tTargetProp = tTargetThing.GetProperty(pTargetPropertyName, true);
                         if (tTargetProp != null)
                         {
+                            tTargetThing.SetProperty(tTargetProp.Name, tThing.GetProperty(tSourceProp.Name).GetValue());
                             ThePropertyMapperInfo tInfo = new ThePropertyMapperInfo
                             {
                                 SourceThing = pSourceThing,
@@ -1802,7 +1803,7 @@ namespace nsCDEngine.Engines.ThingService
                                     if (prop.Value is byte[] || TheThing.GetSafePropertyString(tThing, pSourcePropertyName) != TheCommonUtils.CStr(prop.Value))
                                         tThing.SetProperty(pSourcePropertyName, prop.Value);
                                 };
-                                tTargetProp.RegisterEvent(eThingEvents.PropertyChanged, tInfo.TargetCallback );
+                                tTargetProp.RegisterEvent(eThingEvents.PropertyChanged, tInfo.TargetCallback);
                             }
                             TheCDEngines.MyThingEngine.MyThingRegistry.MyPropertyMaps.AddAnItem(tInfo);
                             return tInfo.cdeMID;
@@ -1867,7 +1868,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="MyValue">Class containing the fields and properties</param>
         /// <param name="pNamePrefix">Allows to add a prefix to all Thing Properties</param>
         /// <param name="pBaseProperty">If not null, all new properties will be sub-properties of this given property</param>
-        public static void ClassPropertiesToThingProperties(TheThing pBaseThing, object MyValue,string pNamePrefix="", cdeP pBaseProperty=null)
+        public static void ClassPropertiesToThingProperties(TheThing pBaseThing, object MyValue, string pNamePrefix = "", cdeP pBaseProperty = null)
         {
             if (pBaseThing == null || MyValue == null) return;
             object orgValue = null;
@@ -1884,7 +1885,7 @@ namespace nsCDEngine.Engines.ThingService
                     if (fType == Type.GetType("System.DateTime") || fType == Type.GetType("System.DateTimeOffset"))
                     {
                         if (pBaseProperty != null)
-                            cdeP.SetSafePropertyDate(pBaseProperty,pNamePrefix+ finfo.Name, TheCommonUtils.CDate(orgValue));
+                            cdeP.SetSafePropertyDate(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CDate(orgValue));
                         else
                             TheThing.SetSafePropertyDate(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CDate(orgValue));
                     }
@@ -1916,15 +1917,15 @@ namespace nsCDEngine.Engines.ThingService
                         else
                             pBaseThing.SetProperty(finfo.Name, pNamePrefix + orgValue, ePropertyTypes.TBinary);
                     }
-                    else if (fType.Namespace== "System.Collections.Generic")
+                    else if (fType.Namespace == "System.Collections.Generic")
                     {
                         var collection = orgValue as IEnumerable; // (IEnumerable)finfo.GetValue(orgValue, null);
                         foreach (var item in collection)
                         {
-                            ClassPropertiesToThingProperties(pBaseThing, item, pBaseProperty == null ? $"{finfo.Name}_":"", pBaseProperty);
+                            ClassPropertiesToThingProperties(pBaseThing, item, pBaseProperty == null ? $"{finfo.Name}_" : "", pBaseProperty);
                         }
                     }
-                    else if (fType.Namespace!="System")
+                    else if (fType.Namespace != "System")
                     {
                         ClassPropertiesToThingProperties(pBaseThing, orgValue, pBaseProperty == null ? $"{finfo.Name}_" : "", pBaseProperty);
                     }
@@ -1963,7 +1964,7 @@ namespace nsCDEngine.Engines.ThingService
                 case TypeCode.UInt64:
                     return true;
             }
-                return false;
+            return false;
         }
     }
 }
