@@ -406,32 +406,32 @@ namespace nsCDEngine.Engines.ThingService
     /// <summary>
     /// Specifies the algorithm for Throttling of SETP calls
     /// </summary>
-    public enum eThrottleKind: int
+    public enum eThrottleKind : int
     {
         /// <summary>
         /// Only the last property change will be used
         /// </summary>
-        Last =0,
+        Last = 0,
 
-    /// <summary>
+        /// <summary>
         /// Only the first change will be used
         /// </summary>
-        First=1,
+        First = 1,
 
         /// <summary>
         /// An average will be calculated over all changes will be used
         /// </summary>
-        Average=2,
+        Average = 2,
 
         /// <summary>
         /// Only the minimum value will be used
         /// </summary>
-        MinValue=3,
+        MinValue = 3,
 
         /// <summary>
         /// Only the maximum value wil be used
         /// </summary>
-        MaxValue=4
+        MaxValue = 4
     }
 
 
@@ -604,7 +604,7 @@ namespace nsCDEngine.Engines.ThingService
                 return MyBaseEngine;
             if (string.IsNullOrEmpty(EngineName))
                 return null;
-            MyBaseEngine=TheThingRegistry.GetBaseEngine(EngineName);
+            MyBaseEngine = TheThingRegistry.GetBaseEngine(EngineName);
             return MyBaseEngine;
         }
 
@@ -965,9 +965,9 @@ namespace nsCDEngine.Engines.ThingService
         public cdeP RemoveProperty(string pName)
         {
             cdeP t = GetProperty(pName);
-            if (t!=null)
+            if (t != null)
             {
-                if (t.cdeOP==null)
+                if (t.cdeOP == null)
                     MyPropertyBag.TryRemove(t.Name, out t);
                 else
                     t.cdeOP.cdePB?.TryRemove(t.Name, out t);
@@ -988,7 +988,7 @@ namespace nsCDEngine.Engines.ThingService
         public bool RemovePropertiesStartingWith(string pName)
         {
             bool retVal = false;
-            List<string> Keys=new List<string>();
+            List<string> Keys = new List<string>();
             lock (MyPropertyBag.MyLock)
             {
                 foreach (string key in MyPropertyBag.Keys)
@@ -1029,13 +1029,13 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pThrottleInMs">Snapshot Throttle time in MS</param>
         /// <param name="pKind">Algorithm to be used for the throttle (in V3.1 only LAST is supported)</param>
         /// <returns></returns>
-        public int SetPublishThrottle(int pThrottleInMs, eThrottleKind pKind=eThrottleKind.Last)
+        public int SetPublishThrottle(int pThrottleInMs, eThrottleKind pKind = eThrottleKind.Last)
         {
             if (pThrottleInMs >= 0)
             {
                 PublishThrottle = pThrottleInMs;
                 PublishThrottleKind = pKind;
-                if (PubList==null)
+                if (PubList == null)
                     PubList = new cdeConcurrentDictionary<string, cdeP>();
             }
             else
@@ -1055,13 +1055,13 @@ namespace nsCDEngine.Engines.ThingService
             DoThrottlePub(null);
         }
 
-        internal void ThrottledSETP(cdeP pProperty,Guid pOriginator, bool ForcePublish)
+        internal void ThrottledSETP(cdeP pProperty, Guid pOriginator, bool ForcePublish)
         {
-            if (pProperty==null || TheBaseAssets.MyServiceHostInfo.DisableNMIMessages || TheBaseAssets.MyServiceHostInfo.DisableNMI || ((pProperty.cdeFOC & 1) == 0 && !ForcePublish))
+            if (pProperty == null || TheBaseAssets.MyServiceHostInfo.DisableNMIMessages || TheBaseAssets.MyServiceHostInfo.DisableNMI || ((pProperty.cdeFOC & 1) == 0 && !ForcePublish))
                 return;
-            if (PublishThrottle <= 0 || (pProperty.cdeE&2)!=0 || pProperty.cdeO!=cdeMID)    //TODO V4: P of P must send rigth away..optimize in DoThrottlePub
+            if (PublishThrottle <= 0 || (pProperty.cdeE & 2) != 0 || pProperty.cdeO != cdeMID)    //TODO V4: P of P must send rigth away..optimize in DoThrottlePub
             {
-                pProperty.PublishChange(TheCommonUtils.cdeGuidToString(pOriginator), Guid.Empty, null,eEngineName.NMIService, ForcePublish);
+                pProperty.PublishChange(TheCommonUtils.cdeGuidToString(pOriginator), Guid.Empty, null, eEngineName.NMIService, ForcePublish);
                 return;
             }
             switch (PublishThrottleKind)
@@ -1088,7 +1088,7 @@ namespace nsCDEngine.Engines.ThingService
                     PubList[cdeP.GetPropertyPath(pProperty)] = pProperty;
                     break;
             }
-            if (DateTime.Now.Subtract(PubLastSend).TotalMilliseconds>PublishThrottle)
+            if (DateTime.Now.Subtract(PubLastSend).TotalMilliseconds > PublishThrottle)
             {
                 PubLastSend = DateTime.Now;
                 DoThrottlePub(null);
@@ -1174,12 +1174,12 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>List of properties matching the condition</returns>
         public List<cdeP> GetPropertiesStartingWith(string pName)
         {
-            List<cdeP> Keys=new List<cdeP>();
+            List<cdeP> Keys = new List<cdeP>();
             lock (MyPropertyBag.MyLock)
             {
                 foreach (string key in MyPropertyBag.Keys)
                 {
-                    if (key.StartsWith(pName,StringComparison.OrdinalIgnoreCase))
+                    if (key.StartsWith(pName, StringComparison.OrdinalIgnoreCase))
                         Keys.Add(MyPropertyBag[key]);
                 }
             }
@@ -1203,7 +1203,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="propertyFilter">Indicate which properties of a thing should be returned.</param>
         /// <returns></returns>
         public IEnumerable<string> GetMatchingProperties(ThePropertyFilter propertyFilter)
-        { 
+        {
             IEnumerable<string> propertiesToInclude;
             if (propertyFilter?.Properties == null)
             {
@@ -1247,7 +1247,7 @@ namespace nsCDEngine.Engines.ThingService
                 }
                 if (propsToAdd != null)
                 {
-                    propertiesToInclude = propertiesToInclude.Where(p=>!p.StartsWith("!")).Union(propsToAdd);
+                    propertiesToInclude = propertiesToInclude.Where(p => !p.StartsWith("!")).Union(propsToAdd);
                 }
             }
             if (propertyFilter?.PropertiesToExclude?.Any() == true)
@@ -1302,7 +1302,7 @@ namespace nsCDEngine.Engines.ThingService
             List<cdeP> Keys = new List<cdeP>();
             lock (MyPropertyBag.MyLock)
             {
-                foreach (cdeP key in GetAllProperties(includeSubProperties? 10:0))
+                foreach (cdeP key in GetAllProperties(includeSubProperties ? 10 : 0))
                 {
                     if (!string.IsNullOrEmpty(key.cdeM) && key.cdeM.StartsWith(pName, StringComparison.OrdinalIgnoreCase))
                         Keys.Add(key);
@@ -1330,7 +1330,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 return false;
             }
-            return cdeN == TSM.GetOriginator(originator) &&  !IsOnLocalNode();
+            return cdeN == TSM.GetOriginator(originator) && !IsOnLocalNode();
         }
 
 
@@ -1374,7 +1374,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public cdeP SetProperty(string pName, object pValue)
         {
-            return SetProperty(pName, pValue,ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, -1,null, null);
+            return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, -1, null, null);
         }
 
         /// <summary>
@@ -1477,7 +1477,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="EventAction">Defines what events should be fired</param>
         /// <param name="pOnChangeEvent">a callback for a local (current node) onChangeEvent</param>
         /// <returns></returns>
-        public cdeP SetProperty(string pName, object pValue, int EventAction=-1, Action<cdeP> pOnChangeEvent=null)
+        public cdeP SetProperty(string pName, object pValue, int EventAction = -1, Action<cdeP> pOnChangeEvent = null)
         {
             return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, EventAction, pOnChangeEvent, null);
         }
@@ -1494,7 +1494,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="EventAction">Defines what events should be fired</param>
         /// <param name="pOnChangeEvent">a callback for a local (current node) onChangeEvent</param>
         /// <returns></returns>
-        public cdeP SetProperty(string pName, object pValue, ePropertyTypes pType, int EventAction=-1, Action<cdeP> pOnChangeEvent=null)
+        public cdeP SetProperty(string pName, object pValue, ePropertyTypes pType, int EventAction = -1, Action<cdeP> pOnChangeEvent = null)
         {
             return SetProperty(pName, pValue, pType, DateTimeOffset.MinValue, EventAction, pOnChangeEvent, null);
         }
@@ -1629,7 +1629,7 @@ namespace nsCDEngine.Engines.ThingService
                 // if (NoFireAdd) TODO - Revisit event firing for Properties of Properties: this ensures that top-level property additions get fired, but no events are fired at the thing level for sub-properties
                 FireEvent(eThingEvents.PropertyAdded, this, pProp, true);
             }
-            if (tOldProp != null && tOldProp!=pProp && tOldProp.HasRegisteredEvents())
+            if (tOldProp != null && tOldProp != pProp && tOldProp.HasRegisteredEvents())
             {
                 tOldProp.MoveEventsTo(pProp);
                 if (tOldProp.Value != pProp.Value)
@@ -1647,7 +1647,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="nameValueDictionary"></param>
         /// <param name="sourceTimestamp"></param>
         /// <returns></returns>
-        public bool SetProperties(IDictionary<string,object> nameValueDictionary, DateTimeOffset sourceTimestamp)
+        public bool SetProperties(IDictionary<string, object> nameValueDictionary, DateTimeOffset sourceTimestamp)
         {
             if (nameValueDictionary == null) return false;
             foreach (var nv in nameValueDictionary)
@@ -1665,7 +1665,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool RegisterOnChange(string OnUpdateName, Action<cdeP> oOnChangeCallback)
         {
-            if (oOnChangeCallback==null || string.IsNullOrEmpty(OnUpdateName)) return false;
+            if (oOnChangeCallback == null || string.IsNullOrEmpty(OnUpdateName)) return false;
 
             cdeP tProp = GetProperty(OnUpdateName, true);
             if (tProp != null)
@@ -1742,7 +1742,7 @@ namespace nsCDEngine.Engines.ThingService
             if (string.IsNullOrEmpty(pName)) return null;
 
             if (!pName.StartsWith("["))
-                return GetPropertyRoot(pName,DoCreate, ref NoFireAdded);
+                return GetPropertyRoot(pName, DoCreate, ref NoFireAdded);
 
             cdeP tP = null;
             TheDataBase tParent = this;
@@ -1805,7 +1805,7 @@ namespace nsCDEngine.Engines.ThingService
         public cdeP DeclareSecureProperty(string pName, ePropertyTypes pType)
         {
             cdeP tProp = GetProperty(pName, true);
-            if (tProp==null || (tProp.cdeE & 0x01) != 0) return tProp;
+            if (tProp == null || (tProp.cdeE & 0x01) != 0) return tProp;
 
             string tOldValue = tProp.ToString();
             if (tProp.cdeO != cdeMID)
@@ -1846,7 +1846,7 @@ namespace nsCDEngine.Engines.ThingService
             if (string.IsNullOrEmpty(pName)) return 0;
 
             var tP = GetProperty(pName, false);
-            if (tP!=null)
+            if (tP != null)
                 return (ePropertyTypes)tP.cdeT;
             return 0;
         }
@@ -1862,9 +1862,9 @@ namespace nsCDEngine.Engines.ThingService
             {
                 cdeP tP = null;
                 if (MyPropertyBag[key].Value != null)
-                    tP=OutThing.SetProperty(key, TheCommonUtils.CStr(MyPropertyBag[key].GetValue()),(ePropertyTypes)MyPropertyBag[key].cdeT, MyPropertyBag[key].cdeFOC, null);
+                    tP = OutThing.SetProperty(key, TheCommonUtils.CStr(MyPropertyBag[key].GetValue()), (ePropertyTypes)MyPropertyBag[key].cdeT, MyPropertyBag[key].cdeFOC, null);
                 else
-                    tP=OutThing.SetProperty(key, "", (ePropertyTypes)MyPropertyBag[key].cdeT, MyPropertyBag[key].cdeFOC, null);
+                    tP = OutThing.SetProperty(key, "", (ePropertyTypes)MyPropertyBag[key].cdeT, MyPropertyBag[key].cdeFOC, null);
                 tP.cdeE = MyPropertyBag[key].cdeE;
                 MyPropertyBag[key].Clone(tP);
             }
@@ -1907,7 +1907,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="sinkStatusHasChanged"></param>
         public void RegisterStatusChanged(Action<cdeP> sinkStatusHasChanged)
         {
-            if (sinkStatusHasChanged!=null)
+            if (sinkStatusHasChanged != null)
                 GetProperty("StatusLevel", true).RegisterEvent(eThingEvents.PropertyChanged, sinkStatusHasChanged);
         }
 
@@ -2047,7 +2047,8 @@ namespace nsCDEngine.Engines.ThingService
         public string Value
         {
             get { return TheThing.GetSafePropertyString(this, "Value"); }
-            set {
+            set
+            {
                 TheThing.SetSafePropertyString(this, "Value", value);
             }
         }
@@ -2138,10 +2139,11 @@ namespace nsCDEngine.Engines.ThingService
         [IgnoreDataMember]
         public List<eThingCaps> Capabilities
         {
-            get {
-                string [] tCaps = TheThing.GetSafePropertyString(this, "Capabilities").Split(',');
+            get
+            {
+                string[] tCaps = TheThing.GetSafePropertyString(this, "Capabilities").Split(',');
                 List<eThingCaps> t = new List<eThingCaps>();
-                if (tCaps.Length>0)
+                if (tCaps.Length > 0)
                 {
                     foreach (string c in tCaps)
                     {
@@ -2154,12 +2156,12 @@ namespace nsCDEngine.Engines.ThingService
             }
             set
             {
-                if (value!=null && value.Count>0)
+                if (value != null && value.Count > 0)
                 {
-                    string final="";
+                    string final = "";
                     foreach (eThingCaps t in value)
                     {
-                        if (final.Length > 0) final +=",";
+                        if (final.Length > 0) final += ",";
                         final += ((int)t).ToString();
                     }
                     TheThing.SetSafePropertyString(this, "Capabilities", final);
@@ -2169,7 +2171,7 @@ namespace nsCDEngine.Engines.ThingService
 
         internal int GetLowestCapability()
         {
-            int res=(int)Capabilities.OrderBy(s => s).FirstOrDefault();
+            int res = (int)Capabilities.OrderBy(s => s).FirstOrDefault();
             if (res == 0)
                 res = 9999;
             return res;
@@ -2192,7 +2194,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             return MyRegisteredEvents.GetKnownEvents();
         }
-#region Event Handling
+        #region Event Handling
 
         private readonly TheCommonUtils.RegisteredEventHelper<ICDEThing, object> MyRegisteredEvents = null;
 
@@ -2513,7 +2515,7 @@ namespace nsCDEngine.Engines.ThingService
             return string.Format("{0}", this.cdeMID);
         }
 
-#region Static Methods
+        #region Static Methods
 
         /// <summary>
         /// Hands a given TSM to a given Thing
@@ -2531,7 +2533,7 @@ namespace nsCDEngine.Engines.ThingService
                     tCurrentUser = TheUserManager.GetUserByID(TheCommonUtils.CSCDecrypt2GUID(tSendMessage.UID, TheBaseAssets.MySecrets.GetAI()));
             }
             var tProgMsg = new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback, CurrentUserID = ((tCurrentUser == null) ? Guid.Empty : tCurrentUser.cdeMID) };
-            tProgMsg.ClientInfo=TheCommonUtils.GetClientInfo(tProgMsg);
+            tProgMsg.ClientInfo = TheCommonUtils.GetClientInfo(tProgMsg);
             if (tThing.MyRegisteredEvents.HasRegisteredEvents(tSendMessage.TXT))
             {
                 if (tSendMessage.TXT.StartsWith(eUXEvents.OnClick)) TheCommonUtils.SleepOneEye(200, 200); //REVIEW: Bug#1098 this will make "TAP and HOLD" impossible...but that should be a different event anyway...shall we keep it here or force plugins to add this individually?
@@ -2659,7 +2661,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public static cdeP SetSafePropertyString(ICDEThing pThing, string pName, string pValue, bool UpdateThing = false)
         {
-            return SetSafeProperty(pThing, pName, pValue, ePropertyTypes.TString,UpdateThing);
+            return SetSafeProperty(pThing, pName, pValue, ePropertyTypes.TString, UpdateThing);
         }
 
         /// <summary>
@@ -2671,12 +2673,12 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pType">Sets the Type of the Property</param>
         /// <param name="UpdateThing">If set to true, TheThing's UpdateThing function will be called and TheThing is updated in TheThingRegistry and TheThingRegistry is flushed to Disk</param>
         /// <returns></returns>
-        public static cdeP SetSafeProperty(ICDEThing pThing, string pName, object pValue, ePropertyTypes pType, bool UpdateThing=false)
+        public static cdeP SetSafeProperty(ICDEThing pThing, string pName, object pValue, ePropertyTypes pType, bool UpdateThing = false)
         {
             if (pThing == null) return null;
             cdeP ret = pThing.GetProperty(pName, true);
             ret.cdeT = (int)pType;
-            ret= pThing.SetProperty(pName, pValue);
+            ret = pThing.SetProperty(pName, pValue);
             if (UpdateThing)
                 TheThingRegistry.UpdateThing(pThing, true);
             return ret;
@@ -2692,7 +2694,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="UpdateThing">If set to true, TheThing's UpdateThing function will be called and TheThing is updated in TheThingRegistry and TheThingRegistry is flushed to Disk</param>
         /// <param name="ForceUpdate">Forces an update to the Thing - even if the value of the property is the same as already store in the property</param>
         /// <returns></returns>
-        public static cdeP SetSafeProperty(TheThing pThing, string pName, object pValue, ePropertyTypes pType, bool UpdateThing=false, bool ForceUpdate=false)
+        public static cdeP SetSafeProperty(TheThing pThing, string pName, object pValue, ePropertyTypes pType, bool UpdateThing = false, bool ForceUpdate = false)
         {
             if (pThing == null) return null;
             cdeP ret = pThing.SetProperty(pName, pValue, pType, ForceUpdate ? 0x20 : -1, null); //NEW3.1: 0x20 was 8
@@ -2977,5 +2979,57 @@ namespace nsCDEngine.Engines.ThingService
         #endregion
 
         #endregion
+    }
+
+    [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class)]
+    public class OPCUATypeAttribute : Attribute
+    {
+        public string UAType;
+        public string UANamespace;
+        public string UANodeId;
+
+        public OPCUATypeAttribute(string pType, string pNamespace)
+        {
+            UAType = pType;
+            UANamespace = pNamespace;
+        }
+
+        public static bool ApplyUAAttributes(Type pThingType, ICDEThing pThing)
+        {
+            if (pThing == null || pThingType == null)
+                return false;
+            bool bResult = false;
+            try
+            {
+                var info = (OPCUATypeAttribute)pThingType.GetCustomAttributes(typeof(OPCUATypeAttribute), true)?.FirstOrDefault();
+                if (info != null)
+                {
+                    if (!string.IsNullOrEmpty(info?.UAType))
+                        pThing.SetProperty(nameof(UAType), info?.UAType);
+                    if (!string.IsNullOrEmpty(info?.UANamespace))
+                        pThing.SetProperty(nameof(UANamespace), info?.UANamespace);
+                    bResult = true;
+                }
+            }
+            catch { }
+
+            return bResult;
+        }
+    }
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    public class OPCUAPropertyAttribute : Attribute
+    {
+        public ePropertyTypes cdeT = ePropertyTypes.NOCHANGE;
+        public string UASourceType;
+        public string UAUnits;
+        public string SourceUnits;
+        public double? UARangeMin;
+        public double? UARangeMax;
+        public string UADescription;
+        public string UADisplayName;
+        public string UANodeId;
+        public string UABrowseName;
+        public int? UAWriteMask;
+        public int? UAUserWriteMask;
     }
 }

@@ -371,6 +371,7 @@ namespace nsCDEngine.Engines.ThingService
                             tThing.AddCapability(cap);
                         }
                     }
+                    OPCUATypeAttribute.ApplyUAAttributes(tThing.GetObject()?.GetType(), tThing);
                 }
 
                 // Make sure the historin gets wired up before any updates are made to the thing: important for permanent consumers
