@@ -2984,13 +2984,13 @@ namespace nsCDEngine.Engines.ThingService
     [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class)]
     public class OPCUATypeAttribute : Attribute
     {
-        public string UAType;
+        public string UANodeIdentifier;
         public string UANamespace;
-        public string UANodeId;
+        public bool AllowWrites;
 
         public OPCUATypeAttribute(string pType, string pNamespace)
         {
-            UAType = pType;
+            UANodeIdentifier = pType;
             UANamespace = pNamespace;
         }
 
@@ -3004,10 +3004,11 @@ namespace nsCDEngine.Engines.ThingService
                 var info = (OPCUATypeAttribute)pThingType.GetCustomAttributes(typeof(OPCUATypeAttribute), true)?.FirstOrDefault();
                 if (info != null)
                 {
-                    if (!string.IsNullOrEmpty(info?.UAType))
-                        pThing.SetProperty(nameof(UAType), info?.UAType);
+                    if (!string.IsNullOrEmpty(info?.UANodeIdentifier))
+                        pThing.SetProperty(nameof(UANodeIdentifier), info?.UANodeIdentifier);
                     if (!string.IsNullOrEmpty(info?.UANamespace))
                         pThing.SetProperty(nameof(UANamespace), info?.UANamespace);
+                    pThing.SetProperty(nameof(AllowWrites), info.AllowWrites);
                     bResult = true;
                 }
             }
