@@ -29,7 +29,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.201
+        dotnet-version: 3.1.201
         source-url: https://api.nuget.org/v3/index.json
         config-file: .\nuget.config
         owner: ${{secrets.NUGETORG_APIKEY_OWNER}}
