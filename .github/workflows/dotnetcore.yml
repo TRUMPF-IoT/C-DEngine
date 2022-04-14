@@ -32,6 +32,7 @@ jobs:
         dotnet-version: |
           3.1.201
           6.0
+          5.0
         source-url: https://api.nuget.org/v3/index.json
         config-file: .\nuget.config
         owner: ${{secrets.NUGETORG_APIKEY_OWNER}}
