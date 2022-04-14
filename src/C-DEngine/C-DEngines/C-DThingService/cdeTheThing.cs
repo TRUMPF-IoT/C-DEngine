@@ -2995,12 +2995,12 @@ namespace nsCDEngine.Engines.ThingService
             UANamespace = pNamespace;
         }
         public OPCUATypeAttribute() { }
-        public OPCUATypeAttribute(string UATypeNodeId)
+        public OPCUATypeAttribute(string pUATypeNodeId)
         {
-            UATypeNodeId = UATypeNodeId;
+            UATypeNodeId = pUATypeNodeId;
         }
 
-        public static bool ApplyUAAttributes(Type pThingType, ICDEThing pThing)
+        public static bool ApplyUAAttributes(Type pThingType, TheThing pThing)
         {
             if (pThing == null || pThingType == null)
                 return false;
@@ -3017,6 +3017,45 @@ namespace nsCDEngine.Engines.ThingService
                     if (!string.IsNullOrEmpty(info?.UANamespace))
                         pThing.SetProperty(nameof(UANamespace), info?.UANamespace);
                     pThing.SetProperty(nameof(AllowWrites), info.AllowWrites);
+
+                    var thingTypeProps = pThingType.GetProperties();
+                    foreach (var prop in thingTypeProps)
+                    {
+                        OPCUAPropertyAttribute uaAttribute = null;
+                        try
+                        {
+                            uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
+                            if (uaAttribute != null)
+                            {
+                                var tProp = pThing.GetProperty(prop.Name);
+                                if (tProp != null)
+                                {
+                                    if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
+                                    if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UASourceType), uaAttribute.UASourceType);
+                                    if (!string.IsNullOrEmpty(uaAttribute?.UAUnits))
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUnits), uaAttribute.UAUnits);
+                                    if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
+                                    if (!string.IsNullOrEmpty(uaAttribute?.UANodeId))
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UANodeId), uaAttribute.UANodeId);
+                                    if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
+                                    if (uaAttribute.UARangeMin != null)
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
+                                    if (uaAttribute.UARangeMax != null)
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMax), uaAttribute.UARangeMax);
+                                    if (uaAttribute.UAWriteMask != null)
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
+                                    if (uaAttribute.UAUserWriteMask != null)
+                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+
                     bResult = true;
                 }
             }
@@ -3028,16 +3067,16 @@ namespace nsCDEngine.Engines.ThingService
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
     public class OPCUAPropertyAttribute : Attribute
     {
-        public ePropertyTypes cdeT = ePropertyTypes.NOCHANGE;
+        public string UABrowseName;
+
+        // Possible future enhancements. All these should be defined in the UA NodeSet referenced in the UATypeNodeId of TheThing
         public string UASourceType;
         public string UAUnits;
-        public string SourceUnits;
         public double? UARangeMin;
         public double? UARangeMax;
         public string UADescription;
         public string UADisplayName;
         public string UANodeId;
-        public string UABrowseName;
         public int? UAWriteMask;
         public int? UAUserWriteMask;
     }
