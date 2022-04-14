@@ -41,7 +41,7 @@ namespace nsCDEngine.BaseClasses
         ///
         /// <returns>   Error string if load failed - then the default security in the CDE is used. Null if succeeded </returns>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        public static string LoadCrypto(string pDLLName, ICDESystemLog pMySYSLOG = null, bool bDontVerifyTrust=false, string pFromFile = null, bool bVerifyTrustPath = true, bool bDontVerifyIntegrity = false)
+        public static string LoadCrypto(string pDLLName, ICDESystemLog pMySYSLOG = null, bool bDontVerifyTrust = false, string pFromFile = null, bool bVerifyTrustPath = true, bool bDontVerifyIntegrity = false)
         {
             if (MasterSwitch)
                 return CryptoLoadMessage = "LoadCrypto is not allowed after the Node has been started";
@@ -51,12 +51,14 @@ namespace nsCDEngine.BaseClasses
                 if (string.IsNullOrEmpty(pDLLName))
                     pDLLName = "cdeCryptoLib.dll";
                 Dictionary<string, string> tL = new Dictionary<string, string>();
-                Assembly tCryptoAssembly=null;
+                Assembly tCryptoAssembly = null;
+                string codeSignThumb;
                 if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch") //Android and IOS
                 {
                     if (MyCodeSigner == null)
                         MyCodeSigner = new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
-                    if (!bDontVerifyTrust && string.IsNullOrEmpty(MyCodeSigner.GetAppCert(bDontVerifyTrust, pFromFile, bVerifyTrustPath, bDontVerifyIntegrity)))
+                    codeSignThumb = MyCodeSigner.GetAppCert(bDontVerifyTrust, pFromFile, bVerifyTrustPath, bDontVerifyIntegrity);
+                    if (!bDontVerifyTrust && string.IsNullOrEmpty(codeSignThumb))
                     {
                         return CryptoLoadMessage = $"No code-signing certificate found but required";
                     }
@@ -67,7 +69,7 @@ namespace nsCDEngine.BaseClasses
 
                     tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM, out tCryptoAssembly);
                     if (tTSM != null)
-                        TheSystemMessageLog.ToCo($"{tTSM.TXT} {tTSM.PLS}");
+                        TheSystemMessageLog.ToCo($"Domain:{AppDomain.CurrentDomain?.FriendlyName} DLL:{pFromFile} Cert Found:{codeSignThumb} {tTSM.TXT} {tTSM.PLS}");
                 }
                 else
                 {
@@ -95,9 +97,9 @@ namespace nsCDEngine.BaseClasses
                         }
                     }
                 }
-                if ((bDontVerifyTrust || MyCodeSigner?.IsTrusted(pDLLName)==true) && tL?.Count>0)
+                if ((bDontVerifyTrust || MyCodeSigner?.IsTrusted(pDLLName) == true) && tL?.Count > 0)
                 {
-                    if (tCryptoAssembly==null)
+                    if (tCryptoAssembly == null)
                         tCryptoAssembly = Assembly.LoadFrom(pDLLName);
                     if (tL.ContainsKey("ICDESecrets"))
                     {
@@ -121,7 +123,7 @@ namespace nsCDEngine.BaseClasses
                                     case "ICDECrypto": MyCrypto = Activator.CreateInstance(tNType, new object[] { MySecrets, pMySYSLOG }) as ICDECrypto; break;
                                 }
                             }
-                            catch(Exception e)
+                            catch (Exception e)
                             {
                                 pMySYSLOG?.WriteToLog(0, 1, "LoadCrypto", $"Failed to create implementation of {tInter}. Most likely constructor not implemented correctly (must take ICDESecrets as first parameter): {e}", eMsgLevel.l1_Error);
                             }
@@ -157,10 +159,10 @@ namespace nsCDEngine.BaseClasses
             {
                 return ScanLibrary(assemblyPath, out resTSM, out _);
             }
-            public Dictionary<string, string> ScanLibrary(string assemblyPath,out TSM resTSM, out Assembly tAss)
+            public Dictionary<string, string> ScanLibrary(string assemblyPath, out TSM resTSM, out Assembly tAss)
             {
                 resTSM = null;
-                Dictionary<string, string> mList =new Dictionary<string, string>();
+                Dictionary<string, string> mList = new Dictionary<string, string>();
 
                 tAss = null;
                 if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
@@ -184,7 +186,7 @@ namespace nsCDEngine.BaseClasses
                     {
                         //If we end up here, the assembly was compiled with the Native Tool Chain (i.e. XBox Store)
                         //all names are stripped out and identification of a assembly can only be made by its "interface footprint"
-                        var t=AppDomain.CurrentDomain.GetAssemblies();
+                        var t = AppDomain.CurrentDomain.GetAssemblies();
                         foreach (var assembly in t)
                         {
                             try
@@ -200,7 +202,7 @@ namespace nsCDEngine.BaseClasses
                                                    where ifs != null && ifs.Length > 0 && (ifs.Any(s => "IBaseEngine".Equals(s.Name)))
                                                    select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
 
-                                    if (IsCDEAss.Any()==false)
+                                    if (IsCDEAss.Any() == false)
                                     {
                                         tAss = assembly;
                                         break;
@@ -365,7 +367,7 @@ namespace nsCDEngine.BaseClasses
         /// <summary>
         /// Version of the C-DEngine in Major.Minor format.
         /// </summary>
-        public static double CurrentVersion {get { return BuildVersion; } }
+        public static double CurrentVersion { get { return BuildVersion; } }
 
         /// <summary>
         /// Returns the Application Information of the hosting App
@@ -460,14 +462,14 @@ namespace nsCDEngine.BaseClasses
         {
             if (IsInitialized) return;
             IsInitialized = true;
-            if (MyServiceHostInfo == null || !(MySecrets?.IsApplicationIDValid()==true))
+            if (MyServiceHostInfo == null || !(MySecrets?.IsApplicationIDValid() == true))
             {
                 MasterSwitch = false;
                 return;
             }
             MyApplication = pApp;
 
-#region step 1: Moved from StartApplication to here as all the following code is updating TheBaseAssets
+            #region step 1: Moved from StartApplication to here as all the following code is updating TheBaseAssets
             //The following section are "app.config" only settings required before cdeTPI is loaded. These settings cannot be set via the Provisioning Service
             int delay = TheCommonUtils.CInt(MySettings.GetSetting("StartupDelay"));
             if (delay > 0)
@@ -543,7 +545,7 @@ namespace nsCDEngine.BaseClasses
             }
 #endif
 
-            MyServiceHostInfo.EnableTaskKPIs =TheCommonUtils.CBool(MySettings.GetSetting("EnableTaskKPIs"));
+            MyServiceHostInfo.EnableTaskKPIs = TheCommonUtils.CBool(MySettings.GetSetting("EnableTaskKPIs"));
             if (MyServiceHostInfo.EnableTaskKPIs)
             {
                 var taskKpiThread = new Thread(() =>
@@ -566,7 +568,7 @@ namespace nsCDEngine.BaseClasses
             }
 
 
-#region step 3: analyse os environment information
+            #region step 3: analyse os environment information
             OperatingSystem os = Environment.OSVersion;
             var osInfoForLog = $"C-DEngine version: {BuildVersion} OS:{Environment.OSVersion} OS Version:{os.VersionString} OS Version Numbers: {os.Version.Major}.{os.Version.Minor}.{os.Version.Build}.{os.Version.Revision} Platform:{os.Platform} SP:{os.ServicePack} Processor Count: {Environment.ProcessorCount} IsMono:{(Type.GetType("Mono.Runtime") != null)} IsNetCore:{TheCommonUtils.IsNetCore()} Product: {TheCommonUtils.GetAssemblyProduct(typeof(TheBaseAssets))} ";
             TheSystemMessageLog.ToCo(osInfoForLog);
@@ -623,9 +625,9 @@ namespace nsCDEngine.BaseClasses
 #endif
             }
             TheSystemMessageLog.ToCo("BaseDir: " + MyServiceHostInfo.BaseDirectory);
-#endregion
+            #endregion
 
-#region step 4: Prepare essential Subsystems (Syslog, ScopeManager, Diagnostics, Caches, AppInfo)
+            #region step 4: Prepare essential Subsystems (Syslog, ScopeManager, Diagnostics, Caches, AppInfo)
             MySYSLOG = new TheSystemMessageLog(500); // No more ToCo after this point (will be ignored)
             TheCDEKPIs.Reset();
 
@@ -661,7 +663,7 @@ namespace nsCDEngine.BaseClasses
                 Price = 0,
                 ServiceDescription = MyServiceHostInfo.Title,
                 ServiceName = MyServiceHostInfo.ApplicationName,
-                Capabilities = new List<eThingCaps> {eThingCaps.Host},
+                Capabilities = new List<eThingCaps> { eThingCaps.Host },
                 Categories = new List<string>(),
                 FilesManifest = new List<string>()
             };
@@ -708,7 +710,7 @@ namespace nsCDEngine.BaseClasses
                 (MyLoc as TheDefaultLocalizationUtils).DoPseudoLoc = TheCommonUtils.CBool(MySettings.GetSetting("DoPseudoLoc"));
             }
 
-#region step 5: output some system information
+            #region step 5: output some system information
             if (MyServiceHostInfo.IsMemoryOptimized)
                 MySYSLOG.SetMaxLogEntries(10);
             MySYSLOG.WriteToLog(4151, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseAssets", osInfoForLog, eMsgLevel.l4_Message));
@@ -718,9 +720,9 @@ namespace nsCDEngine.BaseClasses
                 MySYSLOG.WriteToLog(4152, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseAssets", dotNetInfoForLog, eMsgLevel.l4_Message));
             }
             MySYSLOG.WriteToLog(4153, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheBaseAssets", "BaseDir: " + MyServiceHostInfo.BaseDirectory, eMsgLevel.l4_Message));
-#endregion
+            #endregion
 
-#region step 6: determine WebSocket8 vs. WebSocketsSharp
+            #region step 6: determine WebSocket8 vs. WebSocketsSharp
             var ws8FlagTemp = MySettings.GetSetting("DisallowWebSocket8");
             if (!string.IsNullOrEmpty(ws8FlagTemp))
             {
@@ -743,9 +745,9 @@ namespace nsCDEngine.BaseClasses
 #endif
                 MySYSLOG.WriteToLog(4155, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseAssets", tWSMsg, eMsgLevel.l4_Message));
             }
-#endregion
+            #endregion
 
-#region step 7: Initialize Localization subsystem (ILocalizationHooks)
+            #region step 7: Initialize Localization subsystem (ILocalizationHooks)
             bool bLocInitialized = false;
             try
             {
@@ -799,9 +801,9 @@ namespace nsCDEngine.BaseClasses
                 if (MyServiceHostInfo.MyAltStationURLs.Count(s => s.StartsWith("CDEB")) == 0)
                     MyServiceHostInfo.MyAltStationURLs.Add("CDEB://{" + MyServiceHostInfo.MyDeviceInfo.DeviceID + "}"); //TODO: Backchannel Possibly save to Config File
             }
-#endregion
+            #endregion
 
-#region step 9: Start Localhost QSender and SessionStateManager
+            #region step 9: Start Localhost QSender and SessionStateManager
             MySession = new TheSessionStateManager(MyServiceHostInfo);
             LocalHostQSender = new TheQueuedSender();   //NO connected or Error Event necessary
             LocalHostQSender.StartSender(new TheChannelInfo(MyServiceHostInfo.MyDeviceInfo.DeviceID, MyScopeManager.ScopeID, MyServiceHostInfo.MyDeviceInfo.SenderType, MyServiceHostInfo.GetPrimaryStationURL(false)), null, false); //NEW:2.06 Setting Realscope here ///null correct - no subs on LocalhostQS in beginning //RScope-OK
@@ -809,7 +811,7 @@ namespace nsCDEngine.BaseClasses
             {
                 MySYSLOG.WriteToLog(4157, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseAssets", $"WebSockets Disabled - no WSPort specified {MyServiceHostInfo.MyStationWSPort} or DisableWebSocket={MyServiceHostInfo.DisableWebSockets}", eMsgLevel.l4_Message));
             }
-#endregion
+            #endregion
 
             // Post Device ID settings
 

@@ -2,15 +2,15 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
+using nsCDEngine.BaseClasses;
 using nsCDEngine.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using nsCDEngine.BaseClasses;
-using System.Reflection;
 #if !CDE_STANDARD // PKCS on .Net Standard requires additional nuget package: must allow running without dependency
 using System.Security.Cryptography.Pkcs;
 #endif
@@ -308,6 +308,8 @@ namespace nsCDEngine.Security
 
         private static X509Certificate2 ReadPECertificateFromBinaryImage(string filePath, bool verifyCertificateTrust, bool verifyIntegrity)
         {
+            TheBaseAssets.MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 666, "ReadPECertificateFromBinaryImage", $"Trying PE load Cert from: {filePath}", eMsgLevel.l7_HostDebugMessage);
+
             X509Certificate2 firstSignerCert = null;
             // PE info from https://docs.microsoft.com/en-us/windows/win32/debug/pe-format
             using (var fileStream = File.OpenRead(filePath))
@@ -574,7 +576,15 @@ namespace nsCDEngine.Security
                         {
                             var certs = new X509Certificate2Collection();
                             certs.Import(certificateBytes);
-                            firstSignerCert = certs[0];
+                            if (TSM.L(eDEBUG_LEVELS.ESSENTIALS))
+                            {
+                                TheBaseAssets.MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 25666, "ReadPECertificateFromBinaryImage", $"Certs Found: {certs?.Count}", eMsgLevel.l7_HostDebugMessage);
+                                int i = 0;
+                                foreach (var cert in certs)
+                                    TheBaseAssets.MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 25666, "ReadPECertificateFromBinaryImage", $"Cert [{i++}]: {cert.Thumbprint}", eMsgLevel.l7_HostDebugMessage);
+                            }
+                            firstSignerCert = Environment.OSVersion.Platform == PlatformID.Unix && certs.Count > 0 ? certs[certs.Count - 1] : certs[0];
+                            //firstSignerCert = certs[0];
                         }
                         catch
                         {
@@ -709,17 +719,18 @@ namespace nsCDEngine.Security
         private static bool DontVerifyIntegrity;
         private static ICDESystemLog MySYSLOG = null;
 
-        public string GetAppCert(bool bDontVerifyTrust=false, string pFromFile = null, bool bVerifyTrustPath=true, bool bDontVerifyIntegrity=false)
+        public string GetAppCert(bool bDontVerifyTrust = false, string pFromFile = null, bool bVerifyTrustPath = true, bool bDontVerifyIntegrity = false)
         {
+            DontVerifyTrust = bDontVerifyTrust; //Moved here if DontVerifyTrust was set and GetAppCert was called on diffent CodeSigner
+            VerifyTrustPath = bVerifyTrustPath;
+            DontVerifyIntegrity = bDontVerifyIntegrity;
+
             if (!string.IsNullOrEmpty(MyAppCertThumb) && string.IsNullOrEmpty(pFromFile))
                 return MyAppCertThumb;
             if (pFromFile == null)
             {
                 pFromFile = Assembly.GetExecutingAssembly().Location; // C-DEngine.dll
             }
-            DontVerifyTrust = bDontVerifyTrust;
-            VerifyTrustPath = bVerifyTrustPath;
-            DontVerifyIntegrity = bDontVerifyIntegrity;
 
             if (pFromFile == null)
                 return null;
@@ -769,6 +780,7 @@ namespace nsCDEngine.Security
             {
                 MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 418, "Diagnostics", $"C-DEngine is not signed or signature could not be read", eMsgLevel.l1_Error);
             }
+            MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 418, "Diagnostics", $"App Cert found on ISM {pFromFile} Thumb:{MyAppHostCert?.Thumbprint?.ToLower()}");
             return MyAppCertThumb = MyAppHostCert?.Thumbprint?.ToLower();
         }
 
@@ -786,7 +798,7 @@ namespace nsCDEngine.Security
                     return false; //4.211.0: We did try to load the AppCert earlier. If there is no AppCert we are "not trusted"
                 }
                 // Note: we only check one certificate, so plug-ins can not have more than one signature for this check for work reliably
-                fileName=Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+                fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
                 cert = VerifyPEAndReadSignerCert(fileName, VerifyTrustPath, !DontVerifyIntegrity);
             }
             catch (Exception)

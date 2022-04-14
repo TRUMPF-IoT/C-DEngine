@@ -1200,7 +1200,7 @@ namespace nsCDEngine.Engines
                         // TODO Figure out how to make Signature validation work on non-Windows platforms
                         if (!TheCommonUtils.IsDeviceSenderType(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType) && !TheBaseAssets.MyCodeSigner.IsTrusted(BaseDir + relativeCurrentDir + fiNext.Name)) // CODE REVIEW: Use Path.Combine here? //IDST-OK: No CodeSigning Trust Check on Devices
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(418, new TSM("TheCDEngines", string.Format("Auth Failed on Plugin {0} - it does not have correct signature", fiNext.Name), eMsgLevel.l1_Error));
+                            TheBaseAssets.MySYSLOG.WriteToLog(418, new TSM("TheCDEngines", $"Auth Failed on Plugin {fiNext.Name} - ({BaseDir + relativeCurrentDir + fiNext.Name}) it does not have correct signature", eMsgLevel.l1_Error));
                             continue;
                         }
                         List<string> tL = pLoader.ScanForCDEPlugins(BaseDir + relativeCurrentDir + fiNext.Name, out TSM tTSM); //,ref TheBaseAssets.MyCDEPluginTypes);

@@ -371,6 +371,7 @@ namespace nsCDEngine.Engines.ThingService
                             tThing.AddCapability(cap);
                         }
                     }
+                    OPCUATypeAttribute.ApplyUAAttributes(tThing.GetObject()?.GetType(), tThing);
                 }
 
                 // Make sure the historin gets wired up before any updates are made to the thing: important for permanent consumers
@@ -1529,6 +1530,32 @@ namespace nsCDEngine.Engines.ThingService
             if (tList == null || tList.Count == 0) return tList;
             return tList.Where(pSelector).ToList();
         }
+
+        /// <summary>
+        /// Returns all Things that have a UATypeNodeId attribute set
+        /// </summary>
+        /// <param name="pEngineName">Engine Name owning TheThings</param>
+        /// <param name="AllowRemoteEngine">If True, the list includes TheThings on remote Nodes</param>
+        /// <returns></returns>
+        public static List<TheThing> GetThingsWithUATypeNodeId(string pEngineName, bool AllowRemoteEngine = false)
+        {
+            List<TheThing> tList = GetThingsByFunc(pEngineName, s => s.GetProperty(nameof(OPCUATypeAttribute.UATypeNodeId)) != null, AllowRemoteEngine);
+            return tList;
+        }
+
+        /// <summary>
+        /// Returns all Things with a specific OPC UA Node Type ID
+        /// </summary>
+        /// <param name="pEngineName">Engine Name owning TheThings</param>
+        /// <param name="pUATypeNodeId">nsu style OPC UA NodeID</param>
+        /// <param name="AllowRemoteEngine">If True, the list includes TheThings on remote Nodes</param>
+        /// <returns></returns>
+        public static List<TheThing> GetThingsByUATypeNodeId(string pEngineName, string pUATypeNodeId, bool AllowRemoteEngine = false)
+        {
+            List<TheThing> tList = GetThingsByFunc(pEngineName, s => $"{s.GetProperty(nameof(OPCUATypeAttribute.UATypeNodeId))}" == pUATypeNodeId, AllowRemoteEngine);
+            return tList;
+        }
+
 
         /// <summary>
         /// Returs TheThings matching the Selector
