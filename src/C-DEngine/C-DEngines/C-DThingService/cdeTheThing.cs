@@ -3027,7 +3027,7 @@ namespace nsCDEngine.Engines.ThingService
                             uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
                             if (uaAttribute != null)
                             {
-                                var tProp = pThing.GetProperty(prop.Name);
+                                var tProp = pThing.GetProperty(prop.Name, true); //5.144.1 Must create property during apply attribute
                                 if (tProp != null)
                                 {
                                     if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
