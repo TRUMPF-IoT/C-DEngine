@@ -592,7 +592,7 @@ namespace CDEngine.CDUtils.Zlib
         {
             int n = 0;
             bool done = false;
-#if !NETCF && !SILVERLIGHT && !CDE_STANDARD
+#if OLD_DOTNET // !NETCF && !SILVERLIGHT && !CDE_STANDARD
             int retries = 0;
 #endif
             do
@@ -602,7 +602,7 @@ namespace CDEngine.CDUtils.Zlib
                     n = s.Read(buffer, offset, count);
                     done = true;
                 }
-#if NETCF || SILVERLIGHT || CDE_STANDARD
+#if !OLD_DOTNET // NETCF || SILVERLIGHT || CDE_STANDARD
                 catch (System.IO.IOException)
                 {
                     throw;
