@@ -5,13 +5,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net60</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>cdePackager</RootNamespace>
     <AssemblyName>cdePackager</AssemblyName>
     <Product>cdePackager for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
-    <Copyright>Copyright © 2017-2020 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <Copyright>Copyright © 2017-2022 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
     <PackageDescription>cdePackager for C-DEngine plugins</PackageDescription>
     <PackageIcon>toplogo-128.png</PackageIcon>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
@@ -23,43 +23,6 @@
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
     <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
-  <Choose>
-    <When Condition="'$(TargetFramework)'=='netcoreapp2.0'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);NET_STANDARD;NETSTANDARD2_0</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFramework)'=='net45'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);;CDE_NET45</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFramework)'=='net40'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);CDE_NET4</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFramework)'=='net35'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);CDE_NET35</DefineConstants>
-      </PropertyGroup>
-    </When>
-  </Choose>
-
-  <ItemGroup Condition="'$(TargetFramework)'!='netcoreapp2.0'">
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.ServiceProcess" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net35' ">
-    <!-- Required for dotnet build -->
-    <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\C-DEngine\C-DEngine.csproj">

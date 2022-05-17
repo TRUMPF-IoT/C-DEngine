@@ -5,12 +5,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net45;net40;net35</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <RootNamespace>nsCDEngine</RootNamespace>
     <AssemblyName>C-DEngine</AssemblyName>
     <PackageId>C-DEngine</PackageId>
     <PackageIcon>toplogo-128.png</PackageIcon>
-    <Version>4.302.1$(cdeNugetSuffix)</Version>
+    <Version>5.145.1$(cdeNugetSuffix)</Version>
     <Authors>Chris Muench</Authors>
     <Company>C-Labs</Company>
     <Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
@@ -109,7 +109,7 @@
     <DefineConstants>CDE_INTNEWTON;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(UpdaterInSolution)' == 'True'">
+  <ItemGroup Condition="'$(UpdaterInSolution)' == 'True' AND '$(TargetFramework)'=='net45'">
     <EmbeddedResource Include="$(OutputPath)cdeUpdater.exe" Link="cdeUpdater.exe" />
 
     <ProjectReference Include="..\Utilities\cdeUpdater\cdeUpdater.csproj" PrivateAssets="All" Condition="'$(TargetFramework)'!='netstandard2.0'">

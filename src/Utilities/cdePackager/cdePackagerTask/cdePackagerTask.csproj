@@ -5,13 +5,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net45</TargetFrameworks>
+    <TargetFrameworks>net60</TargetFrameworks>
     <OutputType>library</OutputType>
     <RootNamespace>cdePackagerTask</RootNamespace>
     <AssemblyName>cdePackagerTask</AssemblyName>
     <Product>cdePackagerTask for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
-    <Copyright>Copyright © 2017-2020 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <Copyright>Copyright © 2017-2022 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
     <PackageDescription>cdePackagerTask for C-DEngine plugins</PackageDescription>
     <PackageIcon>toplogo-128.png</PackageIcon>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -21,49 +21,6 @@
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
     <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
-  <Choose>
-    <When Condition="'$(TargetFramework)'=='netcoreapp2.0'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);NET_STANDARD;NETSTANDARD2_0</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFramework)'=='net45'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);;CDE_NET45</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFramework)'=='net40'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);CDE_NET4</DefineConstants>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetFramework)'=='net35'">
-      <PropertyGroup>
-        <DefineConstants>$(DefineConstants);CDE_NET35</DefineConstants>
-      </PropertyGroup>
-    </When>
-  </Choose>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.Build.Framework" />
-    <Reference Include="Microsoft.Build.Utilities.v4.0" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net35' ">
-    <!-- Required for dotnet build -->
-    <PackageReference Include="jnm2.ReferenceAssemblies.net35" Version="1.0.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\C-DEngine\C-DEngine.csproj">
@@ -83,7 +40,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <PackageReference Include="Microsoft.Build" Version="17.2.0" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.2.0" />
   </ItemGroup>
 
 </Project>

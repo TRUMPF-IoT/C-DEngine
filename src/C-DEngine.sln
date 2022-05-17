@@ -61,15 +61,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Licenses", "_Licenses", "{
 		..\LICENSES\MS-PL.txt = ..\LICENSES\MS-PL.txt
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cdeIIS", "cdeIIS\cdeIIS.csproj", "{32C782DA-95F2-4D4D-8F3A-966BE5FA4DA4}"
-EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{3ef53a99-b09d-43e3-8f75-e5600d2f47e2}*SharedItemsImports = 13
-		Utilities\cdeZLIB\cdeZLIB.projitems*{605aff65-944e-4174-b92c-8180b3fa93c1}*SharedItemsImports = 13
-		Utilities\cdeZLIB\cdeZLIB.projitems*{91c5c704-4777-46b5-9dc8-70d111dc4e23}*SharedItemsImports = 5
-		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{eeef4ccb-7687-40b6-8762-73d1b292b8c7}*SharedItemsImports = 5
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -107,10 +99,6 @@ Global
 		{658CAB3B-FFAA-4CD9-BCDE-BDB68E5891C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{658CAB3B-FFAA-4CD9-BCDE-BDB68E5891C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{658CAB3B-FFAA-4CD9-BCDE-BDB68E5891C9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{32C782DA-95F2-4D4D-8F3A-966BE5FA4DA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{32C782DA-95F2-4D4D-8F3A-966BE5FA4DA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{32C782DA-95F2-4D4D-8F3A-966BE5FA4DA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{32C782DA-95F2-4D4D-8F3A-966BE5FA4DA4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -126,9 +114,14 @@ Global
 		{931CF659-4DF2-4FF9-9AAD-FD6F88E5B608} = {FA9B9528-9051-4F66-A5AE-EC2A81B9041F}
 		{C4CA7E29-1FFF-4A90-9D9F-2840E9C0A34D} = {FA9B9528-9051-4F66-A5AE-EC2A81B9041F}
 		{658CAB3B-FFAA-4CD9-BCDE-BDB68E5891C9} = {117A0345-D2A5-4FA6-909F-B0890EF244E3}
-		{32C782DA-95F2-4D4D-8F3A-966BE5FA4DA4} = {117A0345-D2A5-4FA6-909F-B0890EF244E3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CA8F4461-CFC8-4CD6-83A1-8AEB7A8B85DC}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{3ef53a99-b09d-43e3-8f75-e5600d2f47e2}*SharedItemsImports = 13
+		Utilities\cdeZLIB\cdeZLIB.projitems*{605aff65-944e-4174-b92c-8180b3fa93c1}*SharedItemsImports = 13
+		Utilities\cdeZLIB\cdeZLIB.projitems*{91c5c704-4777-46b5-9dc8-70d111dc4e23}*SharedItemsImports = 5
+		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{eeef4ccb-7687-40b6-8762-73d1b292b8c7}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

@@ -14,7 +14,7 @@ using cdePackager;
 
 namespace cdePackagerTask
 {
-    public class PackagePlugIn : Microsoft.Build.Utilities.AppDomainIsolatedTask, cdePackager.ILogger
+    public class PackagePlugIn : cdePackager.ILogger//, Microsoft.Build.Utilities.AppDomainIsolatedTask, 
     {
         [Required]
         public string PluginFilePath { get; set; }
@@ -24,7 +24,7 @@ namespace cdePackagerTask
 
         public string pPlatform { get; set; }
         public bool Diagnostics { get; set; }
-        public override bool Execute()
+        public /*override*/ bool Execute()
         {
             var storePath = StorePath;
             if (String.IsNullOrEmpty(storePath))
@@ -38,7 +38,7 @@ namespace cdePackagerTask
 
         public void WriteLine(string text)
         {
-            Log.LogMessage(text);
+            //Log.LogMessage(text);
         }
     }
 }
