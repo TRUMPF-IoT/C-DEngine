@@ -109,7 +109,7 @@
     <DefineConstants>CDE_INTNEWTON;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(UpdaterInSolution)' == 'True' AND '$(TargetFramework)'=='net45'">
+  <ItemGroup Condition="'$(UpdaterInSolution)' == 'True'">
     <EmbeddedResource Include="$(OutputPath)cdeUpdater.exe" Link="cdeUpdater.exe" />
 
     <ProjectReference Include="..\Utilities\cdeUpdater\cdeUpdater.csproj" PrivateAssets="All" Condition="'$(TargetFramework)'!='netstandard2.0'">
@@ -118,7 +118,7 @@
       <Private>True</Private>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\Utilities\cdeUpdater\cdeUpdater.csproj" PrivateAssets="All" AdditionalProperties="TargetFramework=net45" Condition="'$(TargetFramework)'=='netstandard2.0'">
+    <ProjectReference Include="..\Utilities\cdeUpdater\cdeUpdater.csproj" PrivateAssets="All" AdditionalProperties="TargetFramework=net48" Condition="'$(TargetFramework)'=='netstandard2.0'">
       <Project>{a30c012b-f161-48a7-ad0c-f12bd1ed263c}</Project>
       <Name>cdeUpdater</Name>
       <Private>True</Private>

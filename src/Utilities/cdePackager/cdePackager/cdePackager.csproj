@@ -5,7 +5,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net60</TargetFrameworks>
+    <TargetFrameworks>net48</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>cdePackager</RootNamespace>
     <AssemblyName>cdePackager</AssemblyName>

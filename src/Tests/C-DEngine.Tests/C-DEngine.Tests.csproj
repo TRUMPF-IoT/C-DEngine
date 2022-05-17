@@ -1,11 +1,11 @@
-<!--
+﻿<!--
  SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;net35;net45</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <RootNamespace>C_DEngine.Tests</RootNamespace>
 
     <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
@@ -13,10 +13,6 @@
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'=='net35'">
-    <Compile Remove="C-DEngines\C-DThingService\SensorModelTests.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="C-DEngines\C-DThingService\SensorModelTests.cs" />
