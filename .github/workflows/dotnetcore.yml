@@ -51,6 +51,8 @@ jobs:
     - name: Use GitVersion
       id: gitversion # step id used as reference for output values
       uses: gittools/actions/gitversion/execute@v0.9.9
+      env:
+        DOTNET_ROLL_FORWARD: Major
 
     - name: Gitversion info
       run: |
@@ -100,8 +102,8 @@ jobs:
       run: dotnet restore './src/C-DEngine.sln'
 
     # Workaround for gitversiontask lock exception: build a single targetframework first
-    - name: Build cdeUpdater Net45
-      run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --framework net45 --configuration Release --no-restore --disable-parallel /nowarn:nu5105
+    - name: Build cdeUpdater Net48
+      run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --framework net48 --configuration Release --no-restore --disable-parallel /nowarn:nu5105
 
     - name: Build cdeUpdater
       run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --configuration Release --no-restore --disable-parallel /nowarn:nu5105
