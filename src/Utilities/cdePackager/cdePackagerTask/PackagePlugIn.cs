@@ -14,7 +14,7 @@ using cdePackager;
 
 namespace cdePackagerTask
 {
-    public class PackagePlugIn : Microsoft.Build.Utilities.AppDomainIsolatedTask, cdePackager.ILogger
+    public class PackagePlugIn : AppDomainIsolatedTask, cdePackager.ILogger
     {
         [Required]
         public string PluginFilePath { get; set; }
@@ -38,7 +38,7 @@ namespace cdePackagerTask
 
         public void WriteLine(string text)
         {
-            Log.LogMessage(text);
+            //Log.LogMessage(text);
         }
     }
 }

@@ -270,6 +270,8 @@ namespace nsCDEngine.Engines.NMIService
                 RegisterControlType(MyBaseEngine, "Status Light", $"{(int)eFieldType.StatusLight}");
                 RegisterControlType(MyBaseEngine, "Image Slider", $"{(int)eFieldType.ImageSlider}");
                 RegisterControlType(MyBaseEngine, "Logo Button", $"{(int)eFieldType.LogoButton}");
+                RegisterControlType(MyBaseEngine, "Collapsible Group", $"{(int)eFieldType.CollapsibleGroup}");
+                RegisterControlType(MyBaseEngine, "Tile Group", $"{(int)eFieldType.TileGroup}");
 
                 RegisterEvent(eEngineEvents.ThingDeleted, sinkThingDeleted);
                 MyBaseEngine.ProcessInitialized();

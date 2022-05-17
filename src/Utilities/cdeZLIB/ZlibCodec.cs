@@ -83,7 +83,9 @@ namespace CDEngine.CDUtils.Zlib
     /// </remarks>
     [Interop.GuidAttribute("ebc25cf6-9120-4283-b972-0e5520d0000D")]
     [Interop.ComVisible(true)]
+#if OLD_DOTNET
     [Interop.ClassInterface(Interop.ClassInterfaceType.AutoDispatch)]
+#endif
     sealed internal class ZlibCodec
     {
         /// <summary>
