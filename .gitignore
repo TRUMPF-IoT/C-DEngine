@@ -237,3 +237,5 @@ project.assets.json
 /src/C-DEngine/MediaContent.xml
 /src/Help
 /src/C-DEngine.sln.GhostDoc.xml
+/src/.sonarqube
+/src/sonar.bat

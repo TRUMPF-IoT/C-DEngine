@@ -560,14 +560,18 @@ namespace nsCDEngine.ISM
             return "";
         }
 
+        /// <summary>
+        /// Creates the plugin package for the Store
+        /// </summary>
+        /// <param name="tInfo">Plugin Info</param>
+        /// <param name="tPlace">Marketplace Info</param>
+        /// <param name="outputDirectory">Directory where plugin should be posted</param>
+        /// <param name="bForce">if true, the package will be created even if it exists</param>
+        /// <param name="packageFilePath">Resulting path to the package created</param>
+        /// <returns></returns>
         public string CreatePluginPackage(ThePluginInfo tInfo, TheServicesMarketPlace tPlace, string outputDirectory, bool bForce, out string packageFilePath)
         {
-#if !CDE_NET35 && !CDE_NET4
             return ThePluginPackager.CreatePluginPackage(tInfo, tPlace, outputDirectory, bForce, out packageFilePath);
-#else
-            packageFilePath = null;
-            return "Packaging is not supported on this platform";
-#endif
         }
 
 

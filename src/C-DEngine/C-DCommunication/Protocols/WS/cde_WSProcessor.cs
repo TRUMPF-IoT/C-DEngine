@@ -279,10 +279,13 @@ namespace nsCDEngine.Communication
             catch (Exception eee)
             {
                 HasFaulted = true;
-                if (eee.Source=="System")
-                    TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed because WebSocket was closed during ReceiveAsync.", eMsgLevel.l1_Error));
-                else
-                    TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed.", eMsgLevel.l1_Error, eee.ToString()));
+                if (TheBaseAssets.MasterSwitch)
+                {
+                    if (eee.Source == "System")
+                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed because WebSocket was closed during ReceiveAsync.", eMsgLevel.l1_Error));
+                    else
+                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed.", eMsgLevel.l1_Error, eee.ToString()));
+                }
             }
             TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ProcessWS", $"ProcessWS Loop for {OwnerNodeID} has ended. Faulted:{HasFaulted} HasWS:{websocket != null}", eMsgLevel.l3_ImportantMessage));
             ConnectSuccess = false;

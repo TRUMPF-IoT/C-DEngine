@@ -90,7 +90,7 @@ namespace nsCDEngine.Communication
             if (QDelay < 2) QDelay = 2;
             if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON && TheBaseAssets.MyServiceHostInfo.WsJsThrottle > QDelay)
                 QDelay = TheBaseAssets.MyServiceHostInfo.WsJsThrottle;
-            if (eventSenderThreadRunning != null)
+            if (eventSenderThreadRunning != null && TheBaseAssets.MasterSwitch)
                 TheCommonUtils.cdeRunAsync("EventSenderThreadRunning", true, (p) => { eventSenderThreadRunning(this); });
             MyISBlock?.FireEvent("SenderThreadCreated");
             try

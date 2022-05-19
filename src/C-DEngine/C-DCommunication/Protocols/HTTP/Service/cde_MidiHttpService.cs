@@ -136,13 +136,16 @@ namespace nsCDEngine.Communication.HttpService
                     }
                     catch (Exception e)
                     {
-                        if (!(e is HttpListenerException) || TheBaseAssets.MasterSwitch)
+                        if (TheBaseAssets.MasterSwitch)
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4345, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpMidiServer", "Failed - Will Stop!", eMsgLevel.l1_Error, e.ToString()));
-                        }
-                        else
-                        {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4345, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("HttpMidiServer", "Failed - Will Stop!", eMsgLevel.l4_Message, e.ToString()));
+                            if (!(e is HttpListenerException))
+                            {
+                                TheBaseAssets.MySYSLOG.WriteToLog(4345, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpMidiServer", "Failed - Will Stop!", eMsgLevel.l1_Error, e.ToString()));
+                            }
+                            else
+                            {
+                                TheBaseAssets.MySYSLOG.WriteToLog(4345, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("HttpMidiServer", "Failed - Will Stop!", eMsgLevel.l4_Message, e.ToString()));
+                            }
                         }
                         IsActive = false;
                     }

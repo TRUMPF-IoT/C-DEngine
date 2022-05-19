@@ -16,27 +16,35 @@ namespace nsCDEngine.Communication
         private readonly object lockStartLock = new object();
         internal void StartHeartBeat()
         {
-            if (IsQSenderReadyForHB)
+            if (IsQSenderReadyForHB || !TheBaseAssets.MasterSwitch)
                 return;
             IsQSenderReadyForHB = true;
-            if (MyTSMHistory == null)
+            try
             {
-                MyTSMHistory = new TheMirrorCache<TheSentRegistryItem>(TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime);
-            }
-
-            if (!TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
-            {
-                TheQueuedSenderRegistry.RegisterHBTimer(sinkHeartBeatTimer);
-            }
-            else
-            {
-                lock (lockStartLock)
+                if (MyTSMHistory == null)
                 {
-                    if (mMyHeartBeatTimer == null)
-                        mMyHeartBeatTimer = new Timer(sinkHeartBeatTimerLocal, null, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
+                    MyTSMHistory = new TheMirrorCache<TheSentRegistryItem>(TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime);
                 }
+
+                if (!TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
+                {
+                    TheQueuedSenderRegistry.RegisterHBTimer(sinkHeartBeatTimer);
+                }
+                else
+                {
+                    lock (lockStartLock)
+                    {
+                        if (mMyHeartBeatTimer == null)
+                            mMyHeartBeatTimer = new Timer(sinkHeartBeatTimerLocal, null, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
+                    }
+                }
+                InitHeartbeatTimer();
             }
-            InitHeartbeatTimer();
+            catch (Exception e)
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(247, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"StartHearbeat failed: {e}", eMsgLevel.l1_Error), true);
+                IsQSenderReadyForHB = false;
+            }
         }
 
         internal void StopHeartBeat()

@@ -34,6 +34,11 @@ namespace nsCDEngine.Communication
 
         public bool StartSender(TheChannelInfo pChannelInfo, string pInitialSubscriptions, bool IsIncoming)
         {
+            if (!TheBaseAssets.MasterSwitch)
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(2300, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"System shutting down, QS will not start", eMsgLevel.l2_Warning), true);
+                return false;
+            }
             if (MyTargetNodeChannel != null)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2300, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"This should never happen: QueuedSender {pChannelInfo.ToMLString()} has already started", eMsgLevel.l1_Error), true);
@@ -536,7 +541,7 @@ namespace nsCDEngine.Communication
             LastError = pCause;
             try
             {
-                if (MyTargetNodeChannel != null && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE) // && !TheCommonUtils.IsHostADevice()) NEW3.211: Even Devices should try reconnect
+                if (MyTargetNodeChannel != null && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE && TheBaseAssets.MasterSwitch) // && !TheCommonUtils.IsHostADevice()) NEW3.211: Even Devices should try reconnect
                 {
                     StopHeartBeat();
                     //SendCounter = 0;
@@ -1282,10 +1287,10 @@ namespace nsCDEngine.Communication
                                     {
                                         var Parts = tP.Split('=');
                                         tName = Parts[0];
-                                        var tVal = Parts[1];
                                         if (tName.Length == tP.Length)
                                             continue;
-                                        if (!tSP.Any(s => s.StartsWith(tName)) || tVal.StartsWith("{") || tVal.StartsWith("["))
+                                        var tVal = Parts.Length > 1 ? Parts[1] : null;
+                                        if (!tSP.Any(s => s.StartsWith(tName)) || tVal?.StartsWith("{")==true || tVal?.StartsWith("[")==true)
                                             tSP.Add(tP);
                                         else
                                         {
@@ -1503,6 +1508,13 @@ namespace nsCDEngine.Communication
                                     {
                                         tMsgQ3 = qc;
                                     }
+                                }
+                                if (tMsg==null)
+                                {
+                                    TheBaseAssets.MySYSLOG.WriteToLog(23227, new TSM("QueuedSender", $"Get Next Message - locked message found with QLen={tQKV?.Count()}, message will be removed!", eMsgLevel.l2_Warning));
+                                    MyCoreQueue.Clear(false);
+                                    pQCountRet = 0;
+                                    return;
                                 }
                                 if (tMsg.QueueIdx > 2)
                                 {
