@@ -1824,7 +1824,7 @@ namespace nsCDEngine.Engines.StorageService
                 TheCommonUtils.TaskWaitTimeout(taskCS.Task, new TimeSpan(0, 0, 15)).ContinueWith(t => taskCS.TrySetResult(pRec));
                 return taskCS.Task;
             }
-            return null;
+            return Task.FromResult<TheDataRetrievalRecord>(null);
         }
 
         /// <summary>
@@ -2243,7 +2243,7 @@ namespace nsCDEngine.Engines.StorageService
         internal string DeleteByID(TheFormInfo pForm, string pID, TheClientInfo pClientInfo, Action<StoreResponse> pResponse)
         {
             if (pClientInfo == null || !TheUserManager.HasUserAccess(pClientInfo.UserID, pForm.cdeA))
-                return TheBaseAssets.MyLoc.GetLocalizedStringByKey(pClientInfo.LCID, eEngineName.NMIService, "ERR: ###You don't have Access###");
+                return TheBaseAssets.MyLoc.GetLocalizedStringByKey(TheBaseAssets.MyServiceHostInfo.DefaultLCID, eEngineName.NMIService, "ERR: ###You don't have Access###");
             Guid tGuid = TheCommonUtils.CGuid(pID);
             if (tGuid == Guid.Empty)
                 return TheBaseAssets.MyLoc.GetLocalizedStringByKey(pClientInfo.LCID, eEngineName.NMIService, "ERR: ###Invalid ID###");
@@ -2731,7 +2731,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if (tCookie!=null && tCookie.TargetNode != Guid.Empty)
                     TheCommCore.PublishToNode(tCookie.TargetNode, new TSM(eEngineName.NMIService, "NMI_TOAST", tRes.ErrorMsg));
-                if (!(tRes.MyRecords?.Count>0))
+                if (tCookie==null || !(tRes.MyRecords?.Count>0))
                     return;
             }
 

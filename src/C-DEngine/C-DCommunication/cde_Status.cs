@@ -59,12 +59,13 @@ namespace nsCDEngine.Communication
 
         internal static string GetScopeHashML(List<string> pScopes)
         {
-            if (pScopes?.Count < 1)
-                return "";
             string ret = "";
-            foreach (var hash in pScopes)
+            if (pScopes?.Count > 0)
             {
-                ret += $"{GetScopeHashML(hash, null)} ";
+                foreach (var hash in pScopes)
+                {
+                    ret += $"{GetScopeHashML(hash, null)} ";
+                }
             }
             return ret;
         }

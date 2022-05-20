@@ -2117,7 +2117,7 @@ namespace nsCDEngine.Engines.NMIService
 
             //horizontal line
 
-            tFlds["LowerSpacerLine"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 89, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld, TileWidth = 12, TileHeight = 1, TileFactorY = 12, ClassName= "cdeWizardSpacer" });
+            tFlds["BottomSpacerLine"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 89, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld, TileWidth = 12, TileHeight = 1, TileFactorY = 12, ClassName= "cdeWizardSpacer" });
 
             tFlds["ButtonGroup"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 90, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld, TileWidth = 12, TileHeight = 1 });
             if (pPrevPage < 0 && pNextPage < 0)

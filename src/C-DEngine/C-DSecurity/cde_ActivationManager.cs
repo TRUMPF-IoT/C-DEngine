@@ -228,7 +228,7 @@ namespace nsCDEngine.Activation
                     }
                     if (result)
                     {
-                        var pinnedLicense = deviceTypeStatus.ActivatedParameters?.FirstOrDefault(lp => lp.Name == "PinnedLicense");
+                        var pinnedLicense = deviceTypeStatus?.ActivatedParameters?.FirstOrDefault(lp => lp.Name == "PinnedLicense");
                         if (pinnedLicense != null)
                         {
                             var pinnedDeviceId = MySecrets.GetPinnedDeviceId(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, nsCDEngine.Discovery.TheNetworkInfo.GetMACAddress(false));

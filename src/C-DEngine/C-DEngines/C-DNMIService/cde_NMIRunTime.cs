@@ -40,8 +40,11 @@ namespace nsCDEngine.Engines.NMIService
                         try
                         {
                             var tLocParts = pMsg.Message?.PLS.Split(';');
-                            var tLocInfo = new TheNMILocationInfo { cdeN = pMsg.Message.GetOriginatorSecurityProxy(), Accuracy = TheCommonUtils.CDbl(tLocParts[2]), Latitude = TheCommonUtils.CDbl(tLocParts[1]), Longitude = TheCommonUtils.CDbl(tLocParts[0]), ClientInfo = tClientInfo, Description = tClientInfo != null && tClientInfo.UserID != Guid.Empty ? TheUserManager.GetUserFullName(tClientInfo.UserID) : "Unknown User" };
-                            FireEvent(cmd[0], this, tLocInfo, true);
+                            if (tLocParts?.Length > 2)
+                            {
+                                var tLocInfo = new TheNMILocationInfo { cdeN = pMsg.Message.GetOriginatorSecurityProxy(), Accuracy = TheCommonUtils.CDbl(tLocParts[2]), Latitude = TheCommonUtils.CDbl(tLocParts[1]), Longitude = TheCommonUtils.CDbl(tLocParts[0]), ClientInfo = tClientInfo, Description = tClientInfo != null && tClientInfo.UserID != Guid.Empty ? TheUserManager.GetUserFullName(tClientInfo.UserID) : "Unknown User" };
+                                FireEvent(cmd[0], this, tLocInfo, true);
+                            }
                         }
                         catch (Exception) { }
                     }
@@ -640,11 +643,7 @@ namespace nsCDEngine.Engines.NMIService
                                         TheThingRegistry.RequestGlobalThings();
                                     }
 
-                                    List<TheThing> tThings = null;
-                                    if (tPN != "DeviceTypes")
-                                        tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
-                                    else //TODO: Comes with new Sensor Model
-                                        tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
+                                    List<TheThing> tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
                                     var tSP = cmd[3].Split(';');
                                     TheFieldInfo tField = GetFieldById(TheCommonUtils.CGuid(tSP[0]));
                                     string ValueProperty = TheCommonUtils.CStr(tField?.PropBagGetValue("ValueProperty"));

@@ -107,7 +107,7 @@ namespace nsCDEngine.Security
         public string RSADecryptWithPrivateKey(byte[] val, string pPrivateKey)
         {
             if (string.IsNullOrEmpty(pPrivateKey)) return "";
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
             try
             {
                 rsa.FromXmlString(pPrivateKey);
@@ -143,7 +143,7 @@ namespace nsCDEngine.Security
                     if (string.IsNullOrEmpty(RSAKey))
                         return "";
                 }
-                rsa = new RSACryptoServiceProvider();
+                rsa = new RSACryptoServiceProvider(2048);
                 rsa.FromXmlString(RSAKey);
             }
 #if (!CDE_STANDARD) // RSA Decrypt parameter different (padding enum vs. bool)
@@ -167,7 +167,7 @@ namespace nsCDEngine.Security
         public byte[] RSAEncrypt(string val, string pRSAPublic)
         {
             if (string.IsNullOrEmpty(pRSAPublic) || string.IsNullOrEmpty(val)) return null;
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
             string[] rsaP = pRSAPublic.Split(',');
             RSAParameters tP = new RSAParameters()
             {
@@ -197,9 +197,9 @@ namespace nsCDEngine.Security
             RSACryptoServiceProvider rsa;
             RSAKey = null;
             if (Environment.OSVersion.Platform == PlatformID.Unix) // CODE REVIEW: Is this really the right check/condition? CM: Better would be to find out if we create this in SW or HW
-                rsa = new RSACryptoServiceProvider(512);
+                rsa = new RSACryptoServiceProvider(512); //NOSONAR small linux devices cannot calulate larger keys fast enough
             else
-                rsa = new RSACryptoServiceProvider();
+                rsa = new RSACryptoServiceProvider(2048);
             if (!_platformDoesNotSupportRSAXMLExportImport)
             {
                 try

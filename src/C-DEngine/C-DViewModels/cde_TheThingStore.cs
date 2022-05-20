@@ -100,7 +100,7 @@ namespace nsCDEngine.ViewModels
             tThing.cdeSEQ = cdeSEQ;
 
             IEnumerable<string> propertiesToInclude = null;
-            if (propFilter?.Properties != null || propFilter.FilterToSensorProperties == true || propFilter.FilterToConfigProperties == true)
+            if (propFilter?.Properties != null || propFilter?.FilterToSensorProperties == true || propFilter?.FilterToConfigProperties == true)
             {
                 propertiesToInclude = thingWithMeta?.GetMatchingProperties(propFilter);
                 if (propertiesToInclude != null)

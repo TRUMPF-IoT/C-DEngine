@@ -761,7 +761,7 @@ namespace nsCDEngine.Security
         private static string MD5(string text, bool useEasyScope16)
         {
             var result = default(string);
-            using (var algo = new MD5CryptoServiceProvider())
+            using (var algo = new SHA512Managed()) // new MD5CryptoServiceProvider())
             {
                 algo.ComputeHash(Encoding.UTF8.GetBytes(text));
                 result = CU.ToHexString(algo.Hash);

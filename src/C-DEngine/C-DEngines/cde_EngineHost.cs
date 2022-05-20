@@ -129,8 +129,6 @@ namespace nsCDEngine.Engines
                 MyStorageMirrorRepository.TryGetValue(pDataSource, out retObj);
                 if (retObj == null)
                 {
-                    if (string.IsNullOrEmpty(pDataSource)) return null;
-
                     string[] t = pDataSource.Split(new[] { ";:;" }, StringSplitOptions.None);
                     MyStorageMirrorRepository.TryGetValue(t[0], out retObj);
                     if (retObj == null)
@@ -1448,11 +1446,12 @@ namespace nsCDEngine.Engines
             tIBase.GetDeviceTypes()?.Select(dt => deviceTypeInfos[dt.DeviceType] = dt);
 
             // Read device type attributes from the engine
-            try
-            {
-                pluginType.GetCustomAttributes(typeof(DeviceTypeAttribute), true).Select(dt => dt as DeviceTypeAttribute).Select(dta => new TheDeviceTypeInfo(dta)).Select(dt => deviceTypeInfos[dt.DeviceType] = dt);
-            }
-            catch { }
+            //try
+            //{
+            //    pluginType.GetCustomAttributes(typeof(DeviceTypeAttribute), true).Select(dt => dt as DeviceTypeAttribute).Select(dta => new TheDeviceTypeInfo(dta)).Select(dt => deviceTypeInfos[dt.DeviceType] = dt)
+            //    ; //TODO-MarkusH: This does not do anything, can it be removed?
+            //}
+            //catch { }
 
             // Now read device type attributes from all classes that implement ICDEThing
             try

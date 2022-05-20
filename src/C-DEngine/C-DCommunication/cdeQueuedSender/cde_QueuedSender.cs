@@ -743,7 +743,8 @@ namespace nsCDEngine.Communication
                     TheBaseAssets.MySession.RemoveSessionsByDeviceID(MyTargetNodeChannel.cdeMID, Guid.Empty);
                     if (MyTargetNodeChannel != null && MyTargetNodeChannel.MySessionState != null)
                         TheBaseAssets.MySession.RemoveSessionByID(MyTargetNodeChannel.MySessionState.cdeMID);
-                    MyTargetNodeChannel.MySessionState = null;
+                    if (MyTargetNodeChannel != null)
+                        MyTargetNodeChannel.MySessionState = null; 
                 }
                 TheBaseAssets.MySYSLOG.WriteToLog(2308, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"QSender Last Reference removed - QSender will dispose for {MyTargetNodeChannel?.ToMLString()}", eMsgLevel.l3_ImportantMessage
 #if JC_DEBUGCOMM  //No Stacktrace on Platforms other than windows
@@ -1373,10 +1374,7 @@ namespace nsCDEngine.Communication
                 else
                 {
                     PayLoadBytes = MsgToQueue.PLB;
-                    if (myTargetNodeChannel.SenderType != cdeSenderType.CDE_JAVAJASON)
-                        PayLoadBytesLength = PayLoadBytes.Length;
-                    else
-                        PayLoadBytesLength = PayLoadBytes.Length;
+                    PayLoadBytesLength = PayLoadBytes.Length;
                 }
                 int PayLen = PayLoadBytesLength;
                 int tTeles = 1;

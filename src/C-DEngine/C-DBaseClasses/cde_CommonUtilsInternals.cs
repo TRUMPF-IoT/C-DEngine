@@ -1196,11 +1196,7 @@ namespace nsCDEngine.BaseClasses
                     if (pMessage.PLS.StartsWith("data:"))
                     {
                         string[] fParts = cdeSplit(pMessage.PLS, "base64,", false, false);
-#if PORTABLE
-                        if (!tTargetFileName.Contains("\\") && !tTargetFileName.Contains("/"))
-#else
-                        if (!!tTargetFileName.Contains(Path.DirectorySeparatorChar) && !tTargetFileName.Contains(Path.AltDirectorySeparatorChar))
-#endif
+                        if (!tTargetFileName.Contains(Path.DirectorySeparatorChar) && !tTargetFileName.Contains(Path.AltDirectorySeparatorChar))
                         {
                             if (fParts[0].Contains("image"))
                             {

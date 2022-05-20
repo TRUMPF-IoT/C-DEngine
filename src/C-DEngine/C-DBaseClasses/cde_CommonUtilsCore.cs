@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -1275,11 +1276,11 @@ namespace nsCDEngine.BaseClasses
                 init((uint)seed);
             }
 
-            private Random mRandom;
+            private RandomNumberGenerator mRandom;
 
             private void init(uint seed)
             {
-                mRandom = new Random((int)seed);
+                mRandom = RandomNumberGenerator.Create(); // Compliant for security-sensitive use cases
             }
 
             public uint NextUInt(uint minValue, uint maxValue)
@@ -1293,7 +1294,10 @@ namespace nsCDEngine.BaseClasses
                 }
                 lock (mRandom)
                 {
-                    return (uint)mRandom.Next((int)minValue, (int)maxValue);
+                    byte[] data = new byte[16];
+                    mRandom.GetBytes(data);
+                    var ul = BitConverter.ToUInt64(data, 0);
+                    return (uint)((ul % (maxValue - minValue)) + minValue);
                 }
             }
 
@@ -1301,7 +1305,10 @@ namespace nsCDEngine.BaseClasses
             {
                 lock (mRandom)
                 {
-                    return mRandom.NextDouble();
+                    byte[] data = new byte[16];
+                    mRandom.GetBytes(data);
+                    var ul = BitConverter.ToUInt64(data, 0) >>11;
+                    return ul / (double)(1UL << 53);
                 }
             }
         }

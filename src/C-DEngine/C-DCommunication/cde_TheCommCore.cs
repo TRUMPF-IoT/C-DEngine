@@ -167,7 +167,7 @@ namespace nsCDEngine.Communication
                 }
                 if (!TheBaseAssets.MyServiceHostInfo.DisableWebSockets && TheBaseAssets.MyServiceHostInfo.MyStationWSPort > 0
 #if CDE_NET45 || CDE_STANDARD
-                    && (TheBaseAssets.MyServiceHostInfo.MyStationWSPort != TheBaseAssets.MyServiceHostInfo.MyStationPort || !MyWebService.IsHttpListener)
+                    && (TheBaseAssets.MyServiceHostInfo.MyStationWSPort != TheBaseAssets.MyServiceHostInfo.MyStationPort || MyWebService?.IsHttpListener==false)
 #endif
                     )
                 {
@@ -786,13 +786,13 @@ namespace nsCDEngine.Communication
             if (string.IsNullOrEmpty(Topic) || Topic.StartsWith("CDE_PICKUP"))
             {
                 tSend?.SetLastHeartbeat(pRequestData.SessionState);
-                TheCorePubSub.SetResponseBuffer(pRequestData, tSend.MyTargetNodeChannel, false, "");
+                TheCorePubSub.SetResponseBuffer(pRequestData, tSend?.MyTargetNodeChannel, false, "");
                 return true;
             }
             if (Topic.StartsWith("CDE_INITWS"))
             {
                 tSend?.SetLastHeartbeat(pRequestData.SessionState);
-                TheCorePubSub.SetResponseBuffer(pRequestData, tSend.MyTargetNodeChannel, false, "CDE_WSINIT"); //Must be WSINIT as there are no legal subs for JAVASCRIPT at this point
+                TheCorePubSub.SetResponseBuffer(pRequestData, tSend?.MyTargetNodeChannel, false, "CDE_WSINIT"); //Must be WSINIT as there are no legal subs for JAVASCRIPT at this point
                 return true;
             }
             if (Topic.StartsWith("CDE_MESHSELECT"))
@@ -800,10 +800,10 @@ namespace nsCDEngine.Communication
                 string tLogRes = "ERR:CDE_MESHSELECT_FAILURE";
                 string rToken = null;
                 Guid MesID = TheCommonUtils.CGuid(Topic.Substring("CDE_MESHSELECT:".Length));
-                if (MesID!=Guid.Empty && pRequestData?.SessionState?.Meshes?.Count>0)
+                if (MesID != Guid.Empty && pRequestData?.SessionState?.Meshes?.Count > 0)
                 {
                     TheMeshPicker tPic = pRequestData?.SessionState?.Meshes.Find(s => s.cdeMID == MesID);
-                    if (tPic!=null)
+                    if (tPic != null)
                     {
                         var tUser = TheUserManager.GetUserByID(tPic.UserID);
                         if (tUser != null)
@@ -814,15 +814,18 @@ namespace nsCDEngine.Communication
                         }
                     }
                 }
-                pRequestData.SessionState.Meshes = null; //For security reasons we only give the browser one shot! If CDE_MESHSELECT comes in a second time it will no longer be parsed
+                if (pRequestData?.SessionState != null)
+                    pRequestData.SessionState.Meshes = null; //For security reasons we only give the browser one shot! If CDE_MESHSELECT comes in a second time it will no longer be parsed
                 if (tLogRes.StartsWith("ERR"))
                 {
                     TheCDEKPIs.IncrementKPI(eKPINames.BruteDelay);
                     //Security Fix: ID#770 - wait 200 ms before returning anything with error code to limit BruteForce
                     TheCommonUtils.SleepOneEye(200, 100);
                 }
+                if (pRequestData?.SessionState == null)
+                    return false;
                 tSend?.SetLastHeartbeat(pRequestData.SessionState);
-                TheCorePubSub.SetResponseBuffer(pRequestData, tSend.MyTargetNodeChannel, true, tLogRes, pRequestData.SessionState.OrigThing, rToken);
+                TheCorePubSub.SetResponseBuffer(pRequestData, tSend?.MyTargetNodeChannel, true, tLogRes, pRequestData.SessionState.OrigThing, rToken);
                 return true;
             }
             if (Topic.StartsWith("CDE_LOGIN") || Topic.StartsWith("CDE_TLOGIN"))
@@ -879,7 +882,7 @@ namespace nsCDEngine.Communication
                     TheCommonUtils.SleepOneEye(200, 100);
                 }
                 tSend?.SetLastHeartbeat(pRequestData.SessionState);
-                TheCorePubSub.SetResponseBuffer(pRequestData, tSend.MyTargetNodeChannel, true, tLogRes, originatingThing, rToken);
+                TheCorePubSub.SetResponseBuffer(pRequestData, tSend?.MyTargetNodeChannel, true, tLogRes, originatingThing, rToken);
                 return true;
             }
             if (Topic.StartsWith("LOGIN_SUCCESS"))
@@ -900,7 +903,7 @@ namespace nsCDEngine.Communication
                     string tPin = Topic.Substring(11);
                     if (!TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser)
                         tPin = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, tPin);
-                    var tUsers=TheUserManager.PerformLoginByPin(pRequestData, tPin);
+                    var tUsers = TheUserManager.PerformLoginByPin(pRequestData, tPin);
                     if (tUsers?.Count > 0)
                     {
                         TheBaseAssets.MySession.WriteSession(pRequestData.SessionState);
@@ -922,12 +925,12 @@ namespace nsCDEngine.Communication
                     if (Topic.Length > 11) //tUser.PrimaryRole.Equals("ADMIN") &&
                     {
                         string tscope = Topic.Substring(11, Topic.Length - 11);
-                        if (!TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser)
+                        if (!TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser && pRequestData?.SessionState != null)
                             tscope = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, tscope);
                         TheUserDetails tUser = TheUserManager.PerformLoginByScope(pRequestData, tscope);
                         if (tUser != null)
                         {
-                            TheBaseAssets.MySession.WriteSession(pRequestData.SessionState);
+                            TheBaseAssets.MySession.WriteSession(pRequestData?.SessionState);
                             tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
                         }
                     }
@@ -936,11 +939,12 @@ namespace nsCDEngine.Communication
                 {
                     TheCDEKPIs.IncrementKPI(eKPINames.BruteDelay);
                     //Security Fix: ID#770 - wait 200 ms before returning anything with error code to limit BruteForce
-                    pRequestData.EndSessionOnResponse = true;
+                    if (pRequestData != null)
+                        pRequestData.EndSessionOnResponse = true;
                     TheCommonUtils.SleepOneEye(200, 100);
                 }
-                tSend?.SetLastHeartbeat(pRequestData.SessionState);
-                TheCorePubSub.SetResponseBuffer(pRequestData, tSend.MyTargetNodeChannel, true, tSidRes, Guid.Empty, rToken);
+                tSend?.SetLastHeartbeat(pRequestData?.SessionState);
+                TheCorePubSub.SetResponseBuffer(pRequestData, tSend?.MyTargetNodeChannel, true, tSidRes, Guid.Empty, rToken);
                 return true;
             }
             return false;
@@ -1129,6 +1133,10 @@ namespace nsCDEngine.Communication
 
         internal static byte[] SetConnectingBuffer(TheQueuedSender pSender)
         {
+            if (pSender==null)
+            {
+                return null;
+            }
             TheDeviceMessage tDev = new TheDeviceMessage
             {
                 SID = pSender?.MyTargetNodeChannel?.RealScopeID != null ? TheBaseAssets.MyScopeManager.GetScrambledScopeID(pSender.MyTargetNodeChannel.RealScopeID, true) : TheBaseAssets.MyScopeManager.GetScrambledScopeID(), //GRSI: rare //RScope-OK: Initial Connect from Primary Scope Only //4.209: Ok no to JavaJson
@@ -1141,7 +1149,7 @@ namespace nsCDEngine.Communication
         }
         internal static string SetConnectingBufferStr(TheChannelInfo pChannel, string pRealScopeID)
         {
-            if (pChannel.SenderType == cdeSenderType.CDE_CUSTOMISB)
+            if (pChannel?.SenderType == cdeSenderType.CDE_CUSTOMISB)
                 return $"CDE_CONNECT;:;ContentService@{TheBaseAssets.MyScopeManager.GetScrambledScopeID(pRealScopeID, true)}"; //4.211: ISB does not automatically get all PLugins from this Node as subscriptions
             else
             {

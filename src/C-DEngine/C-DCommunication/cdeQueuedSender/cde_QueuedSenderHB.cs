@@ -198,7 +198,10 @@ namespace nsCDEngine.Communication
                         TSM tMsg = new TSM("QueuedSender", $"Initial Connection failed. {MyTargetNodeChannel?.ToMLString()} might be down!", eMsgLevel.l2_Warning);
                         HeartBeatCnt = 0;
                         //FlushQueue();
-                        tMsg.ORG = MyTargetNodeChannel.cdeMID.ToString();
+                        if (MyTargetNodeChannel != null)
+                            tMsg.ORG = MyTargetNodeChannel.cdeMID.ToString();
+                        else
+                            tMsg.ORG = "No Channel";
                         TheBaseAssets.MySYSLOG.WriteToLog(248, tMsg, true);
                         FireSenderProblem(new TheRequestData() { ErrorDescription = $"1305:Connecting failed for {ConnectRetries} retries" });
                         ConnectRetries = 0;

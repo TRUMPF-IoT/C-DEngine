@@ -831,7 +831,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (createParams == null)
             {
-                return null;
+                return Task.FromResult<TheThing>(null);
             }
             lock (createOwnedThingLock)
             {
@@ -1947,9 +1947,12 @@ namespace nsCDEngine.Engines.ThingService
                     else if (fType.Namespace == "System.Collections.Generic")
                     {
                         var collection = orgValue as IEnumerable; // (IEnumerable)finfo.GetValue(orgValue, null);
-                        foreach (var item in collection)
+                        if (collection != null)
                         {
-                            ClassPropertiesToThingProperties(pBaseThing, item, pBaseProperty == null ? $"{finfo.Name}_" : "", pBaseProperty);
+                            foreach (var item in collection)
+                            {
+                                ClassPropertiesToThingProperties(pBaseThing, item, pBaseProperty == null ? $"{finfo.Name}_" : "", pBaseProperty);
+                            }
                         }
                     }
                     else if (fType.Namespace != "System")

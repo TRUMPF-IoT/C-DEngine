@@ -922,9 +922,12 @@ namespace nsCDEngine.BaseClasses
             double dVersion = -1;
             try
             {
-                var versionString = GetAssemblyAttribute<System.Reflection.AssemblyFileVersionAttribute>(plugin)?.Version;
-                var verParts = versionString.Split(new char[] { '.' }, 2);
-                dVersion = TheCommonUtils.CDbl($"{verParts[0]}.{verParts[1].Replace(".", "")}");
+                var versionString = GetAssemblyAttribute<AssemblyFileVersionAttribute>(plugin)?.Version;
+                var verParts = versionString?.Split(new char[] { '.' }, 2);
+                if (verParts?.Length > 1)
+                    dVersion = CDbl($"{verParts[0]}.{verParts[1].Replace(".", "")}");
+                else
+                    dVersion = 1.0;
             }
             catch (Exception) { }
             return dVersion;

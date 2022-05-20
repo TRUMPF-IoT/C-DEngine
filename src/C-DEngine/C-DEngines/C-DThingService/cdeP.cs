@@ -330,7 +330,7 @@ namespace nsCDEngine.Engines.ThingService
 
                 if ((cdeFOC > 0 && ((cdeFOC & 8) == 0 || (cdeFOC & 0x20) != 0)) || (bIsRemoteThing && ownerBase?.IsOnLocalNode() == true)) //Only fire this if the ownerThing is marked IsRegisteredGlobally and its hosted on this node
                 {
-                    ownerBase.ThrottledSETP(this, cdeN, bIsRemoteThing);
+                    ownerBase?.ThrottledSETP(this, cdeN, bIsRemoteThing);
                     //PublishChange(TheCommonUtils.cdeGuidToString(ownerBase.cdeN), Guid.Empty, null);
                 }
             }

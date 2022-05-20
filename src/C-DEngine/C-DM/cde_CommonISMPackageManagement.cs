@@ -274,7 +274,7 @@ namespace nsCDEngine.PluginManagement
             }
             else
             {
-                if (tInfo.CurrentVersion > tPlace.CurrentVersion)
+                if (tInfo?.CurrentVersion > tPlace.CurrentVersion)
                 {
                     tPlace.CurrentVersion = tInfo.CurrentVersion;
                 }

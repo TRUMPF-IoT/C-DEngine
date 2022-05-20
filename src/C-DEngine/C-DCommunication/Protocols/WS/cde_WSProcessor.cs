@@ -70,7 +70,7 @@ namespace nsCDEngine.Communication
 
             var _MyTargetNodeChannel = pSender?.MyTargetNodeChannel;
             Uri TargetUri = TheCommonUtils.CUri(_MyTargetNodeChannel?.TargetUrl, true);
-            if (TargetUri == null)
+            if (TargetUri == null || _MyTargetNodeChannel==null)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("WSProcessor", "Invalid Target URL", eMsgLevel.l1_Error, $"{_MyTargetNodeChannel?.ToString()}"));
                 return false;

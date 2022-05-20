@@ -283,9 +283,10 @@ namespace nsCDEngine
             return token;
         }
 
+        private object AddOrUpdateLock = new object();
         private void AddOrUpdateRegistration(ConsumerRegistration registration)
         {
-            lock (this)
+            lock (AddOrUpdateLock)
             {
                 _consumerRegistrations[registration.Token] = registration;
                 if (_thingStream == null)
@@ -389,7 +390,7 @@ namespace nsCDEngine
 
         public void UnregisterConsumerInternal(Guid token, bool keepHistoryStore)
         {
-            lock (this)
+            lock (AddOrUpdateLock)
             {
                 _permanentConsumers.RemoveAnItemByID(token, null);
                 if (!keepHistoryStore && _consumerRegistrations.TryGetValue(token, out ConsumerRegistration registration))

@@ -148,7 +148,7 @@ namespace cdePackager
                         }
                         if (bDiagnostics)
                         {
-                            logger.WriteLine($"Resolving {args.Name} {name}: {ass.CodeBase}");
+                            logger.WriteLine($"Resolving {args.Name} {name}: {ass?.CodeBase}");
                         }
                         return ass;
                     };

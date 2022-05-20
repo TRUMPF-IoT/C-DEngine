@@ -83,7 +83,7 @@ namespace nsCDEngine.BaseClasses
                                          select new { Type = t, t.Namespace, t.Name, t.FullName };
                         foreach (var Plugin in CDEPlugins)
                         {
-                            if (!(Plugin?.Type?.IsAbstract == true))
+                            if (Plugin?.Type?.IsAbstract == false)
                             {
                                 var ints = Plugin.Type.GetInterfaces();
                                 foreach (var tI in ints)
@@ -235,7 +235,7 @@ namespace nsCDEngine.BaseClasses
                         resTSM = new TSM("TheCDEngines", $"Assembly {assemblyPath} found and added Crypto", "");
                         foreach (var Plugin in CDEPlugins)
                         {
-                            if (!(Plugin?.Type?.IsAbstract == true))
+                            if (Plugin?.Type?.IsAbstract == false)
                             {
                                 var ints = Plugin.Type.GetInterfaces();
                                 foreach (var tI in ints)

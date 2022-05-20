@@ -156,21 +156,21 @@ namespace cdeUpdater
                         StartupLog($"Trying to kill {processName} / {processPid} in directory {processDirectory}");
                         KillProcess(processName, processDirectory, processPid);
                         return;
-                    case "SET":
-                        if (args.Length > 3)
-                        {
-                            using (Process mainProcess = new Process())
-                            {
-                                mainProcess.StartInfo.FileName = "cdeTimeSet.exe";
-                                mainProcess.StartInfo.WorkingDirectory = processDirectory;
-                                mainProcess.StartInfo.Arguments = target + " \"" + args[3] + "\"";
-                                if (args.Length > 4)
-                                    mainProcess.StartInfo.Arguments += " \"" + args[4] + "\"";
-                                mainProcess.Start();
-                            }
-                            while (IsMainProcessRunning("cdeTimeSet", null, 0)); // CODE REVIEW: where is this called from? Unclear if processDirectory and processPid are specified for SET, keeping compatible for now
-                        }
-                        return;
+                    //case "SET":
+                    //    if (args.Length > 3)
+                    //    {
+                    //        using (Process mainProcess = new Process())
+                    //        {
+                    //            mainProcess.StartInfo.FileName = "cdeTimeSet.exe";
+                    //            mainProcess.StartInfo.WorkingDirectory = processDirectory;
+                    //            mainProcess.StartInfo.Arguments = target + " \"" + args[3] + "\"";
+                    //            if (args.Length > 4)
+                    //                mainProcess.StartInfo.Arguments += " \"" + args[4] + "\"";
+                    //            mainProcess.Start();
+                    //        }
+                    //        while (IsMainProcessRunning("cdeTimeSet", null, 0)); // CODE REVIEW: where is this called from? Unclear if processDirectory and processPid are specified for SET, keeping compatible for now
+                    //    }
+                    //    return;
                 }
                 string[] NewFiles = cdeSplit(target, ";:;", true, true);
                 List<string> MyNewFiles = new List<string>();

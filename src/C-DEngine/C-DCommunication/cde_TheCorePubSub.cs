@@ -305,7 +305,7 @@ namespace nsCDEngine.Communication
                             }
                             var tTopicSens = tTopic.Split('@')[0]; //only topic - no ScopeID
                             var tTopicParts = tTopic.Split(';');
-                            if (tTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
+                            if (tTargetNodeChannel?.SenderType == cdeSenderType.CDE_JAVAJASON)
                             {
                                 //4.209: JavaJason does no longer get the scope ID - hence telegrams coming from the browser have to be ammmended with SID here
                                 if (string.IsNullOrEmpty(recvMessage.SID) && !string.IsNullOrEmpty(pRequestData?.SessionState?.SScopeID))

@@ -219,7 +219,7 @@ namespace nsCDEngine.Communication
             var msg = PrepareRequestMessage(originator, target, messageName, correlationToken, txtParameters, PLS, PLB);
             if (msg == null)
             {
-                return null;
+                return Task.FromResult<TSM>(null); 
             }
 
             if (timeout > MaxTimeOut)
@@ -258,7 +258,7 @@ namespace nsCDEngine.Communication
             var originatorThingOrEngine = RegisterRequestCallback(originator, callback);
             if (originatorThingOrEngine == null)
             {
-                return null;
+                return Task.FromResult<TSM>(null);
             }
 
             if (target.SendToProvisioningService)

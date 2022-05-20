@@ -25,6 +25,7 @@
     <!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
     <DefineConstants>TRACE;CDE_SYSLOG;CDE_USECSWS;$(DefineConstants)</DefineConstants>
+	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -28,7 +28,7 @@ namespace nsCDEngine.Engines.NMIService
             MyBaseEngine.SetEngineName(eEngineName.NMIService);        //Can be any arbitrary name - recommended is the class name
             MyBaseEngine.SetFriendlyName("The NMI Model Service");
             MyBaseEngine.AddCapability(eThingCaps.Internal);
-            MyBaseEngine.SetPluginInfo("This service manages the NMI Model of the C-DEngine", 0, null, "toplogo-150.png", "C-Labs", "http://www.c-labs.com", null); //TODO: Describe your plugin - this will later be used in the Plugin-Store
+            MyBaseEngine.SetPluginInfo("This service manages the NMI Model of the C-DEngine", 0, null, "toplogo-150.png", "C-Labs", "https://www.c-labs.com", null); //TODO: Describe your plugin - this will later be used in the Plugin-Store
 
             MyBaseEngine.GetEngineState().IsAllowedUnscopedProcessing = TheBaseAssets.MyServiceHostInfo.IsCloudService;
             MyBaseEngine.GetEngineState().IsAcceptingFilePush = true;
