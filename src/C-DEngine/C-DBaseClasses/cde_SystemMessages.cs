@@ -426,7 +426,7 @@ namespace nsCDEngine.BaseClasses
                 hash += ENG.GetHashCode();
             hash += GetOriginator().GetHashCode();
             if (!string.IsNullOrEmpty(OWN))
-            hash += OWN.GetHashCode();
+                hash += OWN.GetHashCode();
             string[] t = TheCommonUtils.cdeSplit(TXT, ";:;", false, false);
             if (t != null && t.Length > 0 && !string.IsNullOrEmpty(t[0]))
                 hash += t[0].GetHashCode();

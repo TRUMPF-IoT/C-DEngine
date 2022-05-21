@@ -1011,7 +1011,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="UpdateThing">If set to true, TheThing's UpdateThing function will be called and TheThing is updated in TheThingRegistry and TheThingRegistry is flushed to Disk</param>
         /// <param name="ForceUpdate">Forces an update to the Thing - even if the value of the property is the same as already store in the property</param>
         /// <returns></returns>
-        public static cdeP SetSafeProperty(cdeP pProp, string pName, object pValue, ePropertyTypes pType, bool UpdateThing = false, bool ForceUpdate = false)
+        public static cdeP SetSafeProperty(cdeP pProp, string pName, object pValue, ePropertyTypes pType, bool UpdateThing, bool ForceUpdate)
         {
             if (pProp == null) return null;
             cdeP ret = pProp.SetProperty(pName, pValue, pType, ForceUpdate ? 0x20 : -1, null); //NEW3.1: 0x20 was 8
@@ -1258,7 +1258,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="EventAction">Defines what events should be fired</param>
         /// <param name="pOnChangeEvent">a callback for a local (current node) onChangeEvent</param>
         /// <returns></returns>
-        public cdeP SetProperty(string pName, object pValue, int EventAction = -1, Action<cdeP> pOnChangeEvent = null)
+        public cdeP SetProperty(string pName, object pValue, int EventAction, Action<cdeP> pOnChangeEvent = null)
         {
             return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, EventAction, pOnChangeEvent, null);
         }
@@ -1275,7 +1275,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="EventAction">Defines what events should be fired</param>
         /// <param name="pOnChangeEvent">a callback for a local (current node) onChangeEvent</param>
         /// <returns></returns>
-        public cdeP SetProperty(string pName, object pValue, ePropertyTypes pType, int EventAction = -1, Action<cdeP> pOnChangeEvent = null)
+        public cdeP SetProperty(string pName, object pValue, ePropertyTypes pType, int EventAction, Action<cdeP> pOnChangeEvent = null)
         {
             return SetProperty(pName, pValue, pType, DateTimeOffset.MinValue, EventAction, pOnChangeEvent, null);
         }

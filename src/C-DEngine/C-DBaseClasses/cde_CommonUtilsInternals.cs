@@ -978,7 +978,7 @@ namespace nsCDEngine.BaseClasses
             if (tAss == null)
                 tAss = Assembly.GetExecutingAssembly();
             if (tAss == null)
-                tAss = typeof(TheCommonUtils).GetType().Assembly;
+                tAss = typeof(TheCommonUtils).Assembly;
             diagnosticsInfo = string.Empty;
             tAss.ManifestModule.GetPEKind(out var assemblyPEKind, out var assemblyPlatform);
             var runtimeVersion = tAss.ImageRuntimeVersion;

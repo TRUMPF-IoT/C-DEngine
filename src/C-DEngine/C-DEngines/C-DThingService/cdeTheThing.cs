@@ -1477,7 +1477,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="EventAction">Defines what events should be fired</param>
         /// <param name="pOnChangeEvent">a callback for a local (current node) onChangeEvent</param>
         /// <returns></returns>
-        public cdeP SetProperty(string pName, object pValue, int EventAction = -1, Action<cdeP> pOnChangeEvent = null)
+        public cdeP SetProperty(string pName, object pValue, int EventAction, Action<cdeP> pOnChangeEvent = null)
         {
             return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, EventAction, pOnChangeEvent, null);
         }
@@ -1494,7 +1494,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="EventAction">Defines what events should be fired</param>
         /// <param name="pOnChangeEvent">a callback for a local (current node) onChangeEvent</param>
         /// <returns></returns>
-        public cdeP SetProperty(string pName, object pValue, ePropertyTypes pType, int EventAction = -1, Action<cdeP> pOnChangeEvent = null)
+        public cdeP SetProperty(string pName, object pValue, ePropertyTypes pType, int EventAction, Action<cdeP> pOnChangeEvent = null)
         {
             return SetProperty(pName, pValue, pType, DateTimeOffset.MinValue, EventAction, pOnChangeEvent, null);
         }

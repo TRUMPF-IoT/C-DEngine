@@ -20,7 +20,7 @@ using nsCDEngine.Security;
 
 namespace nsCDEngine.Communication
 {
-    internal partial class TheQueuedSender : TheDataBase
+    internal partial class TheQueuedSender : TheDataBase, IDisposable
     {
         public TheQueuedSender()
         {
@@ -1679,7 +1679,7 @@ namespace nsCDEngine.Communication
                     MyTSMHistoryCount = MyTSMHistory.Count; // This is expensive (takes a global concurrentdictionary lock)
                     TheCDEKPIs.IncTSMByEng(pTSM.ENG);
 
-                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.ESSENTIALS) | MyTSMHistoryCount != 3000 ? null : new TSM("QSRegistry", $"TSMSeenHistory QS very full! Cnt:{MyTSMHistoryCount} Out:{pIsOutgoing} TXT:{pTSM.TXT} TIM:{pTSM.TIM} ENG:{pTSM.ENG} SEID:{tSessionID}  FID:{cFID} ORG:{tOrg}", eMsgLevel.l6_Debug)); // full  TSM: {pTSM.ToString()}
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.ESSENTIALS) || MyTSMHistoryCount != 3000 ? null : new TSM("QSRegistry", $"TSMSeenHistory QS very full! Cnt:{MyTSMHistoryCount} Out:{pIsOutgoing} TXT:{pTSM.TXT} TIM:{pTSM.TIM} ENG:{pTSM.ENG} SEID:{tSessionID}  FID:{cFID} ORG:{tOrg}", eMsgLevel.l6_Debug)); // full  TSM: {pTSM.ToString()}
                     if (MyTSMHistoryCount > 6000)
                     {
                         MyTSMHistory.Reset();

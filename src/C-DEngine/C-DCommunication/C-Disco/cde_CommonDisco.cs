@@ -150,17 +150,17 @@ namespace nsCDEngine.Discovery
             eventWSDMatchFound -= pMatch;
             eventWSDMatchFound += pMatch;
         }
-        public void UnRegisterNewMatch(Action<Guid, string, List<string>> pMatch)
+        public void UnRegisterNewMatch(Action<Guid, string, List<string>> pUnMatch)
         {
             // ReSharper disable once DelegateSubtraction
-            eventWSDMatchFound -= pMatch;
+            eventWSDMatchFound -= pUnMatch;
         }
 
-        public void RegisterUPnPUID(string pUid, Action<TheUPnPDeviceInfo> pCallback)
+        public void RegisterUPnPUID(string pUid, Action<TheUPnPDeviceInfo> CallBack)
         {
             if (!mUPnpUIDs.ContainsKey(pUid))
             {
-                mUPnpUIDs.TryAdd(pUid, pCallback);
+                mUPnpUIDs.TryAdd(pUid, CallBack);
                 ScanKnownDevices(pUid);
             }
         }
@@ -172,11 +172,11 @@ namespace nsCDEngine.Discovery
             }
         }
 
-        public void RegisterDeviceLost(string pUid, Action<TheUPnPDeviceInfo> pCallback)
+        public void RegisterDeviceLost(string pUid, Action<TheUPnPDeviceInfo> CallBack)
         {
             if (!mUPnpLost.ContainsKey(pUid))
             {
-                mUPnpLost.TryAdd(pUid, pCallback);
+                mUPnpLost.TryAdd(pUid, CallBack);
             }
         }
         public void UnregisterDeviceLost(string pUid)
@@ -341,21 +341,21 @@ namespace nsCDEngine.Discovery
             return null;
         }
 
-        public void RegisterDevice(TheUPnPDeviceInfo pNewDevice)
+        public void RegisterDevice(TheUPnPDeviceInfo pInfo)
         {
-            RegisterDevice(pNewDevice, false);
+            RegisterDevice(pInfo, false);
         }
 
-        public bool RegisterDevice(TheUPnPDeviceInfo pNewDevice, bool ForceUpdate)
+        public bool RegisterDevice(TheUPnPDeviceInfo pInfo, bool ForceUpdate)
         {
             TheDiagnostics.SetThreadName("UPnP-Notify", true);
-            if (!TheBaseAssets.MasterSwitch || (TheCommonUtils.cdeIsLocked(LockNotify) && !ForceUpdate) || string.IsNullOrEmpty(pNewDevice?.LocationURL)) return false;
+            if (!TheBaseAssets.MasterSwitch || (TheCommonUtils.cdeIsLocked(LockNotify) && !ForceUpdate) || string.IsNullOrEmpty(pInfo?.LocationURL)) return false;
             lock (LockNotify)
             {
                 TheUPnPDeviceInfo tHistory = null;
                 //tHistory = MyUPnPDiscoveryPast.MyMirrorCache.GetEntryByFunc((s) => s.LocationURL.Equals(pNewDevice.LocationURL, StringComparison.OrdinalIgnoreCase)); //
-                string[] tUsn = pNewDevice.USN.Split(':');
-                string tNewUsn = pNewDevice.USN;
+                string[] tUsn = pInfo.USN.Split(':');
+                string tNewUsn = pInfo.USN;
                 if (tUsn.Length > 2)
                     tNewUsn = tUsn[0] + ':' + tUsn[1];
                 tHistory = MyUPnPDiscoveryPast.MyMirrorCache.GetEntryByFunc((s) => s.USN.StartsWith(tNewUsn, StringComparison.OrdinalIgnoreCase)); //
@@ -363,8 +363,8 @@ namespace nsCDEngine.Discovery
                 {
                     try
                     {
-                        tHistory.SourceIP = IPAddress.TryParse(pNewDevice.LocationURL.Split(':')[0], out IPAddress tIp) ? pNewDevice.LocationURL : new Uri(pNewDevice.LocationURL).Host;
-                        tHistory.LocationURL = pNewDevice.LocationURL;
+                        tHistory.SourceIP = IPAddress.TryParse(pInfo.LocationURL.Split(':')[0], out IPAddress tIp) ? pInfo.LocationURL : new Uri(pInfo.LocationURL).Host;
+                        tHistory.LocationURL = pInfo.LocationURL;
                         if (DateTimeOffset.Now.Subtract(tHistory.LastSeenAt).TotalSeconds < tHistory.MaxAge)
                         {
                             MyUPnPDiscoveryPast.MyMirrorCache.AddOrUpdateItem(tHistory); //gUSN
@@ -378,12 +378,12 @@ namespace nsCDEngine.Discovery
                     }
                     catch (Exception e)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(111, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("UPnP", string.Format("UPnP {0} Invalid Device URL", pNewDevice), eMsgLevel.l1_Error, e.ToString()));
+                        TheBaseAssets.MySYSLOG.WriteToLog(111, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("UPnP", string.Format("UPnP {0} Invalid Device URL", pInfo), eMsgLevel.l1_Error, e.ToString()));
                         return false;
                     }
                 }
                 if (tHistory == null)
-                    tHistory = pNewDevice;
+                    tHistory = pInfo;
                 MyUPnPDiscoveryPast.MyMirrorCache.AddOrUpdateItem(tHistory); //gUSN
                 Uri tLocationUrl;
                 try

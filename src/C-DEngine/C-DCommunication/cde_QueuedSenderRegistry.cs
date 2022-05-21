@@ -102,9 +102,9 @@ namespace nsCDEngine.Communication
                         {
                             var handlers = eventHBTimerFired.GetInvocationList();
                             TheCDEKPIs.SetKPI(eKPINames.HTCallbacks, handlers.Length);
-                            foreach (Action<long> handler in handlers)
+                            foreach (Delegate handler in handlers)
                             {
-                                TheCommonUtils.DoFireEvent<long>(handler, mHBTicker, false, 1000);
+                                TheCommonUtils.DoFireEvent<long>(handler as Action<long>, mHBTicker, false, 1000);
                             }
                         }
                     }
@@ -180,9 +180,9 @@ namespace nsCDEngine.Communication
                         {
                             var handlers = eventHealthTimerFired.GetInvocationList();
                             TheCDEKPIs.SetKPI(eKPINames.HTCallbacks, handlers.Length);
-                            foreach (Action<long> handler in handlers)
+                            foreach (Delegate handler in handlers)
                             {
-                                TheCommonUtils.DoFireEvent<long>(handler, mHealthTicker, false, 5000);
+                                TheCommonUtils.DoFireEvent<long>(handler as Action<long>, mHealthTicker, false, 5000);
                             }
                         }
                     }

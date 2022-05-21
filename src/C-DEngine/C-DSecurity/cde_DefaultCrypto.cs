@@ -133,7 +133,7 @@ namespace nsCDEngine.Security
         ///
         /// <returns>   A string. </returns>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        public string RSADecrypt(byte[] val, RSACryptoServiceProvider rsa = null, string RSAKey = null, string RSAPublic = null)
+        public string RSADecrypt(byte[] val, RSACryptoServiceProvider rsa, string RSAKey = null, string RSAPublic = null)
         {
             if (rsa == null)
             {

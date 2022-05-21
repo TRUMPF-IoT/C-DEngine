@@ -653,6 +653,7 @@ namespace nsCDEngine.ViewModels
             // ReSharper disable once ValueParameterNotUsed
             internal set
             {
+                mStatusLevel = value;
                 int tNewLevel = StatusLevel;
                 if (mStatusLevel != tNewLevel)
                 {
@@ -851,7 +852,7 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         public bool ShowMarkupInLog
         {
-            get { return m_ShowMInLog | DebugLevel > eDEBUG_LEVELS.ESSENTIALS; }
+            get { return m_ShowMInLog || DebugLevel > eDEBUG_LEVELS.ESSENTIALS; }
             set { m_ShowMInLog = value; }
         }
         private bool m_ShowMInLog = false;
@@ -918,8 +919,8 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         public bool AuditNMIChanges
         {
-            get { return m_auditNMIChanges & TheLoggerFactory.HasEngine(); }
-            internal set { m_auditNMIChanges = true; }
+            get { return m_auditNMIChanges && TheLoggerFactory.HasEngine(); }
+            internal set { m_auditNMIChanges = value; }
         }
         private bool m_auditNMIChanges = false;
 

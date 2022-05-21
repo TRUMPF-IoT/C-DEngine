@@ -335,7 +335,7 @@ namespace nsCDEngine.Communication
 
         private readonly object _postToSocketLock = new object();
 
-        internal override void PostToSocket(TheDeviceMessage pMsg, byte[] pPostBuffer, bool SendAsBinary, bool IsInitialConnect)
+        internal override void PostToSocket(TheDeviceMessage pMsg, byte[] pPostBuffer, bool pSendAsBinary, bool IsInitialConnect)
         {
             TheDiagnostics.SetThreadName("WSPostToSocket:" + ((MyQSender?.MyTargetNodeChannel!=null) ? MyQSender.MyTargetNodeChannel.ToString():"DEAD"));
             if (MyQSender?.MyTargetNodeChannel==null)
@@ -384,7 +384,7 @@ namespace nsCDEngine.Communication
                             outputBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(tStr));
                         }
                         //LogBufferToFile("wsoutputputlog", outputBuffer.Array, outputBuffer.Offset, outputBuffer.Count);
-                        Task tTask = websocket.SendAsync(outputBuffer, SendAsBinary ? WebSocketMessageType.Binary : WebSocketMessageType.Text, true, TheBaseAssets.MasterSwitchCancelationToken);
+                        Task tTask = websocket.SendAsync(outputBuffer, pSendAsBinary ? WebSocketMessageType.Binary : WebSocketMessageType.Text, true, TheBaseAssets.MasterSwitchCancelationToken);
                         tTask.Wait(TheBaseAssets.MyServiceHostInfo.TO.WsTimeOut * 10);
                         if (!tTask.IsCompleted)
                         {
@@ -413,9 +413,9 @@ namespace nsCDEngine.Communication
 
 
 
-        public override void Shutdown(bool FireEvent, string pReason)
+        public override void Shutdown(bool IsAsync, string pReason)
         {
-            base.Shutdown(FireEvent, pReason);
+            base.Shutdown(IsAsync, pReason);
             try
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(43611, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheWSServer", $"WS Server for {OwnerNodeID} CloseFired:{CloseFired} Reason: {pReason}", eMsgLevel.l3_ImportantMessage));
@@ -432,7 +432,7 @@ namespace nsCDEngine.Communication
                 catch {
                     //ignored
                 }
-                if (FireEvent && !CloseFired && eventClosed != null) //FireEvent &&
+                if (IsAsync && !CloseFired && eventClosed != null) //FireEvent &&
                 {
                     CloseFired = true;
                     eventClosed(pReason);

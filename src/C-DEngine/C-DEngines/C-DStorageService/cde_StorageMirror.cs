@@ -75,7 +75,7 @@ namespace nsCDEngine.Engines.StorageService
     /// TheStorageMirror is a class representing data storage of the C-DEngine. It abstracts the underlying data Store from the use in The C-DEngine
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class TheStorageMirror<T> where T : TheDataBase, INotifyPropertyChanged, new()
+    public class TheStorageMirror<T>:IDisposable where T : TheDataBase, INotifyPropertyChanged, new()
     {
 #pragma warning disable 67
         [Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later Version")]
@@ -2406,7 +2406,7 @@ namespace nsCDEngine.Engines.StorageService
                     if (HasLiveFields)
                     {
                         // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
-                        foreach (ICDEThing tThing in retList)
+                        foreach (var tThing in retList)
                         {
                             foreach (TheFieldInfo tFldInfo in pDataSource.FieldInfo)
                             {
@@ -2424,7 +2424,7 @@ namespace nsCDEngine.Engines.StorageService
                                                 OnUpdateName += "." + tUpdateName[i];
                                         }
                                     }
-                                    cdeP tProp = tThing?.GetBaseThing()?.GetProperty(OnUpdateName, true);
+                                    cdeP tProp = (tThing as ICDEThing)?.GetBaseThing()?.GetProperty(OnUpdateName, true);
                                     if (tProp != null)
                                     {
                                         TheFormsGenerator.RegisterNMISubscription(pDataSource?.ClientInfo, tFldInfo.DataItem, tFldInfo);

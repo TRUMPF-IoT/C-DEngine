@@ -312,7 +312,7 @@ namespace nsCDEngine.Communication
         /// <param name="pTarget"></param>
         /// <param name="pSender"></param>
         /// <returns></returns>
-        public bool SendTSM(TSM tTSM, string pTopic=null, Guid? pTarget=null, Guid? pSender=null)
+        public bool SendTSM(TSM tTSM, string pTopic, Guid? pTarget, Guid? pSender=null)
         {
             if (MyQSender == null || tTSM == null) return false;
             if (!tTSM.ORG.Contains(":") && pSender!=null)

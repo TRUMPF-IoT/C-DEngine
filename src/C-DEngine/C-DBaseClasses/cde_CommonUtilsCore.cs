@@ -821,8 +821,10 @@ namespace nsCDEngine.BaseClasses
                 if (pUid.Length > 36)
                     pUid = pUid.Substring(0, 36);
                 else
+                {
                     if (pUid.Length < 36)
-                    pUid += "000000000000".Substring(0, 36 - pUid.Length);
+                        pUid += "000000000000".Substring(0, 36 - pUid.Length);
+                }
                 res = CGuid(pUid);
             }
             return res;
@@ -1283,21 +1285,21 @@ namespace nsCDEngine.BaseClasses
                 mRandom = RandomNumberGenerator.Create(); // Compliant for security-sensitive use cases
             }
 
-            public uint NextUInt(uint minValue, uint maxValue)
+            public uint NextUInt(uint pMin, uint pMax)
             {
-                if (minValue == maxValue) return minValue;
-                if (minValue > maxValue)
+                if (pMin == pMax) return pMin;
+                if (pMin > pMax)
                 {
-                    var t = maxValue;
-                    maxValue = minValue;
-                    minValue = t;
+                    var t = pMax;
+                    pMax = pMin;
+                    pMin = t;
                 }
                 lock (mRandom)
                 {
                     byte[] data = new byte[16];
                     mRandom.GetBytes(data);
                     var ul = BitConverter.ToUInt64(data, 0);
-                    return (uint)((ul % (maxValue - minValue)) + minValue);
+                    return (uint)((ul % (pMax - pMin)) + pMin);
                 }
             }
 

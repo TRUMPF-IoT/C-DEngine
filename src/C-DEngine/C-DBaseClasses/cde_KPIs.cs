@@ -16,18 +16,18 @@ namespace nsCDEngine.BaseClasses
 {
     public class TheKPIs : ICDEKpis
     {
-        public void IncrementKPI(string name, bool dontReset = false)
+        public void IncrementKPI(string pName, bool dontReset = false)
         {
-            TheCDEKPIs.IncrementKPI(name, dontReset);
+            TheCDEKPIs.IncrementKPI(pName, dontReset);
         }
 
         /// <summary>
         /// Increments an existing KPI by 1 using an eKPINames enum.
         /// </summary>
-        /// <param name="eKPI">Enum that determines which KPI to increment</param>
-        public void IncrementKPI(eKPINames eKPI)
+        /// <param name="pName">Enum that determines which KPI to increment</param>
+        public void IncrementKPI(eKPINames pName)
         {
-            TheCDEKPIs.IncrementKPI(eKPI);
+            TheCDEKPIs.IncrementKPI(pName);
         }
     }
 

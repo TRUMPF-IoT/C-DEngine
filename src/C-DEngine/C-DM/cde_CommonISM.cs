@@ -810,7 +810,7 @@ namespace nsCDEngine.ISM
         /// Restarts the Node. If ForceQuitt is set, no data is flushed to disk on restart
         /// </summary>
         /// <param name="ForceQuit"></param>
-        public void Restart(bool ForceQuit)
+        public void Restart(bool ForceQuit = false)
         {
             RestartOrWipe(ForceQuit);
         }

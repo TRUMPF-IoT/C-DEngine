@@ -634,7 +634,7 @@ namespace nsCDEngine.Engines.NMIService
                                     if (cmd.Length > 6)
                                     {
                                         tPN = cmd[6].Split('=')[0];
-                                        if (cmd[6].IndexOf('=') > 0)
+                                        if (cmd[6].IndexOf('=') > -1)
                                             tPV = cmd[6].Substring(cmd[6].IndexOf('=') + 1);
                                     }
 
@@ -716,7 +716,7 @@ namespace nsCDEngine.Engines.NMIService
                                     if (cmd.Length > 5)
                                     {
                                         tPN = cmd[5].Split('=')[0];
-                                        if (cmd[5].IndexOf('=') > 0)
+                                        if (cmd[5].IndexOf('=') > -1)
                                             tPV = cmd[5].Substring(cmd[5].IndexOf('=') + 1);
                                     }
                                     List<TheThing> tThings = TheThingRegistry.GetThingsOfEngine("*", true, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();

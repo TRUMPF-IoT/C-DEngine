@@ -85,10 +85,6 @@ namespace nsCDEngine.Engines
         void UpdateEngineState(string pScrambledScopeID);
 
         /// <summary>
-        /// Forces the engine to resurrect any dead channel
-        /// </summary>
-        bool ResurectChannels();
-        /// <summary>
         /// Returns the current state of this Engine (Service Plugin)
         /// </summary>
         /// <returns></returns>
@@ -363,11 +359,6 @@ namespace nsCDEngine.Engines
         /// </summary>
         /// <param name="pMessage">TSM to be send via the MessageRegistered event</param>
         void MessageProcessed(TSM pMessage);
-
-        /// <summary>
-        /// New in V2.5: Resets the current Engine Channel. This might become necessary when the scopeID has changed
-        /// </summary>
-        void ResetChannel();
 
         /// <summary>
         /// New in V3.0: Returns the ICDEThing of this Engine

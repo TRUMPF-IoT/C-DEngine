@@ -596,7 +596,7 @@ namespace nsCDEngine.Security
         /// <param name="bNoLogging">If true, errors will not be logged</param>
         /// <param name="bUseEasyScope16">if true, the EasyScopeID can have up to 16 characters. Attention: this might not be compatible to existing mesh setups as all nodes in a mesh need to understand 16chars ScopeIDs</param>
         /// <returns></returns>
-        public string GetScrambledScopeIDFromEasyID(string pEasyScope, bool bNoLogging, bool bUseEasyScope16)
+        public string GetScrambledScopeIDFromEasyID(string pEasyScope, bool bNoLogging = false, bool bUseEasyScope16 = false)
         {
             if (string.IsNullOrEmpty(pEasyScope)) return null;  //NEW 10/20/2012
             Guid tG = CU.CGuid(TheBaseAssets.MySecrets.GetAK());
