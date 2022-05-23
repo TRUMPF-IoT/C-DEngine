@@ -1911,7 +1911,7 @@ namespace WebSocketSharp
     {
       var buff = new StringBuilder (base64Key, 64);
       buff.Append (_guid);
-      SHA1 sha1 = new SHA1CryptoServiceProvider ();
+      SHA1 sha1 = new SHA1CryptoServiceProvider ();                     //NOSONAR - 3rd Party Code
       var src = sha1.ComputeHash (buff.ToString ().UTF8Encode ());
 
       return Convert.ToBase64String (src);

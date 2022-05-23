@@ -478,8 +478,7 @@ namespace WebSocketSharp.Net
     /// <exception cref="ArgumentException">
     /// An element with the specified name isn't found in <paramref name="serializationInfo"/>.
     /// </exception>
-    protected WebHeaderCollection (
-      SerializationInfo serializationInfo, StreamingContext streamingContext)
+    protected WebHeaderCollection (SerializationInfo serializationInfo, StreamingContext streamingContext) //NOSONAR - third party code not validated
     {
       if (serializationInfo == null)
         throw new ArgumentNullException ("serializationInfo");

@@ -479,7 +479,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="pText">Command Text</param>
         /// <param name="pPayload">Payload string for the message</param>
         /// <param name="LCID">Language ID to translate the string in PLS to</param>
-        public TSM(string tEngine, string pText, string pPayload, int LCID)
+        public TSM(string tEngine, string pText, string pPayload, int LCID) //NOSONAR - this is a special case for localized PLS Payloads
         {
             ENG = tEngine;
             TXT = pText;
