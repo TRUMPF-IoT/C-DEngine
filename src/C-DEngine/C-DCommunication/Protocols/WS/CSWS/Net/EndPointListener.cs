@@ -185,7 +185,7 @@ namespace WebSocketSharp.Net
         fs.Read (pvk, 0, pvk.Length);
       }
 
-      var rsa = new RSACryptoServiceProvider ();
+      var rsa = new RSACryptoServiceProvider (2048); //CM: C-Labs change. This is not used in the CDE therefore no issue
       rsa.ImportCspBlob (pvk);
 
       return rsa;

@@ -46,7 +46,7 @@ namespace nsCDEngine.Security
         {
             if (toEncrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new AesManaged();
+            AesManaged myRijndael = new AesManaged();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform encryptor = myRijndael.CreateEncryptor(AK, AI);
             MemoryStream msEncrypt = new MemoryStream();
             CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
@@ -70,7 +70,7 @@ namespace nsCDEngine.Security
         {
             if (toDecrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new AesManaged();
+            AesManaged myRijndael = new AesManaged(); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform decryptor = myRijndael.CreateDecryptor(AK, AI);
             byte[] resultArray = decryptor.TransformFinalBlock(toDecrypt, 0, toDecrypt.Length);
             myRijndael.Clear();
@@ -175,7 +175,7 @@ namespace nsCDEngine.Security
                 Exponent = ToHexByte(rsaP[0])
             };
             rsa.ImportParameters(tP);
-            byte[] tBytes = rsa.Encrypt(CUTF8String2Array(val), false);
+            byte[] tBytes = rsa.Encrypt(CUTF8String2Array(val), false);     //NOSONAR This is required to support browsers without TLS in on-premises environments
             return tBytes;
         }
 
