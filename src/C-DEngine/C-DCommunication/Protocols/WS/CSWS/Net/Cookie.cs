@@ -790,14 +790,9 @@ namespace WebSocketSharp.Net
     /// <returns>
     /// An <see cref="int"/> that represents the hash code for the current <see cref="Cookie"/>.
     /// </returns>
-    public override int GetHashCode ()
-    {
-      return hash (
-        StringComparer.InvariantCultureIgnoreCase.GetHashCode (_name),
-        _value.GetHashCode (),
-        _path.GetHashCode (),
-        StringComparer.InvariantCultureIgnoreCase.GetHashCode (_domain),
-        _version);
+    public override int GetHashCode () //NOSONAR - 3rd Party code will be dropped in the future
+        {
+      return hash (StringComparer.InvariantCultureIgnoreCase.GetHashCode (_name),_value.GetHashCode (),_path.GetHashCode (),StringComparer.InvariantCultureIgnoreCase.GetHashCode (_domain),_version); //NOSONAR - 3rd Party code will be dropped in the future
     }
 
     /// <summary>

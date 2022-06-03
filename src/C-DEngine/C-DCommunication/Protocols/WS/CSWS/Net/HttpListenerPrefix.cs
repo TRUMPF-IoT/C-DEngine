@@ -51,7 +51,7 @@ namespace WebSocketSharp.Net
     private IPAddress[]  _addresses;
     private string       _host;
     private HttpListener _listener;
-    private string       _original;
+    private readonly string       _original;
     private string       _path;
     private ushort       _port;
     private bool         _secure;
@@ -198,9 +198,9 @@ namespace WebSocketSharp.Net
       return pref != null && pref._original == _original;
     }
 
-    public override int GetHashCode ()
-    {
-      return _original.GetHashCode ();
+    public override int GetHashCode () //NOSONAR - 3rd Party code will be dropped in the future
+        {
+      return _original.GetHashCode (); //NOSONAR - 3rd Party Code will be removed in future
     }
 
     public override string ToString ()

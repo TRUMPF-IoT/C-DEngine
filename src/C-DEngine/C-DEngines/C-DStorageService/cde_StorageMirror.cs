@@ -1824,7 +1824,7 @@ namespace nsCDEngine.Engines.StorageService
                 TheCommonUtils.TaskWaitTimeout(taskCS.Task, new TimeSpan(0, 0, 15)).ContinueWith(t => taskCS.TrySetResult(pRec));
                 return taskCS.Task;
             }
-            return Task.FromResult<TheDataRetrievalRecord>(null);
+            return Task.FromResult<TheDataRetrievalRecord>(pRec);
         }
 
         /// <summary>
@@ -2026,21 +2026,38 @@ namespace nsCDEngine.Engines.StorageService
             }
             else
             {
+                var tRec2 = tRec;
                 Task<TheDataRetrievalRecord> tTask = RetrieveEdgeStorageProperties(tRec);
                 if (tTask != null)
                 {
                     tTask.Wait();
                     tRec = tTask.Result;
                 }
-                tRec = RebuildThingStorePB(tRec);
-                tResponse.MyRecords = TheStorageUtilities.ConvertFromStoreRecord<T>(tRec, false, out string tError);
-                if (!string.IsNullOrEmpty(tError))
+                if (tRec == null)
                 {
                     tResponse.HasErrors = true;
-                    tResponse.ErrorMsg = tError;
+                    tResponse.ErrorMsg = $"EdgeStore Properties could not be retrieved for {tRec2?.UID}";
                 }
-                //if (IsCached)
-                  //  MyMirrorCache.Fill(tResponse);
+                else
+                {
+                    tRec = RebuildThingStorePB(tRec);
+                    if (tRec == null)
+                    {
+                        tResponse.HasErrors = true;
+                        tResponse.ErrorMsg = "ThingStorePB could not be rebuilt";
+                    }
+                    else
+                    {
+                        tResponse.MyRecords = TheStorageUtilities.ConvertFromStoreRecord<T>(tRec, false, out string tError);
+                        if (!string.IsNullOrEmpty(tError))
+                        {
+                            tResponse.HasErrors = true;
+                            tResponse.ErrorMsg = tError;
+                        }
+                        //if (IsCached)
+                        //  MyMirrorCache.Fill(tResponse);
+                    }
+                }
             }
             TimedRequest tReq = GetTimedRequest(LastID);
             if (tReq != null)
@@ -2052,7 +2069,7 @@ namespace nsCDEngine.Engines.StorageService
 
         private TheDataRetrievalRecord RebuildThingStorePB(TheDataRetrievalRecord pRec)
         {
-            if (typeof(T).Equals(typeof(TheThingStore)))
+            if (typeof(T).Equals(typeof(TheThingStore)) && pRec!=null)
             {
                 List<TFD> pbDefinitions = pRec.FLDs.Where(fld => !typeof(TheThingStore).GetProperties().Any(prop => prop.Name.Equals(fld.N)) && !TheStorageUtilities.defaultRows.Contains(fld.N)).ToList();
                 Dictionary<string, object> PB = new Dictionary<string, object>();

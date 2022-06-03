@@ -277,7 +277,7 @@ namespace nsCDEngine.Activation
         /// <returns></returns>
         public bool ValidateSignature(List<byte[]> rsaPublicKeyCSPBlobs)
         {
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048); //CM: new in 5.146.0 - will render old licenses unusable
             var payload = CU.CUTF8String2Array(GetCanonicalLicense());
             foreach (var key in rsaPublicKeyCSPBlobs)
             {
@@ -357,7 +357,7 @@ namespace nsCDEngine.Activation
             bool success = false;
             try
             {
-                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048); //CM: new in 5.146.0 - will render old licenses unusable
                 rsa.ImportCspBlob(rsaPrivateKeyCSPBlob);
                 if (rsa.PublicOnly)
                 {

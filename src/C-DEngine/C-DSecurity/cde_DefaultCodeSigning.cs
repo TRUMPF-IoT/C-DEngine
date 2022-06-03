@@ -683,7 +683,7 @@ namespace nsCDEngine.Security
             }
 
             byte[] fileHash;
-            using (var sha1 = new System.Security.Cryptography.SHA1Managed())
+            using (var sha1 = new System.Security.Cryptography.SHA1Managed()) //NOSONAR - required for CodeSigning to work properly
             {
                 fileHash = sha1.ComputeHash(signedImageContent);
             }

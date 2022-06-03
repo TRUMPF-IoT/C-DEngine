@@ -104,14 +104,14 @@ namespace nsCDEngine.Activation
             HMAC hmac;
             try
             {
-                hmac = HMACSHA1.Create();
+                hmac = HMACSHA1.Create();   //NOSONAR  - not security sensitive context
                 hmac.Key = signingKey;
             }
             catch (PlatformNotSupportedException)
             {
                 try
                 {
-                    var sha1 = new HMACSHA1(signingKey);
+                    var sha1 = new HMACSHA1(signingKey);  //NOSONAR  - not security sensitive context
                     hmac = sha1;
                 }
                 catch (PlatformNotSupportedException)
