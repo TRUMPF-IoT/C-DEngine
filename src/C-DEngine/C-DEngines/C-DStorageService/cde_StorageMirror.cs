@@ -2102,7 +2102,7 @@ namespace nsCDEngine.Engines.StorageService
 
         #region NMI Table and Form Code
 
-        internal string UpdateFromJSON(TheFormInfo pForm, string pJSON, string pDirtyMask, Guid pOriginator,TheClientInfo pClientInfo, Action<StoreResponse> pResponse)
+        internal string UpdateFromJSON(TheFormInfo pForm, string pJSON, string pDirtyMask, Guid pOriginator,TheClientInfo pClientInfo, Guid pSEID, Action<StoreResponse> pResponse)
         {
             if (TheCDEngines.MyNMIService == null || string.IsNullOrEmpty(pJSON) || pJSON=="[]" || pForm.defDataSource.StartsWith("TheUserDetails;:;"))
                 return "";  //SECURITY-UPDATE: Forbit any updates to TheUserDetails table through generic calls by clients/browsers!
@@ -2162,7 +2162,15 @@ namespace nsCDEngine.Engines.StorageService
                                         if (tSourceP != null && tTargetP != null)
                                         {
                                             var tOld = tTargetP.GetValue();
-                                            bool tFoundOne = tTargetP.SetValue(tSourceP.GetValue(), pOriginator.ToString(), tSourceP.cdeCTIM);
+                                            var tNewVal=tSourceP.GetValue();
+                                            if ((tInfo.Flags & 1) != 0)
+                                            {
+                                                //TODO: NMI will use RSA to encrypt value. We need the session here to decrypt:
+                                                tNewVal = TheCommonUtils.CStr(tSourceP.Value);
+                                                if (tNewVal.ToString().StartsWith("&^CDEP5^&:"))
+                                                    tNewVal = TheCommonUtils.cdeRSADecrypt(pSEID, tNewVal.ToString());
+                                            }
+                                            bool tFoundOne = tTargetP.SetValue(tNewVal, pOriginator.ToString(), tSourceP.cdeCTIM);
                                             if (tFoundOne)
                                             {
                                                 if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)

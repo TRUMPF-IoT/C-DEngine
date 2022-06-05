@@ -246,7 +246,7 @@ namespace nsCDEngine.Engines.NMIService
                                                         string tDirtyMask = "*";
                                                         if (cmd.Length > 4)
                                                             tDirtyMask = cmd[4];
-                                                        string tUpdated = magicMethod.Invoke(MyStorageMirror, new[] { tTable, pMsg.Message.PLS, tDirtyMask, (object)pMsg.Message.GetOriginator(), tClientInfo, null }).ToString();
+                                                        string tUpdated = magicMethod.Invoke(MyStorageMirror, new[] { tTable, pMsg.Message.PLS, tDirtyMask, (object)pMsg.Message.GetOriginator(), tClientInfo, TheCommonUtils.CGuid(pMsg.Message.SEID), null }).ToString();
                                                         if (!string.IsNullOrEmpty(tUpdated))
                                                         {
                                                             TSM tTsm = new TSM(eEngineName.NMIService, "NMI_UPD_DATA_RET:"); //TODO: Investigate if we can PublishCentral UPD_DATA
