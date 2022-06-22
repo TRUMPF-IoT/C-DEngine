@@ -136,7 +136,7 @@
 
   <Import Project="..\Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems" Label="Shared" Condition="$(DefineConstants.Contains('CDE_INTNEWTON'))" />
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.JSON" Version="12.0.3" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))"/>
+    <PackageReference Include="Newtonsoft.JSON" Version="13.0.1" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))"/>
   </ItemGroup>
 
   <Target Name="CopyUpdaterEXEBeforeBuild" BeforeTargets="BeforeBuild">
