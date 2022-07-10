@@ -18,6 +18,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+#pragma warning disable 1591
 
 //ERROR Range 500-509
 

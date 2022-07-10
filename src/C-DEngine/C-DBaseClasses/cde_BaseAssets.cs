@@ -47,10 +47,9 @@ namespace nsCDEngine.BaseClasses
                 return CryptoLoadMessage = "LoadCrypto is not allowed after the Node has been started";
             try
             {
-                var inDLLName = pDLLName;
                 if (string.IsNullOrEmpty(pDLLName))
                     pDLLName = "cdeCryptoLib.dll";
-                Dictionary<string, string> tL = new Dictionary<string, string>();
+                Dictionary<string, string> tL = new();
                 Assembly tCryptoAssembly = null;
                 string codeSignThumb;
                 if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch") //Android and IOS
@@ -152,7 +151,7 @@ namespace nsCDEngine.BaseClasses
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         public static string CryptoLoadMessage { private set; get; } = null; //if not null, loading of crypto failed and node must decide what to do
         static bool _platformDoesNotSupportReflectionOnlyLoadFrom;
-        static readonly List<string> _KnownInterfaces = new List<string> { "ICDECrypto", "ICDESecrets", "ICDEScopeManager", "ICDECodeSigning", "ICDEActivation" };
+        static readonly List<string> _KnownInterfaces = new () { "ICDECrypto", "ICDESecrets", "ICDEScopeManager", "ICDECodeSigning", "ICDEActivation" };
         internal class CryptoReferenceLoader : MarshalByRefObject
         {
             public Dictionary<string, string> ScanLibrary(string assemblyPath, out TSM resTSM)
@@ -162,7 +161,7 @@ namespace nsCDEngine.BaseClasses
             public Dictionary<string, string> ScanLibrary(string assemblyPath, out TSM resTSM, out Assembly tAss)
             {
                 resTSM = null;
-                Dictionary<string, string> mList = new Dictionary<string, string>();
+                Dictionary<string, string> mList = new ();
 
                 tAss = null;
                 if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
@@ -202,7 +201,7 @@ namespace nsCDEngine.BaseClasses
                                                    where ifs != null && ifs.Length > 0 && (ifs.Any(s => "IBaseEngine".Equals(s.Name)))
                                                    select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
 
-                                    if (IsCDEAss.Any() == false)
+                                    if (!IsCDEAss.Any()) //Contains Crypto interfaces but no IBaseEngines 
                                     {
                                         tAss = assembly;
                                         break;
@@ -272,7 +271,7 @@ namespace nsCDEngine.BaseClasses
             internal set
             {
                 _masterSwitch = value;
-                if (value == false)
+                if (!value)
                 {
                     MasterSwitchCancelationTokenSource.Cancel();
                 }
@@ -285,7 +284,7 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         public static TheServiceHostInfo MyServiceHostInfo = null;
 
-        private static readonly CancellationTokenSource MasterSwitchCancelationTokenSource = new CancellationTokenSource();
+        private static readonly CancellationTokenSource MasterSwitchCancelationTokenSource = new ();
         /// <summary>
         /// When C-DEngine is shutting down all tokens obtained from MasterSwitchCancelationToken get canceled. You can use this when waiting for long running Tasks.
         /// </summary>
@@ -298,13 +297,13 @@ namespace nsCDEngine.BaseClasses
         /// <summary>
         /// FUTURE USE: List of all Types Known to the C-DEngine
         /// </summary>
-        public static List<Type> MyServiceTypes = new List<Type>();
+        public static List<Type> MyServiceTypes = new ();
         /// <summary>
         /// Lists all known Plugins currently running in this instance of the C-DEngine
         /// </summary>
-        public static Dictionary<string, Type> MyCDEPluginTypes = new Dictionary<string, Type>();       //DIC-Allowed   STRING
+        public static Dictionary<string, Type> MyCDEPluginTypes = new ();       //DIC-Allowed   STRING
 
-        internal static Dictionary<string, string> ServiceURLs = new Dictionary<string, string>();     //DIC-Allowed    STRING
+        internal static readonly Dictionary<string, string> ServiceURLs = new ();     //DIC-Allowed    STRING
         internal static bool ForceShutdown = false;
         internal static long DelayShutDownCount = 0;
         internal static bool IsInAgentStartup = false;
@@ -388,10 +387,9 @@ namespace nsCDEngine.BaseClasses
                 string ret = "V";
                 try
                 {
-                    //Assembly assembly = Assembly.GetExecutingAssembly();
                     if (MyServiceHostInfo == null) return "Unknown";
 
-                    System.Reflection.Assembly assembly = TheCommonUtils.cdeGetExecutingAssembly(); // System.Reflection.Assembly.GetCallingAssembly();
+                    System.Reflection.Assembly assembly = TheCommonUtils.cdeGetExecutingAssembly(); 
                     String version = assembly.FullName.Split(',')[1];
                     String fullversion = version.Split('=')[1];
                     int build = int.Parse(fullversion.Split('.')[2]);
@@ -403,9 +401,7 @@ namespace nsCDEngine.BaseClasses
                     }
                     else
                     {
-                        bool isdef = Attribute.IsDefined(assembly, typeof(AssemblyInformationalVersionAttribute));
                         AssemblyInformationalVersionAttribute attribute = (AssemblyInformationalVersionAttribute)Attribute.GetCustomAttribute(assembly, typeof(AssemblyInformationalVersionAttribute));
-                        //var attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
                         if (attribute?.InformationalVersion != null)
                         {
                             var value = attribute.InformationalVersion;
@@ -438,7 +434,7 @@ namespace nsCDEngine.BaseClasses
         }
 
         internal static TheSessionStateManager MySession;
-        internal static Dictionary<string, ThePluginInfo> MyCDEPlugins = new Dictionary<string, ThePluginInfo>();       //DIC-Allowed   STRING
+        internal static Dictionary<string, ThePluginInfo> MyCDEPlugins = new ();       //DIC-Allowed   STRING
         internal static TheMirrorCache<TheReceivedParts> MyReceivedParts;
         internal static ThePluginInfo MyAppInfo;
         internal static bool IsStarting;
@@ -462,7 +458,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (IsInitialized) return;
             IsInitialized = true;
-            if (MyServiceHostInfo == null || !(MySecrets?.IsApplicationIDValid() == true))
+            if (MyServiceHostInfo == null || MySecrets?.IsApplicationIDValid() != true)
             {
                 MasterSwitch = false;
                 return;
@@ -554,7 +550,7 @@ namespace nsCDEngine.BaseClasses
                     {
                         var kpis = TheCommonUtils.GetTaskKpis(null);
                         TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: {TheCommonUtils.SerializeObjectToJSONString(kpis)}");
-                        Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) // TheCommonUtils.SleepOneEye(1000, 1000);
+                        Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) 
                     } while (MasterSwitch && !Engines.TheCDEngines.IsHostReady && MyServiceHostInfo.EnableTaskKPIs);
                     TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: KPIs Handoff to NodeHost");
                 });
@@ -606,6 +602,7 @@ namespace nsCDEngine.BaseClasses
             }
             catch
             {
+                //intentionally blank
             }
 #endif
             if (TheCommonUtils.IsMono()) // CODE REVIEW: Need to clean this up - do we mean Mono or Linux or case-insensitive file systems? CM: No- here we need this to find out if we are running in the MONO Runtime
@@ -644,7 +641,6 @@ namespace nsCDEngine.BaseClasses
 
             MyBlobCache = new TheMirrorCache<TheBlobData>(MyServiceHostInfo.TO.StorageCleanCycle);
             MyReceivedParts = new TheMirrorCache<TheReceivedParts>(MyServiceHostInfo.TO.StorageCleanCycle);
-            //TODO: I hope there is a better way to do this for Metro!
             MyServiceTypes.Add(typeof(TheBaseAssets));
 
             MyServiceHostInfo.TO.MakeHeartNormal();
@@ -672,9 +668,7 @@ namespace nsCDEngine.BaseClasses
             #endregion
 
             //Now load provisioning and local settings then parse them
-#pragma warning disable CS0618 // Type or member is obsolete - its allowed here
             if (!TheCDESettings.ParseSettings(MyCmdArgs, true, false))
-#pragma warning restore CS0618 // Type or member is obsolete
             {
                 MasterSwitch = false;
                 return;
@@ -705,7 +699,7 @@ namespace nsCDEngine.BaseClasses
                 uDir += "C-DEngine.dll";
             MyServiceHostInfo.CodeSignThumb = MyCodeSigner.GetAppCert(MyServiceHostInfo.DontVerifyTrust, uDir, MyServiceHostInfo.VerifyTrustPath, MyServiceHostInfo.DontVerifyIntegrity);  //Must be loaded here to set trust level in HSI
 
-            if (MyLoc as TheDefaultLocalizationUtils != null)
+            if (MyLoc is TheDefaultLocalizationUtils)
             {
                 (MyLoc as TheDefaultLocalizationUtils).DoPseudoLoc = TheCommonUtils.CBool(MySettings.GetSetting("DoPseudoLoc"));
             }
@@ -767,6 +761,7 @@ namespace nsCDEngine.BaseClasses
             }
             catch
             {
+                //intentionally blank
             }
             if (!bLocInitialized)
             {
@@ -798,8 +793,8 @@ namespace nsCDEngine.BaseClasses
                 MyServiceHostInfo.MyStationURL = MyServiceHostInfo.MyDeviceMoniker + "{" + MyServiceHostInfo.MyDeviceInfo.DeviceID + "}".ToUpper(); //MSU-OK
             else
             {
-                if (MyServiceHostInfo.MyAltStationURLs.Count(s => s.StartsWith("CDEB")) == 0)
-                    MyServiceHostInfo.MyAltStationURLs.Add("CDEB://{" + MyServiceHostInfo.MyDeviceInfo.DeviceID + "}"); //TODO: Backchannel Possibly save to Config File
+                if (MyServiceHostInfo.MyAltStationURLs.Any(s => s.StartsWith("CDEB")))
+                    MyServiceHostInfo.MyAltStationURLs.Add("CDEB://{" + MyServiceHostInfo.MyDeviceInfo.DeviceID + "}"); 
             }
             #endregion
 

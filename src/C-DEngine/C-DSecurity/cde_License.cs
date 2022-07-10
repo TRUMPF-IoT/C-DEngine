@@ -10,6 +10,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
+#pragma warning disable 1591
 
 namespace nsCDEngine.Activation
 {

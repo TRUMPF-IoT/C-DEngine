@@ -1396,6 +1396,30 @@ namespace nsCDEngine.Engines
             });
             return tcs.Task;
         }
+
+        /// <summary>
+        /// Fires when an Engine is initialized
+        /// </summary>
+        /// <param name="pEngineName">Name of the Engine to wait for</param>
+        /// <param name="pCallback"></param>
+        public static bool WaitForEngineReady(string pEngineName, Action<ICDEThing, object> pCallback)
+        {
+            IBaseEngine tbase = TheThingRegistry.GetBaseEngine(pEngineName);
+            if (tbase == null)
+                return false;
+            void innerCallback(ICDEThing sender, object obj)
+            {
+                pCallback(sender, obj);
+                tbase.UnregisterEvent(eThingEvents.Initialized, innerCallback);
+            }
+            tbase.UnregisterEvent(eThingEvents.Initialized, innerCallback);
+            tbase.RegisterEvent(eThingEvents.Initialized, innerCallback);
+            if (tbase == null || !tbase.GetEngineState().IsEngineReady)
+            {
+                innerCallback(tbase.GetBaseThing(),null);
+            }
+            return true;
+        }
         #endregion
     }
 }

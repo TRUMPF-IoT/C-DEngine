@@ -220,7 +220,7 @@ namespace nsCDEngine
             {
                 foreach (var thingKV in thingsWithHistorian.GetDynamicEnumerable())
                 {
-                    thingKV.Value.Historian.Close(); //._storageMirror.ForceSave();
+                    thingKV.Value.Historian.Close(); 
                 }
             }
         }

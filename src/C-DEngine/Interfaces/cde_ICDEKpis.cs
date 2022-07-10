@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
+#pragma warning disable 1591
 
 namespace nsCDEngine.BaseClasses
 {

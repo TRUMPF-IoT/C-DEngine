@@ -16,7 +16,7 @@ namespace nsCDEngine.Engines.ThingService
     /// <summary>
     /// Avalable Property Types for C-DEngine Things
     /// </summary>
-    public enum ePropertyTypes : int
+    public enum ePropertyTypes 
     {
         /// <summary>
         /// The default property Type is string
@@ -112,18 +112,10 @@ namespace nsCDEngine.Engines.ThingService
         }
         #endregion
 
-        private string mName;
         /// <summary>
         /// Name of the property
         /// </summary>
-        public string Name
-        {
-            get { return mName; }
-            set
-            {
-                mName = value;
-            }
-        }
+        public string Name { get; set; }
 
         /// <summary>
         /// Returns true if theproperty has changed during the last SetProperty. If false, the last SetProperty tried to write the same value
@@ -136,7 +128,6 @@ namespace nsCDEngine.Engines.ThingService
         private object OldValue;
         private object mValue;
 
-        //private HashSet<Guid> mPCRequestors = new HashSet<Guid>();
         /// <summary>
         /// Set the PublisCentral bit on the cdeFOC. The requestor is the node requesting the PC
         /// </summary>
@@ -208,17 +199,6 @@ namespace nsCDEngine.Engines.ThingService
             }
         }
 
-        ///// <summary>
-        ///// Sets a new Value to the Property
-        ///// </summary>
-        ///// <param name="pVal">The new value</param>
-        ///// <param name="pOriginator">The originator who wrote the value</param>
-        ///// <returns></returns>
-        //public bool SetValue(object pVal, string pOriginator)
-        //{
-        //    return SetValue(pVal, pOriginator, false);
-        //}
-
         /// <summary>
         /// Sets a new Value to the Property
         /// if cdeE|1 is set, the value will be automatically encrypted
@@ -244,26 +224,6 @@ namespace nsCDEngine.Engines.ThingService
             OldValue = mValue;
 
             object pVal = pValue;
-            // Removed 4.0.1.12 - 11/18/2017 - caused problems in preserving data types into Axoom IoTHub sender.
-            //if (pValue is DateTimeOffset || pValue is DateTime)
-            //{
-            //    if (pValue == null)
-            //        pVal = DateTimeOffset.MinValue;
-            //    else
-            //    {
-            //        DateTimeOffset tDTO = TheCommonUtils.CDate(pValue);
-            //        pVal = tDTO.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
-            //    }
-            //}
-            // Remove this special case: NewtonSoft serializes with invariant culture already
-            //else if (pValue is double)
-            //{
-            //    pVal = ((double)pValue).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            //}
-            //else if (pValue is float)
-            //{
-            //    pVal = ((float)pValue).ToString(System.Globalization.CultureInfo.InvariantCulture);
-            //}
 #if !CDE_STANDARD   //No System.Drawing
             //else
             if (pValue is System.Drawing.Bitmap)
@@ -307,7 +267,6 @@ namespace nsCDEngine.Engines.ThingService
             }
             this.cdeCTIM = sourceTimeStamp;
 
-            //if (cdeT != (int)ePropertyTypes.TString && (pVal is string) && pVal.ToString().StartsWith("{"))
             bool hasChanged = SetProperty(ref mValue, pVal, cdeT, cdeE);
             if (hasChanged)
             {
@@ -318,7 +277,7 @@ namespace nsCDEngine.Engines.ThingService
                 this.changedMask = 0;
             }
 
-            // CODE REVIEW: Changing a race condition behavior for property notifications: before we would not fire if a concurrent/subsequent set had changed the value to the same value.
+            // TODO CODE REVIEW: Changing a race condition behavior for property notifications: before we would not fire if a concurrent/subsequent set had changed the value to the same value.
             // However, the receiver will still see the HasChanged property as not having changed (inherent race condition of the design). But callers will get the right indication for the time of the call/change
             // Only consumer of the return value seems to be the JSON Deserializer of property change messages: unclear if it behaves better with either race condition behavior?
             //if (NoFire) return hasChanged;
@@ -331,14 +290,13 @@ namespace nsCDEngine.Engines.ThingService
                 if ((cdeFOC > 0 && ((cdeFOC & 8) == 0 || (cdeFOC & 0x20) != 0)) || (bIsRemoteThing && ownerBase?.IsOnLocalNode() == true)) //Only fire this if the ownerThing is marked IsRegisteredGlobally and its hosted on this node
                 {
                     ownerBase?.ThrottledSETP(this, cdeN, bIsRemoteThing);
-                    //PublishChange(TheCommonUtils.cdeGuidToString(ownerBase.cdeN), Guid.Empty, null);
                 }
             }
 
 #if CDE_SYNC
                 bool FireAsync=false;
 #else
-            bool FireAsync = (cdeFOC&256)==0; //true
+            bool FireAsync = (cdeFOC&256)==0; 
 #endif
             if (hasChanged)
             {
@@ -346,7 +304,7 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     FireEvent(eThingEvents.PropertyChanged, FireAsync, FireEventTimeout);
                     OwnerThing?.FireEvent(eThingEvents.PropertyChanged, OwnerThing, this, FireAsync);
-                    if (mName == "Value")
+                    if (Name == "Value")
                     {
                         FireEvent(eThingEvents.ValueChanged, FireAsync, FireEventTimeout);
                         if (OwnerThing != null)
@@ -372,7 +330,7 @@ namespace nsCDEngine.Engines.ThingService
 
             if (hasChanged && ownerBase != null && ownerBase.DeviceType != eKnownDeviceTypes.IBaseEngine)
             {
-                switch (mName)
+                switch (Name)
                 {
                     case "StatusLevel":
                         IBaseEngine tBase = ownerBase.GetBaseEngine();
@@ -383,7 +341,6 @@ namespace nsCDEngine.Engines.ThingService
                         IBaseEngine tBase2 = ownerBase.GetBaseEngine();
                         if (tBase2 != null)
                         {
-                            //tBase2.GetBaseThing().GetBaseThing().LastMessage = TheCommonUtils.CStr(pVal); //Will be done by line below anyway
                             tBase2.GetEngineState().LastMessage = TheCommonUtils.CStr(pVal);
                         }
                         break;
@@ -420,17 +377,11 @@ namespace nsCDEngine.Engines.ThingService
                 if (tSplit.Length > 3)
                 {
                     for (int i = 2; i < tSplit.Length - 1; i++)
-                        tProName += "." + tSplit[i];
+                        tProName += $".{tSplit[i]}";
                 }
             }
             return tProName;
         }
-
-        /// <summary>
-        /// Constructor of a new Property
-        /// </summary>
-        public cdeP()
-        { }
 
         internal cdeP cdeOP = null;
 
@@ -537,7 +488,7 @@ namespace nsCDEngine.Engines.ThingService
                     if (storage != null && value != null && TheCommonUtils.CDate(storage) == TheCommonUtils.CDate(value)) return false;
                     break;
                 case ePropertyTypes.TBinary:
-                    if ((storage == null && value == null)) return false;// || ((storage as byte[]).GetHashCode() == (value as byte[]).GetHashCode())) return false;
+                    if ((storage == null && value == null)) return false;
                     break;
                 case ePropertyTypes.TFunction:
                     return false;
@@ -576,7 +527,7 @@ namespace nsCDEngine.Engines.ThingService
 
         static private string GetParentPath(cdeP pProp, string pRes)
         {
-            var tRes = $"[{pProp.mName}]";  //TODOV4: Validate with OPC Client/Server and Markus
+            var tRes = $"[{pProp.Name}]";  //TODOV4: Validate with OPC Client/Server and Markus
             if (!string.IsNullOrEmpty(pRes))
                 tRes += $".{pRes}";
             if (pProp.cdeOP != null)
@@ -686,11 +637,13 @@ namespace nsCDEngine.Engines.ThingService
                 tFireTSM = new TSM(pTargetEngine, $"SETP:{cdeO}", $"{tName}={(valueToPublish ?? (this))}") { OWN = OwnerThing.GetBaseThing().cdeMID.ToString() };    //ThingProperties
             }
             else
-                tFireTSM = new TSM(pTargetEngine, $"SETP:{cdeO}", $"{mName}={(valueToPublish ?? (this))}") { OWN = cdeO.ToString() };    //ThingProperties
+                tFireTSM = new TSM(pTargetEngine, $"SETP:{cdeO}", $"{Name}={(valueToPublish ?? (this))}") { OWN = cdeO.ToString() };    //ThingProperties
             if ((OwnerThing?.GetBaseThing()?.cdeF & 1) != 0)
                 tFireTSM.ENG = $"NMI{tFireTSM.OWN}";
 
-            TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(pTargetEngine, $"Publish({cdeFOC}) to {pTargetNode} Change of {mName}", eMsgLevel.l3_ImportantMessage, tFireTSM.PLS.Length > 50 ? tFireTSM.PLS.Substring(0, 50) : tFireTSM.PLS));
+#pragma warning disable S3358 // Ternary operators should not be nested - Performance over beauty!
+            TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(pTargetEngine, $"Publish({cdeFOC}) to {pTargetNode} Change of {Name}", eMsgLevel.l3_ImportantMessage, tFireTSM.PLS.Length > 50 ? tFireTSM.PLS.Substring(0, 50) : tFireTSM.PLS));
+#pragma warning restore S3358 // Ternary operators should not be nested
 
             tFireTSM.LVL = eMsgLevel.l3_ImportantMessage;
             if ((cdeE & 2) != 0)
@@ -700,7 +653,7 @@ namespace nsCDEngine.Engines.ThingService
             }
             else //V4: All Property Changes have to be sent...filter might filter out two posts to a thing if sent to fast. Batching should take care of this
             {
-                tFireTSM.TXT += $":{mName}";
+                tFireTSM.TXT += $":{Name}";
                 tFireTSM.SetNotToSendAgain(true);
             }
             var tOrgGuid = TSM.GetOriginator(pOriginator);
@@ -717,12 +670,7 @@ namespace nsCDEngine.Engines.ThingService
             }
             else
             {
-                //if (pForcePublish || (cdeFOC & 1) != 0)
-                //{
-                //if (pForcePublish)  //Prevent from double -sending to Browsers // CODE REVIEW: This is now prevented by not resending anything from a remote node? Was causing NMI to not get regular updates for some reason?
-                //    tFireTSM.SetToServiceOnly(true);
                 TheCommCore.PublishCentral(tFireTSM);
-                //}
             }
             TheCDEKPIs.IncrementKPI(eKPINames.SetPsFired);
         }
@@ -749,6 +697,12 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
+        /// Constructor of a new Property
+        /// </summary>
+        public cdeP()
+        { }
+
+        /// <summary>
         /// Creates a new property from an exiting property
         /// </summary>
         /// <param name="ToClone">Property to be cloned to this</param>
@@ -768,7 +722,7 @@ namespace nsCDEngine.Engines.ThingService
             this.cdeOP = ToClone.cdeOP;
             this.cdePRI = ToClone.cdePRI;
             this.cdeT = ToClone.cdeT;
-            this.mName = ToClone.mName;
+            this.Name = ToClone.Name;
             this.mValue = ToClone.mValue;
             this.OldValue = ToClone.OldValue;
             this.OwnerThing = ToClone.OwnerThing;
@@ -782,7 +736,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pValue"></param>
         public cdeP(string pName, object pValue)
         {
-            mName = pName;
+            Name = pName;
             SetValue(pValue, null, DateTimeOffset.Now);
         }
 
@@ -885,10 +839,6 @@ namespace nsCDEngine.Engines.ThingService
                     }
                     childProp.ClonePropertyMetaData(targetChild);
                 }
-                //foreach (var propName in Target.cdePB.Keys.Except(cdePB.Keys).ToList())
-                //{
-                //    Target.RemoveProperty(propName);
-                //}
             }
         }
 
@@ -898,7 +848,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 return;
             }
-            tP.cdeT = cdeT; // = Target.SetPropertyTypeOnly(Target.Name, (ePropertyTypes) cdeT); // CODE REVIEW: Should we use this or directly update the cdeP (more efficient). What do we lose? CM: we dont lose anything - this function is "NoRecursion" so it should be fine
+            tP.cdeT = cdeT; // CODE REVIEW: Should we use this or directly update the cdeP (more efficient). What do we lose? CM: we dont lose anything - this function is "NoRecursion" so it should be fine
 
 
             tP.cdeA = this.cdeA;
@@ -906,11 +856,8 @@ namespace nsCDEngine.Engines.ThingService
             tP.cdeE = this.cdeE;
             tP.cdeEXP = this.cdeEXP;
             tP.cdeF = this.cdeF;
-            //tP.cdeFOC = this.cdeFOC; //CM: this is not meta data and must not be overwritten!
             tP.cdeM = this.cdeM;
             tP.cdeN = this.cdeN;
-            //tP.cdeO = this.cdeO;
-            //tP.FireEventTimeout = this.FireEventTimeout;
             tP.cdePRI = this.cdePRI;
         }
 
@@ -1082,7 +1029,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (cdePB == null)
             {
-                return null;
+                return new();
             }
             var propNames = cdePB.Keys.ToList();
             var props = new List<cdeP>();
@@ -1174,17 +1121,6 @@ namespace nsCDEngine.Engines.ThingService
             return Keys;
         }
 
-        /// <summary>
-        /// Sets a property
-        /// If the property does not exist, it will be created
-        /// </summary>
-        /// <param name="pName">Property Name</param>
-        /// <param name="pValue">Value to be set</param>
-        /// <returns></returns>
-        public cdeP SetProperty(string pName, object pValue)
-        {
-            return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, -1, null, null);
-        }
 
         /// <summary>
         /// Registers a new property with TheThing at runtime
@@ -1220,7 +1156,29 @@ namespace nsCDEngine.Engines.ThingService
             return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, 0x20, null, null);
         }
 
+        /// <summary>
+        /// Sets the type of a property
+        /// If the property does not exist, it will be created
+        /// </summary>
+        /// <param name="pName">Property Name</param>
+        /// <param name="pType">Type of the property</param>
+        /// <returns></returns>
+        public cdeP SetPropertyTypeOnly(string pName, ePropertyTypes pType)
+        {
+            return SetProperty(pName, null, pType, DateTimeOffset.MinValue, 0x10, null, null);
+        }
 
+        /// <summary>
+        /// Sets a property
+        /// If the property does not exist, it will be created
+        /// </summary>
+        /// <param name="pName">Property Name</param>
+        /// <param name="pValue">Value to be set</param>
+        /// <returns></returns>
+        public cdeP SetProperty(string pName, object pValue)
+        {
+            return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, -1, null, null);
+        }
 
         /// <summary>
         /// Sets a property
@@ -1235,18 +1193,6 @@ namespace nsCDEngine.Engines.ThingService
         public cdeP SetProperty(string pName, object pValue, ePropertyTypes pType)
         {
             return SetProperty(pName, pValue, pType, DateTimeOffset.MinValue, -1, null, null);
-        }
-
-        /// <summary>
-        /// Sets the type of a property
-        /// If the property does not exist, it will be created
-        /// </summary>
-        /// <param name="pName">Property Name</param>
-        /// <param name="pType">Type of the property</param>
-        /// <returns></returns>
-        public cdeP SetPropertyTypeOnly(string pName, ePropertyTypes pType)
-        {
-            return SetProperty(pName, null, pType, DateTimeOffset.MinValue, 0x10, null, null);
         }
 
         /// <summary>

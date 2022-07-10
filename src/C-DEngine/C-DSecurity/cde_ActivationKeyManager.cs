@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+#pragma warning disable 1591
 
 namespace nsCDEngine.Activation
 {

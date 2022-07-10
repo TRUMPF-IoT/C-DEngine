@@ -195,10 +195,16 @@ namespace nsCDEngine.BaseClasses
             return CArray2UnicodeString(fromEncrypt, 0, fromEncrypt.Length);
         }
 
+        /// <summary>
+        /// Decrypts a string 
+        /// </summary>
+        /// <param name="OrgBuffer">Encrypted String</param>
+        /// <param name="AI">Salt</param>
+        /// <param name="bSupressLog">if true, errors will not be logged</param>
+        /// <returns></returns>
         public static string cdeDecrypt(string OrgBuffer, byte[] AI, bool bSupressLog = false)
         {
             if (string.IsNullOrEmpty(OrgBuffer)) return OrgBuffer;
-            //return OrgBuffer;
             string DeCrypted = "";
             OrgBuffer = OrgBuffer.Replace("%3D", "=");
             OrgBuffer = OrgBuffer.Replace("-", "+");
@@ -219,6 +225,12 @@ namespace nsCDEngine.BaseClasses
             return DeCrypted;
         }
 
+        /// <summary>
+        /// Decrypts a string to a GUID
+        /// </summary>
+        /// <param name="OrgBuffer">Encrypted GUID</param>
+        /// <param name="AI">Salt</param>
+        /// <returns></returns>
         public static Guid CSCDecrypt2GUID(string OrgBuffer, byte[] AI)
         {
             if (!TheBaseAssets.MyCrypto.HasBufferCorrectLength(OrgBuffer,"GUID")) return Guid.Empty;

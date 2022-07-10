@@ -12,6 +12,7 @@ using nsCDEngine.BaseClasses;
 #if !CDE_NET35
 using System.Numerics;
 #endif
+#pragma warning disable 1591
 
 namespace nsCDEngine.Activation
 {

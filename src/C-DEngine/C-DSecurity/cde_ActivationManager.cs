@@ -16,6 +16,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+#pragma warning disable 1591
 
 namespace nsCDEngine.Activation
 {

@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+#pragma warning disable 1591
 
 //#pragma warning disable CS1591    //TODO: Remove and document public methods
 

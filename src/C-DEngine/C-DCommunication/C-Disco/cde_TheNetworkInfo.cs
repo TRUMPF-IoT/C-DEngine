@@ -377,7 +377,7 @@ namespace nsCDEngine.Discovery
         /// Returns the external IP of this hosting hardware by making a reverse lookup via checkip.dyndns.org
         /// </summary>
         /// <param name="pCallback">Will be called when the host was resolved</param>
-        /// <param name="pCookie">A cookie to track this call with</param
+        /// <param name="pCookie">A cookie to track this call with</param>
         public static void GetExternalIp(Action<IPAddress, object> pCallback, object pCookie)
         {
             string whatIsMyIp = "https://ifconfig.me/ip";

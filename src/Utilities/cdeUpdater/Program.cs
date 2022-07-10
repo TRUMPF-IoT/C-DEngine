@@ -149,28 +149,12 @@ namespace cdeUpdater
                         while (IsMainProcessRunning(processName, processDirectory, processPid)) ;
                         StartProcess(processName, processDirectory);
                         StartupLog($"Starting {processName}.exe in directory ${processDirectory}");
-                        //Thread.Sleep(10000);
                         return;
                     case "STOP":
                         if (!IsMainProcessRunning(processName, processDirectory, processPid)) return;
                         StartupLog($"Trying to kill {processName} / {processPid} in directory {processDirectory}");
                         KillProcess(processName, processDirectory, processPid);
                         return;
-                    //case "SET":
-                    //    if (args.Length > 3)
-                    //    {
-                    //        using (Process mainProcess = new Process())
-                    //        {
-                    //            mainProcess.StartInfo.FileName = "cdeTimeSet.exe";
-                    //            mainProcess.StartInfo.WorkingDirectory = processDirectory;
-                    //            mainProcess.StartInfo.Arguments = target + " \"" + args[3] + "\"";
-                    //            if (args.Length > 4)
-                    //                mainProcess.StartInfo.Arguments += " \"" + args[4] + "\"";
-                    //            mainProcess.Start();
-                    //        }
-                    //        while (IsMainProcessRunning("cdeTimeSet", null, 0)); // CODE REVIEW: where is this called from? Unclear if processDirectory and processPid are specified for SET, keeping compatible for now
-                    //    }
-                    //    return;
                 }
                 string[] NewFiles = cdeSplit(target, ";:;", true, true);
                 List<string> MyNewFiles = new List<string>();
@@ -214,15 +198,6 @@ namespace cdeUpdater
                 }
                 StartupLog($"App {processName} was closed....");
 
-                // TODO Handle cases of shutdown crashes: the process sticks around while WER does it's work, even though the SCM reports the service as stopped
-                //while (IsMainProcessRunning(args[2]))
-                //{
-                //    StartupLog("App " + args[2] + " found running after close....");
-                //    Thread.Sleep(3000);
-                //}
-
-                //Thread.Sleep(2000);
-
                 foreach (string tFile in MyNewFiles)
                 {
                     try
@@ -246,7 +221,6 @@ namespace cdeUpdater
             catch (Exception e)
             {
                 StartupLog(e.ToString());
-                //return;
             }
 
             try
@@ -265,7 +239,9 @@ namespace cdeUpdater
                         break;
                 }
             }
-            catch { }
+            catch { 
+                //left blank
+            }
             StartupLog("Updater done.");
         }
 
