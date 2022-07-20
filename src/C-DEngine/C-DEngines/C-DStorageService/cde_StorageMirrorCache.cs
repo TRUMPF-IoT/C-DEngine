@@ -2615,7 +2615,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return false;
             }
-            if (_rwLock.TryEnterUpgradeableReadLock(0))
+            if (_rwLock.TryEnterUpgradeableReadLock(0)) //NOSONAR There is no code here that could throw, so no need to add a try/finally around the ExitUpgradeableReadLock call
             {
                 _rwLock.ExitUpgradeableReadLock();
                 return false;
@@ -2628,7 +2628,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return false; // This thread is holding the write lock
             }
-            if (_rwLock.TryEnterWriteLock(0))
+            if (_rwLock.TryEnterWriteLock(0))  //NOSONAR There is no code here that could throw, so no need to add a try/finally around the ExitWriteLock call
             {
                 _rwLock.ExitWriteLock();
                 return false;

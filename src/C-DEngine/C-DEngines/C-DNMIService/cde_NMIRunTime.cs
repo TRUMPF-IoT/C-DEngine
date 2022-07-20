@@ -22,7 +22,7 @@ namespace nsCDEngine.Engines.NMIService
     public partial class TheNMIEngine
     {
         #region Private and Internal Methods
-        private readonly cdeConcurrentDictionary<string, IBaseEngine> MyRegisteredEngines = new cdeConcurrentDictionary<string, IBaseEngine>();
+        private readonly cdeConcurrentDictionary<string, IBaseEngine> MyRegisteredEngines = new ();
         private bool InPrefUpd;
         private bool InManUpdate;
 
@@ -40,10 +40,16 @@ namespace nsCDEngine.Engines.NMIService
                         try
                         {
                             var tLocParts = pMsg.Message?.PLS.Split(';');
-                            var tLocInfo = new TheNMILocationInfo { cdeN = pMsg.Message.GetOriginatorSecurityProxy(), Accuracy = TheCommonUtils.CDbl(tLocParts[2]), Latitude = TheCommonUtils.CDbl(tLocParts[1]), Longitude = TheCommonUtils.CDbl(tLocParts[0]), ClientInfo = tClientInfo, Description = tClientInfo != null && tClientInfo.UserID != Guid.Empty ? TheUserManager.GetUserFullName(tClientInfo.UserID) : "Unknown User" };
-                            FireEvent(cmd[0], this, tLocInfo, true);
+                            if (tLocParts?.Length > 2)
+                            {
+                                var tLocInfo = new TheNMILocationInfo { cdeN = pMsg.Message.GetOriginatorSecurityProxy(), Accuracy = TheCommonUtils.CDbl(tLocParts[2]), Latitude = TheCommonUtils.CDbl(tLocParts[1]), Longitude = TheCommonUtils.CDbl(tLocParts[0]), ClientInfo = tClientInfo, Description = tClientInfo != null && tClientInfo.UserID != Guid.Empty ? TheUserManager.GetUserFullName(tClientInfo.UserID) : "Unknown User" };
+                                FireEvent(cmd[0], this, tLocInfo, true);
+                            }
                         }
-                        catch (Exception) { }
+                        catch (Exception) 
+                        { 
+                            //ignored
+                        }
                     }
                     break;
                 case "NMI_NODEPING":
@@ -108,35 +114,31 @@ namespace nsCDEngine.Engines.NMIService
                             break;
                         }
                         string tTableName = TheCommonUtils.CGuid(cmd[1]).ToString();
-                        if (cmd[0].Equals("NMI_UPD_DATA"))
+                        if (cmd[0].Equals("NMI_UPD_DATA") && (!string.IsNullOrEmpty(UserPrefID) && UserPrefID == tTableName))
                         {
-                            if (!string.IsNullOrEmpty(UserPrefID) && UserPrefID == tTableName)
-                            {
-                                if (InPrefUpd)
-                                    return;
-                                InPrefUpd = true;
-                                TheUserDetails tUpdUser = TheUserManager.GetUserByID(TheCommonUtils.CGuid(cmd[2]));
-                                if (tUpdUser != null)
-                                {
-                                    tUpdUser = TheCommonUtils.DeserializeJSONStringToObject<TheUserDetailsI>(pMsg.Message.PLS).CloneToUser(pMsg.CurrentUserID);
-                                    if (tUpdUser.IsOnCurrentNode())
-                                    {
-                                        int tLCID = TheUserManager.UpdateUserI(tUpdUser);
-                                        if (tLCID >= 0)
-                                            TheBaseAssets.MySession.UpdateSessionLCID(TheCommonUtils.CGuid(pMsg.Message.SEID), tLCID);
-                                        //TheBaseAssets.MySYSLOG.WriteToLog(7678, new TSM(eEngineName.NMIService, "NMI_UPD_DATA", eMsgLevel.l6_Debug, pMsg.Message.PLS));
-                                    }
-                                    else
-                                    {
-                                        TSM tTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###User cannot be edited on this node!###"));
-                                        TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
-                                        InPrefUpd = false;
-                                        return;
-                                    }
-                                }
-                                InPrefUpd = false;
+                            if (InPrefUpd)
                                 return;
+                            InPrefUpd = true;
+                            TheUserDetails tUpdUser = TheUserManager.GetUserByID(TheCommonUtils.CGuid(cmd[2]));
+                            if (tUpdUser != null)
+                            {
+                                tUpdUser = TheCommonUtils.DeserializeJSONStringToObject<TheUserDetailsI>(pMsg.Message.PLS).CloneToUser(pMsg.CurrentUserID);
+                                if (tUpdUser.IsOnCurrentNode())
+                                {
+                                    int tLCID = TheUserManager.UpdateUserI(tUpdUser);
+                                    if (tLCID >= 0)
+                                        TheBaseAssets.MySession.UpdateSessionLCID(TheCommonUtils.CGuid(pMsg.Message.SEID), tLCID);
+                                }
+                                else
+                                {
+                                    TSM tTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###User cannot be edited on this node!###"));
+                                    TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
+                                    InPrefUpd = false;
+                                    return;
+                                }
                             }
+                            InPrefUpd = false;
+                            return;
                         }
                         if (!string.IsNullOrEmpty(UserManID) && UserManID == tTableName)
                         {
@@ -176,12 +178,10 @@ namespace nsCDEngine.Engines.NMIService
                                         else
                                         {
                                             //NewtonSoft Fix
-                                            //pMsg.Message.PLS = pMsg.Message.PLS.Replace("\"AccessMask\":null", "AccessMask: 0");
                                             tUpdUser = TheCommonUtils.DeserializeJSONStringToObject<TheUserDetailsI>(pMsg.Message.PLS).CloneToUser(pMsg.CurrentUserID);
                                             if (tUpdUser.IsOnCurrentNode())
                                             {
                                                 TheUserManager.UpdateUserI(tUpdUser);
-                                                //TheBaseAssets.MySYSLOG.WriteToLog(7678, new TSM(eEngineName.NMIService, "NMI_UPD_DATA", eMsgLevel.l6_Debug, pMsg.Message.PLS));
                                             }
                                             else
                                             {
@@ -234,7 +234,7 @@ namespace nsCDEngine.Engines.NMIService
                                             case "NMI_UPD_DATA":
                                                 {
 #if CDE_STANDARD  //Metro Style Reflection
-                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("UpdateFromJSON"); //,BindingFlags.NonPublic | BindingFlags.Instance);
+                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("UpdateFromJSON");
 #else
                                                     magicMethod = magicType.GetMethod("UpdateFromJSON", BindingFlags.NonPublic | BindingFlags.Instance);
 #endif
@@ -243,23 +243,22 @@ namespace nsCDEngine.Engines.NMIService
                                                         string tDirtyMask = "*";
                                                         if (cmd.Length > 4)
                                                             tDirtyMask = cmd[4];
-                                                        string tUpdated = magicMethod.Invoke(MyStorageMirror, new[] { tTable, pMsg.Message.PLS, tDirtyMask, (object)pMsg.Message.GetOriginator(), tClientInfo, null }).ToString();
+                                                        string tUpdated = magicMethod.Invoke(MyStorageMirror, new[] { tTable, pMsg.Message.PLS, tDirtyMask, (object)pMsg.Message.GetOriginator(), tClientInfo, TheCommonUtils.CGuid(pMsg.Message.SEID), null }).ToString();
                                                         if (!string.IsNullOrEmpty(tUpdated))
                                                         {
-                                                            TSM tTsm = new TSM(eEngineName.NMIService, "NMI_UPD_DATA_RET:"); //TODO: Investigate if we can PublishCentral UPD_DATA
+                                                            TSM tTsm = new (eEngineName.NMIService, "NMI_UPD_DATA_RET:"); 
                                                             if (!tTable.IsAlwaysEmpty)
                                                                 tTsm.SetOriginator(pMsg.Message.GetOriginator());
                                                             tTsm.TXT += tTableName + ":" + cmd[3];
                                                             tTsm.PLS = tUpdated;
                                                             TheCommCore.PublishCentral(tTsm);
-                                                            foreach (TheFormInfo tIn in MyNMIModel.MyForms.MyMirrorCache.TheValues.Where(s => s.defDataSource == tTable.defDataSource))
+                                                            foreach (var (tIn, sTSM) in from TheFormInfo tIn in MyNMIModel.MyForms.MyMirrorCache.TheValues.Where(s => s.defDataSource == tTable.defDataSource)
+                                                                                        where !tIn.cdeMID.ToString().Equals(tTableName)
+                                                                                        let sTSM = TSM.Clone(tTsm, false)
+                                                                                        select (tIn, sTSM))
                                                             {
-                                                                if (!tIn.cdeMID.ToString().Equals(tTableName))
-                                                                {
-                                                                    TSM sTSM = TSM.Clone(tTsm, false);
-                                                                    sTSM.TXT = "NMI_UPD_DATA_RET:" + tIn.cdeMID + ":" + cmd[3];
-                                                                    TheCommCore.PublishCentral(sTSM);
-                                                                }
+                                                                sTSM.TXT = "NMI_UPD_DATA_RET:" + tIn.cdeMID + ":" + cmd[3];
+                                                                TheCommCore.PublishCentral(sTSM);
                                                             }
                                                         }
                                                     }
@@ -268,7 +267,7 @@ namespace nsCDEngine.Engines.NMIService
                                             case "NMI_DEL_ID":
                                                 {
 #if CDE_STANDARD  //Metro Style Reflection
-                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("DeleteByID"); //,BindingFlags.NonPublic | BindingFlags.Instance);
+                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("DeleteByID"); 
 #else
                                                     magicMethod = magicType.GetMethod("DeleteByID", BindingFlags.NonPublic | BindingFlags.Instance);
 #endif
@@ -365,7 +364,6 @@ namespace nsCDEngine.Engines.NMIService
                                             var tRes = magicMethod.Invoke(MyStorageMirror, new[] { tTableInsert, (object)pMsg.Message.PLS, tClientInfo, null });
                                             if (cmd.Length > 2 && TheCommonUtils.CBool(tRes))
                                                 SendNMIData(pMsg.Message, tClientInfo, (cmd.Length > 3 && TheCommonUtils.CGuid(cmd[3]) != TheCommonUtils.CGuid(tTableInsert.AddTemplateType)) ? cmd[3] : tTableName2, "CMyTable", tTableName2, cmd[2], false, false);
-                                            //TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_SET_DATA:{" + tTableName2 + "}", TheUserManager.SendUserList(pMsg.CurrentUser)));
                                         }
                                     }
                                 }
@@ -395,12 +393,12 @@ namespace nsCDEngine.Engines.NMIService
                         if (astream != null)
                         {
                             var tTopic = $"NMI_GLOBAL_{cmd[0].Substring(15)}:{pMsg.Message.PLS}";
-                            ThePlanarImage tImg = new ThePlanarImage
+                            ThePlanarImage tImg = new ()
                             {
                                 ImageSource = pMsg.Message.PLS,
                                 Bits = astream
                             };
-                            TSM tTsm = new TSM(eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.SerializeObjectToJSONString(tImg) };
+                            TSM tTsm = new (eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.SerializeObjectToJSONString(tImg) };
                             TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                             return;
                         }
@@ -419,7 +417,7 @@ namespace nsCDEngine.Engines.NMIService
                                 if (astream != null)
                                 {
                                     var tTopic = $"NMI_GLOBAL_{cmd[0].Substring(15)}:{pMsg.Message.PLS}";
-                                    TSM tTsm = new TSM(eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
+                                    TSM tTsm = new (eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
                                     TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                                     return;
                                 }
@@ -429,7 +427,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (bstream != null)
                         {
                             var tTopic = $"NMI_GLOBAL_{cmd[0].Substring(15)}:{pMsg.Message.PLS}";
-                            TSM tTsm = new TSM(eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.CArray2UTF8String(bstream) };
+                            TSM tTsm = new (eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.CArray2UTF8String(bstream) };
                             TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                             return;
                         }
@@ -456,13 +454,13 @@ namespace nsCDEngine.Engines.NMIService
                                         }
                                         if (astream != null)
                                         {
-                                            TSM tTsm = new TSM(eEngineName.NMIService, "NMI_ENGINEJS:" + teng) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
+                                            TSM tTsm = new (eEngineName.NMIService, "NMI_ENGINEJS:" + teng) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
                                             TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                                         }
                                     }
                                     if (!string.IsNullOrEmpty(tBase.GetEngineState().CSS))
                                     {
-                                        TSM tTsm = new TSM(eEngineName.NMIService, "NMI_CUSTOM_CSS", tBase.GetEngineState().CSS);
+                                        TSM tTsm = new (eEngineName.NMIService, "NMI_CUSTOM_CSS", tBase.GetEngineState().CSS);
                                         TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                                     }
                                 }
@@ -478,9 +476,9 @@ namespace nsCDEngine.Engines.NMIService
                             case "7888BBC6A1A849F3B5668057EE69318F":    //Simplified ThingRegistry
                                 if (!pMsg.Message.IsFirstNode() || !TheUserManager.HasUserAccess(pMsg.CurrentUserID, 0xF0) || cmd.Length < 4) return;
                                 {
-                                    TSM tTSM = new TSM(eEngineName.NMIService, "NMI_SET_DATA:7888BBC6A1A849F3B5668057EE69318F:4F925FF043EF456395181391F7D179AB:noview");
+                                    TSM tTSM = new (eEngineName.NMIService, "NMI_SET_DATA:7888BBC6A1A849F3B5668057EE69318F:4F925FF043EF456395181391F7D179AB:noview");
                                     List<TheThing> tThings = TheThingRegistry.GetThingsOfEngine("*", true, true);
-                                    List<TheThingPicker> tLst = new List<TheThingPicker>();
+                                    List<TheThingPicker> tLst = new ();
                                     if (tThings != null)
                                     {
                                         foreach (var tT in tThings)
@@ -491,7 +489,7 @@ namespace nsCDEngine.Engines.NMIService
                                             if (string.IsNullOrEmpty(tFN))
                                                 tFN = $"no Name:{tT.cdeMID}";
                                             List<cdeP> tLstP = tT.GetAllProperties();
-                                            TheThingPicker tPick = new TheThingPicker { EngineName = tT.EngineName, DeviceType = tT.DeviceType, FriendlyName = tFN, cdeMID = tT.cdeMID, IsRemote = (tT.cdeN != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID), PB = new ThePropertyBag() };
+                                            TheThingPicker tPick = new (){ EngineName = tT.EngineName, DeviceType = tT.DeviceType, FriendlyName = tFN, cdeMID = tT.cdeMID, IsRemote = (tT.cdeN != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID), PB = new ThePropertyBag() };
                                             foreach (cdeP tP in tLstP)
                                             {
                                                 if ((tP.cdeE & 1) != 0) //No encrypted properties are sent
@@ -554,15 +552,15 @@ namespace nsCDEngine.Engines.NMIService
                             case "CERTPICKER":
                                 if (!pMsg.Message.IsFirstNode() || !TheUserManager.HasUserAccess(pMsg.CurrentUserID, 0x80) || cmd.Length < 4) return;
                                 {
-                                    List<TheComboOptions> tLst = new List<TheComboOptions>
+                                    List<TheComboOptions> tLst = new ()
                                     {
                                         new TheComboOptions { N = "Refresh Picker", V = "CDE_PPP" }
                                     };
                                     try
                                     {
-                                        X509Store userCaStore = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+                                        X509Store userCaStore = new (StoreName.My, StoreLocation.LocalMachine);
                                         userCaStore.Open(OpenFlags.ReadOnly);
-                                        X509Certificate2Collection certificatesInStore = userCaStore.Certificates; //?.Find(X509FindType.FindByApplicationPolicy, new Oid("1.3.6.1.5.5.7.3.2), false);
+                                        X509Certificate2Collection certificatesInStore = userCaStore.Certificates; 
 
                                         foreach (X509Certificate2 cert in certificatesInStore)
                                         {
@@ -589,9 +587,9 @@ namespace nsCDEngine.Engines.NMIService
                                             }
                                             if (!foundOne)
                                                 continue;
-                                            X509Chain chain = new X509Chain();
+                                            X509Chain chain = new ();
                                             string rootName = "";
-                                            X509ChainPolicy chainPolicy = new X509ChainPolicy()
+                                            X509ChainPolicy chainPolicy = new ()
                                             {
                                                 RevocationMode = X509RevocationMode.NoCheck,
                                                 RevocationFlag = X509RevocationFlag.EntireChain,
@@ -631,7 +629,7 @@ namespace nsCDEngine.Engines.NMIService
                                     if (cmd.Length > 6)
                                     {
                                         tPN = cmd[6].Split('=')[0];
-                                        if (cmd[6].IndexOf('=') > 0)
+                                        if (cmd[6].IndexOf('=') > -1)
                                             tPV = cmd[6].Substring(cmd[6].IndexOf('=') + 1);
                                     }
 
@@ -640,15 +638,11 @@ namespace nsCDEngine.Engines.NMIService
                                         TheThingRegistry.RequestGlobalThings();
                                     }
 
-                                    List<TheThing> tThings = null;
-                                    if (tPN != "DeviceTypes")
-                                        tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
-                                    else //TODO: Comes with new Sensor Model
-                                        tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
+                                    List<TheThing> tThings = TheThingRegistry.GetThingsOfEngine("*", bInclEngines, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
                                     var tSP = cmd[3].Split(';');
                                     TheFieldInfo tField = GetFieldById(TheCommonUtils.CGuid(tSP[0]));
                                     string ValueProperty = TheCommonUtils.CStr(tField?.PropBagGetValue("ValueProperty"));
-                                    List<TheComboOptions> tLst = new List<TheComboOptions>
+                                    List<TheComboOptions> tLst = new ()
                                     {
                                         new TheComboOptions { G = "Refresh", N = "Refresh Picker", V = "CDE_PPP" },
                                         new TheComboOptions { G = "Refresh", N = "Empty Entry", V = "" }
@@ -717,12 +711,12 @@ namespace nsCDEngine.Engines.NMIService
                                     if (cmd.Length > 5)
                                     {
                                         tPN = cmd[5].Split('=')[0];
-                                        if (cmd[5].IndexOf('=') > 0)
+                                        if (cmd[5].IndexOf('=') > -1)
                                             tPV = cmd[5].Substring(cmd[5].IndexOf('=') + 1);
                                     }
                                     List<TheThing> tThings = TheThingRegistry.GetThingsOfEngine("*", true, bInclRemotes).OrderBy(s => s.FriendlyName).ToList();
                                     var tSP = cmd[3].Split(';');
-                                    List<TheComboOptions> tLst = new List<TheComboOptions>
+                                    List<TheComboOptions> tLst = new ()
                                     {
                                         new TheComboOptions { N = "Refresh Picker", V = "CDE_PPP" },
                                         new TheComboOptions { N = "Empty Entry", V = "" }
@@ -769,7 +763,7 @@ namespace nsCDEngine.Engines.NMIService
                                     var tSP = cmd[3].Split(';');
                                     TheFieldInfo tField = GetFieldById(TheCommonUtils.CGuid(tSP[0]));
                                     bool AddSystemProps = TheCommonUtils.CBool(tField?.PropBagGetValue("SystemProperties"));
-                                    List<TheComboOptions> tLst = new List<TheComboOptions>
+                                    List<TheComboOptions> tLst = new ()
                                     {
                                         new TheComboOptions { N = "Refresh Picker", V = "CDE_PPP" }
                                     };
@@ -777,8 +771,8 @@ namespace nsCDEngine.Engines.NMIService
                                     if (tThing != null)
                                     {
                                         List<cdeP> tLstP = tThing.GetAllProperties().OrderBy(s => s.Name).ToList();
-                                        foreach (cdeP tP in tLstP)
-                                            tLst.Add(new TheComboOptions { N = tP.Name, V = tP.Name });
+                                        tLst.AddRange(from cdeP tP in tLstP
+                                                      select new TheComboOptions { N = tP.Name, V = tP.Name });
                                         if (AddSystemProps)
                                         {
                                             tLst.Add(new TheComboOptions { N = "cde TimeStamp", V = "cdeCTIM" });
@@ -807,9 +801,6 @@ namespace nsCDEngine.Engines.NMIService
                     bool ForceLoad = false;
                     if (cmd.Length > 6)
                         ForceLoad = TheCommonUtils.CBool(cmd[6]);
-                    //cmd[1]=pTargetElement;
-                    //cmd[2]=pDataType;
-                    //cmd[3]=pStrDataID
                     SendNMIData(pMsg.Message, tClientInfo, cmd[1], cmd[2], cmd[3], modelId, ForceLoad, IsInitialLoad);
                     break;
                 case "NMI_CHECK4_UPDATE":
@@ -870,7 +861,7 @@ namespace nsCDEngine.Engines.NMIService
                         string tPlS = TheCommonUtils.LoadStringFromDisk(tTargetDir, null);
                         if (!string.IsNullOrEmpty(tPlS))
                         {
-                            TSM tSceneTsm = new TSM(eEngineName.NMIService, "NMI_SET_SCENE", tPlS);
+                            TSM tSceneTsm = new (eEngineName.NMIService, "NMI_SET_SCENE", tPlS);
                             TheCommCore.PublishToOriginator(pMsg.Message, tSceneTsm);
                         }
                     }
@@ -947,15 +938,12 @@ namespace nsCDEngine.Engines.NMIService
                                 if (!string.IsNullOrEmpty(tPls))
                                 {
                                     TheNMIScene tScene2 = TheCommonUtils.DeserializeJSONStringToObject<TheNMIScene>(tPls);
-                                    if (tScene2 != null && tScene2.Screens?.Count > 0)
+                                    if (tScene2 != null && tScene2.Screens?.Count > 0 && !tScene2.Screens.Any(s => s.ID == tScene.Screens[0].ID))
                                     {
-                                        if (!tScene2.Screens.Any(s => s.ID == tScene.Screens[0].ID))
-                                        {
-                                            tScene.Screens[0].FldOrder = tScene2.Screens.OrderByDescending(s => s.FldOrder).First().FldOrder + 10;
-                                            tScene2.Screens.Add(tScene.Screens[0]);
-                                            pMsg.Message.PLS = TheCommonUtils.SerializeObjectToJSONString(tScene2);
-                                            WasMerged = true;
-                                        }
+                                        tScene.Screens[0].FldOrder = tScene2.Screens.OrderByDescending(s => s.FldOrder).First().FldOrder + 10;
+                                        tScene2.Screens.Add(tScene.Screens[0]);
+                                        pMsg.Message.PLS = TheCommonUtils.SerializeObjectToJSONString(tScene2);
+                                        WasMerged = true;
                                     }
                                 }
                             }
@@ -1037,7 +1025,7 @@ namespace nsCDEngine.Engines.NMIService
                                         byte[] astream = tBase.GetPluginResource(tP[1] + ".js");
                                         if (astream != null)
                                         {
-                                            TSM tTsm = new TSM(eEngineName.NMIService, $"NMI_CUSTOM_SCRIPT:{(cmd.Length > 1 ? cmd[1] : pMsg.Message.PLS)}")
+                                            TSM tTsm = new (eEngineName.NMIService, $"NMI_CUSTOM_SCRIPT:{(cmd.Length > 1 ? cmd[1] : pMsg.Message.PLS)}")
                                             {
                                                 PLS = TheCommonUtils.GenerateFinalStr(TheCommonUtils.CArray2UTF8String(astream)).Replace("%=CONTENT%", cmd.Length > 1 ? cmd[1] : pMsg.Message.PLS)
                                             };
@@ -1069,13 +1057,13 @@ namespace nsCDEngine.Engines.NMIService
                 case "NMI_SYNCBLOCKS":
                     try
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.NMIService, $"NMI_SYNCBLOCKS: Received from {pMsg.Message.GetOriginator()}", eMsgLevel.l3_ImportantMessage)); //, pMsg.Message.PLS));
+                        TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.NMIService, $"NMI_SYNCBLOCKS: Received from {pMsg.Message.GetOriginator()}", eMsgLevel.l3_ImportantMessage)); 
                         List<ThePageBlocks> tList = TheCommonUtils.DeserializeJSONStringToObject<List<ThePageBlocks>>(pMsg.Message.PLS);
                         UpdatePageBlocks(tList);
                     }
                     catch (Exception nsbe)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.NMIService, $"NMI_SYNCBLOCKS: failed to sync", eMsgLevel.l2_Warning, nsbe.ToString())); //, pMsg.Message.PLS));
+                        TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.NMIService, $"NMI_SYNCBLOCKS: failed to sync", eMsgLevel.l2_Warning, nsbe.ToString())); 
                     }
                     break;
                 default:
@@ -1084,7 +1072,7 @@ namespace nsCDEngine.Engines.NMIService
             }
         }
 
-        private bool SendScreenMeta(string cmd, Guid pDashboardID, TheClientInfo tClientInfo, TheProcessMessage pMsg, Guid? pSubScreenID)
+        private void SendScreenMeta(string cmd, Guid pDashboardID, TheClientInfo tClientInfo, TheProcessMessage pMsg, Guid? pSubScreenID)
         {
             TSM tScreenTsm;
             try
@@ -1093,9 +1081,7 @@ namespace nsCDEngine.Engines.NMIService
                 TheScreenInfo tInfo = AssembleScreenMeta(pDashboardID, tClientInfo, cmd == "NMI_GET_SCREENMETAF", pMsg);
                 if (tInfo == null)
                 {
-                    //if (!MyBaseEngine.GetEngineState().IsService || !TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper || TheBaseAssets.MyServiceHostInfo.IsCloudService || !pMsg.Message.IsFirstNode())
-                    return false;
-                    //tScreenTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Screen not found on this Relay.###"));
+                    return;
                 }
                 else
                 {
@@ -1119,14 +1105,12 @@ namespace nsCDEngine.Engines.NMIService
             }
             if (tScreenTsm != null)
                 TheCommCore.PublishToOriginator(pMsg.Message, tScreenTsm);
-            return true;
         }
 
         internal static bool SendNMIData(TSM pMsg, TheClientInfo pClientInfo, string pTargetElement, string pDataType, string pStrDataID, string pModelID, bool ForceReload, bool IsInitialLoad)
         {
-            TSM tTsm = new TSM(eEngineName.NMIService, "NMI_SET_DATA:");
+            TSM tTsm = new (eEngineName.NMIService, "NMI_SET_DATA:");
             Guid pDataID = TheCommonUtils.CGuid(pStrDataID);
-            //if (Guid.Empty == pDataID) return false;
             string tTableName3 = pDataID.ToString().ToLower();
             tTsm.TXT += tTableName3;
             if (!string.IsNullOrEmpty(UserManID) && UserManID == tTableName3)
@@ -1162,7 +1146,7 @@ namespace nsCDEngine.Engines.NMIService
                     List<TheThing> tList = TheThingRegistry.GetThingsByProperty(eEngineName.NMIService, pClientInfo.UserID, "DeviceType", eKnownDeviceTypes.TheNMIScene);
                     if (tList != null)
                     {
-                        TheScreenInfo tScreenInfo = new TheScreenInfo
+                        TheScreenInfo tScreenInfo = new ()
                         {
                             MyDashboard = new TheDashboardInfo() { DashboardTitle = "My Scenes", cdeMID = TheCommonUtils.CGuid(tTableName3), PropertyBag = new ThePropertyBag { "Category=NMI" } },
                             MyDashPanels = new List<TheDashPanelInfo>()
@@ -1230,6 +1214,7 @@ namespace nsCDEngine.Engines.NMIService
                         case eScreenClass.CMyForm:
                         case eScreenClass.CMyChart:
                         case eScreenClass.CMyTable:
+                        case eScreenClass.CMyData:
                             try
                             {
                                 TheFormInfo tTable = GetFormById(pDataID);
@@ -1258,13 +1243,13 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             Type magicType = MyStorageMirror.GetType();
 #if CDE_STANDARD //Metro Style Reflection
-                                            MethodInfo magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("SerializeToJSON"); //,BindingFlags.NonPublic | BindingFlags.Instance);
+                                            MethodInfo magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("SerializeToJSON");
 #else
                                             MethodInfo magicMethod = magicType.GetMethod("SerializeToJSON", BindingFlags.NonPublic | BindingFlags.Instance);
 #endif
                                             if (magicMethod != null)
                                             {
-                                                TheJSONLoaderDefinition tJSON = new TheJSONLoaderDefinition
+                                                TheJSONLoaderDefinition tJSON = new ()
                                                 {
                                                     ORG = pMsg.GetOriginator(),
                                                     TargetElement = pTargetElement,
@@ -1305,6 +1290,16 @@ namespace nsCDEngine.Engines.NMIService
                                                 tTable.FireEvent(eUXEvents.OnBeforeLoad, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message = pMsg }, false);
                                                 var tso = TheFormsGenerator.GetScreenOptions(tTable.cdeMID, pClientInfo, ForceReload ? tTable : null);
                                                 tJSON.FieldInfo = TheFormsGenerator.GetPermittedFields(tTable.cdeMID, pClientInfo, tso, true);
+                                                if (pDataType == eScreenClass.CMyData)
+                                                {
+                                                    MethodInfo csvmagicMethod = magicType.GetTypeInfo().GetDeclaredMethod("SerializeToCSV");
+                                                    tTsm.PLS = csvmagicMethod.Invoke(MyStorageMirror, new[] { (object)tJSON }).ToString();
+                                                    if (tTsm.PLS == "WAITING")
+                                                        return false;
+                                                    tTsm.ENG = eEngineName.ContentService;
+                                                    tTsm.TXT = $"CDE_FILE:{tTable.FormTitle}.csv:text/csv";
+                                                    break;
+                                                }
                                                 tTsm.PLS = magicMethod.Invoke(MyStorageMirror, new[] { (object)tJSON }).ToString();
                                                 if (tTsm == null || tTsm.PLS.Equals("WAITING") || tTsm.PLS.Equals("ASYNC"))
                                                 {
@@ -1386,14 +1381,11 @@ namespace nsCDEngine.Engines.NMIService
                                     tTsm.PLS = TheCommonUtils.GenerateFinalStr(TheCommonUtils.SerializeObjectToJSONString(tI));
                                     tTsm.TXT = "NMI_SCREENMETA:" + pTargetElement;
                                     var tForm = TheNMIEngine.GetDashboardById(pDataID);
-                                    if (tForm != null)
+                                    if (tForm?.IsEventRegistered(eUXEvents.OnLoad) == true)
                                     {
-                                        if (tForm.IsEventRegistered(eUXEvents.OnLoad))
-                                        {
-                                            var tEV = TSM.Clone(tTsm, false);
-                                            tEV.ORG = pMsg.GetOriginator().ToString();
-                                            tForm.FireEvent(eUXEvents.OnLoad, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message = tEV }, false);
-                                        }
+                                        var tEV = TSM.Clone(tTsm, false);
+                                        tEV.ORG = pMsg.GetOriginator().ToString();
+                                        tForm.FireEvent(eUXEvents.OnLoad, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message = tEV }, false);
                                     }
                                 }
                                 else
@@ -1401,7 +1393,7 @@ namespace nsCDEngine.Engines.NMIService
                             }
                             catch (Exception e)
                             {
-                                tTsm.PLS = "Exception: CMyDashboard Data Retrieval Failed. Click Refresh to try again";// + e.ToString();
+                                tTsm.PLS = "Exception: CMyDashboard Data Retrieval Failed. Click Refresh to try again";
                                 tTsm.TXT = "NMI_CUSTOM_HTML:" + pTargetElement;
                                 TheBaseAssets.MySYSLOG.WriteToLog(7678, new TSM(eEngineName.NMIService, "Dashboard Retreival failed", eMsgLevel.l1_Error, e.ToString()));
                             }
@@ -1423,7 +1415,6 @@ namespace nsCDEngine.Engines.NMIService
                                 IBaseEngine tBase = TheThingRegistry.GetBaseEngine(pDataType);
                                 if (tBase != null)
                                 {
-                                    //tBase.Subscribe(null);
                                     TSM tForward = TSM.Clone(pMsg, true);
                                     tForward.ENG = pDataType;
                                     tBase.ProcessMessage(tForward);
@@ -1453,7 +1444,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (tDash?.colPanels == null || tDash.colPanels.Count == 0)   //Fix crash if plugin has only dashboard but no content
                 return false;
-            List<TheDashPanelInfo> tMyDashPanels = new List<TheDashPanelInfo>();
+            List<TheDashPanelInfo> tMyDashPanels = new ();
             foreach (string tDID in tDash.colPanels.ToList())
             {
                 TheDashPanelInfo tD = TheFormsGenerator.ParsePanelInfo(tDID);
@@ -1486,7 +1477,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 TheFormsGenerator.AssembleDynamicScreens(tInfo, pClientInfo);
 
-                List<TheDashPanelInfo> tMyDashPanels = new List<TheDashPanelInfo>();
+                List<TheDashPanelInfo> tMyDashPanels = new ();
                 if (tInfo.MyDashPanels != null && tInfo.MyDashPanels.Count > 0)
                     tMyDashPanels.AddRange(tInfo.MyDashPanels);
 
@@ -1508,7 +1499,7 @@ namespace nsCDEngine.Engines.NMIService
                             var tCate = ThePropertyBag.PropBagGetValue(tDash.PropertyBag, "Category", "=");
                             if (string.IsNullOrEmpty(tCate))
                                 tCate = GetNodeForCategory();
-                            TheDashPanelInfo tD = new TheDashPanelInfo(tOwnerEngine)
+                            TheDashPanelInfo tD = new (tOwnerEngine)
                             {
                                 cdeMID = tDash.cdeMID,
                                 cdeA = tDash.cdeA,
@@ -1532,7 +1523,6 @@ namespace nsCDEngine.Engines.NMIService
                             tDash.FireUpdate(tD, tOwnerEngine, pMsg); //OK - late binding
                             tMyDashPanels.Add(tD);
                         }
-                        //fOrder++;
                     }
                 }
 
@@ -1550,7 +1540,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (string.IsNullOrEmpty(tCate))
                             tCate = GetNodeForCategory();
                         var tControl = ThePropertyBag.PropBagGetValue(tDash.PropertyBag, "ControlClass", "=");
-                        TheDashPanelInfo tD = new TheDashPanelInfo(tOwnerEngine)
+                        TheDashPanelInfo tD = new (tOwnerEngine)
                         {
                             cdeMID = tDash.cdeMID,
                             cdeA = tDash.cdeA,
@@ -1589,18 +1579,7 @@ namespace nsCDEngine.Engines.NMIService
                         PropertyBag = new ThePropertyBag { "Thumbnail=FA5:f03e" },
                         Category = GetNodeForCategory(),
                     });
-                    //tMyDashPanels.Add(new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing())
-                    //{
-                    //    cdeMID = eActivationAndStatusDashGuid,
-                    //    cdeA = 0,
-                    //    Flags = 3,
-                    //    FldOrder = 9075,
-                    //    PanelTitle = "Activation and Status",
-                    //    ControlClass = "CMyDashboard:" + eActivationAndStatusDashGuid,
-                    //    Category = GetNodeForCategory(),
-                    //    PropertyBag = new ThePropertyBag() { "nVisibility=false" }
-                    //});
-                    TheDashPanelInfo tOverallStatus = new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing())
+                    TheDashPanelInfo tOverallStatus = new (TheCDEngines.MyNMIService.GetBaseThing())
                     {
                         cdeMID = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID,
                         cdeA = 0,
@@ -1613,35 +1592,32 @@ namespace nsCDEngine.Engines.NMIService
                     };
                     ThePropertyBag.PropBagUpdateValue(tOverallStatus.PropertyBag, "UXID", "=", tOverallStatus.cdeMID.ToString());
                     tMyDashPanels.Add(tOverallStatus);
-                    if (!TheCommonUtils.IsDeviceSenderType(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType))    //IDST-OK: No Updates supported on Device Nodes
+                    if (!TheCommonUtils.IsDeviceSenderType(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType) && pClientInfo.IsFirstNode && TheBaseAssets.MyApplication.MyISMRoot != null)
                     {
-                        if (pClientInfo.IsFirstNode && TheBaseAssets.MyApplication.MyISMRoot != null)
+                        TheBaseAssets.MyApplication.MyISMRoot.ScanForISMUpdate(true, true, false);
+                        if (TheBaseAssets.MyApplication.MyISMRoot.IsUpdateAvailable())
                         {
-                            TheBaseAssets.MyApplication.MyISMRoot.ScanForISMUpdate(true, true, false);
-                            if (TheBaseAssets.MyApplication.MyISMRoot.IsUpdateAvailable())
+                            //TODO: Show a list of all updates available...maybe as a toast?
+                            tMyDashPanels.Add(new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing(), new Guid("{6193A416-2511-4ECA-BFC4-B328D48E06F8}"),
+                                $"Updates ready to install!", "cdeUpdater")
                             {
-                                //TODO: Show a list of all updates available...maybe as a toast?
-                                tMyDashPanels.Add(new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing(), new Guid("{6193A416-2511-4ECA-BFC4-B328D48E06F8}"),
-                                    $"Updates ready to install!", "cdeUpdater")
-                                {
-                                    PropertyBag = new nmiDashboardTile { Thumbnail = "FA5:f3a5", ClassName = "cdeUpdaterTile", TileWidth = 3, TileHeight = 3, Caption = "Updates/New Installs ready" },
-                                    FldOrder = 9900,
-                                    Category = "Updates"
-                                });
-                            }
-                            tMyDashPanels.Add(
-                        new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing())
-                        {
-                            cdeMID = new Guid("{0A3F93CE-4C1A-457A-811A-6679AF4DEE9E}"),
-                            cdeA = 128,
-                            Flags = 3,
-                            FldOrder = 9901,
-                            PanelTitle = "Check for Updates",
-                            ControlClass = "jsAction:CFU",
-                            Category = "Updates",
-                            PropertyBag = new nmiCtrlTileButton { Thumbnail = "FA5:f01c" }
-                        });
+                                PropertyBag = new nmiDashboardTile { Thumbnail = "FA5:f3a5", ClassName = "cdeUpdaterTile", TileWidth = 3, TileHeight = 3, Caption = "Updates/New Installs ready" },
+                                FldOrder = 9900,
+                                Category = "Updates"
+                            });
                         }
+                        tMyDashPanels.Add(
+                    new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing())
+                    {
+                        cdeMID = new Guid("{0A3F93CE-4C1A-457A-811A-6679AF4DEE9E}"),
+                        cdeA = 128,
+                        Flags = 3,
+                        FldOrder = 9901,
+                        PanelTitle = "Check for Updates",
+                        ControlClass = "jsAction:CFU",
+                        Category = "Updates",
+                        PropertyBag = new nmiCtrlTileButton { Thumbnail = "FA5:f01c" }
+                    });
                     }
                 }
                 if (tMyDashPanels.Count > 0)
@@ -1660,7 +1636,6 @@ namespace nsCDEngine.Engines.NMIService
                     astream = tBase.GetPluginResource(pPageTemplate);
                     if (astream != null)
                     {
-                        //Console.WriteLine(string.Format("page {0} found in Plugin :{1}", pPageTemplate, tBase.GetEngineName()));
                         return astream;
                     }
                 }
@@ -1669,7 +1644,6 @@ namespace nsCDEngine.Engines.NMIService
                     astream = tBase.GetPluginResource(pPageTemplate);
                     if (astream != null)
                     {
-                        //Console.WriteLine(string.Format("page {0} found in Plugin :{1}", pPageTemplate, tBase.GetEngineName()));
                         return astream;
                     }
                 }

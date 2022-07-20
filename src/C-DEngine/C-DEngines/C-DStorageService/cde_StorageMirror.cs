@@ -23,6 +23,7 @@ using System.Linq.Expressions;
 using nsCDEngine.ISM;
 using System.IO;
 using System.Threading.Tasks;
+using System.Text;
 // ReSharper disable UseNullPropagation
 // ReSharper disable DelegateSubtraction
 // ReSharper disable MergeSequentialChecks
@@ -38,7 +39,7 @@ namespace nsCDEngine.Engines.StorageService
     /// <summary>
     /// Event Names of Events fired by TheStorageService
     /// </summary>
-    public class eStoreEvents
+    public static class eStoreEvents
     {
         /// <summary>
         /// Fired when the store is ready to be used
@@ -75,7 +76,7 @@ namespace nsCDEngine.Engines.StorageService
     /// TheStorageMirror is a class representing data storage of the C-DEngine. It abstracts the underlying data Store from the use in The C-DEngine
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class TheStorageMirror<T> where T : TheDataBase, INotifyPropertyChanged, new()
+    public class TheStorageMirror<T> : IDisposable where T : TheDataBase, INotifyPropertyChanged, new()
     {
 #pragma warning disable 67
         [Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later Version")]
@@ -88,7 +89,7 @@ namespace nsCDEngine.Engines.StorageService
         {
             public List<T> MyRecords;
             public bool HasErrors;
-            public int PageNumber;      //NEW: ChangeSet 26+
+            public int PageNumber;      
             public string ErrorMsg = "";
             public string SQLFilter = "";
             public string SQLOrder = "";
@@ -96,8 +97,8 @@ namespace nsCDEngine.Engines.StorageService
             public object Cookie;
         }
 
-        #region Timed Store-Request Management
-        private class TimedRequest
+#region Timed Store-Request Management
+        private sealed class TimedRequest
         {
             public Action<StoreResponse> MyRequest;
             public Timer MyTimer;
@@ -105,11 +106,11 @@ namespace nsCDEngine.Engines.StorageService
             public Guid MagicID;
             public object Cookie;
         }
-        private readonly cdeConcurrentDictionary<string, TimedRequest> MyStoreRequests = new cdeConcurrentDictionary<string, TimedRequest>();
-        private readonly object MyStoreRequestsLock = new object();
+        private readonly cdeConcurrentDictionary<string, TimedRequest> MyStoreRequests = new ();
+        private readonly object MyStoreRequestsLock = new ();
         private string AddTimedRequest(Action<StoreResponse> pCallBack, object pCookie, Dictionary<string, T> pDetails)
         {
-            TimedRequest tReq = new TimedRequest
+            TimedRequest tReq = new()
             {
                 MyRequest = pCallBack,
                 MagicID = Guid.NewGuid(),
@@ -156,8 +157,7 @@ namespace nsCDEngine.Engines.StorageService
 
         private void sinkRequestFailed(object state)
         {
-            // CODE REVIEW: If this method throws an exception, it will be unhandled and the process will terminate
-            // TODO verify it's indeed safe
+            // CODE REVIEW: If this method throws an exception, it will be unhandled and the process will terminate and verify it's indeed safe
             TheDiagnostics.SetThreadName("Storage-RequestFailed", true);
             if (state is TimedRequest req)
             {
@@ -168,7 +168,7 @@ namespace nsCDEngine.Engines.StorageService
                 }
 
                 TheBaseAssets.MySYSLOG.WriteToLog(472, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", "Storage-Request Timed Out", eMsgLevel.l2_Warning));
-                StoreResponse tResponse = new StoreResponse
+                StoreResponse tResponse = new ()
                 {
                     ErrorMsg = "Call Timed out",
                     HasErrors = true
@@ -182,11 +182,11 @@ namespace nsCDEngine.Engines.StorageService
             }
         }
 
-        #endregion
+#endregion
 
-        #region Event Handling
+#region Event Handling
 
-        private readonly TheCommonUtils.RegisteredEventHelper<StoreEventArgs> MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<StoreEventArgs>();
+        private readonly TheCommonUtils.RegisteredEventHelper<StoreEventArgs> MyRegisteredEvents = new ();
         public Action<StoreEventArgs> RegisterEvent(string pEventName, Action<StoreEventArgs> pCallback)
         {
             return MyRegisteredEvents.RegisterEvent(pEventName, pCallback);
@@ -204,7 +204,7 @@ namespace nsCDEngine.Engines.StorageService
         {
             return MyRegisteredEvents.HasRegisteredEvents(pEventName);
         }
-        #endregion
+#endregion
         public bool IsReady { get; internal set; } // CODE REVIEW: Should this be internal set? CM: YES!
         public bool AllowFireUpdates { get; set; }
         public bool IsCached { get; set; }
@@ -272,10 +272,10 @@ namespace nsCDEngine.Engines.StorageService
         internal bool CanBeFlushed { get; set; }
         internal string FriendlyName { get; set; }
         public string Description { get; internal set; }
-        public TheMirrorCache<T> MyMirrorCache = new TheMirrorCache<T>();
+        public TheMirrorCache<T> MyMirrorCache = new ();
         private IStorageService engineStorageServer;
 
-        #region Init and Active Properties
+#region Init and Active Properties
         public TheStorageMirror(IStorageService pStorageServer)
         {
             engineStorageServer = pStorageServer;
@@ -284,7 +284,7 @@ namespace nsCDEngine.Engines.StorageService
         }
         ~TheStorageMirror()
         {
-            Reset();
+            Dispose(false);
         }
         public void SetStorageService(IStorageService pStorageServer)
         {
@@ -296,7 +296,7 @@ namespace nsCDEngine.Engines.StorageService
             get { return MyMirrorCache.MyStoreID; }
             set {
                 MyMirrorCache.MyStoreID = value;
-                if (DontRegisterInStorageRegistry == false)
+                if (!DontRegisterInStorageRegistry)
                     TheCDEngines.RegisterMirrorRepository(value, this);
             }
         }
@@ -307,9 +307,6 @@ namespace nsCDEngine.Engines.StorageService
             private set
             {
                 m_StoreID = value;
-                //IsReady = true;       //4.1094: MUST NOT BE HERE as store is not ready at this point!
-                //if (IsRAMStore && !IsCachePersistent) This leads to double fire with cache tables and SQL tables
-                //  FireEvent (eStoreEvents.StoreReady, new StoreEventArgs(m_StoreID), true);
                 NotifyOfUpdate(null);
             }
         }
@@ -328,14 +325,14 @@ namespace nsCDEngine.Engines.StorageService
                 if (engineStorageServer == null || IsRAMStore || TheCDEngines.MyIStorageService == null) return;
                 if (!mIsUpdateSubscriptionEnabled && value)
                 {
-                    TSM msgSub = new TSM(TheCDEngines.MyIStorageService.GetBaseEngine().GetEngineName(), "CDE_SUBSCRIBE", TheBaseAssets.MyScopeManager.AddScopeID(m_StoreID));
+                    TSM msgSub = new(TheCDEngines.MyIStorageService.GetBaseEngine().GetEngineName(), "CDE_SUBSCRIBE", TheBaseAssets.MyScopeManager.AddScopeID(m_StoreID));
                     msgSub.SetNoDuplicates(true);
                     msgSub.SetToServiceOnly(true);
                     TheCommCore.PublishCentral(msgSub);
                 }
                 if (mIsUpdateSubscriptionEnabled && !value)
                 {
-                    TSM msgSub = new TSM(TheCDEngines.MyIStorageService.GetBaseEngine().GetEngineName(), "CDE_UNSUBSCRIBE", TheBaseAssets.MyScopeManager.AddScopeID(m_StoreID));
+                    TSM msgSub = new (TheCDEngines.MyIStorageService.GetBaseEngine().GetEngineName(), "CDE_UNSUBSCRIBE", TheBaseAssets.MyScopeManager.AddScopeID(m_StoreID));
                     msgSub.SetNoDuplicates(true);
                     msgSub.SetToServiceOnly(true);
                     TheCommCore.PublishCentral(msgSub);
@@ -344,17 +341,8 @@ namespace nsCDEngine.Engines.StorageService
             }
         }
         private Timer mMyHealthTimer = null;
-        private bool mIsRAMStore = true;
-        public bool IsRAMStore
-        {
-            get { return mIsRAMStore; }
-            set
-            {
-                mIsRAMStore = value;
-                //if (mIsRAMStore && !IsReady && !IsCachePersistent)    //NEW:V3B3: This must not set the Store to ready! All Stores have to be initialized!
-                  //  IsReady = true;
-            }
-        }
+
+        public bool IsRAMStore { get; set; } = true;
 
         public Task<bool> WaitForStoreReadyAsync()
         {
@@ -362,7 +350,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return TheCommonUtils.TaskFromResult(true);
             }
-            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            TaskCompletionSource<bool> tcs = new ();
             void callback(StoreEventArgs args)
             {
                 tcs.TrySetResult(IsReady);
@@ -394,11 +382,17 @@ namespace nsCDEngine.Engines.StorageService
 
         public void Dispose()
         {
-            DisposeExpireTimer();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
-        #endregion
+        protected virtual void Dispose(bool disposing)
+        {
+            DisposeExpireTimer();
+            Reset();
+        }
+#endregion
 
-        #region Expiration Management
+#region Expiration Management
 
         /// <summary>
         /// Sets a time in seconds after which Record entries will be removed from the Database
@@ -412,7 +406,7 @@ namespace nsCDEngine.Engines.StorageService
             StartOrStopExpireTimer(tSeconds);
             if (MyMirrorCache != null)
             {
-                //if (MyMirrorCache.MyExpirationTest == 0) // CODE REVIEW: This did not update if the expiration test had been set before: was there a reason? Need this ability for historian with multiple consumers
+                //CODE REVIEW: MyMirrorCache.MyExpirationTest == 0 - This did not update if the expiration test had been set before: was there a reason? Need this ability for historian with multiple consumers
                 MyMirrorCache.SetExpireTime(tSeconds);
                 if (pEventRecordExpired != null)
                 {
@@ -445,7 +439,10 @@ namespace nsCDEngine.Engines.StorageService
                         {
                             newHealthTimer?.Dispose();
                         }
-                        catch { }
+                        catch 
+                        { 
+                            //intentionally blank
+                        }
                     }
                 }
                 else
@@ -454,7 +451,10 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         mMyHealthTimer?.Change(0, expireTimer);
                     }
-                    catch { } // Could get an ObjectDisposedException here, but just ignore all exceptions
+                    catch 
+                    {
+                        // Could get an ObjectDisposedException here, but just ignore all exceptions
+                    }
                 }
             }
             else
@@ -470,20 +470,21 @@ namespace nsCDEngine.Engines.StorageService
             {
                 healthTimer?.Dispose();
             }
-            catch { }
+            catch
+            {
+                //intentionally blank
+            }
         }
 
         private int MyRecordExpiration;
         private void sinkExpireTimer(object NOTUSED)
         {
             // Now handled inside SaveCacheToDisk
-            //if (CacheStoreInterval > 0 && MyMirrorCache != null && MyMirrorCache.mCacheCounter > 0 && MyMirrorCache.IsCachePersistent && IsStoreIntervalInSeconds && DateTimeOffset.Now.Subtract(MyMirrorCache.mLastStore).TotalSeconds > CacheStoreInterval)
-            //    MyMirrorCache.SaveCacheToDisk(false, false);
             if (MyRecordExpiration==0) return;
             if ((IsRAMStore || IsCached) && MyMirrorCache!=null)
                 MyMirrorCache.RemoveRetired(MyRecordExpiration);
             if (!IsRAMStore && engineStorageServer!=null)
-                engineStorageServer.EdgeStorageExecuteSql(typeof(T), "delete from {0} where cdeCTIM < '"+ DateTime.Now.Subtract(new TimeSpan(0,0,MyRecordExpiration)).ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture) +"'", "", "", null, CacheTableName); //TODO-TEST: DELETE ITEM FROM STORAGE DEVICE - Catch results and update records in cache
+                engineStorageServer.EdgeStorageExecuteSql(typeof(T), "delete from {0} where cdeCTIM < '"+ DateTime.Now.Subtract(new TimeSpan(0,0,MyRecordExpiration)).ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture) +"'", "", "", null, CacheTableName); 
         }
         public void SetMaxStoreSize(int pRecords)
         {
@@ -491,9 +492,9 @@ namespace nsCDEngine.Engines.StorageService
                MyMirrorCache.SetMaxStoreSize(pRecords);
         }
 
-        #endregion
+#endregion
 
-        #region Store Init, Notify and Reset
+#region Store Init, Notify and Reset
         public void InitializeStore(bool ResetContent)
         {
             InitializeStore(false, ResetContent, false, true);
@@ -547,7 +548,7 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(473, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", $"Ignoring Save Count {storeParams.SaveCount} for {FriendlyName ?? CacheTableName} because MaxAge has been specified.", eMsgLevel.l1_Error));
                 }
-                if (storeParams.ExpirationCallback!= null && ! (storeParams.ExpirationCallback is Action<T>) )
+                if (storeParams.ExpirationCallback!= null && storeParams.ExpirationCallback is not Action<T> )
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(473, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", $"Invalid ExpirationCallback - must be of Type Action<T> for {FriendlyName ?? CacheTableName}. Callback will not be called.", eMsgLevel.l1_Error));
                 }
@@ -612,7 +613,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 MyStoreID = TheStorageUtilities.GenerateUniqueIDFromType(typeof(T), CacheTableName);
                 TheBaseAssets.MyServiceTypes.Add(typeof(T));
-                if (DontRegisterInStorageRegistry == false)
+                if (!DontRegisterInStorageRegistry)
                 {
                     TheCDEngines.RegisterMirrorRepository(TheStorageUtilities.GenerateUniqueIDFromType(typeof(T), null), this);
                     TheCDEngines.RegisterMirrorRepository(MyStoreID, this);
@@ -706,17 +707,12 @@ namespace nsCDEngine.Engines.StorageService
             Description = storeParams.Description;
             if (MyStoreID.Length == 0)
             {
-                if (mIsRAMStore || IsCached)
-                {
-                    if (mIsRAMStore || AppendOnly)
-                        InitializeStore(storeParams);
-                    //if (pDefaults != null) //This will not work with cached tables at it will write too soon (Cache not loaded yet)
-                      //  AddAnItem(pDefaults, null);
-                }
-                if (!mIsRAMStore && engineStorageServer!=null)
+                if ((IsRAMStore || IsCached) && (IsRAMStore || AppendOnly))
+                    InitializeStore(storeParams);
+                if (!IsRAMStore && engineStorageServer != null)
                     engineStorageServer.EdgeDataCreateStore(typeof(T), pDefaults, storeParams.FriendlyName, storeParams.Description, storeParams.ResetContent, CreateStoreCallback, CacheTableName);
                 TheBaseAssets.MyServiceTypes.Add(typeof(T));
-                if (DontRegisterInStorageRegistry == false)
+                if (!DontRegisterInStorageRegistry)
                 {
                     TheCDEngines.RegisterMirrorRepository(TheStorageUtilities.GenerateUniqueIDFromType(typeof(T), null), this);
                     TheCDEngines.RegisterMirrorRepository(StoreMID.ToString(), this);
@@ -750,7 +746,7 @@ namespace nsCDEngine.Engines.StorageService
                 else
                     MyStoreID = pMsg?.PLS;
             }
-            if (IsCached && !mIsRAMStore && !AppendOnly)
+            if (IsCached && !IsRAMStore && !AppendOnly)
                 engineStorageServer.RequestEdgeStorageData(MyStoreID, "", 0, 0, "", "cdeCTIM", "", "", RetrieveRecordsCallback, false);
             else
                 FireStoreReady();
@@ -809,7 +805,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if (IsUpdateSubscriptionEnabled)
                 {
-                    TSM msgSub = new TSM(TheCDEngines.MyIStorageService.GetBaseEngine().GetEngineName(), "CDE_UNSUBSCRIBE", TheBaseAssets.MyScopeManager.AddScopeID(m_StoreID));
+                    TSM msgSub = new (TheCDEngines.MyIStorageService.GetBaseEngine().GetEngineName(), "CDE_UNSUBSCRIBE", TheBaseAssets.MyScopeManager.AddScopeID(m_StoreID));
                     msgSub.SetNoDuplicates(true);
                     msgSub.SetToServiceOnly(true);
                     TheCommCore.PublishCentral(msgSub);
@@ -896,11 +892,10 @@ namespace nsCDEngine.Engines.StorageService
                 return MyMirrorCache!=null && MyMirrorCache.MyRecords.ContainsKey(pKey.ToString());
             else
             {
-                //TODO: On Storage
                 return false;
             }
         }
-        #endregion
+#endregion
 
         public void sinkProcessServiceMessages(TSM pMessage)
         {
@@ -924,7 +919,7 @@ namespace nsCDEngine.Engines.StorageService
             }
         }
 
-        #region DELETE Items
+#region DELETE Items
         /// <summary>
         /// Removes the store from the StorageMirror repository and removes the table from the IStorageService if applicable.
         /// </summary>
@@ -977,7 +972,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if (pCallBack != null)
                 {
-                    StoreResponse tResponse = new StoreResponse
+                    StoreResponse tResponse = new ()
                     {
                         HasErrors = true,
                         ErrorMsg = "StorageService not ready"
@@ -986,7 +981,7 @@ namespace nsCDEngine.Engines.StorageService
                 }
                 return;
             }
-            if (!mIsRAMStore || IsCached)
+            if (!IsRAMStore || IsCached)
             {
                 string Magix = "";
                 if (pCallBack != null)
@@ -995,9 +990,9 @@ namespace nsCDEngine.Engines.StorageService
                     engineStorageServer.EdgeStorageExecuteSql(typeof(T), "delete from {0} where cdeMID='" + item.cdeMID + "'", "", Magix, (pMsg) =>
                     {
                         RemoveEdgeStorageProperties(item.cdeMID, pMsg, sinkExecuteSql);
-                    }, CacheTableName); //TODO-TEST: DELETE ITEM FROM STORAGE DEVICE
+                    }, CacheTableName); 
             }
-            if (mIsRAMStore || IsCached)
+            if (IsRAMStore || IsCached)
                 MyMirrorCache.RemoveAnItemByID(item.cdeMID, null);
         }
 
@@ -1009,12 +1004,12 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="pCallBack">The callback that will be invoked upon error or completion of the removal.</param>
         public void RemoveAnItemByID(Guid ItemId, Action<StoreResponse> pCallBack)
         {
-            if (ItemId==Guid.Empty) return;
+            if (ItemId == Guid.Empty) return;
             if (!IsReady)
             {
                 if (pCallBack != null)
                 {
-                    StoreResponse tResponse = new StoreResponse
+                    StoreResponse tResponse = new()
                     {
                         HasErrors = true,
                         ErrorMsg = "StorageService not ready"
@@ -1024,21 +1019,19 @@ namespace nsCDEngine.Engines.StorageService
                 return;
             }
             //lock (MyMirrorCache.MyRecordsLock) //LOCK-REVIEW: There is a deeper lock in MirrorCache.RemoveAnItemByID...is this lock really necessary?
+            if (!IsRAMStore || IsCached)
             {
-                if (!mIsRAMStore || IsCached)
-                {
-                    string Magix = "";
-                    if (pCallBack != null)
-                        Magix = AddTimedRequest(pCallBack, null, null);
-                    if (engineStorageServer != null)
-                        engineStorageServer.EdgeStorageExecuteSql(typeof(T), "delete from {0} where cdeMID='" + ItemId + "'", "", Magix, (pMsg) =>
-                        {
-                            RemoveEdgeStorageProperties(ItemId, pMsg, sinkExecuteSql);
-                        }, CacheTableName); //TODO-TEST: DELETE ITEM FROM STORAGE DEVICE
-                }
-                if ((mIsRAMStore || IsCached))
-                    MyMirrorCache.RemoveAnItemByID(ItemId,null);
+                string Magix = "";
+                if (pCallBack != null)
+                    Magix = AddTimedRequest(pCallBack, null, null);
+                if (engineStorageServer != null)
+                    engineStorageServer.EdgeStorageExecuteSql(typeof(T), "delete from {0} where cdeMID='" + ItemId + "'", "", Magix, (pMsg) =>
+                    {
+                        RemoveEdgeStorageProperties(ItemId, pMsg, sinkExecuteSql);
+                    }, CacheTableName);
             }
+            if ((IsRAMStore || IsCached))
+                MyMirrorCache.RemoveAnItemByID(ItemId, null);
         }
 
         /// <summary>
@@ -1050,15 +1043,12 @@ namespace nsCDEngine.Engines.StorageService
         /// /// <param name="CallBack">The method to be called after returning from attempted deletion of properties</param>
         internal void RemoveEdgeStorageProperties(Guid OwnerId, TSM ReturnedMsg, Action<TSM> CallBack)
         {
-            if (typeof(T) == typeof(TheThing))
+            if (typeof(T) == typeof(TheThing) && engineStorageServer != null)
             {
-                if (engineStorageServer != null)
+                engineStorageServer.EdgeStorageExecuteSql(typeof(cdeP), "delete from {0} where cdeO='" + OwnerId + "'", "", "", (pMsg) =>
                 {
-                    engineStorageServer.EdgeStorageExecuteSql(typeof(cdeP), "delete from {0} where cdeO='" + OwnerId + "'", "", "", (pMsg) =>
-                    {
-                        CallBack?.Invoke(ReturnedMsg);
-                    }, CacheTableName);
-                }
+                    CallBack?.Invoke(ReturnedMsg);
+                }, CacheTableName);
             }
         }
 
@@ -1070,23 +1060,20 @@ namespace nsCDEngine.Engines.StorageService
         /// /// <param name="CallBack">The method to be called after returning from attempted deletion</param>
         internal void RemoveEdgeStorageProperty(Guid OwnerId, string pName, Action<TSM> CallBack)
         {
-            if(typeof(T) == typeof(TheThing))
+            if (typeof(T) == typeof(TheThing) && engineStorageServer != null)
             {
-                if(engineStorageServer != null)
+                engineStorageServer.EdgeStorageExecuteSql(typeof(cdeP), "delete from {0} where cdeO='" + OwnerId + "' and Name='" + pName + "'", "", "", (pMsg) =>
                 {
-                    engineStorageServer.EdgeStorageExecuteSql(typeof(cdeP), "delete from {0} where cdeO='" + OwnerId + "' and Name='" + pName + "'", "", "", (pMsg) =>
-                    {
-                        CallBack?.Invoke(pMsg);
-                    }, CacheTableName);
-                }
+                    CallBack?.Invoke(pMsg);
+                }, CacheTableName);
             }
         }
-        #endregion
+#endregion
 
-        #region EXECUTE Sql
+#region EXECUTE Sql
         public void ExecuteSql(string tSql,string tColFilter, Action<StoreResponse> pCallBack)
         {
-            if (!mIsRAMStore)
+            if (!IsRAMStore)
             {
                 string Magix = "";
                 if (pCallBack != null)
@@ -1105,7 +1092,7 @@ namespace nsCDEngine.Engines.StorageService
                 tReq = GetTimedRequest(cmds[1]);
             if (tReq != null)
             {
-                StoreResponse tResponse = new StoreResponse
+                StoreResponse tResponse = new ()
                 {
                     HasErrors = false,
                     ErrorMsg = pMsg.PLS
@@ -1113,9 +1100,9 @@ namespace nsCDEngine.Engines.StorageService
                 tReq.MyRequest(tResponse);
             }
         }
-        #endregion
+#endregion
 
-        #region ADD and UPDATE Items
+#region ADD and UPDATE Items
         /// <summary>
         /// Adds a single item to the StorageMirror's underlying MirrorCache and/or IStorageService.
         /// </summary>
@@ -1132,7 +1119,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="pDetails">The item to be added.</param>
         public void AddAnItem(string pKey,T pDetails)
         {
-            Dictionary<string, T> tList = new Dictionary<string, T> {{pKey, pDetails}};
+            Dictionary<string, T> tList = new () {{pKey, pDetails}};
             AddItems(tList, null);
         }
 
@@ -1143,7 +1130,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="pCallBack">The callback method that will be invoked upon error or completed insertion of the item.</param>
         public void AddAnItem(T pDetails, Action<StoreResponse> pCallBack)
         {
-            Dictionary<string, T> tList = new Dictionary<string, T> {{Guid.Empty.ToString(), pDetails}};
+            Dictionary<string, T> tList = new () {{Guid.Empty.ToString(), pDetails}};
             AddItems(tList, pCallBack);
         }
 
@@ -1165,7 +1152,7 @@ namespace nsCDEngine.Engines.StorageService
         {
             if (pDetails == null)
                 return;
-            Dictionary<string, T> tList = new Dictionary<string, T>();
+            Dictionary<string, T> tList = new ();
             foreach (T pKey in pDetails)
             {
                 tList.Add(pKey.cdeMID.ToString(), pKey);
@@ -1184,7 +1171,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if (pCallBack != null)
                 {
-                    StoreResponse tResponse = new StoreResponse
+                    StoreResponse tResponse = new ()
                     {
                         HasErrors = true,
                         ErrorMsg = "StorageService not ready"
@@ -1193,10 +1180,10 @@ namespace nsCDEngine.Engines.StorageService
                 }
                 return;
             }
-            if ((mIsRAMStore || IsCached) && !AppendOnly)
+            if ((IsRAMStore || IsCached) && !AppendOnly)
             {
-                StoreResponse tResponse = new StoreResponse();
-                Dictionary<string, T> ResList = new Dictionary<string, T>();
+                StoreResponse tResponse = new ();
+                Dictionary<string, T> ResList = new ();
                 MyMirrorCache.MyRecordsRWLock.RunUnderWriteLock(() =>
                 {
                     foreach (string tKey in pDetails.Keys)
@@ -1215,7 +1202,7 @@ namespace nsCDEngine.Engines.StorageService
                 pCallBack?.Invoke(tResponse);
                 NotifyOfUpdate(tResponse);
             }
-            if (!mIsRAMStore)
+            if (!IsRAMStore)
             {
                 string Magix = "";
                 if (pCallBack != null)
@@ -1238,9 +1225,9 @@ namespace nsCDEngine.Engines.StorageService
 
         public void WriteCache(Action<StoreResponse> pCallBack)
         {
-            if (!IsReady || mIsRAMStore)
+            if (!IsReady || IsRAMStore)
                 return;
-            Dictionary<string, T> ResList = new Dictionary<string, T>();
+            Dictionary<string, T> ResList = new ();
             foreach (T tItem in MyMirrorCache.TheValues)
                 ResList.Add(tItem.cdeMID.ToString(), tItem);
 
@@ -1265,7 +1252,7 @@ namespace nsCDEngine.Engines.StorageService
             if (pMsg.PLS.StartsWith(m_StoreID))
             {
                 string[] tResult = pMsg.PLS.Split(':');
-                StoreResponse tResp = new StoreResponse
+                StoreResponse tResp = new ()
                 {
                     HasErrors = false,
                     ErrorMsg = "StoreHasUpdates"
@@ -1283,7 +1270,7 @@ namespace nsCDEngine.Engines.StorageService
             }
             catch (Exception)
             {
-
+                //intentionally blank
             }
             if (tRecords?.UID == null || !tRecords.UID.Equals(m_StoreID))
                 return;
@@ -1293,7 +1280,7 @@ namespace nsCDEngine.Engines.StorageService
                 tReq = GetTimedRequest(cmds[1]);
             if (tReq == null && !AllowFireUpdates)
                 return;
-            StoreResponse tResponse = new StoreResponse();
+            StoreResponse tResponse = new ();
             if (!string.IsNullOrEmpty(tRecords.ERR))
             {
                 tResponse.HasErrors = true;
@@ -1326,7 +1313,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="pNew"></param>
         public void UpdateID(Guid pOld, Guid pNew)
         {
-            if (mIsRAMStore || IsCached)
+            if (IsRAMStore || IsCached)
             {
                 MyMirrorCache.MyRecordsRWLock.RunUnderWriteLock(() =>
                 {
@@ -1357,8 +1344,26 @@ namespace nsCDEngine.Engines.StorageService
         public void UpdateItem(T pDetails, Action<StoreResponse> CallBack)
         {
             if (pDetails == null) return;   //SHOULD NEVER HAPPEN..but did:(
-            Dictionary<string, T> tList = new Dictionary<string, T> {{pDetails.cdeMID.ToString(), pDetails}};
+            Dictionary<string, T> tList = new () {{pDetails.cdeMID.ToString(), pDetails}};
             UpdateItems(tList, CallBack);
+        }
+
+        /// <summary>
+        /// Updates the first item that matches the <paramref name="pSelector"/> with the item <paramref name="pItem"/> in the StorageMirror's underlying MirrorCache and/or IStorageService.
+        /// </summary>
+        /// <param name="pItem">The item used to update the existing item in the StorageMirror.</param>
+        /// <param name="pSelector">The Func to identify the item that will be updated.</param>
+        public void UpdateItemByFunc(T pItem, Func<T, bool> pSelector)
+        {
+            Dictionary<string, T> tList = new();
+            if ((IsRAMStore || IsCached) && pSelector != null)
+            {
+                T ttt = MyMirrorCache.GetEntryByFunc(pSelector);
+                if (ttt != null)
+                    pItem.cdeMID = ttt.cdeMID;
+            }
+            tList.Add(pItem.cdeMID.ToString(), pItem);
+            UpdateItems(tList, null);
         }
 
         /// <summary>
@@ -1376,30 +1381,9 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="pDetails">The List of items to be updated. If an item's cdeMID is Guid.Empty, the item will be added with a new ID.</param>
         public void UpdateItems(List<T> pDetails)
         {
-            Dictionary<string, T> tList = new Dictionary<string, T>();
+            Dictionary<string, T> tList = new ();
             foreach (T t in pDetails)
                 tList.Add(t.cdeMID.ToString(), t);
-            UpdateItems(tList, null);
-        }
-
-        /// <summary>
-        /// Updates the first item that matches the <paramref name="pSelector"/> with the item <paramref name="pItem"/> in the StorageMirror's underlying MirrorCache and/or IStorageService.
-        /// </summary>
-        /// <param name="pItem">The item used to update the existing item in the StorageMirror.</param>
-        /// <param name="pSelector">The Func to identify the item that will be updated.</param>
-        public void UpdateItemByFunc(T pItem, Func<T, bool> pSelector)
-        {
-            Dictionary<string, T> tList = new Dictionary<string, T>();
-            //bool DoAdd = true;
-            if ((mIsRAMStore || IsCached) && pSelector != null)
-            {
-                T ttt = MyMirrorCache.GetEntryByFunc(pSelector);
-                if (ttt != null)
-                    pItem.cdeMID = ttt.cdeMID;
-                    //DoAdd = false;
-            }
-            //if (DoAdd)
-            tList.Add(pItem.cdeMID.ToString(), pItem);
             UpdateItems(tList, null);
         }
 
@@ -1410,7 +1394,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="CallBack">The callback method that will be invoked upon error or completed update of items.</param>
         public void UpdateItems(Dictionary<string,T> pDetails, Action<StoreResponse> CallBack)
         {
-            StoreResponse tResponse = new StoreResponse();
+            StoreResponse tResponse = new ();
             if (!IsReady)
             {
                 if (CallBack != null)
@@ -1422,9 +1406,9 @@ namespace nsCDEngine.Engines.StorageService
                 return;
             }
 
-            if (mIsRAMStore || IsCached)
+            if (IsRAMStore || IsCached)
             {
-                Dictionary<string, T> ResList = new Dictionary<string, T>();
+                Dictionary<string, T> ResList = new ();
                 foreach (T tItem in pDetails.Values)
                 {
                     if (tItem.cdeMID == Guid.Empty)
@@ -1436,7 +1420,7 @@ namespace nsCDEngine.Engines.StorageService
                 CallBack?.Invoke(tResponse);
                 NotifyOfUpdate(tResponse);
             }
-            if (!mIsRAMStore)
+            if (!IsRAMStore)
             {
                 string Magix = "";
                 if (CallBack != null)
@@ -1487,14 +1471,14 @@ namespace nsCDEngine.Engines.StorageService
                                     List<cdeP> propertyRecords = TheStorageUtilities.ConvertFromStoreRecord<cdeP>(tRecords2, true, out string tError);
                                     if (string.IsNullOrEmpty(tError))
                                     {
-                                        TFD PBDefinition = new TFD
+                                        TFD PBDefinition = new ()
                                         {
                                             N = "MyPropertyBag",
                                             T = TheCommonUtils.CStr(typeof(cdeConcurrentDictionary<string, cdeP>)),
                                             C = tRecords.FLDs[tRecords.FLDs.Count - 1].C + 1
                                         };
                                         tRecords.FLDs.Add(PBDefinition);
-                                        cdeConcurrentDictionary<string, cdeP> propertyBag = new cdeConcurrentDictionary<string, cdeP>();
+                                        cdeConcurrentDictionary<string, cdeP> propertyBag = new ();
                                         foreach (cdeP p in propertyRecords)
                                         {
                                             if (!propertyBag.TryAdd(p.Name, p))
@@ -1515,9 +1499,9 @@ namespace nsCDEngine.Engines.StorageService
             }
             CallBack?.Invoke(ReturnedMsg);
         }
-        #endregion
+#endregion
 
-        #region GET Records
+#region GET Records
 
         public List<T> TheValues
         {
@@ -1525,7 +1509,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if ((IsCached || IsRAMStore) && MyMirrorCache.MyRecords != null)
                     return MyMirrorCache.TheValues;
-                return null;
+                return new List<T>();
             }
         }
 
@@ -1535,7 +1519,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if ((IsCached || IsRAMStore) && MyMirrorCache.MyRecords != null)
                     return MyMirrorCache.TheKeys;
-                return null;
+                return new List<string>();
             }
         }
 
@@ -1650,7 +1634,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns>True if the request was successfully made and false otherwise (if the StorageMirror is not ready yet and was not initialized).</returns>
         public bool GetRecords(string SQLFilter, int TopRows, int PageNumber, string SQLOrder,string ColFilter, Action<StoreResponse> pCallBack, bool LocalCallBackOnly, bool InitIfNotInit, object pCookie)
         {
-            StoreResponse tResponse = new StoreResponse();
+            StoreResponse tResponse = new ();
             if (!IsReady && InitIfNotInit)
                 InitializeStore(false);
             if (!IsReady)
@@ -1674,9 +1658,8 @@ namespace nsCDEngine.Engines.StorageService
                 pCallBack(tResponse);
                 return true;
             }
-            if ((mIsRAMStore || IsCached) && !AppendOnly)
+            if ((IsRAMStore || IsCached) && !AppendOnly)
             {
-                //TODO: Only if I find a way to use SQLFilter
                 MyMirrorCache.MyRecordsRWLock.RunUnderReadLock(() =>    //LOCK-REVIEW: New reader lock for result consitency
                 {
                     try
@@ -1738,14 +1721,13 @@ namespace nsCDEngine.Engines.StorageService
                 tResponse.Cookie = pCookie;
                 pCallBack(tResponse);
             }
-            if (!mIsRAMStore)
+            if (!IsRAMStore)
             {
                 string Magix = "";
                 if (pCallBack != null)
                     Magix = AddTimedRequest(pCallBack, pCookie, null);
                 if (engineStorageServer != null)
                 {
-                    //List<Filter> tFilter = CreateFilter(SQLFilter);
                     if (typeof(T) == typeof(TheThingStore))
                         ColFilter = "";
                     engineStorageServer.RequestEdgeStorageData(MyStoreID, ColFilter, TopRows, PageNumber, SQLFilter, SQLOrder, "", Magix, sinkJustReturn, LocalCallBackOnly);
@@ -1790,7 +1772,7 @@ namespace nsCDEngine.Engines.StorageService
                                 TheBaseAssets.MySYSLOG.WriteToLog(476, new TSM("StorageMirror", "Error converting property records", eMsgLevel.l1_Error, pMsg.PLS));
                             else
                             {
-                                TFD PBDefinition = new TFD
+                                TFD PBDefinition = new ()
                                 {
                                     N = "MyPropertyBag",
                                     T = TheCommonUtils.CStr(typeof(cdeConcurrentDictionary<string, cdeP>)),
@@ -1799,7 +1781,7 @@ namespace nsCDEngine.Engines.StorageService
                                 pRec.FLDs.Add(PBDefinition);
                                 foreach (List<string> tList in pRec.RECs)
                                 {
-                                    cdeConcurrentDictionary<string, cdeP> propertyBag = new cdeConcurrentDictionary<string, cdeP>();
+                                    cdeConcurrentDictionary<string, cdeP> propertyBag = new ();
                                     for(int j = PropertyRecords.Count - 1; j > -1; j--)
                                     {
                                         if(tList[cdeMIDIndex].Substring(3).Equals(TheCommonUtils.CStr(PropertyRecords[j].cdeO)))
@@ -1824,7 +1806,7 @@ namespace nsCDEngine.Engines.StorageService
                 TheCommonUtils.TaskWaitTimeout(taskCS.Task, new TimeSpan(0, 0, 15)).ContinueWith(t => taskCS.TrySetResult(pRec));
                 return taskCS.Task;
             }
-            return null;
+            return Task.FromResult<TheDataRetrievalRecord>(pRec);
         }
 
         /// <summary>
@@ -1842,7 +1824,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="pCookie">A cookie that will later be returned with the StoreResponse in the callback.</param>
         public void GetGroupResult(string pColumFilter, string pGrouping, Action<StoreResponse> CallBack, bool LocalCallBackOnly, object pCookie)
         {
-            StoreResponse tResponse = new StoreResponse();
+            StoreResponse tResponse = new ();
             if (!IsReady)
             {
                 if (CallBack != null)
@@ -1855,7 +1837,7 @@ namespace nsCDEngine.Engines.StorageService
                 }
                 return;
             }
-            if (mIsRAMStore || IsCached)
+            if (IsRAMStore || IsCached)
             {
                 if (MyMirrorCache.Count > 0)
                 {
@@ -1869,7 +1851,7 @@ namespace nsCDEngine.Engines.StorageService
                 tResponse.Cookie = pCookie;
                 CallBack(tResponse);
             }
-            if (!mIsRAMStore)
+            if (!IsRAMStore)
             {
                 string Magix = "";
                 if (CallBack != null)
@@ -1881,7 +1863,7 @@ namespace nsCDEngine.Engines.StorageService
 
         private void BuildGroups(List<T> mRecords, string pGrouping, StoreResponse tResponse)
         {
-            List<string> tNames = new List<string>();
+            List<string> tNames = new ();
             foreach (var t in mRecords)
             {
                 object tName = TheCommonUtils.GetPropValue(t, pGrouping);
@@ -1896,7 +1878,7 @@ namespace nsCDEngine.Engines.StorageService
             TheDataRetrievalRecord tRec = TheCommonUtils.DeserializeJSONStringToObject<TheDataRetrievalRecord>(pMsg.PLS);
             if (tRec == null) return;
             string LastID = tRec.MID;
-            StoreResponse tResponse = new StoreResponse
+            StoreResponse tResponse = new ()
             {
                 SQLOrder = tRec.SOR,
                 SQLFilter = tRec.SFI,
@@ -1924,7 +1906,7 @@ namespace nsCDEngine.Engines.StorageService
                     tResponse.ErrorMsg = tError;
                 }
                 else
-                    BuildGroups(tResponse.MyRecords, tRec.GRP, tResponse); //TODO: Add GRP
+                    BuildGroups(tResponse.MyRecords, tRec.GRP, tResponse);
             }
             TimedRequest tReq = GetTimedRequest(LastID);
             if (tReq != null)
@@ -1941,7 +1923,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns></returns>
         public T GetEntryByID(Guid pMagicID)
         {
-            if (mIsRAMStore || IsCached)
+            if (IsRAMStore || IsCached)
                 return MyMirrorCache.GetEntryByID(pMagicID);
             return null;
         }
@@ -1952,7 +1934,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns></returns>
         public T GetEntryByID(string pMagicID)
         {
-            if (mIsRAMStore || IsCached)
+            if (IsRAMStore || IsCached)
                 return MyMirrorCache.GetEntryByID(pMagicID);
             return null;
         }
@@ -1968,7 +1950,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="pCookie">A cookie that will later be returned with the StoreResponse in the callback.</param>
         public void GetEntryByID(Guid pMagicID, Action<StoreResponse> CallBack, bool LocalCallBackOnly,object pCookie)
         {
-            StoreResponse tResponse = new StoreResponse();
+            StoreResponse tResponse = new ();
             if (!IsReady)
             {
                 if (CallBack != null)
@@ -1979,7 +1961,7 @@ namespace nsCDEngine.Engines.StorageService
                 }
                 return;
             }
-            if (mIsRAMStore || IsCached)
+            if (IsRAMStore || IsCached)
             {
                 if (!MyMirrorCache.MyRecords.TryGetValue(pMagicID.ToString(), out T tRes))
                 {
@@ -1996,7 +1978,7 @@ namespace nsCDEngine.Engines.StorageService
                     CallBack(tResponse);
                 }
             }
-            if (!mIsRAMStore)
+            if (!IsRAMStore)
             {
                 string Magix = "";
                 if (CallBack != null)
@@ -2011,7 +1993,7 @@ namespace nsCDEngine.Engines.StorageService
             TheDataRetrievalRecord tRec = TheCommonUtils.DeserializeJSONStringToObject<TheDataRetrievalRecord>(pMsg.PLS);
             if (tRec == null) return;
             string LastID = tRec.MID;
-            StoreResponse tResponse = new StoreResponse
+            StoreResponse tResponse = new ()
             {
                 SQLOrder = tRec.SOR,
                 SQLFilter = tRec.SFI,
@@ -2026,21 +2008,36 @@ namespace nsCDEngine.Engines.StorageService
             }
             else
             {
+                var tRec2 = tRec;
                 Task<TheDataRetrievalRecord> tTask = RetrieveEdgeStorageProperties(tRec);
                 if (tTask != null)
                 {
                     tTask.Wait();
                     tRec = tTask.Result;
                 }
-                tRec = RebuildThingStorePB(tRec);
-                tResponse.MyRecords = TheStorageUtilities.ConvertFromStoreRecord<T>(tRec, false, out string tError);
-                if (!string.IsNullOrEmpty(tError))
+                if (tRec == null)
                 {
                     tResponse.HasErrors = true;
-                    tResponse.ErrorMsg = tError;
+                    tResponse.ErrorMsg = $"EdgeStore Properties could not be retrieved for {tRec2?.UID}";
                 }
-                //if (IsCached)
-                  //  MyMirrorCache.Fill(tResponse);
+                else
+                {
+                    tRec = RebuildThingStorePB(tRec);
+                    if (tRec == null)
+                    {
+                        tResponse.HasErrors = true;
+                        tResponse.ErrorMsg = "ThingStorePB could not be rebuilt";
+                    }
+                    else
+                    {
+                        tResponse.MyRecords = TheStorageUtilities.ConvertFromStoreRecord<T>(tRec, false, out string tError);
+                        if (!string.IsNullOrEmpty(tError))
+                        {
+                            tResponse.HasErrors = true;
+                            tResponse.ErrorMsg = tError;
+                        }
+                    }
+                }
             }
             TimedRequest tReq = GetTimedRequest(LastID);
             if (tReq != null)
@@ -2052,10 +2049,10 @@ namespace nsCDEngine.Engines.StorageService
 
         private TheDataRetrievalRecord RebuildThingStorePB(TheDataRetrievalRecord pRec)
         {
-            if (typeof(T).Equals(typeof(TheThingStore)))
+            if (typeof(T).Equals(typeof(TheThingStore)) && pRec!=null)
             {
                 List<TFD> pbDefinitions = pRec.FLDs.Where(fld => !typeof(TheThingStore).GetProperties().Any(prop => prop.Name.Equals(fld.N)) && !TheStorageUtilities.defaultRows.Contains(fld.N)).ToList();
-                Dictionary<string, object> PB = new Dictionary<string, object>();
+                Dictionary<string, object> PB = new ();
                 foreach (TFD tDef in pbDefinitions)
                 {
                     PB[tDef.N] = null;
@@ -2071,7 +2068,7 @@ namespace nsCDEngine.Engines.StorageService
                     int LastColumn = TheCommonUtils.CInt(record[record.Count - 1].Substring(0, 3));
                     record.Add(string.Format("{0:000}{1}", LastColumn + 1, TheCommonUtils.SerializeObjectToJSONString(PB)));
                 }
-                TFD pbTFD = new TFD
+                TFD pbTFD = new ()
                 {
                     N = "PB",
                     T = TheCommonUtils.CStr(typeof(Dictionary<string, object>)),
@@ -2081,31 +2078,29 @@ namespace nsCDEngine.Engines.StorageService
             }
             return pRec;
         }
-        #endregion
+#endregion
 
-        #region NMI Table and Form Code
+#region NMI Table and Form Code
 
-        internal string UpdateFromJSON(TheFormInfo pForm, string pJSON, string pDirtyMask, Guid pOriginator,TheClientInfo pClientInfo, Action<StoreResponse> pResponse)
+        internal string UpdateFromJSON(TheFormInfo pForm, string pJSON, string pDirtyMask, Guid pOriginator,TheClientInfo pClientInfo, Guid pSEID, Action<StoreResponse> pResponse)
         {
             if (TheCDEngines.MyNMIService == null || string.IsNullOrEmpty(pJSON) || pJSON=="[]" || pForm.defDataSource.StartsWith("TheUserDetails;:;"))
                 return "";  //SECURITY-UPDATE: Forbit any updates to TheUserDetails table through generic calls by clients/browsers!
             string tRes = "";
             var tso = TheFormsGenerator.GetScreenOptions(pForm.cdeMID, pClientInfo, pForm);
-            List<TheFieldInfo> tFldList = TheFormsGenerator.GetPermittedFields(pForm.cdeMID, pClientInfo,tso, false); // TheNMIEngine.GetFieldsByFunc(s => s.FormID == pForm.cdeMID).OrderBy(s => s.FldOrder).ToList();
+            List<TheFieldInfo> tFldList = TheFormsGenerator.GetPermittedFields(pForm.cdeMID, pClientInfo,tso, false); 
 
             T tNewItem = TheCommonUtils.DeserializeJSONStringToObject<T>(pJSON);
             FireEvent(eStoreEvents.UpdateRequested, new StoreEventArgs(tNewItem, pClientInfo), false);
-            if (tNewItem is TheMetaDataBase tMeta)
-            {
-                if (tMeta.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+            if (tNewItem is TheMetaDataBase tMeta && (tMeta.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID))
                     return "";
-            }
+
             if (tFldList.Count > 0 && !string.IsNullOrEmpty(pDirtyMask) && !pDirtyMask.Equals("*"))
             {
                 T tToUpdate = MyMirrorCache.GetEntryByID(tNewItem.cdeMID);
                 TheThing tThing = tToUpdate as TheThing;
                 bool FoundOne = false;
-                string AuditLog = "";
+                StringBuilder AuditLog = new();
                 if (tToUpdate == null)
                 {
                     tToUpdate = tNewItem;
@@ -2113,7 +2108,7 @@ namespace nsCDEngine.Engines.StorageService
                         tToUpdate.cdeCTIM = DateTimeOffset.Now;
                     FoundOne = true;
                     if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
-                        AuditLog = $"New Instance created";
+                        AuditLog.Append("New Instance created");
                 }
                 else
                 {
@@ -2127,15 +2122,15 @@ namespace nsCDEngine.Engines.StorageService
                         if (!string.IsNullOrEmpty(tInfo.DataItem) && pDirtyMask.Length > tCnt && pDirtyMask.Substring(tCnt, 1) == "1" && !TheCommonUtils.CBool(tInfo?.PropBagGetValue("WriteOnce")))
                         {
                             string[] tDataItemParts = tInfo.DataItem.Split('.');
-                            if (tDataItemParts.Length >2 && "MyPropertyBag".Equals(tDataItemParts[0]))
+                            if (tDataItemParts.Length > 2 && "MyPropertyBag".Equals(tDataItemParts[0]))
                             {
                                 if (tThing != null)
                                 {
                                     string tPropName = tDataItemParts[1];
-                                    if (tDataItemParts.Length>3)
+                                    if (tDataItemParts.Length > 3)
                                     {
                                         for (int i = 2; i < tDataItemParts.Length - 1; i++)
-                                            tPropName += "." + tDataItemParts[i];
+                                            tPropName += $".{tDataItemParts[i]}";
                                     }
                                     if (tNewItem is TheThing tNewThing)
                                     {
@@ -2145,12 +2140,20 @@ namespace nsCDEngine.Engines.StorageService
                                         if (tSourceP != null && tTargetP != null)
                                         {
                                             var tOld = tTargetP.GetValue();
-                                            bool tFoundOne = tTargetP.SetValue(tSourceP.GetValue(), pOriginator.ToString(), tSourceP.cdeCTIM);
+                                            var tNewVal = tSourceP.GetValue();
+                                            if ((tInfo.Flags & 1) != 0)
+                                            {
+                                                //TODO: NMI will use RSA to encrypt value. We need the session here to decrypt:
+                                                tNewVal = TheCommonUtils.CStr(tSourceP.Value);
+                                                if (tNewVal.ToString().StartsWith("&^CDEP5^&:"))
+                                                    tNewVal = TheCommonUtils.cdeRSADecrypt(pSEID, tNewVal.ToString());
+                                            }
+                                            bool tFoundOne = tTargetP.SetValue(tNewVal, pOriginator.ToString(), tSourceP.cdeCTIM);
                                             if (tFoundOne)
                                             {
                                                 if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
-                                                    AuditLog += $"{tPropName}:({tOld})-({tTargetP.GetValue()}) ";
-                                                tTargetP.FireEvent(eThingEvents.PropertyChangedByUX, (tTargetP.cdeFOC&256)==0, -1);
+                                                    AuditLog.Append($"{tPropName}:({tOld})-({tTargetP.GetValue()}) ");
+                                                tTargetP.FireEvent(eThingEvents.PropertyChangedByUX, (tTargetP.cdeFOC & 256) == 0, -1);
                                             }
                                             if (tFoundOne && !FoundOne)
                                                 FoundOne = true;
@@ -2163,7 +2166,7 @@ namespace nsCDEngine.Engines.StorageService
                                                 var tVal = tP.GetValue(tSourceP, null);
                                                 tThing.SetProperty(tPropName, tVal);
                                                 if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
-                                                    AuditLog += $"New {tPropName}:({tVal}) ";
+                                                    AuditLog.Append($"New {tPropName}:({tVal}) ");
                                             }
                                         }
                                     }
@@ -2177,25 +2180,19 @@ namespace nsCDEngine.Engines.StorageService
                                     if (tI.GetValue(tNewItem) != tI.GetValue(tToUpdate))
                                     {
                                         if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
-                                            AuditLog += $"{tI.Name}:({tI.GetValue(tNewItem)})-({tI.GetValue(tToUpdate)}) ";
+                                            AuditLog.Append($"{tI.Name}:({tI.GetValue(tNewItem)})-({tI.GetValue(tToUpdate)}) ");
                                         tI.SetValue(tToUpdate, tI.GetValue(tNewItem));
                                         FoundOne = true;
                                     }
                                     continue;
                                 }
                                 PropertyInfo tP = MyType.GetProperty(tInfo.DataItem);
-                                if (tP != null)
+                                if (tP != null && tP.GetValue(tNewItem, null) != tP.GetValue(tToUpdate, null) && tP.CanWrite)
                                 {
-                                    if (tP.GetValue(tNewItem, null) != tP.GetValue(tToUpdate, null))
-                                    {
-                                        if (tP.CanWrite)
-                                        {
-                                            if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
-                                                AuditLog += $"{tI.Name}:({tI.GetValue(tNewItem)})-({tI.GetValue(tToUpdate)}) ";
-                                            tP.SetValue(tToUpdate, tP.GetValue(tNewItem, null), null);
-                                            FoundOne = true;
-                                        }
-                                    }
+                                    if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
+                                        AuditLog.Append($"{tI.Name}:({tI.GetValue(tNewItem)})-({tI.GetValue(tToUpdate)}) ");
+                                    tP.SetValue(tToUpdate, tP.GetValue(tNewItem, null), null);
+                                    FoundOne = true;
                                 }
                             }
                         }
@@ -2221,10 +2218,7 @@ namespace nsCDEngine.Engines.StorageService
                                 tBase.FireEvent(eEngineEvents.ThingUpdated, tThing, true);
                         }
                     }
-                    //else //NEWV3B2: Keep Forms on Browsers in Sync
-                    {
-                        tRes = TheCommonUtils.SerializeObjectToJSONString(pForm.IsAlwaysEmpty ? new T() : tToUpdate);
-                    }
+                    tRes = TheCommonUtils.SerializeObjectToJSONString(pForm.IsAlwaysEmpty ? new T() : tToUpdate);
                     if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
                         TheLoggerFactory.LogEvent(eLoggerCategory.NMIAudit, "NMI-Update", eMsgLevel.l4_Message, pClientInfo.UserID, $"Mods: {AuditLog}", tNewItem.cdeMID.ToString());
                 }
@@ -2243,7 +2237,7 @@ namespace nsCDEngine.Engines.StorageService
         internal string DeleteByID(TheFormInfo pForm, string pID, TheClientInfo pClientInfo, Action<StoreResponse> pResponse)
         {
             if (pClientInfo == null || !TheUserManager.HasUserAccess(pClientInfo.UserID, pForm.cdeA))
-                return TheBaseAssets.MyLoc.GetLocalizedStringByKey(pClientInfo.LCID, eEngineName.NMIService, "ERR: ###You don't have Access###");
+                return TheBaseAssets.MyLoc.GetLocalizedStringByKey(TheBaseAssets.MyServiceHostInfo.DefaultLCID, eEngineName.NMIService, "ERR: ###You don't have Access###");
             Guid tGuid = TheCommonUtils.CGuid(pID);
             if (tGuid == Guid.Empty)
                 return TheBaseAssets.MyLoc.GetLocalizedStringByKey(pClientInfo.LCID, eEngineName.NMIService, "ERR: ###Invalid ID###");
@@ -2257,11 +2251,10 @@ namespace nsCDEngine.Engines.StorageService
 
         internal string InsertFromJSON(TheFormInfo pForm, string pJSON, TheClientInfo pClientInfo, Action<StoreResponse> pResponse)
         {
-            if (pClientInfo==null || !TheUserManager.HasUserAccess(pClientInfo.UserID, pForm.cdeA))
+            if (pClientInfo == null || !TheUserManager.HasUserAccess(pClientInfo.UserID, pForm.cdeA))
                 return "ERR:No Access";
-            T tNewItem;
-            tNewItem = TheCommonUtils.DeserializeJSONStringToObject<T>(pJSON);
-            FireEvent(eStoreEvents.InsertRequested,new StoreEventArgs(tNewItem, pClientInfo), false);
+            T tNewItem = TheCommonUtils.DeserializeJSONStringToObject<T>(pJSON);
+            FireEvent(eStoreEvents.InsertRequested, new StoreEventArgs(tNewItem, pClientInfo), false);
             if (tNewItem.cdeMID == Guid.Empty)
                 return false.ToString();
             string tResult = false.ToString();
@@ -2274,32 +2267,24 @@ namespace nsCDEngine.Engines.StorageService
                     foreach (string t1 in tSets)
                     {
                         string[] t = t1.Split('=');
-                        if (t.Length > 1)
-                        {
-                            if (tThing.GetProperty(t[0])==null)
-                                TheThing.SetSafePropertyString(tThing, t[0], t[1]);
-                        }
+                        if (t.Length > 1 && tThing.GetProperty(t[0]) == null)
+                            TheThing.SetSafePropertyString(tThing, t[0], t[1]);
                     }
                 }
                 if (TheThingRegistry.RegisterThing(tThing) != null)
                 {
-                    tResult=true.ToString();
+                    tResult = true.ToString();
                 }
             }
             else
             {
-                //TODO: Owner must be set for new Rules somehow
-                if (tNewItem is TheMetaDataBase tMeta)
+                if (tNewItem is TheMetaDataBase tMeta && (tMeta.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID))
                 {
-                    if (tMeta.cdeO != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
-                        return "ERR:Not owned by this node"; //Dont fire event here!
+                    return "ERR:Not owned by this node"; //Dont fire event here!
                 }
 
-                if (tNewItem != null)
-                {
-                    AddAnItem(tNewItem, pResponse);
-                    tResult=true.ToString();
-                }
+                AddAnItem(tNewItem, pResponse);
+                tResult = true.ToString();
             }
             if (!TheCommonUtils.CBool(tResult))
                 tNewItem = null;
@@ -2309,7 +2294,7 @@ namespace nsCDEngine.Engines.StorageService
 
         internal string ReturnAsString(string pName, string pItem)
         {
-            System.Text.StringBuilder tStr = new System.Text.StringBuilder();
+            StringBuilder tStr = new ();
             Type MyType = typeof(T);
             PropertyInfo[] tProps = MyType.GetProperties();
             bool IsFirst = true;
@@ -2339,6 +2324,155 @@ namespace nsCDEngine.Engines.StorageService
             }
             return tStr.ToString();
         }
+
+        internal string SerializeToCSV(TheJSONLoaderDefinition pDataSource)
+        {
+            if (pDataSource == null) return "";
+            if (pDataSource.IsEmptyRecord)
+                return "";
+
+            if ((!IsRAMStore && !IsCached) || AppendOnly) // Set to "if(!IsRAMStore)" to always load from SQL Storage
+            {
+                string tSQLOrder = pDataSource.SQLOrder;
+                if (TheCommonUtils.CBool(tSQLOrder))
+                    tSQLOrder = "cdeCTIM desc";
+                string tFilter = pDataSource.SQLFilter;
+                if (tFilter?.Contains("WildContent") == true)
+                    tFilter = "";
+                GetRecords(tFilter, pDataSource.TopRecords, pDataSource.PageNumber, tSQLOrder, sinkCSVResponse, false, false, pDataSource);
+                return "WAITING";
+            }
+            else
+            {
+                bool IsThingBased = typeof(T) == typeof(TheThing);
+                var ShowDescending = TheCommonUtils.CBool(pDataSource.SQLOrder);
+                List<T> retList = null;
+                if (MyMirrorCache.TracksInsertionOrder)
+                {
+                    retList = MyMirrorCache.GetItemsByInsertionOrderInternal(0).Where(item => item != null).ToList();
+                    retList.Reverse();
+                }
+                else
+                {
+                    retList = ShowDescending ? MyMirrorCache.MyRecords.Values.OrderByDescending(s => s.cdeCTIM).ToList() : MyMirrorCache.MyRecords.Values.ToList();
+                }
+                if (!string.IsNullOrEmpty(pDataSource.SQLFilter))
+                {
+                    retList = FilterResults(pDataSource, retList);
+                }
+                if (IsThingBased)
+                    retList = retList.Where(s => !TheThing.GetSafePropertyBool(s as TheThing, "IsHidden")).ToList();    //Fix for Bug#1189
+                if (pDataSource.TopRecords > 0 && retList.Count > pDataSource.TopRecords)
+                {
+                    if (pDataSource.PageNumber > 0 && pDataSource.TopRecords * pDataSource.PageNumber > retList.Count)
+                        pDataSource.PageNumber--;
+                    if (pDataSource.PageNumber < 0)
+                    {
+                        pDataSource.PageNumber = TheCommonUtils.CInt(retList.Count / pDataSource.TopRecords);
+                    }
+                    retList = pDataSource.PageNumber > 0 ? retList.Skip(pDataSource.TopRecords * pDataSource.PageNumber).Take(pDataSource.TopRecords).ToList() : retList.Take(pDataSource.TopRecords).ToList();
+                }
+                return ConverToCSV(pDataSource, retList);
+            }
+        }
+
+        private string ConverToCSV(TheJSONLoaderDefinition pDataSource, List<T> retList)
+        {
+            bool IsThingBased = typeof(T) == typeof(TheThing);
+            StringBuilder tRetStr = new();
+            foreach (var tFldInfo in pDataSource.FieldInfo)
+            {
+                if (NoExportFlds.Contains(tFldInfo.Type) || tFldInfo.DataItem == null)
+                    continue;
+                if (tRetStr.Length > 0)
+                    tRetStr.Append($",");
+                tRetStr.Append($"\"{TheBaseAssets.MyLoc.GetLocalizedStringByKey(pDataSource.ClientInfo.LCID, eEngineName.NMIService, tFldInfo.Header).Replace('\"','\'')}\"");
+            }
+            tRetStr.Append($"\n");
+            if (pDataSource.FieldInfo != null && IsThingBased)
+            {
+                foreach (var tThing in retList)
+                {
+                    if (tThing == null)
+                        continue;
+                    int cnt = 0;
+                    foreach (var tFldInfo in pDataSource.FieldInfo)
+                    {
+                        if (NoExportFlds.Contains(tFldInfo.Type) || tFldInfo.DataItem == null)
+                            continue;
+                        string[] tUpdateName = tFldInfo.DataItem.Split('.');
+                        string OnUpdateName = tFldInfo.DataItem;
+                        if (tUpdateName.Length > 2)
+                        {
+                            OnUpdateName = tUpdateName[1];
+                            if (tUpdateName.Length > 3)
+                            {
+                                for (int i = 2; i < tUpdateName.Length - 1; i++)
+                                    OnUpdateName += $".{tUpdateName[i]}";
+                            }
+                        }
+                        cdeP tProp = (tThing as ICDEThing)?.GetBaseThing()?.GetProperty(OnUpdateName, true);
+                        if (cnt > 0)
+                            tRetStr.Append($",");
+                        tRetStr.Append($"\"{TheCommonUtils.CStr(tProp).Replace('\"', '\'')}\"");
+                        cnt++;
+                    }
+                    tRetStr.Append($"\n");
+                }
+                return tRetStr.ToString();
+            }
+            foreach (var tThing in retList)
+            {
+                if (tThing == null)
+                    continue;
+                int cnt = 0;
+                foreach (var tFldInfo in pDataSource.FieldInfo)
+                {
+                    if (NoExportFlds.Contains(tFldInfo.Type) || tFldInfo.DataItem == null)
+                        continue;
+                    var pInfo = typeof(T).GetProperty(tFldInfo.DataItem);
+                    if (pInfo == null)
+                        continue;
+                    var tVal = pInfo.GetValue(tThing);
+                    if (cnt > 0)
+                        tRetStr.Append($",");
+                    tRetStr.Append($"\"{tVal}\"");
+                    cnt++;
+                }
+                tRetStr.Append($"\n");
+            }
+            return tRetStr.ToString();
+        }
+
+        private void sinkCSVResponse(StoreResponse pResults)
+        {
+            if (!pResults.HasErrors && pResults.Cookie is TheJSONLoaderDefinition tJSON)
+            {
+                TheFormInfo tTable = TheNMIEngine.GetFormById(tJSON.TableName);
+                List<T> retList = pResults.MyRecords;
+                if (tJSON.SQLFilter.Contains("WildContent"))
+                {
+                    retList = FilterResults(tJSON, retList);
+                }
+                try
+                {
+                    TSM tTsm = new(eEngineName.ContentService, $"CDE_FILE:{tTable.FormTitle}.csv:text/csv")
+                    {
+                        PLS = ConverToCSV(tJSON, retList)
+                    };
+                    if (tJSON.ORG != Guid.Empty)
+                        TheCommCore.PublishToNode(tJSON.ORG, tJSON.SID, tTsm);
+                    else
+                        TheBaseAssets.MySYSLOG.WriteToLog(474, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", "Originator request not found", eMsgLevel.l2_Warning));
+                }
+                catch (Exception e)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(480, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", "Error during CSV Conversion", eMsgLevel.l2_Warning, e.Message));
+                }
+            }
+        }
+
+        private readonly List<eFieldType> NoExportFlds = new() { eFieldType.AboutButton, eFieldType.BarChart, eFieldType.CanvasDraw, eFieldType.CollapsibleGroup, eFieldType.Dashboard, eFieldType.FacePlate, eFieldType.FormButton, eFieldType.FormView, eFieldType.Picture, eFieldType.PinButton, eFieldType.Screen, eFieldType.Shape, eFieldType.TileButton, eFieldType.TileGroup };
 
         internal string SerializeToJSON(TheJSONLoaderDefinition pDataSource)
         {
@@ -2406,7 +2540,7 @@ namespace nsCDEngine.Engines.StorageService
                     if (HasLiveFields)
                     {
                         // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
-                        foreach (ICDEThing tThing in retList)
+                        foreach (var tThing in retList)
                         {
                             foreach (TheFieldInfo tFldInfo in pDataSource.FieldInfo)
                             {
@@ -2424,15 +2558,13 @@ namespace nsCDEngine.Engines.StorageService
                                                 OnUpdateName += "." + tUpdateName[i];
                                         }
                                     }
-                                    cdeP tProp = tThing?.GetBaseThing()?.GetProperty(OnUpdateName, true);
+                                    cdeP tProp = (tThing as ICDEThing)?.GetBaseThing()?.GetProperty(OnUpdateName, true);
                                     if (tProp != null)
                                     {
                                         TheFormsGenerator.RegisterNMISubscription(pDataSource?.ClientInfo, tFldInfo.DataItem, tFldInfo);
                                         //tProp.SetPublication(true,pDataSource.ORG);     //Moved to RegisterNMI Subscription
                                         tProp.RegisterEvent(eThingEvents.PropertyChanged, tFldInfo.sinkUpdate);
                                     }
-                                    //else  //If Thing, BaseThing or Property does not exist...dont register any events on it!
-                                    //    tProp = tThing.GetBaseThing().SetProperty(OnUpdateName, null, 0x11, tFldInfo.sinkUpdate);
                                 }
                             }
                         }
@@ -2444,50 +2576,47 @@ namespace nsCDEngine.Engines.StorageService
 
         private void sinkJSONResponse(StoreResponse pResults)
         {
-            if (!pResults.HasErrors)
+            if (!pResults.HasErrors && pResults.Cookie is TheJSONLoaderDefinition tJSON)
             {
-                if (pResults.Cookie is TheJSONLoaderDefinition tJSON)
+                string tPaging = "";
+                TheClientInfo pClientInfo = tJSON.ClientInfo;
+                TheFormInfo tTable = TheNMIEngine.GetFormById(tJSON.TableName);
+                var tso = TheFormsGenerator.GetScreenOptions(tTable.cdeMID, pClientInfo, tJSON.ForceReload ? tTable : null);
+                List<T> retList = pResults.MyRecords;
+                if (tJSON.SQLFilter.Contains("WildContent"))
                 {
-                    string tPaging = "";
-                    TheClientInfo pClientInfo = tJSON.ClientInfo;
-                    TheFormInfo tTable = TheNMIEngine.GetFormById(tJSON.TableName);
-                    var tso = TheFormsGenerator.GetScreenOptions(tTable.cdeMID, pClientInfo, tJSON.ForceReload ? tTable : null);
-                    List<T> retList = pResults.MyRecords;
-                    if (tJSON.SQLFilter.Contains("WildContent"))
-                    {
-                        retList = FilterResults(tJSON, retList);
-                    }
-                    TSM tTsm = new TSM(eEngineName.NMIService, $"NMI_SET_DATA:{tJSON.TableName.ToString().ToLower()}")
-                    {
-                        PLS = TheCommonUtils.SerializeObjectToJSONString(retList)
-                    };
-
-                    if (tJSON.TopRecords > 0)
-                    {
-                        tPaging = string.Format(":{0}:{1}", tJSON.TopRecords, tJSON.PageNumber);
-                    }
-                    if (tJSON.ForceReload)
-                    {
-                        TheFormInfo tToSend = tTable.Clone(pClientInfo.WebPlatform);
-                        TheNMIEngine.CheckAddButtonPermission(pClientInfo, tToSend);
-                        if (tso != null && tso.TileWidth > 0)
-                            tToSend.TileWidth = tso.TileWidth;
-                        tToSend.FormFields = tJSON.FieldInfo;
-                        tTsm.PLS += ":-MODELUPDATE-:" + TheCommonUtils.GenerateFinalStr(TheCommonUtils.SerializeObjectToJSONString(tToSend.GetLocalizedForm(pClientInfo.LCID)));
-                    }
-                    if (tTable.IsEventRegistered(eUXEvents.OnLoad))
-                    {
-                        var tEV = TSM.Clone(tTsm, false);
-                        tEV.ORG = tJSON.ORG.ToString();
-                        tTable.FireEvent(eUXEvents.OnLoad, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message = tEV }, false);
-                    }
-                    tTsm.TXT += string.Format(":{0}:{1}{2}{3}", tJSON.ModelID, tJSON.TargetElement, tPaging, tJSON.ForceReload ? ":true" : "");
-
-                    if (tJSON.ORG != Guid.Empty)
-                        TheCommCore.PublishToNode(tJSON.ORG, tJSON.SID, tTsm);
-                    else
-                        TheBaseAssets.MySYSLOG.WriteToLog(474, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", "Originator request not found", eMsgLevel.l2_Warning));
+                    retList = FilterResults(tJSON, retList);
                 }
+                TSM tTsm = new(eEngineName.NMIService, $"NMI_SET_DATA:{tJSON.TableName.ToString().ToLower()}")
+                {
+                    PLS = TheCommonUtils.SerializeObjectToJSONString(retList)
+                };
+
+                if (tJSON.TopRecords > 0)
+                {
+                    tPaging = string.Format(":{0}:{1}", tJSON.TopRecords, tJSON.PageNumber);
+                }
+                if (tJSON.ForceReload)
+                {
+                    TheFormInfo tToSend = tTable.Clone(pClientInfo.WebPlatform);
+                    TheNMIEngine.CheckAddButtonPermission(pClientInfo, tToSend);
+                    if (tso != null && tso.TileWidth > 0)
+                        tToSend.TileWidth = tso.TileWidth;
+                    tToSend.FormFields = tJSON.FieldInfo;
+                    tTsm.PLS += ":-MODELUPDATE-:" + TheCommonUtils.GenerateFinalStr(TheCommonUtils.SerializeObjectToJSONString(tToSend.GetLocalizedForm(pClientInfo.LCID)));
+                }
+                if (tTable.IsEventRegistered(eUXEvents.OnLoad))
+                {
+                    var tEV = TSM.Clone(tTsm, false);
+                    tEV.ORG = tJSON.ORG.ToString();
+                    tTable.FireEvent(eUXEvents.OnLoad, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message = tEV }, false);
+                }
+                tTsm.TXT += string.Format(":{0}:{1}{2}{3}", tJSON.ModelID, tJSON.TargetElement, tPaging, tJSON.ForceReload ? ":true" : "");
+
+                if (tJSON.ORG != Guid.Empty)
+                    TheCommCore.PublishToNode(tJSON.ORG, tJSON.SID, tTsm);
+                else
+                    TheBaseAssets.MySYSLOG.WriteToLog(474, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", "Originator request not found", eMsgLevel.l2_Warning));
             }
         }
 
@@ -2559,14 +2688,14 @@ namespace nsCDEngine.Engines.StorageService
             return retList;
         }
 
-        #endregion
+#endregion
 
-        #region Chart Code
+#region Chart Code
         private void sinkChartGroups(StoreResponse tRes)
         {
             if (tRes != null && !tRes.HasErrors)
             {
-                if (!(tRes.Cookie is TheChartCookie tChartCookie)) return;
+                if (tRes.Cookie is not TheChartCookie tChartCookie) return;
 
                 tChartCookie.Groups = TheCommonUtils.CStringToList(tRes.ColumnFilter, ';');
                 if (tChartCookie.ValueDefinitions == null)
@@ -2576,7 +2705,7 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     foreach (string t in tVals)
                     {
-                        TheChartValueDefinition tV = new TheChartValueDefinition(Guid.NewGuid(), t) {GroupFilter = tN};
+                        TheChartValueDefinition tV = new (Guid.NewGuid(), t) {GroupFilter = tN};
                         tChartCookie.ValueDefinitions.Add(tV);
                     }
                 }
@@ -2597,7 +2726,7 @@ namespace nsCDEngine.Engines.StorageService
             TheChartDefinition tChartDef = TheNMIEngine.GetChartByID(pChartID);
             if (tChartDef != null)
             {
-                if (!(pCookie is TheChartCookie tCookie))
+                if (pCookie is not TheChartCookie tCookie)
                     tCookie = new TheChartCookie() { ChartDefinition = tChartDef, TargetNode = pTargetNode, IsInitialData = true, VirtualBlock = -1 };
 
                 if (tCookie.Groups == null)
@@ -2663,7 +2792,7 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         tCookie.Counter++;
                         if ((tCookie.Counter % tChartDef.BlockSize) == 0) tCookie.HighestBlock++;
-                        GetRecords(SQLFilter, 1, 0, "cdeCTIM desc",tColumns, sinkUpdatesOne, false, true, tCookie);  //TODO: This has to be determined by whats changed in the Table
+                        GetRecords(SQLFilter, 1, 0, "cdeCTIM desc",tColumns, sinkUpdatesOne, false, true, tCookie);  
                     }
                 }
                 tCookie.VirtualBlock = -1;
@@ -2675,7 +2804,7 @@ namespace nsCDEngine.Engines.StorageService
             if (tRes == null || tRes.HasErrors || tRes.MyRecords == null || tRes.MyRecords.Count == 0)
                 return;
 
-            if (!(tRes.Cookie is TheChartCookie tCookie)) return;
+            if (tRes.Cookie is not TheChartCookie tCookie) return;
 
             if (tCookie.ChartFactory == null)
             {
@@ -2702,17 +2831,13 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     foreach (TheChartValueDefinition tVal in tCookie.ValueDefinitions)
                     {
-                        tCookie.ChartFactory.AddPointToSeries(tVal.ValueName,null, TheCommonUtils.CDbl(TheCommonUtils.GetPropValue(tRec, tVal.ValueName)));
+                        tCookie.ChartFactory.AddPointToSeries(tVal.ValueName,null, TheCommonUtils.CDbl(TheCommonUtils.GetPropValue(tRec, tVal?.ValueName)));
                     }
                 }
                 else
                 {
                     if (!TheCommonUtils.IsNullOrWhiteSpace(tCookie.ChartDefinition.ValueName))
                         tCookie.ChartFactory.AddPointToSeries(tCookie.ChartDefinition.ValueName,null, TheCommonUtils.CDbl(TheCommonUtils.GetPropValue(tRec, tCookie.ChartDefinition.ValueName)));
-                    else
-                    {
-
-                    }
                 }
             }
 
@@ -2731,7 +2856,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if (tCookie!=null && tCookie.TargetNode != Guid.Empty)
                     TheCommCore.PublishToNode(tCookie.TargetNode, new TSM(eEngineName.NMIService, "NMI_TOAST", tRes.ErrorMsg));
-                if (!(tRes.MyRecords?.Count>0))
+                if (tCookie==null || !(tRes.MyRecords?.Count>0))
                     return;
             }
 
@@ -2760,13 +2885,9 @@ namespace nsCDEngine.Engines.StorageService
                 sinkUpdatesOne(tRes);
                 return;
             }
-            //int counter=0;
             DateTimeOffset tLastStamp = DateTimeOffset.MinValue;
             TheChartData tChart = null;
-            //if (tCookie.ChartDefinition.InAquireMode)
-              //  tEnum = tRes.MyRecords.OrderByDescending(s => s.cdeCTIM);
-            //else
-                IEnumerable tEnum = tRes.MyRecords.OrderBy(s => s.cdeCTIM);
+            IEnumerable tEnum = tRes.MyRecords.OrderBy(s => s.cdeCTIM);
             foreach (T tt in tEnum)
             {
                 if (tCookie.ChartDefinition.IntervalInMS == 0 || tt.cdeCTIM.Subtract(tLastStamp).TotalMilliseconds > tCookie.ChartDefinition.IntervalInMS)
@@ -2796,7 +2917,7 @@ namespace nsCDEngine.Engines.StorageService
                             object tObjX = TheCommonUtils.GetPropValue(tt, tValDef.ValueName);
                             if (tObjX != null)
                             {
-                                tChart.MyValue[cnt] += (TheCommonUtils.CDbl(tObjX) * tValDef.GainFactor); // (short)(tt.Temperature * 10);
+                                tChart.MyValue[cnt] += (TheCommonUtils.CDbl(tObjX) * tValDef.GainFactor); 
                                 tChart.ValCnt[cnt]++;
                                 tChart.IsValidValue[cnt] = true;
                             }
@@ -2804,7 +2925,6 @@ namespace nsCDEngine.Engines.StorageService
                         cnt++;
                     }
                 }
-                //counter++;
             }
             if (tChart != null)
                 UpdateChart(tCookie, tChart, (tChart.TimeStamp.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
@@ -2826,7 +2946,7 @@ namespace nsCDEngine.Engines.StorageService
                     tCookie.ChartFactory.AddPointToSeries(tChart.Name[i], pX, tChart.MyValue[i]);
             }
         }
-        #endregion
+#endregion
     }
 
     /// <summary>
@@ -2881,9 +3001,9 @@ namespace nsCDEngine.Engines.StorageService
             Expression exp = null;
 
             if (filters.Count == 1)
-                exp = GetExpression<T>(param, filters[0]);
+                exp = GetExpression(param, filters[0]);
             else if (filters.Count == 2)
-                exp = GetExpression<T>(param, filters[0], filters[1]);
+                exp = GetExpression(param, filters[0], filters[1]);
             else
             {
                 while (filters.Count > 0)
@@ -2891,14 +3011,14 @@ namespace nsCDEngine.Engines.StorageService
                     var f1 = filters[0];
                     var f2 = filters[1];
 
-                    exp = exp == null ? GetExpression<T>(param, filters[0], filters[1]) : Expression.AndAlso(exp, GetExpression<T>(param, filters[0], filters[1]));
+                    exp = exp == null ? GetExpression(param, filters[0], filters[1]) : Expression.AndAlso(exp, GetExpression(param, filters[0], filters[1]));
 
                     filters.Remove(f1);
                     filters.Remove(f2);
 
                     if (filters.Count == 1)
                     {
-                        exp = Expression.AndAlso(exp, GetExpression<T>(param, filters[0]));
+                        exp = Expression.AndAlso(exp, GetExpression(param, filters[0]));
                         filters.RemoveAt(0);
                     }
                 }
@@ -2909,46 +3029,30 @@ namespace nsCDEngine.Engines.StorageService
         }
 
         // ReSharper disable once UnusedTypeParameter
-        private static Expression GetExpression<T>(ParameterExpression param, SQLFilter filter)
+        private static Expression GetExpression(ParameterExpression param, SQLFilter filter)
         {
             MemberExpression member = Expression.Property(param, filter.PropertyName);
             ConstantExpression constant = Expression.Constant(filter.Value);
 
-            switch (filter.Operation)
+            return filter.Operation switch
             {
-                case FilterOp.Equals:
-                    return Expression.Equal(member, constant);
-
-                case FilterOp.GreaterThan:
-                    return Expression.GreaterThan(member, constant);
-
-                case FilterOp.GreaterThanOrEqual:
-                    return Expression.GreaterThanOrEqual(member, constant);
-
-                case FilterOp.LessThan:
-                    return Expression.LessThan(member, constant);
-
-                case FilterOp.LessThanOrEqual:
-                    return Expression.LessThanOrEqual(member, constant);
-
-                case FilterOp.Contains:
-                    return Expression.Call(member, containsMethod, constant);
-
-                case FilterOp.StartsWith:
-                    return Expression.Call(member, startsWithMethod, constant);
-
-                case FilterOp.EndsWith:
-                    return Expression.Call(member, endsWithMethod, constant);
-            }
-
-            return null;
+                FilterOp.Equals => Expression.Equal(member, constant),
+                FilterOp.GreaterThan => Expression.GreaterThan(member, constant),
+                FilterOp.GreaterThanOrEqual => Expression.GreaterThanOrEqual(member, constant),
+                FilterOp.LessThan => Expression.LessThan(member, constant),
+                FilterOp.LessThanOrEqual => Expression.LessThanOrEqual(member, constant),
+                FilterOp.Contains => Expression.Call(member, containsMethod, constant),
+                FilterOp.StartsWith => Expression.Call(member, startsWithMethod, constant),
+                FilterOp.EndsWith => Expression.Call(member, endsWithMethod, constant),
+                _ => null,
+            };
         }
 
-        private static BinaryExpression GetExpression<T>
+        private static BinaryExpression GetExpression
         (ParameterExpression param, SQLFilter filter1, SQLFilter filter2)
         {
-            Expression bin1 = GetExpression<T>(param, filter1);
-            Expression bin2 = GetExpression<T>(param, filter2);
+            Expression bin1 = GetExpression(param, filter1);
+            Expression bin2 = GetExpression(param, filter2);
 
             return Expression.AndAlso(bin1, bin2);
         }

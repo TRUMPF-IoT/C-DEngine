@@ -130,7 +130,7 @@ namespace nsCDEngine.Engines
         {
             if (pRequest == null || TheCommonUtils.IsNullOrWhiteSpace(pRequest.cdeRealPage) || pRequest.cdeRealPage.Length < 2) return false;
             string tResourceName = pRequest.cdeRealPage.Substring(1);
-            if (tResourceName.IndexOf('?') > 0)
+            if (tResourceName.IndexOf('?') > -1)
                 tResourceName = tResourceName.Substring(0, tResourceName.IndexOf('?'));
             Assembly ass = Assembly.GetAssembly(EngineState.EngineType);
             string tFinalGetStr = tResourceName;
@@ -182,7 +182,7 @@ namespace nsCDEngine.Engines
             string[] pParts = pName.Split('/');
             if (pParts.Length<3)
                 pName = pParts[pParts.Length - 1];
-            if (pName.IndexOf('?') > 0)
+            if (pName.IndexOf('?') > -1)
                 pName = pName.Substring(0, pName.IndexOf('?'));
             return TheCommonUtils.GetSystemResource(Assembly.GetAssembly(EngineState.EngineType), pName);
         }
@@ -398,7 +398,7 @@ namespace nsCDEngine.Engines
         /// </summary>
         /// <param name="createDefaultLicense"></param>
         /// <param name="licenseAuthorities">Indicates which additional signatures are required on a license file.</param>
-        public void SetIsLicensed(bool createDefaultLicense, string[] licenseAuthorities)
+        public void SetIsLicensed(bool createDefaultLicense = true, string[] licenseAuthorities = null)
         {
             if (!EngineState.IsInitialized)
             {
@@ -891,49 +891,6 @@ namespace nsCDEngine.Engines
             }
             return TheBaseAssets.MyActivationManager.ReleaseLicense(GetEngineID(), tThing.DeviceType);
         }
-#endregion
-
-
-#region Channel Related Functions
-
-        /// <summary>
-        /// RETIRED IN V4: No more channels
-        /// </summary>
-        /// <param name="pChannelInfo">The new Channel info to be added to the redundancy list</param>
-        /// <param name="PrioToNewUrl">If this is set to true, the new Channel will be used as the new active channel</param>
-        /// <returns>true if a new URL was added</returns>
-        [Obsolete("Retired in V4 - will be removed in V5")]
-        public bool AddUrl(TheChannelInfo pChannelInfo, bool PrioToNewUrl)
-        {
-            return false;
-        }
-
-        /// <summary>
-        /// RETIRED IN V4: No more channels
-        /// </summary>
-        [Obsolete("Retired in V4 - will be removed in V5")]
-        public void ResetChannel()
-        {
-        }
-
-        /// <summary>
-        /// RETIRED IN V4: QSender can have different scopes
-        /// </summary>
-        [Obsolete("Retired in V4 - will be removed in V5")]
-        public void UpdateEngineScope()
-        {
-        }
-
-        /// <summary>
-        /// RETIRED IN V4: No more channels
-        /// </summary>
-        /// <returns></returns>
-        [Obsolete("Retired in V4 - will be removed in V5")]
-        public bool ResurectChannels()
-        {
-            return false;
-        }
-
 #endregion
 
 
@@ -1438,6 +1395,30 @@ namespace nsCDEngine.Engines
                 });
             });
             return tcs.Task;
+        }
+
+        /// <summary>
+        /// Fires when an Engine is initialized
+        /// </summary>
+        /// <param name="pEngineName">Name of the Engine to wait for</param>
+        /// <param name="pCallback"></param>
+        public static bool WaitForEngineReady(string pEngineName, Action<ICDEThing, object> pCallback)
+        {
+            IBaseEngine tbase = TheThingRegistry.GetBaseEngine(pEngineName);
+            if (tbase == null)
+                return false;
+            void innerCallback(ICDEThing sender, object obj)
+            {
+                pCallback(sender, obj);
+                tbase.UnregisterEvent(eThingEvents.Initialized, innerCallback);
+            }
+            tbase.UnregisterEvent(eThingEvents.Initialized, innerCallback);
+            tbase.RegisterEvent(eThingEvents.Initialized, innerCallback);
+            if (tbase == null || !tbase.GetEngineState().IsEngineReady)
+            {
+                innerCallback(tbase.GetBaseThing(),null);
+            }
+            return true;
         }
         #endregion
     }

@@ -17,6 +17,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+#pragma warning disable 1591
 
 namespace nsCDEngine.PluginManagement
 {
@@ -274,7 +275,7 @@ namespace nsCDEngine.PluginManagement
             }
             else
             {
-                if (tInfo.CurrentVersion > tPlace.CurrentVersion)
+                if (tInfo?.CurrentVersion > tPlace.CurrentVersion)
                 {
                     tPlace.CurrentVersion = tInfo.CurrentVersion;
                 }

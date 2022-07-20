@@ -922,9 +922,12 @@ namespace nsCDEngine.BaseClasses
             double dVersion = -1;
             try
             {
-                var versionString = GetAssemblyAttribute<System.Reflection.AssemblyFileVersionAttribute>(plugin)?.Version;
-                var verParts = versionString.Split(new char[] { '.' }, 2);
-                dVersion = TheCommonUtils.CDbl($"{verParts[0]}.{verParts[1].Replace(".", "")}");
+                var versionString = GetAssemblyAttribute<AssemblyFileVersionAttribute>(plugin)?.Version;
+                var verParts = versionString?.Split(new char[] { '.' }, 2);
+                if (verParts?.Length > 1)
+                    dVersion = CDbl($"{verParts[0]}.{verParts[1].Replace(".", "")}");
+                else
+                    dVersion = 1.0;
             }
             catch (Exception) { }
             return dVersion;
@@ -1785,7 +1788,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="pIn">Input array of UTF8 characters, stored as byte value.</param>
         /// <param name="StripFileCodes">If true, the function checks for the Unicode File Tag EF BB BF and strips it from the byte stream</param>
         /// <returns>The converted string.</returns>
-        public static string CArray2UTF8String(byte[] pIn, bool StripFileCodes = false)
+        public static string CArray2UTF8String(byte[] pIn, bool StripFileCodes)
         {
             if (pIn == null) return "";
             return CArray2UTF8String(pIn, 0, pIn.Length, StripFileCodes);
@@ -1799,7 +1802,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="len">Count of array items to include in conversion.</param>
         /// <param name="StripFileCodes">If true, the function checks for the Unicode File Tag EF BB BF and strips it from the byte stream</param>
         /// <returns>The converted string.</returns>
-        public static string CArray2UTF8String(byte[] pIn, int start, int len, bool StripFileCodes = false)
+        public static string CArray2UTF8String(byte[] pIn, int start, int len, bool StripFileCodes)
         {
             UTF8Encoding enc = new UTF8Encoding();
             if (StripFileCodes && start==0 && pIn.Length>3 && pIn[0]==0xEF && pIn[1]==0xBB && pIn[2]==0xBF)

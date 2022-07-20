@@ -190,7 +190,8 @@ namespace nsCDEngine.Security
             byte[] canonicalName = new byte[nsBytes.Length + nameAsBytes.Length];
             nsBytes.CopyTo(canonicalName, 0);
             nameAsBytes.CopyTo(canonicalName, nsBytes.Length);
-            var hashAlg = version == 5 ? (HashAlgorithm)SHA1.Create() : MD5.Create();// HMACSHA1(Encoding.UTF8.GetBytes(sha1key));
+            //var hashAlg = version == 5 ? (HashAlgorithm)SHA1.Create() : MD5.Create();// HMACSHA1(Encoding.UTF8.GetBytes(sha1key));
+            var hashAlg = new SHA512Managed(); //TODO-MarkusH: can you verify that we can switch to this?
             var machineNumberHash = hashAlg.ComputeHash(canonicalName);
 
             byte[] nameGuidBytes = machineNumberHash.Take(16).ToArray();

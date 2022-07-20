@@ -28,7 +28,7 @@ namespace nsCDEngine.Engines.NMIService
             MyBaseEngine.SetEngineName(eEngineName.NMIService);        //Can be any arbitrary name - recommended is the class name
             MyBaseEngine.SetFriendlyName("The NMI Model Service");
             MyBaseEngine.AddCapability(eThingCaps.Internal);
-            MyBaseEngine.SetPluginInfo("This service manages the NMI Model of the C-DEngine", 0, null, "toplogo-150.png", "C-Labs", "http://www.c-labs.com", null); //TODO: Describe your plugin - this will later be used in the Plugin-Store
+            MyBaseEngine.SetPluginInfo("This service manages the NMI Model of the C-DEngine", 0, null, "toplogo-150.png", "C-Labs", "https://www.c-labs.com", null); 
 
             MyBaseEngine.GetEngineState().IsAllowedUnscopedProcessing = TheBaseAssets.MyServiceHostInfo.IsCloudService;
             MyBaseEngine.GetEngineState().IsAcceptingFilePush = true;
@@ -59,7 +59,7 @@ namespace nsCDEngine.Engines.NMIService
 
             if (!TheBaseAssets.MyServiceHostInfo.IsIsolated)
             {
-                TheFormInfo tInf = new TheFormInfo(new Guid("{6EE8AC31-7395-4A80-B01C-D49BE174CFC0}"), eEngineName.NMIService, "###Service Overview###", "HostEngineStates") { IsNotAutoLoading = true, PropertyBag=new nmiCtrlTableView { ShowFilterField=true } };
+                TheFormInfo tInf = new (new Guid("{6EE8AC31-7395-4A80-B01C-D49BE174CFC0}"), eEngineName.NMIService, "###Service Overview###", "HostEngineStates") { IsNotAutoLoading = true, PropertyBag=new nmiCtrlTableView { ShowFilterField=true, ShowExportButton=true } };
                 AddFormToThingUX(tDash, MyBaseThing, tInf, "CMyTable", "###Service Overview###", 1, 0x0F, 128, "###NMI Administration###", null, new ThePropertyBag { "TileThumbnail=FA5:f05a" });
 
                 var tDisButName = "DISPLUG";
@@ -186,7 +186,7 @@ namespace nsCDEngine.Engines.NMIService
             tEList=tEList.OrderBy(s => s.GetBaseEngine().GetLowestCapability()).ToList();
             foreach (var tThing in tEList)
             {
-                if (!(tThing.GetBaseThing()?.IsUXInit()==true))
+                if (tThing.GetBaseThing()?.IsUXInit() == false)
                     tThing.GetBaseThing().CreateUX();
             }
 
@@ -233,57 +233,55 @@ namespace nsCDEngine.Engines.NMIService
         void sinkModelReady()
         {
             if (mIsInitCalled) return;
-            {
-                mIsInitCalled = true;
-                MyBaseThing.RegisterEvent(eEngineEvents.IncomingMessage, HandleMessage);
+            mIsInitCalled = true;
+            MyBaseThing.RegisterEvent(eEngineEvents.IncomingMessage, HandleMessage);
 
-                // CODE REVIEW: Needs to be marked initialized or CreateUX fails due to check of TheNMIEngine.Initialized()
-                mIsInitialized = true;
-                FireEvent(eThingEvents.Initialized, this, true, true);
+            // CODE REVIEW: Needs to be marked initialized or CreateUX fails due to check of TheNMIEngine.Initialized()
+            mIsInitialized = true;
+            FireEvent(eThingEvents.Initialized, this, true, true);
 
-                CreateUX();
-                TheUserManager.AddNewUserByRole(new TheUserDetails() { PrimaryRole = "NMIADMIN", UserName = "admin", Password = "", Name = "Administrator", AssignedEasyScope = "*", AccessMask = 255, NodeScope = "ALL", IsReadOnly = true }); //* Scope OK AES OK ; PW must be empty
-                RegisterControlType(MyBaseEngine, "Single Line Text", "1");
-                RegisterControlType(MyBaseEngine, "eMail Address", "16");
-                RegisterControlType(MyBaseEngine, "Drop Down Box", "2");
-                RegisterControlType(MyBaseEngine, "Multi-Line Text", "5");
-                RegisterControlType(MyBaseEngine, "Single Checkbox", "4");
-                RegisterControlType(MyBaseEngine, "Checkbox Field", "26");
-                RegisterControlType(MyBaseEngine, "Touch-Draw Area", "36");
-                RegisterControlType(MyBaseEngine, "Bar Chart", "34");
-                RegisterControlType(MyBaseEngine, "MuTLock", "47");
-                RegisterControlType(MyBaseEngine, "Smart Label", "20");
-                RegisterControlType(MyBaseEngine, "Number", "12");
-                RegisterControlType(MyBaseEngine, "Date Time", "21");
-                RegisterControlType(MyBaseEngine, "Time", "8");
-                RegisterControlType(MyBaseEngine, "Month", "18");
-                RegisterControlType(MyBaseEngine, "Password", "10");
-                RegisterControlType(MyBaseEngine, "Time Span", "9");
-                RegisterControlType(MyBaseEngine, "URL", "31");
-                RegisterControlType(MyBaseEngine, "Tile Button", "22");
-                RegisterControlType(MyBaseEngine, "Image", "29");
-                RegisterControlType(MyBaseEngine, "Draw Canvas", "36");
-                RegisterControlType(MyBaseEngine, "Endless Slider", "33");
-                RegisterControlType(MyBaseEngine, "Progress Bar", "48");
-                RegisterControlType(MyBaseEngine, "Circular Gauge", $"{(int)eFieldType.CircularGauge}");
-                RegisterControlType(MyBaseEngine, "Smart Gauge", $"{(int)eFieldType.SmartGauge}");
-                RegisterControlType(MyBaseEngine, "Status Light", $"{(int)eFieldType.StatusLight}");
-                RegisterControlType(MyBaseEngine, "Image Slider", $"{(int)eFieldType.ImageSlider}");
-                RegisterControlType(MyBaseEngine, "Logo Button", $"{(int)eFieldType.LogoButton}");
-                RegisterControlType(MyBaseEngine, "Collapsible Group", $"{(int)eFieldType.CollapsibleGroup}");
-                RegisterControlType(MyBaseEngine, "Tile Group", $"{(int)eFieldType.TileGroup}");
+            CreateUX();
+            TheUserManager.AddNewUserByRole(new TheUserDetails() { PrimaryRole = "NMIADMIN", UserName = "admin", Password = "", Name = "Administrator", AssignedEasyScope = "*", AccessMask = 255, NodeScope = "ALL", IsReadOnly = true }); //* Scope OK AES OK ; PW must be empty
+            RegisterControlType(MyBaseEngine, "Single Line Text", "1");
+            RegisterControlType(MyBaseEngine, "eMail Address", "16");
+            RegisterControlType(MyBaseEngine, "Drop Down Box", "2");
+            RegisterControlType(MyBaseEngine, "Multi-Line Text", "5");
+            RegisterControlType(MyBaseEngine, "Single Checkbox", "4");
+            RegisterControlType(MyBaseEngine, "Checkbox Field", "26");
+            RegisterControlType(MyBaseEngine, "Touch-Draw Area", "36");
+            RegisterControlType(MyBaseEngine, "Bar Chart", "34");
+            RegisterControlType(MyBaseEngine, "MuTLock", "47");
+            RegisterControlType(MyBaseEngine, "Smart Label", "20");
+            RegisterControlType(MyBaseEngine, "Number", "12");
+            RegisterControlType(MyBaseEngine, "Date Time", "21");
+            RegisterControlType(MyBaseEngine, "Time", "8");
+            RegisterControlType(MyBaseEngine, "Month", "18");
+            RegisterControlType(MyBaseEngine, "Password", "10");
+            RegisterControlType(MyBaseEngine, "Time Span", "9");
+            RegisterControlType(MyBaseEngine, "URL", "31");
+            RegisterControlType(MyBaseEngine, "Tile Button", "22");
+            RegisterControlType(MyBaseEngine, "Image", "29");
+            RegisterControlType(MyBaseEngine, "Draw Canvas", "36");
+            RegisterControlType(MyBaseEngine, "Endless Slider", "33");
+            RegisterControlType(MyBaseEngine, "Progress Bar", "48");
+            RegisterControlType(MyBaseEngine, "Circular Gauge", $"{(int)eFieldType.CircularGauge}");
+            RegisterControlType(MyBaseEngine, "Smart Gauge", $"{(int)eFieldType.SmartGauge}");
+            RegisterControlType(MyBaseEngine, "Status Light", $"{(int)eFieldType.StatusLight}");
+            RegisterControlType(MyBaseEngine, "Image Slider", $"{(int)eFieldType.ImageSlider}");
+            RegisterControlType(MyBaseEngine, "Logo Button", $"{(int)eFieldType.LogoButton}");
+            RegisterControlType(MyBaseEngine, "Collapsible Group", $"{(int)eFieldType.CollapsibleGroup}");
+            RegisterControlType(MyBaseEngine, "Tile Group", $"{(int)eFieldType.TileGroup}");
 
-                RegisterEvent(eEngineEvents.ThingDeleted, sinkThingDeleted);
-                MyBaseEngine.ProcessInitialized();
-                MyBaseThing.StatusLevel = 1;
-                MyBaseThing.LastMessage = "NMI Model ready";
-                RegisterAllFieldEvents();
-            }
+            RegisterEvent(eEngineEvents.ThingDeleted, sinkThingDeleted);
+            MyBaseEngine.ProcessInitialized();
+            MyBaseThing.StatusLevel = 1;
+            MyBaseThing.LastMessage = "NMI Model ready";
+            RegisterAllFieldEvents();
         }
 
         private void sinkThingDeleted(ICDEThing pEngine, object pDelThing)
         {
-            if (!(pDelThing is TheThing tThing)) return;
+            if (pDelThing is not TheThing tThing) return;
             try
             {
 
@@ -329,7 +327,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="pIncoming"></param>
         public override void HandleMessage(ICDEThing sender, object pIncoming)
         {
-            if (!(pIncoming is TheProcessMessage pMsg)) return;
+            if (pIncoming is not TheProcessMessage pMsg) return;
             switch (pMsg.Message.TXT)   //string 2 cases
             {
                 case "CDE_INITIALIZED":

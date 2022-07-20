@@ -298,12 +298,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <summary>
         /// Tells the NMI Engine what Plugins the control is in
         /// </summary>
-        public virtual string EngineName
-        {
-            get { return mEngineName; }
-            set { mEngineName = value; }
-        }
-        private string mEngineName = "NMIService";
+        public virtual string EngineName {  get; set; }= "NMIService";
 
         /// <summary>
         /// Absolute Left Position in Tile Units
@@ -612,7 +607,7 @@ namespace nsCDEngine.Engines.NMIService
                 MyTarget = pTargetControl;
                 if (MyChildren == null)
                     MyChildren = new List<TheNMIBaseControl>();
-                MyTarget.MyChildren.Add(this);    //TODO: Check Memory Impact
+                MyTarget.MyChildren.Add(this);    
             }
             if (pTRF != null)
             {
@@ -620,10 +615,8 @@ namespace nsCDEngine.Engines.NMIService
                 if (pTRF.FldInfo != null)
                 {
                     MyFieldInfo = pTRF.FldInfo;
-                    //TODO: TheNMIBaseControl.ConvertPropertiesFromBag(this.MyFieldInfo);
                 }
             }
-            //TODO: Put pPropertyBag in PropertyBag
             if (pModelID != null)
                 MyScreenID = TheCommonUtils.CGuid(pModelID);
             return true;
@@ -648,7 +641,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="pChild"></param>
         public virtual void AppendChild(TheNMIBaseControl pChild)
         {
-            //TODO: Not sure here!
+            //allow override
         }
 
         private cdeConcurrentDictionary<string, object> PropertyBag;
@@ -741,17 +734,6 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public int? DrawMargin { get; set; }
     }
-
-    //public class nmiCtrlCanvasDraw : TheNMIBaseControl
-    //{
-    //    public bool? IsVertical { get; set; }
-
-    //    public bool? IsInverted { get; set; }
-
-    //    public string AddShape { get; set; }
-
-    //    public string SetShape { get; set; }
-    //}
 
     /// <summary>
     /// This control displays a check box with or without checkmark.
@@ -1986,6 +1968,10 @@ namespace nsCDEngine.Engines.NMIService
         public bool? ShowFilterField { get; set; }
 
         /// <summary>
+        /// Shows an export button in the header of the table
+        /// </summary>
+        public bool? ShowExportButton { get; set; }
+        /// <summary>
         /// Points at the Form used as the Template to edit rows in this table
         /// </summary>
         public string TemplateID { get; set; }
@@ -2045,6 +2031,11 @@ namespace nsCDEngine.Engines.NMIService
         /// Property name for "AutoConnect"
         /// </summary>
         public string AutoConnectPropertyName { get; set; }
+
+        /// <summary>
+        /// If true the connectivity block is closed by default
+        /// </summary>
+        public bool DoClose { get; set; }
     }
 
     /// <summary>
@@ -2060,6 +2051,21 @@ namespace nsCDEngine.Engines.NMIService
         /// Propoertyname for AutoStart
         /// </summary>
         public string AutoStartPropertyName { get; set; }
+
+        /// <summary>
+        /// If true the starting block is closed by default
+        /// </summary>
+        public bool DoClose { get; set; }
+
+    }
+
+    public class nmiStatusBlock : TheNMIBaseControl
+    {
+        /// <summary>
+        /// If true the status block is closed by default
+        /// </summary>
+        public bool DoClose { get; set; }
+
     }
 
     /// <summary>

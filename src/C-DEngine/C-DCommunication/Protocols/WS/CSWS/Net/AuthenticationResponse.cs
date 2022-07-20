@@ -165,8 +165,8 @@ namespace WebSocketSharp.Net
     private static string hash (string value)
     {
       var src = Encoding.UTF8.GetBytes (value);
-      var md5 = MD5.Create ();
-      var hashed = md5.ComputeHash (src);
+      var md5 = MD5.Create ();   //NOSONAR - 3rd Party Code
+            var hashed = md5.ComputeHash (src);
 
       var res = new StringBuilder (64);
       foreach (var b in hashed)

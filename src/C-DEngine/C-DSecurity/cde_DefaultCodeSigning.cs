@@ -683,7 +683,7 @@ namespace nsCDEngine.Security
             }
 
             byte[] fileHash;
-            using (var sha1 = new System.Security.Cryptography.SHA1Managed())
+            using (var sha1 = new System.Security.Cryptography.SHA1Managed()) //NOSONAR - required for CodeSigning to work properly
             {
                 fileHash = sha1.ComputeHash(signedImageContent);
             }
@@ -734,26 +734,6 @@ namespace nsCDEngine.Security
 
             if (pFromFile == null)
                 return null;
-            //No BaseAssets access and MyServiceHostInfo not set at this point
-            //string tBaseDir = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
-            //if (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.IIS) tBaseDir += "bin\\";
-            //string uDir = tBaseDir;
-            //if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ISMMainExecutable))
-            //{
-            //    uDir += TheBaseAssets.MyServiceHostInfo.ISMMainExecutable;
-            //    if (TheBaseAssets.MyServiceHostInfo.cdeHostingType != cdeHostType.IIS)
-            //    {
-            //        var hostPath = uDir + ".exe";
-            //        if (!File.Exists(hostPath))
-            //        {
-            //            // We may be running under .Net Core with a .dll-based host
-            //            hostPath = uDir + ".dll";
-            //        }
-            //        uDir = hostPath;
-            //    }
-            //}
-            //else
-            //    uDir += "C-DEngine.dll";
             MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 418, "Diagnostics", $"Reading Cert on ISM {pFromFile} ");
             try
             {

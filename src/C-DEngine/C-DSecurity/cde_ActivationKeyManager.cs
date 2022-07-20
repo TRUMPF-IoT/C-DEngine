@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+#pragma warning disable 1591
 
 namespace nsCDEngine.Activation
 {
@@ -85,7 +86,7 @@ namespace nsCDEngine.Activation
             {
                 return new string[] { "Invalid activation key: failed to decode.", String.Format("{0}", activationKeyString) };
             }
-            string activationKeyHash = Convert.ToBase64String((SHA1.Create().ComputeHash(activationKey)));
+            string activationKeyHash = Convert.ToBase64String((SHA1.Create().ComputeHash(activationKey))); //NOSONAR - not sensitive context
 
             byte[] signature = new byte[8];
             activationKey.Take(8).ToArray().CopyTo(signature, 0);

@@ -164,20 +164,20 @@ namespace nsCDEngine.Communication.HttpService
             return RealPage;
         }
 
-        public bool cdeProcessPost(TheRequestData pReq)
+        public bool cdeProcessPost(TheRequestData tReq)
         {
             string cookieHeader = null;
-            if (pReq.Header != null)
+            if (tReq.Header != null)
             {
-                pReq.UserAgent = pReq.Header.cdeSafeGetValue("User-Agent");
-                pReq.ResponseMimeType = pReq.Header.cdeSafeGetValue("Content-Type");
-                pReq.DeviceID = TheCommonUtils.CGuid(pReq.Header.cdeSafeGetValue("cdeDeviceID"));
-                cookieHeader = pReq.Header.cdeSafeGetValue("Cookie");
+                tReq.UserAgent = tReq.Header.cdeSafeGetValue("User-Agent");
+                tReq.ResponseMimeType = tReq.Header.cdeSafeGetValue("Content-Type");
+                tReq.DeviceID = TheCommonUtils.CGuid(tReq.Header.cdeSafeGetValue("cdeDeviceID"));
+                cookieHeader = tReq.Header.cdeSafeGetValue("Cookie");
             }
-            if (string.IsNullOrEmpty(pReq.RemoteAddress))
-                pReq.RemoteAddress = pReq.DeviceID.ToString();
-            pReq.cdeRealPage = cdeGetEnginePage(pReq);
-            string cdeRealPageUpper = pReq.cdeRealPage.ToUpperInvariant();
+            if (string.IsNullOrEmpty(tReq.RemoteAddress))
+                tReq.RemoteAddress = tReq.DeviceID.ToString();
+            tReq.cdeRealPage = cdeGetEnginePage(tReq);
+            string cdeRealPageUpper = tReq.cdeRealPage.ToUpperInvariant();
             cdeConcurrentDictionary<string, string> inCookies = new cdeConcurrentDictionary<string, string>();
             if (!string.IsNullOrEmpty(cookieHeader))
             {
@@ -191,65 +191,65 @@ namespace nsCDEngine.Communication.HttpService
                     if (tCName.Equals($"{TheBaseAssets.MyServiceHostInfo.cdeMID}CDESEID"))
                     {
                         Guid ttSID = TheCommonUtils.CGuid(TheCommonUtils.cdeDecrypt(TheCommonUtils.cdeUnescapeString(tVal), TheBaseAssets.MySecrets.GetAI()));  //REMARK: Sometimes an old cookie of CDESEID was not removed from the browser leading the cdeDecrypt to fail (and write an error message to the log...can be ignored)
-                        if (pReq.SessionState == null && (pReq.SessionState=TheBaseAssets.MySession.ValidateSEID(ttSID)) == null)   //Measure Frequency !!
+                        if (tReq.SessionState == null && (tReq.SessionState=TheBaseAssets.MySession.ValidateSEID(ttSID)) == null)   //Measure Frequency !!
                             DoAdd = false;
                     }
                     if (DoAdd)
                         inCookies.TryAdd(tCName, tVal);
                 }
             }
-            if (!pReq.cdeRealPage.StartsWith("/ISB") && !cdeRealPageUpper.StartsWith("/DEVICE.XML") && !cdeRealPageUpper.StartsWith("/FAVICON.ICO") && !cdeRealPageUpper.StartsWith("/ESP"))
+            if (!tReq.cdeRealPage.StartsWith("/ISB") && !cdeRealPageUpper.StartsWith("/DEVICE.XML") && !cdeRealPageUpper.StartsWith("/FAVICON.ICO") && !cdeRealPageUpper.StartsWith("/ESP"))
             {
-                if (pReq.SessionState == null && TheBaseAssets.MySession.GetSessionState(Guid.Empty, pReq, false)) // IsAB4Interceptor(cdeRealPageUpper)))
+                if (tReq.SessionState == null && TheBaseAssets.MySession.GetSessionState(Guid.Empty, tReq, false)) // IsAB4Interceptor(cdeRealPageUpper)))
                 {
                     if (TheBaseAssets.MyServiceHostInfo.ForceWebPlatform != 0)
                         // ReSharper disable once PossibleNullReferenceException
-                        pReq.SessionState.WebPlatform = TheBaseAssets.MyServiceHostInfo.ForceWebPlatform;
+                        tReq.SessionState.WebPlatform = TheBaseAssets.MyServiceHostInfo.ForceWebPlatform;
                     else
                     {
-                        if (pReq.SessionState.WebPlatform != 0)
-                            pReq.WebPlatform = pReq.SessionState.WebPlatform;
+                        if (tReq.SessionState.WebPlatform != 0)
+                            tReq.WebPlatform = tReq.SessionState.WebPlatform;
                         else
-                            pReq.WebPlatform = TheCommonUtils.GetWebPlatform(pReq.UserAgent);
+                            tReq.WebPlatform = TheCommonUtils.GetWebPlatform(tReq.UserAgent);
                         // ReSharper disable once PossibleNullReferenceException
-                        pReq.SessionState.WebPlatform = pReq.WebPlatform;
+                        tReq.SessionState.WebPlatform = tReq.WebPlatform;
                     }
-                    if (pReq.SessionState.StateCookies == null) pReq.SessionState.StateCookies = new cdeConcurrentDictionary<string, string>();
+                    if (tReq.SessionState.StateCookies == null) tReq.SessionState.StateCookies = new cdeConcurrentDictionary<string, string>();
                     foreach (KeyValuePair<String, String> kvp in inCookies.GetDynamicEnumerable())
                     {
-                        if (!pReq.SessionState.StateCookies.TryGetValue(kvp.Key, out _))
-                            pReq.SessionState.StateCookies.TryAdd(kvp.Key, kvp.Value);
+                        if (!tReq.SessionState.StateCookies.TryGetValue(kvp.Key, out _))
+                            tReq.SessionState.StateCookies.TryAdd(kvp.Key, kvp.Value);
                         else
-                            pReq.SessionState.StateCookies[kvp.Key] = kvp.Value;
+                            tReq.SessionState.StateCookies[kvp.Key] = kvp.Value;
                     }
                 }
                 else
                 {
-                    if (pReq.SessionState != null)
+                    if (tReq.SessionState != null)
                     {
-                        TheQueuedSenderRegistry.GetSenderByGuid(pReq.SessionState.MyDevice)?.SetLastHeartbeat(pReq.SessionState);
+                        TheQueuedSenderRegistry.GetSenderByGuid(tReq.SessionState.MyDevice)?.SetLastHeartbeat(tReq.SessionState);
                     }
                 }
                 if (TheBaseAssets.MyServiceHostInfo.ForceWebPlatform!=0)
-                    pReq.WebPlatform = TheBaseAssets.MyServiceHostInfo.ForceWebPlatform;  //REMOVE AFTER MOBILE TESTING
+                    tReq.WebPlatform = TheBaseAssets.MyServiceHostInfo.ForceWebPlatform;  //REMOVE AFTER MOBILE TESTING
                 else
                 {
-                    if (pReq.SessionState != null)
-                        pReq.WebPlatform = pReq.SessionState.WebPlatform;
+                    if (tReq.SessionState != null)
+                        tReq.WebPlatform = tReq.SessionState.WebPlatform;
                 }
             }
-            pReq.StatusCode = 0;
+            tReq.StatusCode = 0;
 
-            ProcessRequest(pReq);
-            if (pReq.SessionState != null)
+            ProcessRequest(tReq);
+            if (tReq.SessionState != null)
             {
-                if (pReq.EndSessionOnResponse)
-                    TheBaseAssets.MySession.EndSession(pReq);
+                if (tReq.EndSessionOnResponse)
+                    TheBaseAssets.MySession.EndSession(tReq);
                 else
-                    TheBaseAssets.MySession.SetVer(pReq, false, pReq.AllowStatePush, Guid.Empty);
+                    TheBaseAssets.MySession.SetVer(tReq, false, tReq.AllowStatePush, Guid.Empty);
             }
-            if (pReq.StatusCode == 0)
-                pReq.StatusCode = (int)eHttpStatusCode.NotFound;
+            if (tReq.StatusCode == 0)
+                tReq.StatusCode = (int)eHttpStatusCode.NotFound;
             return true;
         }
 
@@ -1057,7 +1057,7 @@ namespace nsCDEngine.Communication.HttpService
                 }
             }
 
-            return (b1 | b2);
+            return (b1 || b2);
         }
 
         public void RegisterStatusRequest(Action<TheRequestData> sinkGetStat)

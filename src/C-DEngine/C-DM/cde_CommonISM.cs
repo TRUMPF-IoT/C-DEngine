@@ -18,6 +18,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+#pragma warning disable 1591
 
 //ERROR Range 500-509
 
@@ -560,21 +561,25 @@ namespace nsCDEngine.ISM
             return "";
         }
 
+        /// <summary>
+        /// Creates the plugin package for the Store
+        /// </summary>
+        /// <param name="tInfo">Plugin Info</param>
+        /// <param name="tPlace">Marketplace Info</param>
+        /// <param name="outputDirectory">Directory where plugin should be posted</param>
+        /// <param name="bForce">if true, the package will be created even if it exists</param>
+        /// <param name="packageFilePath">Resulting path to the package created</param>
+        /// <returns></returns>
         public string CreatePluginPackage(ThePluginInfo tInfo, TheServicesMarketPlace tPlace, string outputDirectory, bool bForce, out string packageFilePath)
         {
-#if !CDE_NET35 && !CDE_NET4
             return ThePluginPackager.CreatePluginPackage(tInfo, tPlace, outputDirectory, bForce, out packageFilePath);
-#else
-            packageFilePath = null;
-            return "Packaging is not supported on this platform";
-#endif
         }
 
 
-        internal void AddUpdateFileForInstall(string fileWithFullPath)
-        {
-            AddUpdateFileForInstall(fileWithFullPath);
-        }
+        //internal void AddUpdateFileForInstall(string fileWithFullPath)
+        //{
+        //    AddUpdateFileForInstall(fileWithFullPath);
+        //}
 
         /// <summary>
         /// Returns true if updates are available
@@ -676,16 +681,73 @@ namespace nsCDEngine.ISM
 
                         using (ZipArchive archive = ZipFile.OpenRead(tFile))
                         {
-                            foreach (ZipArchiveEntry file in archive.Entries)
+                            int THRESHOLD_ENTRIES = 10000;
+                            int THRESHOLD_SIZE = 1000000000; // 1 GB
+                            double THRESHOLD_RATIO = 10;
+                            int totalSizeArchive = 0;
+                            int totalEntryArchive = 0;
+                            bool IsSuspicious = false;
+                            foreach (ZipArchiveEntry entry in archive.Entries)
                             {
-                                string completeFileName = Path.Combine(tFinalTargetDir, file.FullName);
-                                string directory = Path.GetDirectoryName(completeFileName);
+                                totalEntryArchive++;
 
-                                if (!Directory.Exists(directory))
-                                    Directory.CreateDirectory(directory);
+                                using (Stream st = entry.Open())
+                                {
+                                    byte[] buffer = new byte[1024];
+                                    int totalSizeEntry = 0;
+                                    int numBytesRead = 0;
 
-                                if (file.Name != "")
-                                    file.ExtractToFile(completeFileName, true);
+                                    do
+                                    {
+                                        numBytesRead = st.Read(buffer, 0, 1024);
+                                        totalSizeEntry += numBytesRead;
+                                        totalSizeArchive += numBytesRead;
+                                        double compressionRatio = entry.CompressedLength > 0 ? (double)totalSizeEntry / (double)entry.CompressedLength : 0;
+
+                                        if (compressionRatio > THRESHOLD_RATIO)
+                                        {
+                                            TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"LaunchUpdater: Ratio ({compressionRatio}) between compressed {totalSizeEntry} and uncompressed data {entry.CompressedLength} is highly suspicious, looks like a Zip Bomb Attack", eMsgLevel.l1_Error));
+                                            IsSuspicious = true;
+                                            break;
+                                        }
+                                    }
+                                    while (numBytesRead > 0);
+                                }
+
+                                if (totalSizeArchive > THRESHOLD_SIZE)
+                                {
+                                    TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"LaunchUpdater: the uncompressed data size ({totalSizeArchive}) is too much for the application resource capacity. Allowed max: {THRESHOLD_SIZE}", eMsgLevel.l1_Error));
+                                    IsSuspicious = true;
+                                    break;
+                                }
+
+                                if (totalEntryArchive > THRESHOLD_ENTRIES)
+                                {
+                                    TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"LaunchUpdater: too much entries ({totalEntryArchive}) in this archive, can lead to inodes exhaustion of the system. Allowed max: {THRESHOLD_ENTRIES}", eMsgLevel.l1_Error));
+                                    
+                                    IsSuspicious = true;
+                                    break;
+                                }
+                            }
+                            if (!IsSuspicious)
+                            {
+                                foreach (ZipArchiveEntry file in archive.Entries)
+                                {
+                                    string completeFileName = Path.Combine(tFinalTargetDir, file.FullName);
+                                    var destinationFullPath = Path.GetFullPath(completeFileName);
+                                    if (destinationFullPath.StartsWith(tFinalTargetDir))
+                                    {
+                                        TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"Disallowed unzipping of File '{destinationFullPath}' because it would write outside allowed boundary '{tFinalTargetDir}'"));
+                                    }
+                                    else
+                                    {
+                                        string directory = Path.GetDirectoryName(destinationFullPath);
+                                        if (!Directory.Exists(directory))
+                                            Directory.CreateDirectory(directory);
+                                        if (file.Name != "")
+                                            file.ExtractToFile(destinationFullPath, true); //NOSONAR - Check for zipbomb is done above
+                                    }
+                                }
                             }
                         }
                         File.Delete(tFile + ".old");
@@ -749,7 +811,7 @@ namespace nsCDEngine.ISM
         /// Restarts the Node. If ForceQuitt is set, no data is flushed to disk on restart
         /// </summary>
         /// <param name="ForceQuit"></param>
-        public void Restart(bool ForceQuit)
+        public void Restart(bool ForceQuit = false)
         {
             RestartOrWipe(ForceQuit);
         }
@@ -982,16 +1044,24 @@ namespace nsCDEngine.ISM
         private string GetTempFileName()
         {
             // if this failed, we try to create one in the application folder
-            string fileName = Path.ChangeExtension(TheCommonUtils.cdeGetExecutingAssembly().Location, ".exe");
+            return Path.ChangeExtension(TheCommonUtils.cdeGetExecutingAssembly().Location, ".exe");
+        }
+
+        private string ValidateFileName(string pFileName)
+        {
             try
             {
-                using (File.Create(fileName))
+                using (File.Create(pFileName))
                 {
-                    return fileName;
+                    return pFileName;
                 }
             }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
+            catch (IOException) { 
+                //intentionally
+            }
+            catch (UnauthorizedAccessException) { 
+                //intentionally
+            }
 
             return null;
         }
@@ -1001,7 +1071,11 @@ namespace nsCDEngine.ISM
             string fileName = GetTempFileName();
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.IIS)
                 fileName = pTargetDir + "\\C-DEngine.EXE";
+            if (File.Exists(fileName) && TheBaseAssets.MyCodeSigner.IsTrusted(fileName))  //New in 5.147.0: IF already extracted, dont extract again and use existing. Security-Review: Need to validate Cert-Signature 
+                return true;
+            fileName=ValidateFileName(fileName);
             if (string.IsNullOrEmpty(fileName)) return false;
+
 
             string[] names = TheCommonUtils.cdeGetExecutingAssembly().GetManifestResourceNames();
             byte[] buffer = null;
@@ -1242,16 +1316,19 @@ namespace nsCDEngine.ISM
             TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("ISMManager", $"Provisioning Message Received ENG={pMsg?.Message?.ENG} TXT={pMsg?.Message?.TXT}", eMsgLevel.l5_HostMessage));
             if (pMsg?.Message?.ENG == eEngineName.ContentService)
             {
-                var tCmd = pMsg.Message.TXT.Split(':');
-                switch (tCmd[0])
+                var tCmd = pMsg?.Message?.TXT?.Split(':');
+                if (tCmd?.Length > 0)
                 {
-                    //Any setting that must only go via ISM Provisioning sErvice
-                    default:
-                        if (TheCDEngines.MyContentEngine == null)
-                            TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("ISMManager", $"ContentService Not ready! This should not happen!", eMsgLevel.l2_Warning));
-                        else
-                            TheCDEngines.MyContentEngine?.GetBaseEngine()?.ProcessMessage(pMsg);
-                        break;
+                    switch (tCmd[0])
+                    {
+                        //Any setting that must only go via ISM Provisioning sErvice
+                        default:
+                            if (TheCDEngines.MyContentEngine == null)
+                                TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("ISMManager", $"ContentService Not ready! This should not happen!", eMsgLevel.l2_Warning));
+                            else
+                                TheCDEngines.MyContentEngine?.GetBaseEngine()?.ProcessMessage(pMsg);
+                            break;
+                    }
                 }
             }
         }

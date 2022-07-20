@@ -20,8 +20,6 @@ namespace nsCDEngine.Communication
             webSocketSession = wsc as CDEWSBehavior;
         }
 
-        protected override void iDispose() { }
-
         //SERVER SIDE
         internal CDEWSBehavior webSocketSession;
         WebSocket websocket;
@@ -171,7 +169,7 @@ namespace nsCDEngine.Communication
 
 
 
-        internal override void PostToSocket(TheDeviceMessage pMsg, byte[] pPostBuffer, bool PostAsBinary, bool IsInitialConnect)
+        internal override void PostToSocket(TheDeviceMessage pMsg, byte[] pPostBuffer, bool pSendAsBinary, bool IsInitialConnect)
         {
             TheDiagnostics.SetThreadName("WSPostToSocketCSWS:" + (MyQSender.MyTargetNodeChannel?.ToString() ?? "DEAD"));
 
@@ -199,7 +197,7 @@ namespace nsCDEngine.Communication
                 if (pPostBuffer != null)
                 {
                     TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, pPostBuffer.Length);
-                    if (PostAsBinary)
+                    if (pSendAsBinary)
                     {
                         if (webSocketSession != null)
                             webSocketSession.SendB(pPostBuffer);
@@ -221,7 +219,7 @@ namespace nsCDEngine.Communication
                 else
                 {
                     string toSend = TheCommonUtils.SerializeObjectToJSONString(pMsg);
-                    if (PostAsBinary)
+                    if (pSendAsBinary)
                     {
                         byte[] toSendb = TheCommonUtils.CUTF8String2Array(toSend);
                         TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, toSendb.Length);
@@ -256,9 +254,9 @@ namespace nsCDEngine.Communication
 
 
 
-        public override void Shutdown(bool FireEvent, string pReason)
+        public override void Shutdown(bool IsAsync, string pReason)
         {
-            base.Shutdown(FireEvent, pReason);
+            base.Shutdown(IsAsync, pReason);
             try
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(43611, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheWSServer", $"WS Server for {OwnerNodeID} CloseFired:{CloseFired} Reason: {pReason}", eMsgLevel.l3_ImportantMessage));
@@ -266,7 +264,7 @@ namespace nsCDEngine.Communication
                 {
                     websocket.CloseAsync(1000, pReason);
                     websocket = null;
-                    if (!CloseFired && FireEvent && eventClosed != null)
+                    if (!CloseFired && IsAsync && eventClosed != null)
                     {
                         CloseFired = true;
                         eventClosed(pReason);
@@ -275,7 +273,7 @@ namespace nsCDEngine.Communication
                 if (webSocketSession != null)
                 {
                     webSocketSession = null;
-                    if (!CloseFired && FireEvent && eventClosed != null)
+                    if (!CloseFired && IsAsync && eventClosed != null)
                     {
                         CloseFired = true;
                         eventClosed(pReason);

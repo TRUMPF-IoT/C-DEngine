@@ -102,9 +102,9 @@ namespace nsCDEngine.Communication
                         {
                             var handlers = eventHBTimerFired.GetInvocationList();
                             TheCDEKPIs.SetKPI(eKPINames.HTCallbacks, handlers.Length);
-                            foreach (Action<long> handler in handlers)
+                            foreach (Delegate handler in handlers)
                             {
-                                TheCommonUtils.DoFireEvent<long>(handler, mHBTicker, false, 1000);
+                                TheCommonUtils.DoFireEvent<long>(handler as Action<long>, mHBTicker, false, 1000);
                             }
                         }
                     }
@@ -180,9 +180,9 @@ namespace nsCDEngine.Communication
                         {
                             var handlers = eventHealthTimerFired.GetInvocationList();
                             TheCDEKPIs.SetKPI(eKPINames.HTCallbacks, handlers.Length);
-                            foreach (Action<long> handler in handlers)
+                            foreach (Delegate handler in handlers)
                             {
-                                TheCommonUtils.DoFireEvent<long>(handler, mHealthTicker, false, 5000);
+                                TheCommonUtils.DoFireEvent<long>(handler as Action<long>, mHealthTicker, false, 5000);
                             }
                         }
                     }
@@ -269,7 +269,7 @@ namespace nsCDEngine.Communication
                     TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QSRegistry", $"Global TSMHistory dropping message {tCnt}! TIM:{pTSM.TIM} ENG:{pTSM.ENG}", eMsgLevel.l2_Warning));
                     return true;
                 }
-                ActHistorySet.Add(tS);
+                ActHistorySet?.Add(tS);
                 tCnt = MyTSMHistorySet1.Count + MyTSMHistorySet2.Count + MyTSMHistorySet3.Count;
             }
             TheCDEKPIs.SetKPI(eKPINames.SeenBeforeCount, tCnt);
@@ -627,17 +627,19 @@ namespace nsCDEngine.Communication
         {
             lock (MyQueuedSenderList)
             {
-                if (pNodeChannel!=null)
-                    TheFormsGenerator.DisableNMISubscriptions(pNodeChannel.cdeMID);
-                if (MyQueuedSenderList.ContainsID(pNodeChannel.cdeMID))
+                if (pNodeChannel != null)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(2825, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QSRegistry", $"Removed QSender for DeviceID:{TheCommonUtils.GetDeviceIDML(pNodeChannel.cdeMID)}", eMsgLevel.l2_Warning
+                    TheFormsGenerator.DisableNMISubscriptions(pNodeChannel.cdeMID);
+                    if (MyQueuedSenderList.ContainsID(pNodeChannel.cdeMID))
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(2825, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QSRegistry", $"Removed QSender for DeviceID:{TheCommonUtils.GetDeviceIDML(pNodeChannel.cdeMID)}", eMsgLevel.l2_Warning
 #if JC_DEBUGCOMM  //No Stacktrace on Platforms other than windows
 , TheCommonUtils.GetStackInfo(new System.Diagnostics.StackTrace(true))
 #endif
-                        ));
-                    MyQueuedSenderList.RemoveAnItemByID(pNodeChannel.cdeMID, null);
-                    return true;
+                            ));
+                        MyQueuedSenderList.RemoveAnItemByID(pNodeChannel.cdeMID, null);
+                        return true;
+                    }
                 }
                 return false;
             }
@@ -827,7 +829,7 @@ namespace nsCDEngine.Communication
                     string tScramble = null;
                     foreach (var topic in tTopics)
                     {
-                        if (!TheCommonUtils.IsGuid(topic?.Topic))
+                        if (topic != null && !TheCommonUtils.IsGuid(topic?.Topic))
                         {
                             if (sendTopics.Length > 0) sendTopics += ";";
                             sendTopics += topic.Topic;
@@ -877,7 +879,7 @@ namespace nsCDEngine.Communication
                 return false;
             }
             string tMSGSID = null;
-            return MyMasterNodeQS.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID($"CDE_SYSTEMWIDE;{TheBaseAssets.MyServiceHostInfo.MasterNode}", TheBaseAssets.MyScopeManager.ScopeID, ref tMSGSID, true, true), pMsg.SetNodeScope(), true, TheBaseAssets.MyServiceHostInfo.MasterNode, "CDE_SYSTEMWIDE", TheBaseAssets.MyScopeManager.ScopeID, null);       //GRSI: rare
+            return TheCommonUtils.CBool(MyMasterNodeQS?.SendQueued(TheBaseAssets.MyScopeManager.AddScopeID($"CDE_SYSTEMWIDE;{TheBaseAssets.MyServiceHostInfo.MasterNode}", TheBaseAssets.MyScopeManager.ScopeID, ref tMSGSID, true, true), pMsg.SetNodeScope(), true, TheBaseAssets.MyServiceHostInfo.MasterNode, "CDE_SYSTEMWIDE", TheBaseAssets.MyScopeManager.ScopeID, null));       //GRSI: rare
         }
         internal static bool SendMasterNodeQueue()
         {

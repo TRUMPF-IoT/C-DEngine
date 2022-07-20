@@ -242,6 +242,10 @@ namespace nsCDEngine.Engines.NMIService
         /// declares a dynamically created live Screen
         /// </summary>
         public const string CMyLiveScreen = "CMyLiveScreen";
+        /// <summary>
+        /// Data Download
+        /// </summary>
+        public const string CMyData = "CMyData";
     }
 
     /// <summary>
@@ -438,101 +442,98 @@ namespace nsCDEngine.Engines.NMIService
             IBaseEngine tBase = TheCDEngines.MyNMIService.GetBaseEngine();
             if (tBase == null)
                 return;
-            if (pReady != null)
+            if (pReady != null && MyPageDefinitionsStore == null)
             {
-                if (MyPageDefinitionsStore == null)
+                bool DoStore = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("StoreNMI"));
+                MyControlRegistry = new TheStorageMirror<TheControlType>(TheCDEngines.MyIStorageService) { IsRAMStore = true, BlockWriteIfIsolated = true };
+                MyControlRegistry.InitializeStore(false);
+
+                MyChartScreens = new TheStorageMirror<TheChartDefinition>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIChartScreens" };
+                MyChartScreens.InitializeStore(false);
+
+                MyFields = new TheStorageMirror<TheFieldInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIFields" };
+                MyFields.InitializeStore(false);
+
+                MyForms = new TheStorageMirror<TheFormInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIForms" };
+                MyForms.InitializeStore(false);
+
+                MyDashboards = new TheStorageMirror<TheDashboardInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIDashboards" };
+                MyDashboards.InitializeStore(false);
+
+                MyDashComponents = new TheStorageMirror<TheDashPanelInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIDashPanels" };
+                MyDashComponents.InitializeStore(false);
+
+                MyPageBlockTypes = new TheStorageMirror<ThePageBlockTypes>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
+                MyPageDefinitionsStore = new TheStorageMirror<ThePageDefinition>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
+                MyPageContentStore = new TheStorageMirror<ThePageContent>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
+                MyPageBlocksStore = new TheStorageMirror<ThePageBlocks>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
+
+                if (tBase.GetEngineState().IsSimulated || "RAM".Equals(pReady.ToString()))
                 {
-                    bool DoStore = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("StoreNMI"));
-                    MyControlRegistry = new TheStorageMirror<TheControlType>(TheCDEngines.MyIStorageService) { IsRAMStore = true, BlockWriteIfIsolated = true };
-                    MyControlRegistry.InitializeStore(false);
+                    MyPageDefinitionsStore.IsCachePersistent = !TheCommonUtils.IsHostADevice();
+                    MyPageDefinitionsStore.CacheStoreInterval = 5;
+                    MyPageDefinitionsStore.IsStoreIntervalInSeconds = true;
+                    MyPageDefinitionsStore.IsRAMStore = true;
+                    MyPageContentStore.IsRAMStore = true;
+                    MyPageBlocksStore.IsRAMStore = true;
+                    MyPageBlockTypes.IsRAMStore = true;
+                }
+                else
+                {
+                    MyPageDefinitionsStore.IsCached = true;
+                    MyPageDefinitionsStore.CacheStoreInterval = 5;
+                    MyPageDefinitionsStore.IsStoreIntervalInSeconds = true;
+                    MyPageContentStore.IsCached = true;
+                    MyPageBlocksStore.IsCached = true;
+                    MyPageBlockTypes.IsCached = true;
+                }
+                MyPageDefinitionsStore.RegisterEvent(eStoreEvents.StoreReady, UpdatePageStore);
+                MyPageContentStore.RegisterEvent(eStoreEvents.StoreReady, UpdateContentStore);
+                MyPageBlocksStore.RegisterEvent(eStoreEvents.StoreReady, UpdateContentStore);
+                MyPageBlockTypes.RegisterEvent(eStoreEvents.StoreReady, UpdateBlockTypeStore);
+                if (!MyPageDefinitionsStore.IsRAMStore)
+                {
+                    MyPageDefinitionsStore.CreateStore("MyPageDefinitionsStore", "Definitions of NMI Pages", null, false, false);
+                    MyPageContentStore.CreateStore("MyPageContentStore", "Definitions of Page Content", null, false, false);
+                    MyPageBlocksStore.CreateStore("MyPageBlocksStore", "Definitions Page Blocks", null, false, false);
+                    MyPageBlockTypes.CreateStore("MyPageBlockTypes", "Definitions Blocks Types", null, false, false);
+                }
+                else
+                {
+                    MyPageDefinitionsStore.InitializeStore(false);
+                    MyPageContentStore.InitializeStore(false);
+                    MyPageBlocksStore.InitializeStore(false);
+                    MyPageBlockTypes.InitializeStore(false);
+                }
 
-                    MyChartScreens = new TheStorageMirror<TheChartDefinition>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIChartScreens" };
-                    MyChartScreens.InitializeStore(false);
-
-                    MyFields = new TheStorageMirror<TheFieldInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIFields" };
-                    MyFields.InitializeStore(false);
-
-                    MyForms = new TheStorageMirror<TheFormInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIForms" };
-                    MyForms.InitializeStore(false);
-
-                    MyDashboards = new TheStorageMirror<TheDashboardInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIDashboards" };
-                    MyDashboards.InitializeStore(false);
-
-                    MyDashComponents = new TheStorageMirror<TheDashPanelInfo>(TheCDEngines.MyIStorageService) { IsRAMStore = true, IsCachePersistent = DoStore, BlockWriteIfIsolated = true, CacheTableName = "NMIDashPanels" };
-                    MyDashComponents.InitializeStore(false);
-
-                    MyPageBlockTypes = new TheStorageMirror<ThePageBlockTypes>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
-                    MyPageDefinitionsStore = new TheStorageMirror<ThePageDefinition>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
-                    MyPageContentStore = new TheStorageMirror<ThePageContent>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
-                    MyPageBlocksStore = new TheStorageMirror<ThePageBlocks>(TheCDEngines.MyIStorageService) { BlockWriteIfIsolated = true };
-
-                    if (tBase.GetEngineState().IsSimulated || "RAM".Equals(pReady.ToString()))
+                // ReSharper disable once SuspiciousTypeConversion.Global
+                if (TheCDEngines.MyCustomTypes?.Count > 0)
+                {
+                    foreach (var tType in TheCDEngines.MyCustomTypes)
                     {
-                        MyPageDefinitionsStore.IsCachePersistent = !TheCommonUtils.IsHostADevice(); // TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay;
-                        MyPageDefinitionsStore.CacheStoreInterval = 5;
-                        MyPageDefinitionsStore.IsStoreIntervalInSeconds = true;
-                        MyPageDefinitionsStore.IsRAMStore = true;
-                        MyPageContentStore.IsRAMStore = true;
-                        MyPageBlocksStore.IsRAMStore = true;
-                        MyPageBlockTypes.IsRAMStore = true;
-                    }
-                    else
-                    {
-                        MyPageDefinitionsStore.IsCached = true;
-                        MyPageDefinitionsStore.CacheStoreInterval = 5;
-                        MyPageDefinitionsStore.IsStoreIntervalInSeconds = true;
-                        MyPageContentStore.IsCached = true;
-                        MyPageBlocksStore.IsCached = true;
-                        MyPageBlockTypes.IsCached = true;
-                    }
-                    MyPageDefinitionsStore.RegisterEvent(eStoreEvents.StoreReady, UpdatePageStore);
-                    MyPageContentStore.RegisterEvent(eStoreEvents.StoreReady, UpdateContentStore);
-                    MyPageBlocksStore.RegisterEvent(eStoreEvents.StoreReady, UpdateContentStore);
-                    MyPageBlockTypes.RegisterEvent(eStoreEvents.StoreReady, UpdateBlockTypeStore);
-                    if (!MyPageDefinitionsStore.IsRAMStore)
-                    {
-                        MyPageDefinitionsStore.CreateStore("MyPageDefinitionsStore", "Definitions of NMI Pages", null, false, false);
-                        MyPageContentStore.CreateStore("MyPageContentStore", "Definitions of Page Content", null, false, false);
-                        MyPageBlocksStore.CreateStore("MyPageBlocksStore", "Definitions Page Blocks", null, false, false);
-                        MyPageBlockTypes.CreateStore("MyPageBlockTypes", "Definitions Blocks Types", null, false, false);
-                    }
-                    else
-                    {
-                        MyPageDefinitionsStore.InitializeStore(false);
-                        MyPageContentStore.InitializeStore(false);
-                        MyPageBlocksStore.InitializeStore(false);
-                        MyPageBlockTypes.InitializeStore(false);
-                    }
-
-                    // ReSharper disable once SuspiciousTypeConversion.Global
-                    if (TheCDEngines.MyCustomTypes?.Count > 0)
-                    {
-                        foreach (var tType in TheCDEngines.MyCustomTypes)
+                        if (tType is ICDEPlugin)
                         {
-                            if (tType is ICDEPlugin)
-                            {
-                                string tTempType = tType.FullName;
-                                MyCDEPluginUXTypes.Add(tTempType, tType);
-                            }
+                            string tTempType = tType.FullName;
+                            MyCDEPluginUXTypes.Add(tTempType, tType);
                         }
                     }
-
-                    string temp = TheBaseAssets.MySettings.GetSetting("StartScreen");
-                    if (!string.IsNullOrEmpty(temp)) StartScreen = TheCommonUtils.CGuid(temp);
-                    temp = TheBaseAssets.MySettings.GetSetting("MainDashboardScreen");
-                    if (!string.IsNullOrEmpty(temp)) MainDashboardScreen = TheCommonUtils.CGuid(temp);
-                    temp = TheBaseAssets.MySettings.GetSetting("ScreenTimeout");
-                    if (!string.IsNullOrEmpty(temp)) ScreenTimeout = TheCommonUtils.CInt(temp);
-
-                    if (ResourceNames == null)
-                    {
-                        ExeAssembly = Assembly.GetCallingAssembly();
-                        if (ExeAssembly != null)
-                            ResourceNames = ExeAssembly.GetManifestResourceNames().ToList();
-                    }
-
-                    IsModelReady();
                 }
+
+                string temp = TheBaseAssets.MySettings.GetSetting("StartScreen");
+                if (!string.IsNullOrEmpty(temp)) StartScreen = TheCommonUtils.CGuid(temp);
+                temp = TheBaseAssets.MySettings.GetSetting("MainDashboardScreen");
+                if (!string.IsNullOrEmpty(temp)) MainDashboardScreen = TheCommonUtils.CGuid(temp);
+                temp = TheBaseAssets.MySettings.GetSetting("ScreenTimeout");
+                if (!string.IsNullOrEmpty(temp)) ScreenTimeout = TheCommonUtils.CInt(temp);
+
+                if (ResourceNames == null)
+                {
+                    ExeAssembly = Assembly.GetCallingAssembly();
+                    if (ExeAssembly != null)
+                        ResourceNames = ExeAssembly.GetManifestResourceNames().ToList();
+                }
+
+                IsModelReady();
             }
         }
 
@@ -552,7 +553,7 @@ namespace nsCDEngine.Engines.NMIService
 
         internal string GetLiveScreens()
         {
-            StringBuilder tStr = new StringBuilder();
+            StringBuilder tStr = new ();
             bool IsFirst = true;
             List<TheThing> tList = TheThingRegistry.GetThingsByFunc(eEngineName.NMIService, s => s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID && TheThing.GetSafePropertyString(s, "DeviceType") == eKnownDeviceTypes.TheNMIScreen);
             if (tList != null)
@@ -570,9 +571,8 @@ namespace nsCDEngine.Engines.NMIService
 
         internal string GetNMIViews()
         {
-            StringBuilder tStr = new StringBuilder();
+            StringBuilder tStr = new ();
             bool IsFirst = true;
-            //List<TheThing> tList = TheThingRegistry.GetThingsByProperty(eEngineName.NMIService, Guid.Empty, "DeviceType", eKnownDeviceTypes.TheNMIScene);
             List<TheThing> tList = TheThingRegistry.GetThingsByFunc(eEngineName.NMIService, s => s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID && (TheThing.GetSafePropertyString(s, "DeviceType") == eKnownDeviceTypes.TheNMIScene || (TheThing.GetSafePropertyString(s, "DeviceType") == eKnownDeviceTypes.TheNMIScreen && (s.UID == Guid.Empty || TheThing.GetSafePropertyBool(s, "IsPublic")))));
             if (tList != null)
             {
@@ -593,8 +593,7 @@ namespace nsCDEngine.Engines.NMIService
 
         internal string GetControlTypeList()
         {
-            StringBuilder tStr = new StringBuilder();
-            //tStr.Append("Unknown or not found:");
+            StringBuilder tStr = new ();
             foreach (TheControlType tType in MyControlRegistry.TheValues)
             {
                 tStr.Append(";");
@@ -957,7 +956,7 @@ namespace nsCDEngine.Engines.NMIService
                 }
                 else
                 {
-                    _propertyBag.MergeBag(value); // TODO flag duplicates and fail or update
+                    _propertyBag.MergeBag(value); 
                 }
             }
         }
@@ -1019,26 +1018,22 @@ namespace nsCDEngine.Engines.NMIService
                 case eUXEvents.OnClick:
                     if (!rowsAreThings)
                     {
-                        //tVal = string.Format($"cdeCommCore.PublishToOwner('{pBaseThing.cdeMID}','{pBaseThing.EngineName}', '{pEvent}:'+TargetControl.GetProperty('ID') +':{pCookie}',Parameter +':{pCookie}:'+ (TargetControl.MyTRF && TargetControl.MyTRF.RowID?TargetControl.MyTRF.RowID:0),'{pBaseThing.cdeN}'); "); //TargetControl.MyTRF?TargetControl.MyTRF.GetNodeID(): only when rowarethings
                         tVal = $"PTOT:;:;{pBaseThing.cdeMID};:;{pBaseThing.EngineName};:;{pEvent};:;{pCookie};:;{pBaseThing.cdeN}";   //4.11
                     }
                     else
                     {
                         // CODE REVIEW: the TRF's MID is not always a thing mid (i.e. OPC Tag lists are not things and have a "Monitor as Property" button, so can't be used as the owner. What are the scenarios where it is a thing mid, different from the baseThing? Is there a way to dermine when it is, either here or in the browser?
                         // Making this opt-in via rowsAreThings parameter, unclear which callers need this
-                        //tVal = string.Format($"cdeCommCore.PublishToOwner(TargetControl.MyTRF?TargetControl.MyTRF.GetMID():'{pBaseThing.cdeMID}','{pBaseThing.EngineName}', '{pEvent}:'+TargetControl.GetProperty('ID') +':{pCookie}',Parameter +':{pCookie}:'+ (TargetControl.MyTRF && TargetControl.MyTRF.RowID?TargetControl.MyTRF.RowID:0),TargetControl.MyTRF?TargetControl.MyTRF.GetNodeID():'{pBaseThing.cdeN}'); ");
                         tVal = $"PTOR:;:;{pBaseThing.cdeMID};:;{pBaseThing.EngineName};:;{pEvent};:;{pCookie};:;{pBaseThing.cdeN}";
                     }
                     break;
                 default:
                     if (pCookie != null)
                     {
-                        //tVal = $"if (PropertyName=='{pCookie}') {{{{ cdeCommCore.PublishToOwner(TargetControl.MyTRF?TargetControl.MyTRF.GetMID():'{pBaseThing.cdeMID}', '{pBaseThing.EngineName}', '{pEvent}:'+TargetControl.GetProperty('ID') +':{pCookie}',Parameter,TargetControl.MyTRF?TargetControl.MyTRF.GetNodeID():'{pBaseThing.cdeN}'); }}}}";
                         tVal = $"PTOR:{pCookie};:;{pBaseThing.cdeMID};:;{pBaseThing.EngineName};:;{pEvent};:;{pCookie};:;{pBaseThing.cdeN}";
                     }
                     else
                     {
-                        //tVal = $"cdeCommCore.PublishToOwner(TargetControl.MyTRF?TargetControl.MyTRF.GetMID():'{pBaseThing.cdeMID}', '{pBaseThing.EngineName}', '{pEvent}:'+TargetControl.GetProperty('ID'),Parameter,TargetControl.MyTRF?TargetControl.MyTRF.GetNodeID():'{pBaseThing.cdeN}');";
                         tVal = $"PTOR:;:;{pBaseThing.cdeMID};:;{pBaseThing.EngineName};:;{pEvent};:;;:;{pBaseThing.cdeN}";
                     }
                     break;
@@ -1099,7 +1094,7 @@ namespace nsCDEngine.Engines.NMIService
 
         public void UpdateUXProperties(Guid pOrg)
         {
-            List<string> tNes = new List<string>();
+            List<string> tNes = new ();
             foreach (string a in PropertyBag)
             {
                 if (!a.StartsWith("OnThingEvent"))
@@ -1118,7 +1113,6 @@ namespace nsCDEngine.Engines.NMIService
         }
         public bool SetParent(int pParentNode)
         {
-            //if (pParentNode ==0) return false;
             ThePropertyBag.PropBagUpdateValue(PropertyBag, "ParentFld", "=", pParentNode.ToString(), false);
             return true;
         }
@@ -1186,8 +1180,7 @@ namespace nsCDEngine.Engines.NMIService
             if (pProp == null) return;
             if ((pProp.cdeE & 0x40) != 0)
             {
-                //ThePropertyBag.PropBagUpdateValue(PropertyBag, pProp.Name, "=", pProp.ToString());
-                SetUXProperty(Guid.Empty, $"{pProp.Name}={pProp.ToString()}");
+                SetUXProperty(Guid.Empty, $"{pProp.Name}={pProp}");
             }
             if (eventPropertyChanged != null)
                 eventPropertyChanged(this, pProp);
@@ -1375,7 +1368,7 @@ namespace nsCDEngine.Engines.NMIService
         TouchDraw = 36,
         //Popup = 37,
         //DrawOverlay = 38,
-        //Accordion = 39,      //TODO: Use 39 for next control i.e. ColorPicker
+        //Accordion = 39,      
         /// <summary>
         /// Creates an area to drop a file on
         /// </summary>
@@ -1616,7 +1609,7 @@ namespace nsCDEngine.Engines.NMIService
                 }
                 else
                 {
-                    _propertyBag.MergeBag(value); // TODO flag duplicates and fail or update
+                    _propertyBag.MergeBag(value); 
                 }
             }
         }
@@ -1677,7 +1670,7 @@ namespace nsCDEngine.Engines.NMIService
         }
 
 
-        [Obsolete] // CODE REVIEW: This seems to be only used internally/by only two of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
+        [Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only used internally/by only two of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
         public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool bIsFullscreen, bool bIsControl)
         {
             PropertyBag = new ThePropertyBag();
@@ -1691,7 +1684,7 @@ namespace nsCDEngine.Engines.NMIService
             IsFullSceen = bIsFullscreen;
             IsControl = bIsControl;
         }
-        [Obsolete] // CODE REVIEW: This seems to be only not be used in any of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
+        [Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only not be used in any of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
         public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, bool pIsPinned, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool pMTBlocked, bool bIsFullscreen, bool bIsControl)
         {
             PropertyBag = new ThePropertyBag();
@@ -1844,7 +1837,7 @@ namespace nsCDEngine.Engines.NMIService
                 }
                 else
                 {
-                    _propertyBag.MergeBag(value); // TODO flag duplicates and fail or update
+                    _propertyBag.MergeBag(value); 
                 }
             }
         }
@@ -1908,15 +1901,10 @@ namespace nsCDEngine.Engines.NMIService
             {
                 ThePropertyBag.PropBagUpdateValue(pDash.PropertyBag, "OnThingEvent", "=", string.Format("{0};{1}", pOwnerThing.cdeMID, OnChangeName));
                 cdeP tProp = pOwnerThing.GetProperty(OnChangeName, true);
-                if (tProp != null)
-                {
-                    if (pMsg?.Message != null)
-                        tProp.SetPublication(true, pMsg.Message.GetOriginator());    ////OK - late binding
-                    tProp.UnregisterEvent(eThingEvents.PropertyChanged, pDash.sinkUpdate);
-                    tProp.RegisterEvent(eThingEvents.PropertyChanged, pDash.sinkUpdate);
-                }
-                else
-                    tProp = pOwnerThing.SetProperty(OnChangeName, null, 0x11, pDash.sinkUpdate);
+                if (pMsg?.Message != null)
+                    tProp.SetPublication(true, pMsg.Message.GetOriginator());    ////OK - late binding
+                tProp.UnregisterEvent(eThingEvents.PropertyChanged, pDash.sinkUpdate);
+                tProp.RegisterEvent(eThingEvents.PropertyChanged, pDash.sinkUpdate);
                 ThePropertyBag.PropBagUpdateValue(pDash.PropertyBag, "OnPropertyChanged", "=", $"SEV:{OnChangeName}");
             }
             ThePropertyBag.PropBagUpdateValue(pDash.PropertyBag, "UXID", "=", pDash.cdeMID.ToString());
@@ -1931,6 +1919,7 @@ namespace nsCDEngine.Engines.NMIService
         /// Registers a callback that will be called when this Dashboard is loaded in the NMI
         /// </summary>
         /// <param name="pReloadCallback">Callback receiving TheDashPanelInfo</param>
+        [Obsolete("Please use .RegisterEvent(eUXEvents.OnLoad, ...)")]
         public void RegisterOnLoad(Action<TheDashPanelInfo> pReloadCallback)
         {
             eventOnLoad += pReloadCallback;
@@ -2024,7 +2013,6 @@ namespace nsCDEngine.Engines.NMIService
 
     public class TheFormInfo : TheMetaDataBase
     {
-        //public string FormTitle { get; set; }
         [IgnoreDataMember]
         public string FormTitle
         {
@@ -2191,7 +2179,7 @@ namespace nsCDEngine.Engines.NMIService
                 }
                 else
                 {
-                    _propertyBag.MergeBag(value); // TODO flag duplicates and fail or update
+                    _propertyBag.MergeBag(value); 
                 }
             }
         }
@@ -2234,7 +2222,7 @@ namespace nsCDEngine.Engines.NMIService
             Reset();
             if (pBase != null)
             {
-                cdeMID = pBase.GetBaseThing().GetBaseThing().cdeMID; //.GetEngineID();
+                cdeMID = pBase.GetBaseThing().GetBaseThing().cdeMID; 
                 defDataSource = string.Format("TheThing;:;0;:;True;:;EngineName={0}", pBase.GetEngineName());
             }
         }
@@ -2259,7 +2247,7 @@ namespace nsCDEngine.Engines.NMIService
 
         public TheFormInfo Clone(eWebPlatform pWebPlatform, bool CreateFastCache = false)
         {
-            TheFormInfo tScroll = new TheFormInfo();
+            TheFormInfo tScroll = new ();
             CloneTo(tScroll);
 
             tScroll.AssociatedClassName = AssociatedClassName;
@@ -2287,14 +2275,12 @@ namespace nsCDEngine.Engines.NMIService
             if (PlatBag.ContainsKey(pWebPlatform))
                 tScroll.PropertyBag.MergeBag(PlatBag[pWebPlatform], true, false);
 
-            //foreach (eWebPlatform t in PlatBag.Keys)
-            //  tScroll.PlatBag[t]=PlatBag[t].Clone(CreateFastCache);
             return tScroll;
         }
 
         public TheFormInfo GetLocalizedForm(int lcid)
         {
-            TheFormInfo tScroll = new TheFormInfo();
+            TheFormInfo tScroll = new ();
             CloneTo(tScroll);
 
             tScroll.AssociatedClassName = AssociatedClassName;
@@ -2343,7 +2329,6 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns>true if data was sent to the browser</returns>
         public bool Reload(TheProcessMessage pMSG, bool bForceLoad, Guid ContainerControlGuid)
         {
-            //if (pMSG == null || pMSG.CurrentUserID == Guid.Empty) return false;
             TheThing tTHing = TheThingRegistry.GetThingByMID("*", cdeO);
             if (tTHing == null) return false;
             TheDashboardInfo tDash = TheNMIEngine.GetEngineDashBoardByThing(tTHing);
@@ -2523,7 +2508,7 @@ namespace nsCDEngine.Engines.NMIService
                 }
                 else
                 {
-                    _propertyBag.MergeBag(value); // TODO flag duplicates and fail or update
+                    _propertyBag.MergeBag(value);
                 }
             }
         }
@@ -2572,7 +2557,9 @@ namespace nsCDEngine.Engines.NMIService
                 var tLabels = pLabels?.Split(';');
                 for (int i = 0; i < tProps.Length; i++)
                 {
+#pragma warning disable S3358 // Ternary operators should not be nested
                     ValueDefinitions.Add(new TheChartValueDefinition(Guid.NewGuid(), tProps[i]) { Label = string.IsNullOrEmpty(pLabels) ? tProps[i] : (i < tLabels.Length ? tLabels[i] : tProps[i]) });
+#pragma warning restore S3358 // Ternary operators should not be nested
                 }
             }
         }
@@ -2702,7 +2689,6 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public ThePageDefinition GetLocalizedPage(int lcid)
         {
-            // CODE REVIEW/TODO: Clone the page, cache for multiple lcids etc. etc.
             Title = TheBaseAssets.MyLoc.GetLocalizedStringByKey(lcid, eEngineName.NMIService, Title);
             return this;
         }
@@ -2801,12 +2787,16 @@ namespace nsCDEngine.Engines.NMIService
         public string BlockTemplate { get; set; }
         public string BlockContent { get; set; }
 
+#pragma warning disable S2223 // Non-constant static fields should not be visible
+#pragma warning disable IDE0090 // Use 'new(...)'
         public static Guid HTML = new Guid("{3F2D0AD5-9D18-49C5-A6E2-04BE7F10BD89}");
         public static Guid CONTENT = new Guid("{779699EB-2AE9-4EE2-8095-F4BD4A309358}");
         public static Guid IMAGE = new Guid("{2CA1756D-55D9-4EBE-88FC-10A8847EA2DB}");
         public static Guid JAVASCRIPT = new Guid("{E5CC2D30-61EA-45B8-835E-E309DF82C2C4}");
         public static Guid DASHBOARD = new Guid("{14386AA9-D754-4941-AD01-B68081E56AB2}");
         public static Guid STYLESHEET = new Guid("{06A18EF9-9543-4204-BC28-56956BB7C482}");
+#pragma warning restore IDE0090 // Use 'new(...)'
+#pragma warning restore S2223 // Non-constant static fields should not be visible
     }
 
     /// <summary>
@@ -2870,9 +2860,9 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static ThePropertyBag Create(object pInObj)
         {
-            if (pInObj == null) return null;
+            if (pInObj == null) return new();
 
-            ThePropertyBag tBag = new ThePropertyBag
+            ThePropertyBag tBag = new ()
             {
                 _FastCache = new cdeConcurrentDictionary<string, string>()
             };
@@ -2933,7 +2923,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static ThePropertyBag GetSubBag(ThePropertyBag pBag, int pBranch)
         {
-            ThePropertyBag tBag = new ThePropertyBag();
+            ThePropertyBag tBag = new ();
             if (pBag == null) return tBag;
             string tProb = "...............".Substring(0, pBranch);
             foreach (string tEnt in pBag)
@@ -2958,7 +2948,7 @@ namespace nsCDEngine.Engines.NMIService
 
         public static ThePropertyBag CreateUXBagFromProperties(TheThing pThing)
         {
-            ThePropertyBag tRes = new ThePropertyBag();
+            ThePropertyBag tRes = new ();
             if (pThing == null) return tRes;
 
             List<cdeP> tProps = pThing.GetNMIProperties();
@@ -2973,7 +2963,7 @@ namespace nsCDEngine.Engines.NMIService
         }
         public static ThePropertyBag MergeUXBagFromProperties(ThePropertyBag pBag, TheThing pThing)
         {
-            if (pThing == null || pBag == null) return null;
+            if (pThing == null || pBag == null) return new();
 
             List<cdeP> tProps = pThing.GetNMIProperties();
             foreach (cdeP tP in tProps)
@@ -2998,7 +2988,7 @@ namespace nsCDEngine.Engines.NMIService
                 string toInser = pName.Trim() + Seperator;
                 try
                 {
-                    if (pQ.Count(s => s.StartsWith(toInser)) > 0)
+                    if (pQ.Any(s => s.StartsWith(toInser)))
                         return true;
                 }
                 catch
@@ -3039,7 +3029,7 @@ namespace nsCDEngine.Engines.NMIService
                 string tOut = "";
                 if (pQ?._FastCache?.TryGetValue(pName, out tOut) == false)
                     return "";
-                return tOut; // pQ._FastCache.tr.ContainsKey(pName) ? pQ._FastCache[pName] : "";
+                return tOut; 
             }
             string retStr = "";
             lock (pQ)
@@ -3071,20 +3061,16 @@ namespace nsCDEngine.Engines.NMIService
                 _FastCache = null;
                 GetDictionary(this, "=");
             }
-            else
-            {
-
-            }
             return true;
         }
 
         internal static cdeConcurrentDictionary<string, string> GetDictionary(ThePropertyBag pQ, string Seperator)
         {
-            if (pQ == null) return null;
+            if (pQ == null) return new();
             if (pQ.HasFastCache())
                 return pQ._FastCache;
 
-            cdeConcurrentDictionary<string, string> retStr = new cdeConcurrentDictionary<string, string>();
+            cdeConcurrentDictionary<string, string> retStr = new ();
             lock (pQ)
             {
                 try
@@ -3111,7 +3097,7 @@ namespace nsCDEngine.Engines.NMIService
 
         internal ThePropertyBag Clone(bool CreateFastCache = false)
         {
-            ThePropertyBag tPropertyBag = new ThePropertyBag();
+            ThePropertyBag tPropertyBag = new ();
             if (this.Count > 0)
             {
                 if (CreateFastCache)
@@ -3152,7 +3138,6 @@ namespace nsCDEngine.Engines.NMIService
             try
             {
                 int pos = pBag.IndexOf(pSep, StringComparison.Ordinal);
-                //string[] tt = TheCommonUtils.cdeSplit(pBag, pSep, false, false);
                 retStr = pos > 0 ? pBag.Substring(pos + pSep.Length) : "";
             }
             catch
@@ -3169,7 +3154,6 @@ namespace nsCDEngine.Engines.NMIService
             try
             {
                 int pos = pBag.IndexOf(pSep, StringComparison.Ordinal);
-                //string[] tt = TheCommonUtils.cdeSplit(pBag, pSep, false, false);
                 retStr = pos > 0 ? pBag.Substring(pos + pSep.Length) : "";
                 name = pos > 0 ? pBag.Substring(0, pos) : pBag;
             }
@@ -3226,7 +3210,6 @@ namespace nsCDEngine.Engines.NMIService
         public static bool PropBagUpdateValue(ThePropertyBag pQ, string pName, string Seperator, string pValue, bool AllowDuplicates)
         {
             if (string.IsNullOrEmpty(pName) || pQ == null || string.IsNullOrEmpty(pValue)) return false;
-            //if (string.IsNullOrEmpty(pValue)) pValue = "true";
             bool WasInserted = false;
             lock (pQ)
             {

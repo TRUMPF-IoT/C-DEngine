@@ -90,12 +90,12 @@ namespace nsCDEngine.BaseClasses
         /// <summary>
         /// Override to initalize the app with custom values but still call the base!
         /// </summary>
-        /// <param name="pPlugIn">A pre-instantiated plugin Service</param>
-        /// <param name="ArgList">Additional Parameters of the Application</param>
+        /// <param name="pPlug">A pre-instantiated plugin Service</param>
+        /// <param name="CmdArgs">Additional Parameters of the Application</param>
         /// <returns>True if all went well during startup</returns>
-        public virtual bool StartBaseApplication(ICDEPlugin pPlugIn, IDictionary<string, string> ArgList)
+        public virtual bool StartBaseApplication(ICDEPlugin pPlug, IDictionary<string, string> CmdArgs)
         {
-            return StartBaseApplication2(pPlugIn == null ? null : new List<ICDEPlugin> { pPlugIn }, ArgList);
+            return StartBaseApplication2(pPlug == null ? null : new List<ICDEPlugin> { pPlug }, CmdArgs);
         }
         /// <summary>
         /// Override to initalize the app with custom values but still call the base!
@@ -264,9 +264,9 @@ namespace nsCDEngine.BaseClasses
         /// Shutsdown the C-DEngine and all plugins
         /// Applications can override this function to add custom shutdown code
         /// </summary>
-        /// <param name="ForceExit">If True and the C-DEngine will Stop or restart the hosting application. If it is hosted in IIS, the Application Pool hosting the app will be Stopped or Restarted depending on the next parameter</param>
+        /// <param name="force">If True and the C-DEngine will Stop or restart the hosting application. If it is hosted in IIS, the Application Pool hosting the app will be Stopped or Restarted depending on the next parameter</param>
         /// <param name="waitIfPending">Waits in case The shutdown is already initiated</param>
-        public virtual void Shutdown(bool ForceExit, bool waitIfPending = false)
+        public virtual void Shutdown(bool force, bool waitIfPending = false)
         {
             if (!waitIfPending)
             {
@@ -306,7 +306,7 @@ namespace nsCDEngine.BaseClasses
                     }
                     TheBaseAssets.MySYSLOG?.WriteToLog(3, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(TheBaseAssets.MyServiceHostInfo.ApplicationName, TheBaseAssets.MyServiceHostInfo.ApplicationTitle + " Initiating shutdown at : " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l6_Debug));
                     TheBaseAssets.MasterSwitch = false;
-                    TheBaseAssets.ForceShutdown = ForceExit;
+                    TheBaseAssets.ForceShutdown = force;
                     TheCDEngines.StopAllEngines();
                     TheBaseAssets.MySYSLOG?.WriteToLog(3, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(TheBaseAssets.MyServiceHostInfo.ApplicationName, TheBaseAssets.MyServiceHostInfo.ApplicationTitle + " Shutdown: Engines stopped at: " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l6_Debug));
 

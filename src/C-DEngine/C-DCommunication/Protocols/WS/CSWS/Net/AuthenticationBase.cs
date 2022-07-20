@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Specialized;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace WebSocketSharp.Net
@@ -102,8 +103,10 @@ namespace WebSocketSharp.Net
     internal static string CreateNonceValue ()
     {
       var src = new byte[16];
-      var rand = new Random ();
-      rand.NextBytes (src);
+      var randomGenerator = RandomNumberGenerator.Create(); // Compliant for security-sensitive use cases
+      randomGenerator.GetBytes(src); 
+      //var rand = new Random ();
+      //rand.NextBytes (src);
 
       var res = new StringBuilder (32);
       foreach (var b in src)

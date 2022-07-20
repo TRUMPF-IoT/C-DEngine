@@ -495,7 +495,7 @@ namespace nsCDEngine.Engines.ThingService
                         configPropToReturn = new TheConfigurationProperty { Name = nameof(TheThing.ID), cdeT = ePropertyTypes.TString, Generalize = true, Value = this.ID };
                     }
                 }
-                if (configPropToReturn.IsThingReference == true)
+                if (configPropToReturn?.IsThingReference == true)
                 {
                     // Get additional information so we can reconnect the thing reference on import using enginename/devicetype/ID, not just cdeMID
                     var tThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(configPropToReturn.Value));
@@ -1083,6 +1083,10 @@ namespace nsCDEngine.Engines.ThingService
             AddHash(ref hash, ID);
             AddHash(ref hash, ThingMID);
             return hash;
+        }
+        public override bool Equals(object obj)
+        {
+            return (obj is TheThingIdentity) ? base.GetHashCode() == obj.GetHashCode() : false;
         }
         protected static void AddHash(ref int hash, object obj)
         {

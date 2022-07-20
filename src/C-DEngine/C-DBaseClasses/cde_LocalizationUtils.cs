@@ -41,36 +41,36 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         /// <param name="lcid"></param>
         /// <param name="engine"></param>
-        /// <param name="originalLine"></param>
-        /// <param name="isKey"></param>
+        /// <param name="keyOrString"></param>
+        /// <param name="IsKey"></param>
         /// <returns></returns>
-        public string GetLocalizedStringByKey(int lcid, string engine, string originalLine, bool isKey = false)
+        public string GetLocalizedStringByKey(int lcid, string engine, string keyOrString, bool IsKey = false)
         {
-            if (string.IsNullOrEmpty(originalLine)) return originalLine;
+            if (string.IsNullOrEmpty(keyOrString)) return keyOrString;
 
             string[] originalLineParts;
-            if (isKey)
+            if (IsKey)
             {
                 originalLineParts = new string[1];
-                originalLineParts[0] = originalLine;
+                originalLineParts[0] = keyOrString;
             }
             else
             {
-                if (!originalLine.Contains("###"))
+                if (!keyOrString.Contains("###"))
                 {
                     if (_firstRun)
                     {
                         _createTextLog = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("CreateTextLog"));
                         _firstRun = false;
                     }
-                    if (_createTextLog && !string.IsNullOrEmpty(originalLine))
+                    if (_createTextLog && !string.IsNullOrEmpty(keyOrString))
                     {
-                        CreateFileWithAllStringsNotFormattedForLocalization(engine, originalLine);
+                        CreateFileWithAllStringsNotFormattedForLocalization(engine, keyOrString);
                     }
-                    return originalLine;
+                    return keyOrString;
                 }
-                originalLineParts = TheCommonUtils.cdeSplit(originalLine, "###", false, false);
-                if (originalLineParts == null) return originalLine;
+                originalLineParts = TheCommonUtils.cdeSplit(keyOrString, "###", false, false);
+                if (originalLineParts == null) return keyOrString;
             }
 
             var localizedLine = "";

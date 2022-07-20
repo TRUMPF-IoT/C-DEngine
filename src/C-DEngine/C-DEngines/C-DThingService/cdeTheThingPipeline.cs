@@ -395,119 +395,125 @@ namespace nsCDEngine.Engines.ThingService
 
                     try
                     {
-                        if (!answerConfigs?.Any() == true && !pipelines.Contains(pipelineConfig))
+                        if (answerConfigs?.Any() != true)
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Found no answer file for generalized config. Attempting to install the generalized config.", eMsgLevel.l2_Warning, $"File: {configFileNameForLog}. Config {pipelineConfig}"));
-                            pipelines.Add(pipelineConfig);
-                        }
-                        int answerFileIndex = 0;
-                        foreach (var answerConfig in answerConfigs)
-                        {
-                            var answerFileNameForLog = answerFileIndex < answerFileNamesForLog?.Length ? answerFileNamesForLog[answerFileIndex] : answerConfig.FriendlyName ?? $"Answer Config {answerFileIndex}";
-                            answerFileIndex++;
-                            try
+                            if (!pipelines.Contains(pipelineConfig))
                             {
-                                var pipelineInstance = TheCommonUtils.DeserializeJSONStringToObject<ThePipelineConfiguration>(TheCommonUtils.SerializeObjectToJSONString(pipelineConfig)); // TODO implement Clone to avoid reparsing
-
-                                int thingConfigIndex = 0;
-                                foreach (var answerThingConfig in answerConfig.ThingConfigurations)
+                                TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Found no answer file for generalized config. Attempting to install the generalized config.", eMsgLevel.l2_Warning, $"File: {configFileNameForLog}. Config {pipelineConfig}"));
+                                pipelines.Add(pipelineConfig);
+                            }
+                        }
+                        else
+                        { 
+                            int answerFileIndex = 0;
+                            foreach (var answerConfig in answerConfigs)
+                            {
+                                var answerFileNameForLog = answerFileIndex < answerFileNamesForLog?.Length ? answerFileNamesForLog[answerFileIndex] : answerConfig.FriendlyName ?? $"Answer Config {answerFileIndex}";
+                                answerFileIndex++;
+                                try
                                 {
-                                    // verify that the rest matches (or doesn't exist)
-                                    if (thingConfigIndex < pipelineInstance.ThingConfigurations.Count)
+                                    var pipelineInstance = TheCommonUtils.DeserializeJSONStringToObject<ThePipelineConfiguration>(TheCommonUtils.SerializeObjectToJSONString(pipelineConfig)); // TODO implement Clone to avoid reparsing
+
+                                    int thingConfigIndex = 0;
+                                    foreach (var answerThingConfig in answerConfig.ThingConfigurations)
                                     {
-                                        if (answerThingConfig.ThingSpecializationParameters != null)
+                                        // verify that the rest matches (or doesn't exist)
+                                        if (thingConfigIndex < pipelineInstance.ThingConfigurations.Count)
                                         {
-                                            pipelineInstance.ThingConfigurations[thingConfigIndex].ThingSpecializationParameters = answerThingConfig.ThingSpecializationParameters;
+                                            if (answerThingConfig.ThingSpecializationParameters != null)
+                                            {
+                                                pipelineInstance.ThingConfigurations[thingConfigIndex].ThingSpecializationParameters = answerThingConfig.ThingSpecializationParameters;
+                                            }
+                                            else
+                                            {
+                                                TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file: no specialization parameters", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. Config {pipelineInstance.ThingConfigurations[thingConfigIndex]}"));
+                                            }
+
+                                            if (answerThingConfig.ThingSubscriptions != null)
+                                            {
+                                                var generalizedSubscriptions = pipelineInstance.ThingConfigurations[thingConfigIndex].ThingSubscriptions;
+                                                int subIndex = 0;
+                                                var newSubscriptions = new List<TheThingSubscription>();
+
+                                                foreach (var answerSub in answerThingConfig.ThingSubscriptions)
+                                                {
+                                                    if (answerSub != null)
+                                                    {
+                                                        if (answerSub.ExtensionData.ContainsKey("Add"))
+                                                        {
+                                                            // Add a new subscription: remember for now, add later to not confused the subIndex logic
+                                                            newSubscriptions.Add(answerSub);
+                                                        }
+                                                        else if (answerSub.ExtensionData.ContainsKey("Remove"))
+                                                        {
+                                                            // remove this subscription
+                                                            generalizedSubscriptions[subIndex] = null; // Just set to null here, so the subIndex logic doesn't get confused. Will remove the null's later.
+                                                            subIndex++;
+                                                        }
+                                                        else
+                                                        {
+                                                            // Update this subscription
+                                                            var generalizedSub = generalizedSubscriptions[subIndex];
+                                                            TheThingSubscription.SpecializeThingSubscription(answerSub, generalizedSub);
+                                                            subIndex++;
+                                                        }
+                                                    }
+                                                }
+                                                generalizedSubscriptions.AddRange(newSubscriptions);
+                                                generalizedSubscriptions.RemoveAll(sub => sub == null);
+                                            }
+                                            if (answerThingConfig.SensorSubscriptions != null)
+                                            {
+                                                var generalizedSubscriptions = pipelineInstance.ThingConfigurations[thingConfigIndex].SensorSubscriptions;
+                                                int subIndex = 0;
+                                                var newSubscriptions = new List<TheSensorSubscription>();
+
+                                                foreach (var answerSub in answerThingConfig.SensorSubscriptions)
+                                                {
+                                                    if (answerSub != null)
+                                                    {
+                                                        if (answerSub.ExtensionData.ContainsKey("Add"))
+                                                        {
+                                                            // Add a new subscription: remember for now, add later to not confused the index
+                                                            newSubscriptions.Add(answerSub);
+                                                        }
+                                                        else if (answerSub.ExtensionData.ContainsKey("Remove"))
+                                                        {
+                                                            // remove this subscription
+                                                            generalizedSubscriptions[subIndex] = null; // Just set to null here, so the index doesn't get confused. Will remove the null's later.
+                                                            subIndex++;
+                                                        }
+                                                        else
+                                                        {
+                                                            // Update this subscription
+                                                            var generalizedSub = generalizedSubscriptions[subIndex];
+                                                            TheSensorSubscription.SpecializeSensorSubscription(answerSub, generalizedSub);
+
+                                                            subIndex++;
+                                                        }
+                                                    }
+                                                }
+                                                generalizedSubscriptions.AddRange(newSubscriptions);
+                                                generalizedSubscriptions.RemoveAll(sub => sub == null);
+                                            }
+
                                         }
                                         else
                                         {
-                                            TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file: no specialization parameters", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. Config {pipelineInstance.ThingConfigurations[thingConfigIndex]}"));
+                                            TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file: too many specialization parameters. Ignoring.", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. Config# {thingConfigIndex}"));
                                         }
-
-                                        if (answerThingConfig.ThingSubscriptions != null)
-                                        {
-                                            var generalizedSubscriptions = pipelineInstance.ThingConfigurations[thingConfigIndex].ThingSubscriptions;
-                                            int subIndex = 0;
-                                            var newSubscriptions = new List<TheThingSubscription>();
-
-                                            foreach (var answerSub in answerThingConfig.ThingSubscriptions)
-                                            {
-                                                if (answerSub != null)
-                                                {
-                                                    if (answerSub.ExtensionData.ContainsKey("Add"))
-                                                    {
-                                                        // Add a new subscription: remember for now, add later to not confused the subIndex logic
-                                                        newSubscriptions.Add(answerSub);
-                                                    }
-                                                    else if (answerSub.ExtensionData.ContainsKey("Remove"))
-                                                    {
-                                                        // remove this subscription
-                                                        generalizedSubscriptions[subIndex] = null; // Just set to null here, so the subIndex logic doesn't get confused. Will remove the null's later.
-                                                        subIndex++;
-                                                    }
-                                                    else
-                                                    {
-                                                        // Update this subscription
-                                                        var generalizedSub = generalizedSubscriptions[subIndex];
-                                                        TheThingSubscription.SpecializeThingSubscription(answerSub, generalizedSub);
-                                                        subIndex++;
-                                                    }
-                                                }
-                                            }
-                                            generalizedSubscriptions.AddRange(newSubscriptions);
-                                            generalizedSubscriptions.RemoveAll(sub => sub == null);
-                                        }
-                                        if (answerThingConfig.SensorSubscriptions != null)
-                                        {
-                                            var generalizedSubscriptions = pipelineInstance.ThingConfigurations[thingConfigIndex].SensorSubscriptions;
-                                            int subIndex = 0;
-                                            var newSubscriptions = new List<TheSensorSubscription>();
-
-                                            foreach (var answerSub in answerThingConfig.SensorSubscriptions)
-                                            {
-                                                if (answerSub != null)
-                                                {
-                                                    if (answerSub.ExtensionData.ContainsKey("Add"))
-                                                    {
-                                                        // Add a new subscription: remember for now, add later to not confused the index
-                                                        newSubscriptions.Add(answerSub);
-                                                    }
-                                                    else if (answerSub.ExtensionData.ContainsKey("Remove"))
-                                                    {
-                                                        // remove this subscription
-                                                        generalizedSubscriptions[subIndex] = null; // Just set to null here, so the index doesn't get confused. Will remove the null's later.
-                                                        subIndex++;
-                                                    }
-                                                    else
-                                                    {
-                                                        // Update this subscription
-                                                        var generalizedSub = generalizedSubscriptions[subIndex];
-                                                        TheSensorSubscription.SpecializeSensorSubscription(answerSub, generalizedSub);
-
-                                                        subIndex++;
-                                                    }
-                                                }
-                                            }
-                                            generalizedSubscriptions.AddRange(newSubscriptions);
-                                            generalizedSubscriptions.RemoveAll(sub => sub == null);
-                                        }
-
+                                        thingConfigIndex++;
                                     }
-                                    else
+                                    if (answerConfig.ThingConfigurations.Count < pipelineInstance.ThingConfigurations.Count)
                                     {
-                                        TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file: too many specialization parameters. Ignoring.", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. Config# {thingConfigIndex}"));
+                                        TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file: not enough specialization parameters.", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. Params {answerConfig.ThingConfigurations.Count} Expected: {pipelineInstance.ThingConfigurations.Count}"));
                                     }
-                                    thingConfigIndex++;
+                                    pipelines.Add(pipelineInstance);
                                 }
-                                if (answerConfig.ThingConfigurations.Count < pipelineInstance.ThingConfigurations.Count)
+                                catch (Exception e)
                                 {
-                                    TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file: not enough specialization parameters.", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. Params {answerConfig.ThingConfigurations.Count} Expected: {pipelineInstance.ThingConfigurations.Count}"));
+                                    TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. {e.Message}"));
                                 }
-                                pipelines.Add(pipelineInstance);
-                            }
-                            catch (Exception e)
-                            {
-                                TheBaseAssets.MySYSLOG.WriteToLog(7721, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Error processing answer file", eMsgLevel.l1_Error, $"File: {configFileNameForLog}. Answer File: {answerFileNameForLog}. {e.Message}"));
                             }
                         }
                     }

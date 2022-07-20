@@ -148,7 +148,7 @@ namespace cdePackager
                         }
                         if (bDiagnostics)
                         {
-                            logger.WriteLine($"Resolving {args.Name} {name}: {ass.CodeBase}");
+                            logger.WriteLine($"Resolving {args.Name} {name}: {ass?.CodeBase}");
                         }
                         return ass;
                     };
@@ -412,7 +412,10 @@ namespace cdePackager
             //if (pIsService && !TheBaseAssets.MyServiceHostInfo.StationRoles.Contains(GetEngineName()))
             //    TheBaseAssets.MyServiceHostInfo.StationRoles.Add(GetEngineName());
         }
-        public void SetMultiChannel(bool mIsMulti) {  }
+        public void SetMultiChannel(bool mIsMulti) 
+        {  
+            // Not needed
+        }
         public void SetIsMiniRelay(bool pIsRelay) { EngineState.IsMiniRelay = pIsRelay; }
 
         public void SetStatusLevel(int pLevel)
@@ -431,6 +434,8 @@ namespace cdePackager
 
         public void SetIsolationFlags(bool AllowIsolation, bool AllowNodeHopp = false)
         {
+            // Not needed
+
         }
 
         public void SetIsInitializing()
@@ -500,7 +505,7 @@ namespace cdePackager
         /// </summary>
         /// <param name="createDefaultLicense"></param>
         /// <param name="licenseAuthorities">Indicates which additional signatures are required on a license file.</param>
-        public void SetIsLicensed(bool createDefaultLicense, string[] licenseAuthorities)
+        public void SetIsLicensed(bool createDefaultLicense = true, string[] licenseAuthorities = null)
         {
             if (!EngineState.IsInitialized)
             {
@@ -622,6 +627,7 @@ namespace cdePackager
 
         public void FireEvent(string pEventName, object pPara, bool FireAsync)
         {
+            // Not needed
         }
 
         public TheThing GetBaseThing()
@@ -666,22 +672,29 @@ namespace cdePackager
 
         public void InitAndSubscribe()
         {
+            // Not needed
+
         }
 
         public void MessageProcessed(TSM pMessage)
         {
+            // Not needed
+
         }
 
         public void ProcessInitialized()
         {
+            // Not needed
         }
 
         public void ProcessMessage(TheProcessMessage pMessage)
         {
+            // Not needed
         }
 
         public void ProcessMessage(TSM pMessage)
         {
+            // Not needed
         }
 
         public bool PublishToChannels(TSM pMessage, Action<TSM> pLocalCallback)
@@ -691,6 +704,7 @@ namespace cdePackager
 
         public void RegisterCSS(string cssDarkPath, string cssLitePath, Action<TheRequestData> sinkInterceptHttp)
         {
+            // Not needed
         }
 
         public Action<ICDEThing, object> RegisterEvent(string pEventName, Action<ICDEThing, object> pCallback)
@@ -700,23 +714,17 @@ namespace cdePackager
 
         public void RegisterJSEngine(Action<TheRequestData> sinkInterceptHttp)
         {
+            // Not needed
         }
 
         public void ReplyInitialized(TSM pMessage)
         {
-        }
-
-        public void ResetChannel()
-        {
-        }
-
-        public bool ResurectChannels()
-        {
-            return true;
+            // Not needed
         }
 
         public void SetEngineReadiness(bool pReady, TheChannelInfo pOriginator)
         {
+            // Not needed
         }
 
 
@@ -727,22 +735,27 @@ namespace cdePackager
 
         public void StopEngine()
         {
+            // Not needed
         }
 
         public void Subscribe()
         {
+            // Not needed
         }
 
         public void UnregisterEvent(string pEventName, Action<ICDEThing, object> pCallback)
         {
+            // Not needed
         }
 
         public void UpdateCosting(TSM pMessage)
         {
+            // Not needed
         }
 
         public void UpdateEngineState(string pScrambledScopeID)
         {
+            // Not needed
         }
 
         public void SetDeviceTypes(List<TheDeviceTypeInfo> pDeviceTypeInfo)

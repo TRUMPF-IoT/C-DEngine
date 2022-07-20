@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -820,8 +821,10 @@ namespace nsCDEngine.BaseClasses
                 if (pUid.Length > 36)
                     pUid = pUid.Substring(0, 36);
                 else
+                {
                     if (pUid.Length < 36)
-                    pUid += "000000000000".Substring(0, 36 - pUid.Length);
+                        pUid += "000000000000".Substring(0, 36 - pUid.Length);
+                }
                 res = CGuid(pUid);
             }
             return res;
@@ -1275,25 +1278,28 @@ namespace nsCDEngine.BaseClasses
                 init((uint)seed);
             }
 
-            private Random mRandom;
+            private RandomNumberGenerator mRandom;
 
             private void init(uint seed)
             {
-                mRandom = new Random((int)seed);
+                mRandom = RandomNumberGenerator.Create(); // Compliant for security-sensitive use cases
             }
 
-            public uint NextUInt(uint minValue, uint maxValue)
+            public uint NextUInt(uint pMin, uint pMax)
             {
-                if (minValue == maxValue) return minValue;
-                if (minValue > maxValue)
+                if (pMin == pMax) return pMin;
+                if (pMin > pMax)
                 {
-                    var t = maxValue;
-                    maxValue = minValue;
-                    minValue = t;
+                    var t = pMax;
+                    pMax = pMin;
+                    pMin = t;
                 }
                 lock (mRandom)
                 {
-                    return (uint)mRandom.Next((int)minValue, (int)maxValue);
+                    byte[] data = new byte[16];
+                    mRandom.GetBytes(data);
+                    var ul = BitConverter.ToUInt64(data, 0);
+                    return (uint)((ul % (pMax - pMin)) + pMin);
                 }
             }
 
@@ -1301,7 +1307,10 @@ namespace nsCDEngine.BaseClasses
             {
                 lock (mRandom)
                 {
-                    return mRandom.NextDouble();
+                    byte[] data = new byte[16];
+                    mRandom.GetBytes(data);
+                    var ul = BitConverter.ToUInt64(data, 0) >>11;
+                    return ul / (double)(1UL << 53);
                 }
             }
         }

@@ -130,24 +130,18 @@ namespace nsCDEngine.Discovery
             try
             {
                 ArrayList list = new ArrayList(cdeGetHostEntry(MyHostName)?.AddressList);
-                if (list == null) return;
-                foreach (IPAddress address in list)
+                if (list?.Count > 0)
                 {
-                    if (address.AddressFamily==AddressFamily.InterNetwork && !AddressTable.ContainsKey(address))
+                    foreach (IPAddress address in list)
                     {
-                        GetLocalIPs(false);
-                        if (OnNewInterfaceEvent!=null && AddressTable.ContainsKey(address) && AddressTable[address].IsDnsEnabled)
-                            OnNewInterfaceEvent(this,new TheIPDef() { IPAddr = address });
+                        if (address.AddressFamily == AddressFamily.InterNetwork && !AddressTable.ContainsKey(address))
+                        {
+                            GetLocalIPs(false);
+                            if (OnNewInterfaceEvent != null && AddressTable.ContainsKey(address) && AddressTable[address].IsDnsEnabled)
+                                OnNewInterfaceEvent(this, new TheIPDef() { IPAddr = address });
+                        }
                     }
                 }
-                /*foreach (IPAddress address2 in AddressTable.Keys)
-                {
-                    if (AddressTable[address2].IsDnsEnabled && !list.Contains(address2))
-                    {
-                        if (AddressTable[address2].IsDnsEnabled)
-                            this.OnInterfaceDisabledEvent.Fire(this, address2);
-                    }
-                }*/
             }
             catch (Exception exception)
             {
@@ -174,12 +168,12 @@ namespace nsCDEngine.Discovery
                 try
                 {
                     socket.Bind(localEP);
+                    break;
                 }
-                catch (Exception exception)
+                catch (Exception)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(146, new TSM("UPnP", "GetFreePort Error", eMsgLevel.l1_Error, exception.ToString()));
+                    TheBaseAssets.MySYSLOG.WriteToLog(146, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("UPnP", $"Port {num} busy - trying next", eMsgLevel.l6_Debug));
                 }
-                break;
             }
             socket.Close();
             return num;
@@ -361,7 +355,7 @@ namespace nsCDEngine.Discovery
         /// <returns></returns>
         public static bool IsConnectedToInternet()
         {
-            string host = "8.8.8.8";
+            string host = "1.1.1.1"; //NOSONAR - fixed ping to Cloudflare
             var p = new Ping();
             try
             {
@@ -386,7 +380,7 @@ namespace nsCDEngine.Discovery
         /// <param name="pCookie">A cookie to track this call with</param>
         public static void GetExternalIp(Action<IPAddress, object> pCallback, object pCookie)
         {
-            string whatIsMyIp = "http://checkip.dyndns.org/";
+            string whatIsMyIp = "https://ifconfig.me/ip";
             ExIP tExIP = new ExIP
             {
                 Callback = pCallback,
@@ -403,11 +397,7 @@ namespace nsCDEngine.Discovery
                 IPAddress externalIp = null;
                 try
                 {
-                    string getIpRegex = @"(?<=<body>.*)\d*\.\d*\.\d*\.\d*(?=</body>)";
-                    System.Text.RegularExpressions.Regex r = new System.Text.RegularExpressions.Regex(getIpRegex);
-                    System.Text.RegularExpressions.Match m = r.Match(TheCommonUtils.CArray2UTF8String(pResult.ResponseBuffer));
-                    if (m.Success)
-                        externalIp = IPAddress.Parse(m.Value);
+                    externalIp = IPAddress.Parse(TheCommonUtils.CArray2UTF8String(pResult.ResponseBuffer));
                 }
                 catch (Exception e)
                 {

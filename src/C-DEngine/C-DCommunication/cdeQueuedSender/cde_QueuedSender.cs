@@ -20,7 +20,7 @@ using nsCDEngine.Security;
 
 namespace nsCDEngine.Communication
 {
-    internal partial class TheQueuedSender : TheDataBase
+    internal partial class TheQueuedSender : TheDataBase, IDisposable
     {
         public TheQueuedSender()
         {
@@ -34,6 +34,11 @@ namespace nsCDEngine.Communication
 
         public bool StartSender(TheChannelInfo pChannelInfo, string pInitialSubscriptions, bool IsIncoming)
         {
+            if (!TheBaseAssets.MasterSwitch)
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(2300, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"System shutting down, QS will not start", eMsgLevel.l2_Warning), true);
+                return false;
+            }
             if (MyTargetNodeChannel != null)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2300, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"This should never happen: QueuedSender {pChannelInfo.ToMLString()} has already started", eMsgLevel.l1_Error), true);
@@ -536,7 +541,7 @@ namespace nsCDEngine.Communication
             LastError = pCause;
             try
             {
-                if (MyTargetNodeChannel != null && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE) // && !TheCommonUtils.IsHostADevice()) NEW3.211: Even Devices should try reconnect
+                if (MyTargetNodeChannel != null && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE && TheBaseAssets.MasterSwitch) // && !TheCommonUtils.IsHostADevice()) NEW3.211: Even Devices should try reconnect
                 {
                     StopHeartBeat();
                     //SendCounter = 0;
@@ -738,7 +743,8 @@ namespace nsCDEngine.Communication
                     TheBaseAssets.MySession.RemoveSessionsByDeviceID(MyTargetNodeChannel.cdeMID, Guid.Empty);
                     if (MyTargetNodeChannel != null && MyTargetNodeChannel.MySessionState != null)
                         TheBaseAssets.MySession.RemoveSessionByID(MyTargetNodeChannel.MySessionState.cdeMID);
-                    MyTargetNodeChannel.MySessionState = null;
+                    if (MyTargetNodeChannel != null)
+                        MyTargetNodeChannel.MySessionState = null; 
                 }
                 TheBaseAssets.MySYSLOG.WriteToLog(2308, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"QSender Last Reference removed - QSender will dispose for {MyTargetNodeChannel?.ToMLString()}", eMsgLevel.l3_ImportantMessage
 #if JC_DEBUGCOMM  //No Stacktrace on Platforms other than windows
@@ -1282,10 +1288,10 @@ namespace nsCDEngine.Communication
                                     {
                                         var Parts = tP.Split('=');
                                         tName = Parts[0];
-                                        var tVal = Parts[1];
                                         if (tName.Length == tP.Length)
                                             continue;
-                                        if (!tSP.Any(s => s.StartsWith(tName)) || tVal.StartsWith("{") || tVal.StartsWith("["))
+                                        var tVal = Parts.Length > 1 ? Parts[1] : null;
+                                        if (!tSP.Any(s => s.StartsWith(tName)) || tVal?.StartsWith("{")==true || tVal?.StartsWith("[")==true)
                                             tSP.Add(tP);
                                         else
                                         {
@@ -1368,10 +1374,7 @@ namespace nsCDEngine.Communication
                 else
                 {
                     PayLoadBytes = MsgToQueue.PLB;
-                    if (myTargetNodeChannel.SenderType != cdeSenderType.CDE_JAVAJASON)
-                        PayLoadBytesLength = PayLoadBytes.Length;
-                    else
-                        PayLoadBytesLength = PayLoadBytes.Length;
+                    PayLoadBytesLength = PayLoadBytes.Length;
                 }
                 int PayLen = PayLoadBytesLength;
                 int tTeles = 1;
@@ -1503,6 +1506,13 @@ namespace nsCDEngine.Communication
                                     {
                                         tMsgQ3 = qc;
                                     }
+                                }
+                                if (tMsg==null)
+                                {
+                                    TheBaseAssets.MySYSLOG.WriteToLog(23227, new TSM("QueuedSender", $"Get Next Message - locked message found with QLen={tQKV?.Count()}, message will be removed!", eMsgLevel.l2_Warning));
+                                    MyCoreQueue.Clear(false);
+                                    pQCountRet = 0;
+                                    return;
                                 }
                                 if (tMsg.QueueIdx > 2)
                                 {
@@ -1669,7 +1679,7 @@ namespace nsCDEngine.Communication
                     MyTSMHistoryCount = MyTSMHistory.Count; // This is expensive (takes a global concurrentdictionary lock)
                     TheCDEKPIs.IncTSMByEng(pTSM.ENG);
 
-                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.ESSENTIALS) | MyTSMHistoryCount != 3000 ? null : new TSM("QSRegistry", $"TSMSeenHistory QS very full! Cnt:{MyTSMHistoryCount} Out:{pIsOutgoing} TXT:{pTSM.TXT} TIM:{pTSM.TIM} ENG:{pTSM.ENG} SEID:{tSessionID}  FID:{cFID} ORG:{tOrg}", eMsgLevel.l6_Debug)); // full  TSM: {pTSM.ToString()}
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.ESSENTIALS) || MyTSMHistoryCount != 3000 ? null : new TSM("QSRegistry", $"TSMSeenHistory QS very full! Cnt:{MyTSMHistoryCount} Out:{pIsOutgoing} TXT:{pTSM.TXT} TIM:{pTSM.TIM} ENG:{pTSM.ENG} SEID:{tSessionID}  FID:{cFID} ORG:{tOrg}", eMsgLevel.l6_Debug)); // full  TSM: {pTSM.ToString()}
                     if (MyTSMHistoryCount > 6000)
                     {
                         MyTSMHistory.Reset();

@@ -70,7 +70,7 @@ namespace nsCDEngine.Communication
 
             var _MyTargetNodeChannel = pSender?.MyTargetNodeChannel;
             Uri TargetUri = TheCommonUtils.CUri(_MyTargetNodeChannel?.TargetUrl, true);
-            if (TargetUri == null)
+            if (TargetUri == null || _MyTargetNodeChannel==null)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("WSProcessor", "Invalid Target URL", eMsgLevel.l1_Error, $"{_MyTargetNodeChannel?.ToString()}"));
                 return false;
@@ -279,10 +279,13 @@ namespace nsCDEngine.Communication
             catch (Exception eee)
             {
                 HasFaulted = true;
-                if (eee.Source=="System")
-                    TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed because WebSocket was closed during ReceiveAsync.", eMsgLevel.l1_Error));
-                else
-                    TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed.", eMsgLevel.l1_Error, eee.ToString()));
+                if (TheBaseAssets.MasterSwitch)
+                {
+                    if (eee.Source == "System")
+                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed because WebSocket was closed during ReceiveAsync.", eMsgLevel.l1_Error));
+                    else
+                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed.", eMsgLevel.l1_Error, eee.ToString()));
+                }
             }
             TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ProcessWS", $"ProcessWS Loop for {OwnerNodeID} has ended. Faulted:{HasFaulted} HasWS:{websocket != null}", eMsgLevel.l3_ImportantMessage));
             ConnectSuccess = false;
@@ -332,7 +335,7 @@ namespace nsCDEngine.Communication
 
         private readonly object _postToSocketLock = new object();
 
-        internal override void PostToSocket(TheDeviceMessage pMsg, byte[] pPostBuffer, bool SendAsBinary, bool IsInitialConnect)
+        internal override void PostToSocket(TheDeviceMessage pMsg, byte[] pPostBuffer, bool pSendAsBinary, bool IsInitialConnect)
         {
             TheDiagnostics.SetThreadName("WSPostToSocket:" + ((MyQSender?.MyTargetNodeChannel!=null) ? MyQSender.MyTargetNodeChannel.ToString():"DEAD"));
             if (MyQSender?.MyTargetNodeChannel==null)
@@ -381,7 +384,7 @@ namespace nsCDEngine.Communication
                             outputBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(tStr));
                         }
                         //LogBufferToFile("wsoutputputlog", outputBuffer.Array, outputBuffer.Offset, outputBuffer.Count);
-                        Task tTask = websocket.SendAsync(outputBuffer, SendAsBinary ? WebSocketMessageType.Binary : WebSocketMessageType.Text, true, TheBaseAssets.MasterSwitchCancelationToken);
+                        Task tTask = websocket.SendAsync(outputBuffer, pSendAsBinary ? WebSocketMessageType.Binary : WebSocketMessageType.Text, true, TheBaseAssets.MasterSwitchCancelationToken);
                         tTask.Wait(TheBaseAssets.MyServiceHostInfo.TO.WsTimeOut * 10);
                         if (!tTask.IsCompleted)
                         {
@@ -410,9 +413,9 @@ namespace nsCDEngine.Communication
 
 
 
-        public override void Shutdown(bool FireEvent, string pReason)
+        public override void Shutdown(bool IsAsync, string pReason)
         {
-            base.Shutdown(FireEvent, pReason);
+            base.Shutdown(IsAsync, pReason);
             try
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(43611, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheWSServer", $"WS Server for {OwnerNodeID} CloseFired:{CloseFired} Reason: {pReason}", eMsgLevel.l3_ImportantMessage));
@@ -429,7 +432,7 @@ namespace nsCDEngine.Communication
                 catch {
                     //ignored
                 }
-                if (FireEvent && !CloseFired && eventClosed != null) //FireEvent &&
+                if (IsAsync && !CloseFired && eventClosed != null) //FireEvent &&
                 {
                     CloseFired = true;
                     eventClosed(pReason);

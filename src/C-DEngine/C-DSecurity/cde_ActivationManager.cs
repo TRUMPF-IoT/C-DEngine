@@ -16,6 +16,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+#pragma warning disable 1591
 
 namespace nsCDEngine.Activation
 {
@@ -228,7 +229,7 @@ namespace nsCDEngine.Activation
                     }
                     if (result)
                     {
-                        var pinnedLicense = deviceTypeStatus.ActivatedParameters?.FirstOrDefault(lp => lp.Name == "PinnedLicense");
+                        var pinnedLicense = deviceTypeStatus?.ActivatedParameters?.FirstOrDefault(lp => lp.Name == "PinnedLicense");
                         if (pinnedLicense != null)
                         {
                             var pinnedDeviceId = MySecrets.GetPinnedDeviceId(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, nsCDEngine.Discovery.TheNetworkInfo.GetMACAddress(false));

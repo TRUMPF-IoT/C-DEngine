@@ -51,7 +51,7 @@ namespace DataLogUtilities
                 {
                     return true;
                 }
-                if (yValue.Contains("http://opcfoundation.org/UA/2008/02/Types.xsd") || xValue.Contains("http://opcfoundation.org/UA/2008/02/Types.xsd"))
+                if (yValue.Contains("http://opcfoundation.org/UA/2008/02/Types.xsd") || xValue.Contains("http://opcfoundation.org/UA/2008/02/Types.xsd")) //NOSONAR schemas are fixed
                 {
                     return true;
                 }

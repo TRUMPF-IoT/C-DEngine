@@ -46,7 +46,7 @@ namespace nsCDEngine.Security
         {
             if (toEncrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new AesManaged();
+            AesManaged myRijndael = new AesManaged();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform encryptor = myRijndael.CreateEncryptor(AK, AI);
             MemoryStream msEncrypt = new MemoryStream();
             CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
@@ -70,7 +70,7 @@ namespace nsCDEngine.Security
         {
             if (toDecrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new AesManaged();
+            AesManaged myRijndael = new AesManaged(); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform decryptor = myRijndael.CreateDecryptor(AK, AI);
             byte[] resultArray = decryptor.TransformFinalBlock(toDecrypt, 0, toDecrypt.Length);
             myRijndael.Clear();
@@ -107,7 +107,7 @@ namespace nsCDEngine.Security
         public string RSADecryptWithPrivateKey(byte[] val, string pPrivateKey)
         {
             if (string.IsNullOrEmpty(pPrivateKey)) return "";
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
             try
             {
                 rsa.FromXmlString(pPrivateKey);
@@ -133,7 +133,7 @@ namespace nsCDEngine.Security
         ///
         /// <returns>   A string. </returns>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        public string RSADecrypt(byte[] val, RSACryptoServiceProvider rsa = null, string RSAKey = null, string RSAPublic = null)
+        public string RSADecrypt(byte[] val, RSACryptoServiceProvider rsa, string RSAKey = null, string RSAPublic = null)
         {
             if (rsa == null)
             {
@@ -143,7 +143,7 @@ namespace nsCDEngine.Security
                     if (string.IsNullOrEmpty(RSAKey))
                         return "";
                 }
-                rsa = new RSACryptoServiceProvider();
+                rsa = new RSACryptoServiceProvider(2048);
                 rsa.FromXmlString(RSAKey);
             }
 #if (!CDE_STANDARD) // RSA Decrypt parameter different (padding enum vs. bool)
@@ -167,7 +167,7 @@ namespace nsCDEngine.Security
         public byte[] RSAEncrypt(string val, string pRSAPublic)
         {
             if (string.IsNullOrEmpty(pRSAPublic) || string.IsNullOrEmpty(val)) return null;
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
             string[] rsaP = pRSAPublic.Split(',');
             RSAParameters tP = new RSAParameters()
             {
@@ -175,7 +175,7 @@ namespace nsCDEngine.Security
                 Exponent = ToHexByte(rsaP[0])
             };
             rsa.ImportParameters(tP);
-            byte[] tBytes = rsa.Encrypt(CUTF8String2Array(val), false);
+            byte[] tBytes = rsa.Encrypt(CUTF8String2Array(val), false);     //NOSONAR This is required to support browsers without TLS in on-premises environments
             return tBytes;
         }
 
@@ -197,9 +197,9 @@ namespace nsCDEngine.Security
             RSACryptoServiceProvider rsa;
             RSAKey = null;
             if (Environment.OSVersion.Platform == PlatformID.Unix) // CODE REVIEW: Is this really the right check/condition? CM: Better would be to find out if we create this in SW or HW
-                rsa = new RSACryptoServiceProvider(512);
+                rsa = new RSACryptoServiceProvider(512); //NOSONAR small linux devices cannot calulate larger keys fast enough
             else
-                rsa = new RSACryptoServiceProvider();
+                rsa = new RSACryptoServiceProvider(2048);
             if (!_platformDoesNotSupportRSAXMLExportImport)
             {
                 try

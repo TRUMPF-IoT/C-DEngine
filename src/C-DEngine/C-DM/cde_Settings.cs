@@ -961,7 +961,7 @@ namespace nsCDEngine.ISM
 
                 CU.cdeRunAsync("PingForInternet", true, (o) =>
                 {
-                    nsCDEngine.Discovery.TheNetworkInfo.IsConnectedToInternet();
+                    TheNetworkInfo.IsConnectedToInternet();
                 });
                 temp = GetArgOrEnv(CmdArgs, "MyAltStationURLs");
                 if (!string.IsNullOrEmpty(temp))

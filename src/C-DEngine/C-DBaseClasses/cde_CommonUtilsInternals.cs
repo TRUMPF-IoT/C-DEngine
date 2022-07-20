@@ -978,7 +978,7 @@ namespace nsCDEngine.BaseClasses
             if (tAss == null)
                 tAss = Assembly.GetExecutingAssembly();
             if (tAss == null)
-                tAss = typeof(TheCommonUtils).GetType().Assembly;
+                tAss = typeof(TheCommonUtils).Assembly;
             diagnosticsInfo = string.Empty;
             tAss.ManifestModule.GetPEKind(out var assemblyPEKind, out var assemblyPlatform);
             var runtimeVersion = tAss.ImageRuntimeVersion;
@@ -1196,11 +1196,7 @@ namespace nsCDEngine.BaseClasses
                     if (pMessage.PLS.StartsWith("data:"))
                     {
                         string[] fParts = cdeSplit(pMessage.PLS, "base64,", false, false);
-#if PORTABLE
-                        if (!tTargetFileName.Contains("\\") && !tTargetFileName.Contains("/"))
-#else
-                        if (!!tTargetFileName.Contains(Path.DirectorySeparatorChar) && !tTargetFileName.Contains(Path.AltDirectorySeparatorChar))
-#endif
+                        if (!tTargetFileName.Contains(Path.DirectorySeparatorChar) && !tTargetFileName.Contains(Path.AltDirectorySeparatorChar))
                         {
                             if (fParts[0].Contains("image"))
                             {

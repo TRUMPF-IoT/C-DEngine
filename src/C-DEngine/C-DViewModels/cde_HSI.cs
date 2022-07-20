@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+#pragma warning disable 1591
 
 namespace nsCDEngine.ViewModels
 {
@@ -653,6 +654,7 @@ namespace nsCDEngine.ViewModels
             // ReSharper disable once ValueParameterNotUsed
             internal set
             {
+                mStatusLevel = value;
                 int tNewLevel = StatusLevel;
                 if (mStatusLevel != tNewLevel)
                 {
@@ -851,7 +853,7 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         public bool ShowMarkupInLog
         {
-            get { return m_ShowMInLog | DebugLevel > eDEBUG_LEVELS.ESSENTIALS; }
+            get { return m_ShowMInLog || DebugLevel > eDEBUG_LEVELS.ESSENTIALS; }
             set { m_ShowMInLog = value; }
         }
         private bool m_ShowMInLog = false;
@@ -918,8 +920,8 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         public bool AuditNMIChanges
         {
-            get { return m_auditNMIChanges & TheLoggerFactory.HasEngine(); }
-            internal set { m_auditNMIChanges = true; }
+            get { return m_auditNMIChanges && TheLoggerFactory.HasEngine(); }
+            internal set { m_auditNMIChanges = value; }
         }
         private bool m_auditNMIChanges = false;
 
@@ -2196,6 +2198,9 @@ namespace nsCDEngine.ViewModels
             }
         }
 
+        /// <summary>
+        /// Creates a new Connection Channel Info
+        /// </summary>
         public TheChannelInfo()
         {
             IsOneWay = TheBaseAssets.MyServiceHostInfo.OneWayRelayMode;
@@ -2205,6 +2210,10 @@ namespace nsCDEngine.ViewModels
             }
         }
 
+        /// <summary>
+        /// Clones a given Channel Info into a new Channel info
+        /// </summary>
+        /// <param name="pc">The Info to clone</param>
         public TheChannelInfo(TheChannelInfo pc)
         {
             this.cdeMID = pc.cdeMID;
@@ -2282,18 +2291,20 @@ namespace nsCDEngine.ViewModels
 
         internal bool AddAltScopes(List<string> pAlternateScopes)
         {
-            if (pAlternateScopes?.Count < 1)
-                return false;
-            bool FoundAtLeastOne = false;
-            foreach (var ts in pAlternateScopes)
+            if (pAlternateScopes?.Count > 0)
             {
-                if (RealScopeID != ts && !AltScopes.Contains(ts))
+                bool FoundAtLeastOne = false;
+                foreach (var ts in pAlternateScopes)
                 {
-                    AltScopes.Add(ts);
-                    FoundAtLeastOne = true;
+                    if (RealScopeID != ts && !AltScopes.Contains(ts))
+                    {
+                        AltScopes.Add(ts);
+                        FoundAtLeastOne = true;
+                    }
                 }
+                return FoundAtLeastOne;
             }
-            return FoundAtLeastOne;
+            return false;
         }
 
         internal bool ContainsAltScope(string pInScope)
@@ -2402,16 +2413,10 @@ namespace nsCDEngine.ViewModels
             return false;
         }
 
-        /// <summary>
-        /// gets the hash of the channel
-        /// </summary>
-        /// <returns></returns>
         public override int GetHashCode()
         {
-            // ReSharper disable once BaseObjectGetHashCodeCallInGetHashCode
-            return base.GetHashCode();
+            return cdeMID.GetHashCode();
         }
-
     }
 
     /// <summary>
