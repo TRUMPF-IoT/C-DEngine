@@ -24,7 +24,6 @@ using nsCDEngine.ISM;
 using System.IO;
 using System.Threading.Tasks;
 using System.Text;
-using cdeNewtonsoft.Json.Linq;
 // ReSharper disable UseNullPropagation
 // ReSharper disable DelegateSubtraction
 // ReSharper disable MergeSequentialChecks
@@ -98,7 +97,7 @@ namespace nsCDEngine.Engines.StorageService
             public object Cookie;
         }
 
-        #region Timed Store-Request Management
+#region Timed Store-Request Management
         private sealed class TimedRequest
         {
             public Action<StoreResponse> MyRequest;
@@ -183,9 +182,9 @@ namespace nsCDEngine.Engines.StorageService
             }
         }
 
-        #endregion
+#endregion
 
-        #region Event Handling
+#region Event Handling
 
         private readonly TheCommonUtils.RegisteredEventHelper<StoreEventArgs> MyRegisteredEvents = new ();
         public Action<StoreEventArgs> RegisterEvent(string pEventName, Action<StoreEventArgs> pCallback)
@@ -205,7 +204,7 @@ namespace nsCDEngine.Engines.StorageService
         {
             return MyRegisteredEvents.HasRegisteredEvents(pEventName);
         }
-        #endregion
+#endregion
         public bool IsReady { get; internal set; } // CODE REVIEW: Should this be internal set? CM: YES!
         public bool AllowFireUpdates { get; set; }
         public bool IsCached { get; set; }
@@ -276,7 +275,7 @@ namespace nsCDEngine.Engines.StorageService
         public TheMirrorCache<T> MyMirrorCache = new ();
         private IStorageService engineStorageServer;
 
-        #region Init and Active Properties
+#region Init and Active Properties
         public TheStorageMirror(IStorageService pStorageServer)
         {
             engineStorageServer = pStorageServer;
@@ -391,9 +390,9 @@ namespace nsCDEngine.Engines.StorageService
             DisposeExpireTimer();
             Reset();
         }
-        #endregion
+#endregion
 
-        #region Expiration Management
+#region Expiration Management
 
         /// <summary>
         /// Sets a time in seconds after which Record entries will be removed from the Database
@@ -493,9 +492,9 @@ namespace nsCDEngine.Engines.StorageService
                MyMirrorCache.SetMaxStoreSize(pRecords);
         }
 
-        #endregion
+#endregion
 
-        #region Store Init, Notify and Reset
+#region Store Init, Notify and Reset
         public void InitializeStore(bool ResetContent)
         {
             InitializeStore(false, ResetContent, false, true);
@@ -896,7 +895,7 @@ namespace nsCDEngine.Engines.StorageService
                 return false;
             }
         }
-        #endregion
+#endregion
 
         public void sinkProcessServiceMessages(TSM pMessage)
         {
@@ -920,7 +919,7 @@ namespace nsCDEngine.Engines.StorageService
             }
         }
 
-        #region DELETE Items
+#region DELETE Items
         /// <summary>
         /// Removes the store from the StorageMirror repository and removes the table from the IStorageService if applicable.
         /// </summary>
@@ -1069,9 +1068,9 @@ namespace nsCDEngine.Engines.StorageService
                 }, CacheTableName);
             }
         }
-        #endregion
+#endregion
 
-        #region EXECUTE Sql
+#region EXECUTE Sql
         public void ExecuteSql(string tSql,string tColFilter, Action<StoreResponse> pCallBack)
         {
             if (!IsRAMStore)
@@ -1101,9 +1100,9 @@ namespace nsCDEngine.Engines.StorageService
                 tReq.MyRequest(tResponse);
             }
         }
-        #endregion
+#endregion
 
-        #region ADD and UPDATE Items
+#region ADD and UPDATE Items
         /// <summary>
         /// Adds a single item to the StorageMirror's underlying MirrorCache and/or IStorageService.
         /// </summary>
@@ -1500,9 +1499,9 @@ namespace nsCDEngine.Engines.StorageService
             }
             CallBack?.Invoke(ReturnedMsg);
         }
-        #endregion
+#endregion
 
-        #region GET Records
+#region GET Records
 
         public List<T> TheValues
         {
@@ -2079,9 +2078,9 @@ namespace nsCDEngine.Engines.StorageService
             }
             return pRec;
         }
-        #endregion
+#endregion
 
-        #region NMI Table and Form Code
+#region NMI Table and Form Code
 
         internal string UpdateFromJSON(TheFormInfo pForm, string pJSON, string pDirtyMask, Guid pOriginator,TheClientInfo pClientInfo, Guid pSEID, Action<StoreResponse> pResponse)
         {
@@ -2689,9 +2688,9 @@ namespace nsCDEngine.Engines.StorageService
             return retList;
         }
 
-        #endregion
+#endregion
 
-        #region Chart Code
+#region Chart Code
         private void sinkChartGroups(StoreResponse tRes)
         {
             if (tRes != null && !tRes.HasErrors)
@@ -2947,7 +2946,7 @@ namespace nsCDEngine.Engines.StorageService
                     tCookie.ChartFactory.AddPointToSeries(tChart.Name[i], pX, tChart.MyValue[i]);
             }
         }
-        #endregion
+#endregion
     }
 
     /// <summary>

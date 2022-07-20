@@ -2438,18 +2438,18 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, TheMetaDataBase> CreateEngineForms(TheThing pBaseThing, Guid pID, string pTitle, string pFilter, int pFldOrder, int pFlag, int pACL, string category, string pCustomCommand, TheTableParameters tableParams)
         {
+            var tRes = new cdeConcurrentDictionary<string, TheMetaDataBase>();
             TheDashboardInfo tDash = GetEngineDashBoardByThing(pBaseThing);
-            if (tDash == null || pBaseThing == null) return null;
+            if (tDash == null || pBaseThing == null) return tRes;
             string tEngineName = TheThing.GetSafePropertyString(pBaseThing, "EngineName");
             if (string.IsNullOrEmpty(pFilter))
             {
                 if (string.IsNullOrEmpty(tEngineName))
-                    return null;
+                    return tRes;
                 pFilter = "EngineName=" + tEngineName;
             }
             if (pACL < 0)
                 pACL = pBaseThing.cdeA;
-            var tRes = new cdeConcurrentDictionary<string, TheMetaDataBase>();
             tRes["DashInfo"] = tDash;
             TheFormInfo tAllDevices = new TheFormInfo() { cdeMID = pID, FormTitle = pTitle, defDataSource = "TheThing;:;0;:;True;:;" + pFilter, DefaultView = 0, cdeO = pBaseThing.cdeMID, cdeA = pACL };
             tRes["Form"] = tAllDevices;
@@ -2817,16 +2817,23 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddConnectivityBlock(TheThing pBaseThing, TheFormInfo pTargetForm, int pBaseFldNumber, int pAcl, Action<TheProcessMessage, bool> eventConnect = null, bool IncludeUIDPWD = false, ThePropertyBag pProperties = null)
         {
-            if (pBaseThing == null || pTargetForm == null) return null;
-            //collapsable group , "DoClose=true"
             cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
-            TheFieldInfo tGroup = AddSmartControl(pBaseThing, pTargetForm, eFieldType.CollapsibleGroup, pBaseFldNumber, 2, pAcl, "###Connectivity###", true, null, null, new nmiCtrlCollapsibleGroup { DoClose = true, TileWidth = 6, IsSmall = true });
-            if (tGroup == null) return null;
+            if (pBaseThing == null || pTargetForm == null) return tFlds;
+            TheFieldInfo tGroup = AddSmartControl(pBaseThing, pTargetForm, eFieldType.CollapsibleGroup, pBaseFldNumber, 2, pAcl, "###Connectivity###", true, null, null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
+            if (tGroup == null) return tFlds;
             tFlds["Group"] = tGroup;
 
+            int tPar = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "ParentFld", "="));
+            if (tPar>0)
+                tGroup.SetParent(tPar);
             int tTFY = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "TileFactorY", "="));
             if (tTFY < 1)
                 tTFY = 1;
+            var tDoClose = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pProperties, "DoClose", "="));
+            if (tDoClose)
+                tGroup.PropertyBag = new nmiStatusBlock { DoClose = tDoClose };
+            else
+                tGroup.AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiCtrlCollapsibleGroup { DoClose = true });
 
             string pAutoConnect = ThePropertyBag.PropBagGetValue(pProperties, "AutoConnectPropertyName", "=");
             if (!string.IsNullOrEmpty(pAutoConnect))
@@ -2850,10 +2857,10 @@ namespace nsCDEngine.Engines.NMIService
                     if (!(pObj is TheProcessMessage pMsg) || pMsg.Message == null || pThing == null) return;
                     bool IsConnected = TheThing.GetSafePropertyBool(pThing, pConnectedProp);
                     if (IsConnected)
-                        TheCommCore.PublishToOriginator(pMsg.Message, TheNMIEngine.LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Service already connected###")));
+                        TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Service already connected###")));
                     else
                     {
-                        TheCommCore.PublishToOriginator(pMsg.Message, TheNMIEngine.LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Connecting###")));
+                        TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Connecting###")));
                         eventConnect(pMsg, true);
                     }
                 });
@@ -2865,11 +2872,11 @@ namespace nsCDEngine.Engines.NMIService
                     bool IsConnected = TheThing.GetSafePropertyBool(pThing, pConnectedProp);
                     if (!IsConnected)
                     {
-                        TheCommCore.PublishToOriginator(pMsg.Message, TheNMIEngine.LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Service not connected###")));
+                        TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Service not connected###")));
                     }
                     else
                     {
-                        TheCommCore.PublishToOriginator(pMsg.Message, TheNMIEngine.LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Disconnecting###")));
+                        TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Disconnecting###")));
                         eventConnect(pMsg, false);
                     }
                 });
@@ -2904,15 +2911,22 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddStartingBlock(TheThing pBaseThing, TheFormInfo pTargetForm, int pBaseFldNumber, int pAcl, Action<TheProcessMessage, bool> eventStartStop = null, ThePropertyBag pProperties = null)
         {
-            if (pBaseThing == null || pTargetForm == null) return null;
             cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
-            TheFieldInfo tGroup = AddSmartControl(pBaseThing, pTargetForm, eFieldType.CollapsibleGroup, pBaseFldNumber, 2, pAcl, "###Start/Stop###", true, null, null, new nmiCtrlCollapsibleGroup { DoClose = true, TileWidth = 6, IsSmall = true });
-            if (tGroup == null) return null;
+            if (pBaseThing == null || pTargetForm == null) return tFlds;
+            TheFieldInfo tGroup = AddSmartControl(pBaseThing, pTargetForm, eFieldType.CollapsibleGroup, pBaseFldNumber, 2, pAcl, "###Start/Stop###", true, null, null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
+            if (tGroup == null) return tFlds;
             tFlds["Group"] = tGroup;
-
+            int tPar = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "ParentFld", "="));
+            if (tPar > 0)
+                tGroup.SetParent(tPar);
             int tTFY = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "TileFactorY", "="));
             if (tTFY < 1)
                 tTFY = 1;
+            var tDoClose = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pProperties, "DoClose", "="));
+            if (tDoClose)
+                tGroup.PropertyBag = new nmiStatusBlock { DoClose = tDoClose };
+            else
+                tGroup.AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiCtrlCollapsibleGroup { DoClose = true });
 
             string pAutoConnect = ThePropertyBag.PropBagGetValue(pProperties, "AutoStartPropertyName", "=");
             if (!string.IsNullOrEmpty(pAutoConnect))
@@ -2991,8 +3005,15 @@ namespace nsCDEngine.Engines.NMIService
             if (pParentFld == 0)
             {
                 tFlds["Group"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.CollapsibleGroup, StartFldOrder, 2, 0, "###Device Status###", null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
-                tFlds["Group"].AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiCtrlCollapsibleGroup { DoClose = true });
                 pParentFld = StartFldOrder;
+                int tPar = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "ParentFld", "="));
+                if (tPar > 0)
+                    tFlds["Group"].SetParent(tPar);
+                var tDoClose = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pProperties, "DoClose", "="));
+                if (tDoClose)
+                    tFlds["Group"].PropertyBag = new nmiStatusBlock { DoClose = tDoClose };
+                else
+                    tFlds["Group"].AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiCtrlCollapsibleGroup { DoClose = true });
             }
             tFlds["FriendlyName"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.SingleEnded, StartFldOrder + 1, 2, 0xFE, "###Device Name###", "FriendlyName", new nmiCtrlSingleEnded { TileFactorY = tTFY, ParentFld = pParentFld });
             tFlds["StatusLevel"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.StatusLight, StartFldOrder + 2, 0, 0, null, "StatusLevel", new nmiCtrlSingleEnded() { NoTE = true, ParentFld = pParentFld, TileWidth = 2, TileHeight = UseBigStatus ? 2 : 1 });

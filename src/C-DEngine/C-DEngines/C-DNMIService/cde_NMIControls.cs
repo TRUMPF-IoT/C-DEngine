@@ -2031,6 +2031,11 @@ namespace nsCDEngine.Engines.NMIService
         /// Property name for "AutoConnect"
         /// </summary>
         public string AutoConnectPropertyName { get; set; }
+
+        /// <summary>
+        /// If true the connectivity block is closed by default
+        /// </summary>
+        public bool DoClose { get; set; }
     }
 
     /// <summary>
@@ -2046,6 +2051,21 @@ namespace nsCDEngine.Engines.NMIService
         /// Propoertyname for AutoStart
         /// </summary>
         public string AutoStartPropertyName { get; set; }
+
+        /// <summary>
+        /// If true the starting block is closed by default
+        /// </summary>
+        public bool DoClose { get; set; }
+
+    }
+
+    public class nmiStatusBlock : TheNMIBaseControl
+    {
+        /// <summary>
+        /// If true the status block is closed by default
+        /// </summary>
+        public bool DoClose { get; set; }
+
     }
 
     /// <summary>

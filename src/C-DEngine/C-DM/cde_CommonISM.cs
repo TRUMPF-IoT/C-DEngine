@@ -1044,16 +1044,24 @@ namespace nsCDEngine.ISM
         private string GetTempFileName()
         {
             // if this failed, we try to create one in the application folder
-            string fileName = Path.ChangeExtension(TheCommonUtils.cdeGetExecutingAssembly().Location, ".exe");
+            return Path.ChangeExtension(TheCommonUtils.cdeGetExecutingAssembly().Location, ".exe");
+        }
+
+        private string ValidateFileName(string pFileName)
+        {
             try
             {
-                using (File.Create(fileName))
+                using (File.Create(pFileName))
                 {
-                    return fileName;
+                    return pFileName;
                 }
             }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
+            catch (IOException) { 
+                //intentionally
+            }
+            catch (UnauthorizedAccessException) { 
+                //intentionally
+            }
 
             return null;
         }
@@ -1063,7 +1071,11 @@ namespace nsCDEngine.ISM
             string fileName = GetTempFileName();
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.IIS)
                 fileName = pTargetDir + "\\C-DEngine.EXE";
+            if (File.Exists(fileName) && TheBaseAssets.MyCodeSigner.IsTrusted(fileName))  //New in 5.147.0: IF already extracted, dont extract again and use existing. Security-Review: Need to validate Cert-Signature 
+                return true;
+            fileName=ValidateFileName(fileName);
             if (string.IsNullOrEmpty(fileName)) return false;
+
 
             string[] names = TheCommonUtils.cdeGetExecutingAssembly().GetManifestResourceNames();
             byte[] buffer = null;
