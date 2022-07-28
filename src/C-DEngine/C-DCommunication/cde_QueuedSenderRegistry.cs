@@ -57,11 +57,10 @@ namespace nsCDEngine.Communication
         }
 
         #region QS Heartbeat Timer
-        static readonly object lockTimerReg = new object();
         internal static void RegisterHBTimer(Action<long> eventHBTimer)
         {
             if (eventHBTimer == null) return;
-            lock (lockTimerReg)
+            lock (HBTimerLock)
             {
                 if (mMyHBTimer == null)
                     mMyHBTimer = new Timer(sinkHBTimer, null, 0, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
@@ -71,7 +70,7 @@ namespace nsCDEngine.Communication
         }
         internal static void UnregisterHBTimer(Action<long> eventHBTimer)
         {
-            lock (lockTimerReg)
+            lock (HBTimerLock)
             {
                 eventHBTimerFired -= eventHBTimer;
             }
