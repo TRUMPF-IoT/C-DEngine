@@ -20,7 +20,7 @@ namespace nsCDEngine.Communication
     internal class TheWSProcessor8: TheWSProcessorBase
     {
 
-        static readonly cdeConcurrentDictionary<WebSocket, TheWSProcessor8> allSockets = new cdeConcurrentDictionary<WebSocket, TheWSProcessor8>();
+        static readonly cdeConcurrentDictionary<WebSocket, TheWSProcessor8> allSockets = new ();
 
         public TheWSProcessor8(object wsc)
         {
@@ -50,7 +50,10 @@ namespace nsCDEngine.Communication
                 {
                     myWebSocket.Dispose();
                 }
-                catch { }
+                catch 
+                { 
+                    //intentionally blank
+                }
             }
         }
 
@@ -77,7 +80,7 @@ namespace nsCDEngine.Communication
             }
             OwnerNodeID = _MyTargetNodeChannel.cdeMID;
             string TargetUriPath = TargetUri.AbsolutePath;
-            Uri tTarget = new Uri(TargetUri, TheBaseAssets.MyScopeManager.GetISBPath(TargetUriPath, TheCommonUtils.GetOriginST(_MyTargetNodeChannel), _MyTargetNodeChannel.SenderType, 1, Guid.Empty, true));
+            Uri tTarget = new (TargetUri, TheBaseAssets.MyScopeManager.GetISBPath(TargetUriPath, TheCommonUtils.GetOriginST(_MyTargetNodeChannel), _MyTargetNodeChannel.SenderType, 1, Guid.Empty, true));
             tTarget = tTarget.SetWSInfo(tTarget.Port, "");
 
             string connectFailureReason = "";
@@ -86,7 +89,7 @@ namespace nsCDEngine.Communication
                 IsActive = true;
                 CloseFired = false;
                 ConnectSuccess = false;
-                ClientWebSocket wsClientSocket = new ClientWebSocket();
+                ClientWebSocket wsClientSocket = new ();
                 websocket = wsClientSocket;
                 if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUrl))
                 {
@@ -189,25 +192,23 @@ namespace nsCDEngine.Communication
             string tCause = "1604:Thread ended";
             try
             {
-                if (IsSocketReady(websocket))
+                if (IsSocketReady(websocket) && IsClient)
                 {
-                    if (IsClient)
-                    {
-                        //MyQSender.IsConnected = true;
-                        byte[] tSendBuffer = TheCommCore.SetConnectingBuffer(MyQSender);
-                        PostToSocket(null, tSendBuffer, false,true);
-                    }
+                    byte[] tSendBuffer = TheCommCore.SetConnectingBuffer(MyQSender);
+                    PostToSocket(null, tSendBuffer, false, true);
                 }
 
                 while (TheBaseAssets.MasterSwitch && IsActive && IsSocketReady(websocket))
                 {
-                    WebSocketReceiveResult receiveResult = await websocket.ReceiveAsync(buffer, CancellationToken.None);
+                    WebSocketReceiveResult receiveResult = await websocket.ReceiveAsync(buffer, mCancelToken.Token); 
                     if (receiveResult.MessageType == WebSocketMessageType.Close)
                     {
                         tCause = "1605:WebSocket Closed";
                         break;
                     }
-                    //LogBufferToFile("wsinputlog.dat", buffer.Array, buffer.Offset, receiveResult.Count);
+#if DEBUG_WS //better for Sonarcloud
+                    LogBufferToFile("wsinputlog.dat", buffer.Array, buffer.Offset, receiveResult.Count);
+#endif
                     if (MyQSender == null || !MyQSender.IsAlive)
                     {
                         tCause = "1606:QSender No longer alive";
@@ -217,24 +218,30 @@ namespace nsCDEngine.Communication
                     int offset = receiveResult.Count;
                     bool IsUsingTArray = false;
                     byte[] tPostData = null;
+#if DEBUG_WS //better for Sonarcloud
                     int tPostDataLength = 0;
-                    if (receiveResult.EndOfMessage == false)
+#endif
+                    if (!receiveResult.EndOfMessage)
                     {
-                        List<byte[]> tTelList = new List<byte[]>();
+                        List<byte[]> tTelList = new ();
                         byte[] tArray = null;
-                        while (receiveResult.EndOfMessage == false)
+                        while (!receiveResult.EndOfMessage)
                         {
                             if (IsUsingTArray)
                             {
                                 var arraySeg = new ArraySegment<byte>(tArray, offset, tMaxMsgSize - offset);
                                 receiveResult = await websocket.ReceiveAsync(arraySeg, CancellationToken.None);
-                                //LogBufferToFile("wsinputlog.dat", arraySeg.Array, arraySeg.Offset, receiveResult.Count);
+#if DEBUG_WS //better for Sonarcloud
+                                LogBufferToFile("wsinputlog.dat", arraySeg.Array, arraySeg.Offset, receiveResult.Count);
+#endif
                             }
                             else
                             {
                                 var arraySeg = new ArraySegment<byte>(receiveBuffer, offset, tMaxMsgSize - offset);
                                 receiveResult = await websocket.ReceiveAsync(arraySeg, CancellationToken.None);
-                                //LogBufferToFile("wsinputlog.dat", arraySeg.Array, arraySeg.Offset, receiveResult.Count);
+#if DEBUG_WS //better for Sonarcloud
+                                LogBufferToFile("wsinputlog.dat", arraySeg.Array, arraySeg.Offset, receiveResult.Count);
+#endif
                             }
                             if (receiveResult.Count == 0)
                             {
@@ -252,27 +259,36 @@ namespace nsCDEngine.Communication
                         }
                         if (tTelList.Count>0)
                             tPostData = new byte[((tTelList.Count-1) * tMaxMsgSize) + offset];
-                        tPostDataLength = 0;
+#if DEBUG_WS //better for Sonarcloud
+                        Debug tPostDataLength = 0;
+#endif
                         for (int i = 0; i < tTelList.Count - 1; i++)
                         {
                             byte[] tb = tTelList[i];
                             TheCommonUtils.cdeBlockCopy(tb, 0, tPostData, i * tMaxMsgSize, tMaxMsgSize);
-                            tb = null;
                         }
                         if (IsUsingTArray && offset > 0 && tTelList.Count > 0 && tPostData!=null)
                         {
                             TheCommonUtils.cdeBlockCopy(tTelList[tTelList.Count - 1], 0, tPostData, (tTelList.Count - 1) * tMaxMsgSize, offset);
-                            tPostDataLength = tPostData.Length;
+#if DEBUG_WS //better for Sonarcloud
+                            Debug tPostDataLength = tPostData.Length;
+#endif
                         }
-                        //tTelList.Clear();
+#if DEBUG_WS //better for Sonarcloud
+                        tTelList.Clear();
+#endif
                     }
                     if (!IsUsingTArray)
                     {
                         tPostData = new byte[offset];
                         TheCommonUtils.cdeBlockCopy(receiveBuffer, 0, tPostData, 0, offset);
-                        tPostDataLength = offset;
+#if DEBUG_WS //better for Sonarcloud
+                        Debug tPostDataLength = offset;
+#endif
                     }
-                    //LogBufferToFile("wsinputbactchedlog.dat", tPostData, 0, tPostData.Length);
+#if DEBUG_WS //better for Sonarcloud
+                    Debug LogBufferToFile("wsinputbactchedlog.dat", tPostData, 0, tPostData.Length);
+#endif
                     TheCommonUtils.cdeRunAsync("ProcessFromWS", true,(o)=> ProcessIncomingData(null,(byte [])o, ((byte[])o).Length),tPostData);
                 }
             }
@@ -296,44 +312,45 @@ namespace nsCDEngine.Communication
             Shutdown(true, tCause);
         }
 
-        //private void LogBufferToFile(string filePath, byte[] buffer, int offset, int count)
-        //{
-        //    using (var file = new System.IO.FileStream(filePath, System.IO.FileMode.Append, System.IO.FileAccess.Write))
-        //    {
-        //        string decomp = null;
-        //        if (buffer[offset] != '[')
-        //        {
-        //            try
-        //            {
-        //                decomp = TheCommonUtils.cdeDecompressToString(buffer, offset, count);
-        //                decomp = $"{DateTimeOffset.Now}:{decomp}\r\n";
-        //            }
-        //            catch
-        //            {
-        //                decomp = null;
-        //            }
+#if DEBUG_WS //better for Sonarcloud
+        private void LogBufferToFile(string filePath, byte[] buffer, int offset, int count)
+        {
+            using (var file = new System.IO.FileStream(filePath, System.IO.FileMode.Append, System.IO.FileAccess.Write))
+            {
+                string decomp = null;
+                if (buffer[offset] != '[')
+                {
+                    try
+                    {
+                        decomp = TheCommonUtils.cdeDecompressToString(buffer, offset, count);
+                        decomp = $"{DateTimeOffset.Now}:{decomp}\r\n";
+                    }
+                    catch
+                    {
+                        decomp = null;
+                    }
 
-        //        }
-        //        if (decomp == null)
-        //        {
-        //            var bytes = Encoding.UTF8.GetBytes($"{DateTimeOffset.Now}:");
-        //            file.Write(bytes, 0, bytes.Length);
+                }
+                if (decomp == null)
+                {
+                    var bytes = Encoding.UTF8.GetBytes($"{DateTimeOffset.Now}:");
+                    file.Write(bytes, 0, bytes.Length);
 
-        //            file.Write(buffer, offset, count);
+                    file.Write(buffer, offset, count);
 
-        //            bytes = Encoding.UTF8.GetBytes($"\r\n");
-        //            file.Write(bytes, 0, bytes.Length);
-        //        }
-        //        else
-        //        {
-        //            var bytes = Encoding.UTF8.GetBytes(decomp);
-        //            file.Write(bytes, 0, bytes.Length);
-        //        }
-        //        file.Flush();
-        //    }
-        //}
-
-        private readonly object _postToSocketLock = new object();
+                    bytes = Encoding.UTF8.GetBytes($"\r\n");
+                    file.Write(bytes, 0, bytes.Length);
+                }
+                else
+                {
+                    var bytes = Encoding.UTF8.GetBytes(decomp);
+                    file.Write(bytes, 0, bytes.Length);
+                }
+                file.Flush();
+            }
+        }
+#endif
+        private readonly object _postToSocketLock = new ();
 
         internal override void PostToSocket(TheDeviceMessage pMsg, byte[] pPostBuffer, bool pSendAsBinary, bool IsInitialConnect)
         {
@@ -370,7 +387,7 @@ namespace nsCDEngine.Communication
                     }
                     else
                     {
-                        // TODO MH - Move this outside of the lock so we can minimize the lock time? Or are there ordering constraints on the serialization for some reason?
+                        // MH - Move this outside of the lock so we can minimize the lock time? Or are there ordering constraints on the serialization for some reason?
                         ArraySegment<byte> outputBuffer;
                         if (pPostBuffer != null)
                         {
@@ -383,7 +400,9 @@ namespace nsCDEngine.Communication
                             TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, tStr.Length);
                             outputBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(tStr));
                         }
-                        //LogBufferToFile("wsoutputputlog", outputBuffer.Array, outputBuffer.Offset, outputBuffer.Count);
+#if DEBUG_WS //better for Sonarcloud
+                        LogBufferToFile("wsoutputputlog", outputBuffer.Array, outputBuffer.Offset, outputBuffer.Count);
+#endif
                         Task tTask = websocket.SendAsync(outputBuffer, pSendAsBinary ? WebSocketMessageType.Binary : WebSocketMessageType.Text, true, TheBaseAssets.MasterSwitchCancelationToken);
                         tTask.Wait(TheBaseAssets.MyServiceHostInfo.TO.WsTimeOut * 10);
                         if (!tTask.IsCompleted)
@@ -405,7 +424,6 @@ namespace nsCDEngine.Communication
                 {
                     Shutdown(true,$"1610:{errorMsg}");
                 }
-                //IsPosting = false;
                 if (mre != null)
                     ProcessingAllowed = true;
             }

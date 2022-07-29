@@ -22,7 +22,7 @@ namespace nsCDEngine.Communication
         protected TheRequestData MySessionRequestData;
         protected bool CloseFired;
         protected bool IsClient = false;
-        protected CancellationTokenSource mCancelToken=null;
+        protected readonly CancellationTokenSource mCancelToken=new ();
 
         protected ManualResetEventSlim mre; //NEW:V3BETA2: Was AutoReset Event
         internal bool ProcessingAllowed
@@ -86,7 +86,6 @@ namespace nsCDEngine.Communication
                 if (mCancelToken != null)
                     mCancelToken.Cancel();
                 iDispose();
-                //MySessionRequestData = null;
             }
         }
 
@@ -101,7 +100,6 @@ namespace nsCDEngine.Communication
 
         internal virtual bool Connect(TheQueuedSender pSender)
         {
-            //ISM.TheDiagnostics.SetThreadName("WSConnect:4:" + pSender.MyTargetNodeChannel.ToString());
             return true;
         }
 
@@ -216,8 +214,6 @@ namespace nsCDEngine.Communication
             }
             catch (Exception ex) // For debugging
             {
-                //if (eventClosed != null)
-                  //  eventClosed("Connection Error: " + ex.ToString());
                 Shutdown(true,"1601:PostToSocket Error: "+ ex);
             }
         }
