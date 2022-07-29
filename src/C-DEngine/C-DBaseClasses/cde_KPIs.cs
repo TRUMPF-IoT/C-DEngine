@@ -202,6 +202,9 @@ namespace nsCDEngine.BaseClasses
             get { return GetKPI(eKPINames.KPI2); }
             set { SetKPI(eKPINames.KPI2, (long)value); }
         }
+        /// <summary>
+        /// Counter of current WebSocket connections
+        /// </summary>
         public static double KPI3
         {
             get { return GetKPI(eKPINames.KPI3); }
@@ -222,16 +225,26 @@ namespace nsCDEngine.BaseClasses
             get { return GetKPI(eKPINames.KPI6); }
             set { SetKPI(eKPINames.KPI6, (long)value); }
         }
+
+        /// <summary>
+        /// Max amount of SETP messages 
+        /// </summary>
         public static double KPI7
         {
             get { return GetKPI(eKPINames.KPI7); }
             set { SetKPI(eKPINames.KPI7, (long)value); }
         }
+        /// <summary>
+        /// Max amount of SETNP messages
+        /// </summary>
         public static double KPI8
         {
             get { return GetKPI(eKPINames.KPI8); }
             set { SetKPI(eKPINames.KPI8, (long)value); }
         }
+        /// <summary>
+        /// Max amount of Properties set by SETNP 
+        /// </summary>
         public static double KPI9
         {
             get { return GetKPI(eKPINames.KPI9); }
@@ -472,7 +485,7 @@ namespace nsCDEngine.BaseClasses
             nameof(eKPINames.TotalEngineErrors), nameof(eKPINames.TotalEventTimeouts), nameof(eKPINames.UnsignedNodes), nameof(eKPINames.UnsignedPlugins),
             nameof(eKPINames.UniqueMeshes), nameof(eKPINames.SeenBeforeCount), nameof(eKPINames.KnownNMINodes), nameof(eKPINames.StreamsNotFound),
             nameof(eKPINames.BlobsNotFound), nameof(eKPINames.WSTestClients), nameof(eKPINames.QSenders), nameof(eKPINames.QSenderInRegistry),
-            nameof(eKPINames.SessionCount)
+            nameof(eKPINames.SessionCount), nameof(eKPINames.KPI3)
         };
 
 
@@ -482,7 +495,7 @@ namespace nsCDEngine.BaseClasses
             nameof(eKPINames.UnsignedNodes), nameof(eKPINames.UnsignedPlugins), nameof(eKPINames.UniqueMeshes), nameof(eKPINames.BruteDelay),
             nameof(eKPINames.QSenders), nameof(eKPINames.QSenderInRegistry), nameof(eKPINames.SetPsFired), nameof(eKPINames.TotalEngineErrors),
             nameof(eKPINames.EngineErrors), nameof(eKPINames.EventTimeouts), nameof(eKPINames.TotalEventTimeouts), nameof(eKPINames.QSNotRelayed),
-            nameof(eKPINames.SessionCount), nameof(eKPINames.WSTestClients)
+            nameof(eKPINames.SessionCount), nameof(eKPINames.WSTestClients), nameof(eKPINames.KPI3), nameof(eKPINames.KPI7), nameof(eKPINames.KPI8), nameof(eKPINames.KPI9)
         };
 
 
