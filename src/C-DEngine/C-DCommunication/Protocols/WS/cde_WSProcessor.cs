@@ -200,7 +200,7 @@ namespace nsCDEngine.Communication
 
                 while (TheBaseAssets.MasterSwitch && IsActive && IsSocketReady(websocket))
                 {
-                    WebSocketReceiveResult receiveResult = await websocket.ReceiveAsync(buffer, mCancelToken.Token); 
+                    WebSocketReceiveResult receiveResult = await websocket.ReceiveAsync(buffer, mCancelToken.Token);
                     if (receiveResult.MessageType == WebSocketMessageType.Close)
                     {
                         tCause = "1605:WebSocket Closed";

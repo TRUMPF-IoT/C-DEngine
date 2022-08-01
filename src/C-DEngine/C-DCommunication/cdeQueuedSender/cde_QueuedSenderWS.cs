@@ -60,7 +60,7 @@ namespace nsCDEngine.Communication
                         if (IsSenderThreadRunning) return;  //In Case the Thread took longer to create and another one was successful in the meantime
                         TheWSSenderThread();
                         TheBaseAssets.MySYSLOG.WriteToLog(2372, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSQSenderThread was closed (In RunAync) for {MyTargetNodeChannel?.ToMLString()}", eMsgLevel.l1_Error));
-                        if (IsAlive)
+                        if (MyTargetNodeChannel?.SenderType != cdeSenderType.CDE_CLOUDROUTE)
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(236, new TSM("WSQueuedSender", $"WSQSender Thread {MyTargetNodeChannel?.ToMLString()} died", eMsgLevel.l1_Error));
                             FireSenderProblem(new TheRequestData() { ErrorDescription = $"1309:WSQSender Thread {MyTargetNodeChannel?.ToMLString()} died" });
@@ -107,7 +107,6 @@ namespace nsCDEngine.Communication
                         if (MyTargetNodeChannel.MySessionState == null && !IsConnecting && MyCoreQueue.Count > 0)
                             break;
                         mre.WaitOne(QDelay);
-                        // System.Diagnostics.Debug.WriteLine($"Waiting :{IsAlive} {MyCoreQueue.Count} {IsConnected} {IsConnecting} {IsInWSPost} {MyWebSocketProcessor.ProcessingAllowed}");
                     }
                     if (!TheBaseAssets.MasterSwitch || !IsAlive || !MyWebSocketProcessor.IsActive || MyTargetNodeChannel.MySessionState == null)
                     {
@@ -177,7 +176,7 @@ namespace nsCDEngine.Communication
                                     {
                                         // Close the batch here so that no other TSM gets into the same batch
                                         // Possible optimization: check if other TSMs are available and skip the pickup here as well
-                                        IsBatchOn = -1; // IsInWSPost = false;
+                                        IsBatchOn = -1; 
                                     }
                                 }
                                 tDev.DID = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString();
@@ -199,7 +198,7 @@ namespace nsCDEngine.Communication
                             {
                                 TheCommonUtils.CreateRSAKeys(tCurSessState);
                                 if (TheBaseAssets.MyServiceHostInfo.SecurityLevel > 3)
-                                    tDev.RSA = tCurSessState.RSAPublic;  //TODO: Make depending on switch (HighSecurity=RSAGeneration every three seconds
+                                    tDev.RSA = tCurSessState.RSAPublic;  //Security improvement possible: Make depending on switch HighSecurity = RSAGeneration every three seconds
                             }
                             if (MyTargetNodeChannel.SenderType != cdeSenderType.CDE_CLOUDROUTE) //CODE-REVIEW: 4.0113 is this still valid: Must not reset HB if talking to cloud due to Cloud-Disconnect issue
                                 ResetHeartbeatTimer(false, tCurSessState);

@@ -235,6 +235,7 @@ namespace nsCDEngine.Communication
         internal bool IsSenderThreadRunning;
         public bool IsAlive;
         private string m_LastError;
+
         private string LastError
         {
             get { return m_LastError; }
@@ -326,6 +327,7 @@ namespace nsCDEngine.Communication
         private ManualResetEvent mre = null;
         internal TheISBConnect MyISBlock = null;
         internal volatile bool _IsConnected;
+        internal bool WasEverConnected;
         internal bool IsConnected
         {
             get { return _IsConnected; }
@@ -341,6 +343,7 @@ namespace nsCDEngine.Communication
                     // Note: reserve LogID 2330-2349 / 2350-2369 for future senderTypes
                     if (value)
                     {
+                        WasEverConnected = true;
                         IsConnecting = false;
                         ConnectRetries = 0;
                         MyLastConnectTime = DateTimeOffset.Now;
@@ -376,7 +379,6 @@ namespace nsCDEngine.Communication
             }
         }
         private int ConnectRetries;
-        //private long SendCounter = 1;
 
         public bool HasWebSockets()
         {
@@ -618,7 +620,7 @@ namespace nsCDEngine.Communication
                 {
                     if (((IsConnecting || IsConnected) && IsAlive) || !TheBaseAssets.MasterSwitch)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(2310, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Found QueuedSender already connected or reconnecting while restarting Cloud {CloudCounter} WS Connection to {MyTargetNodeChannel} IsAlive:{IsAlive} IsConnected:{IsConnected} IsConnecting:{IsConnecting} MyWSProccIsActive:{MyWebSocketProcessor?.IsActive}", eMsgLevel.l1_Error)); // TODO assign unique logid
+                        TheBaseAssets.MySYSLOG.WriteToLog(2310, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Found QueuedSender already connected or reconnecting while restarting Cloud {CloudCounter} WS Connection to {MyTargetNodeChannel} IsAlive:{IsAlive} IsConnected:{IsConnected} IsConnecting:{IsConnecting} MyWSProccIsActive:{MyWebSocketProcessor?.IsActive}", eMsgLevel.l1_Error)); 
                         return;
                     }
 
@@ -628,11 +630,11 @@ namespace nsCDEngine.Communication
                         if (this.MyTargetNodeChannel.cdeMID == registeredSender.MyTargetNodeChannel?.cdeMID)
                         {
                             //This should not happen! We will always print an error here. One reason for this is that the ServiceRoute contains two entries with the same url as target
-                            TheBaseAssets.MySYSLOG.WriteToLog(2310, new TSM("QueuedSender", $"For some unknown reason is the current (this) QeueSender not in the Registry but a different instance with same TargetMid is. QSender={MyTargetNodeChannel} (this) will be disposed! IsAlive:{IsAlive} IsConnected:{IsConnected} IsConnecting:{IsConnecting} MyWSProccIsActive:{MyWebSocketProcessor?.IsActive}", eMsgLevel.l1_Error)); // TODO assign unique logid
+                            TheBaseAssets.MySYSLOG.WriteToLog(2310, new TSM("QueuedSender", $"For some unknown reason is the current (this) QeueSender not in the Registry but a different instance with same TargetMid is. QSender={MyTargetNodeChannel} (this) will be disposed! IsAlive:{IsAlive} IsConnected:{IsConnected} IsConnecting:{IsConnecting} MyWSProccIsActive:{MyWebSocketProcessor?.IsActive}", eMsgLevel.l1_Error)); 
                             this.Dispose();
                             return;
                         }
-                        TheBaseAssets.MySYSLOG.WriteToLog(2310, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Found duplicate QueuedSender while restarting Cloud {CloudCounter} WS Connection to {MyTargetNodeChannel} IsAlive:{IsAlive} IsConnected:{IsConnected} IsConnecting:{IsConnecting} MyWSProccIsActive:{MyWebSocketProcessor?.IsActive}", eMsgLevel.l1_Error)); // TODO assign unique logid
+                        TheBaseAssets.MySYSLOG.WriteToLog(2310, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Found duplicate QueuedSender while restarting Cloud {CloudCounter} WS Connection to {MyTargetNodeChannel} IsAlive:{IsAlive} IsConnected:{IsConnected} IsConnecting:{IsConnecting} MyWSProccIsActive:{MyWebSocketProcessor?.IsActive}", eMsgLevel.l1_Error)); 
                         return;
                     }
 
@@ -814,7 +816,7 @@ namespace nsCDEngine.Communication
             if (!string.IsNullOrEmpty(pTopicScopeID) && myTargetNodeChannel.MySessionState?.CertScopes?.Count > 0 && myTargetNodeChannel.MySessionState?.CertScopes?.Contains(pTopicScopeID) == false)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2320, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} rejected - scope on message does not match scopes in certificate", eMsgLevel.l1_Error), true);
-                TheCDEKPIs.IncrementKPI(eKPINames.QSNotRelayed); //TODO:KPI New KPI here
+                TheCDEKPIs.IncrementKPI(eKPINames.QSNotRelayed); 
                 return false;
             }
 
@@ -981,7 +983,7 @@ namespace nsCDEngine.Communication
                         !(
                             ((TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.IsNodePermitted(pMessage.GetOriginator())) || myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE) && string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID)
                         )
-                        && !string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID)   //TODO: If the Localhost IsCloudService and its NOT scoped, the telegram is not blocked. That results in all Meshes get to see the Cloud Plugin NMI. If we remove this, No Cloud NMI is visible except if "AllowForeignScopeIDRouting" is true
+                        && !string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID)   //If the Localhost IsCloudService and its NOT scoped, the telegram is not blocked. That results in all Meshes get to see the Cloud Plugin NMI. If we remove this, No Cloud NMI is visible except if "AllowForeignScopeIDRouting" is true
                         && !myTargetNodeChannel.HasRScope(tTopicRealScope)
                     )
                 {
@@ -991,9 +993,9 @@ namespace nsCDEngine.Communication
                                     (eEngineName.ContentService.Equals(pMessage.ENG) && pMessage.TXT.StartsWith("CDE_UPD_ADMIN") && !TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.IsFirstNode())
                                 &&
                                     !tTopicNameOnly.StartsWith("LOGIN_SUCCESS")
-                                && // TODO Code Review - additional checks? Better ways of getting success notifications to Mesh Manager?
+                                && // Code Review - additional checks? Better ways of getting success notifications to Mesh Manager?
                                     !(tDirectGuid == myTargetNodeChannel.cdeMID && (pMessage.TXT.StartsWith("CDE_INIT_SYNC") || pMessage.TXT.StartsWith("CDE_SYNCUSER") || pMessage.TXT.StartsWith("NMI_SYNCBLOCKS")))
-                           )    //TODO:SECVAL
+                           )    
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(2326, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message from {TheCommonUtils.GetDeviceIDML(pMessage.ORG)} to {myTargetNodeChannel} (type={myTargetNodeChannel.SenderType}) rejected - target has different scope", eMsgLevel.l2_Warning, $"{pMessage.TXT}"), true);
                             return false;
@@ -1128,9 +1130,6 @@ namespace nsCDEngine.Communication
                             }
                             else
                             {
-                                // TODO Code Review - Is this an appropriate way to allow cross-engine messages?
-                                // CM: yes, Code moved here as SET P has to be handled first and not processed by HandleMessage of things
-                                //TheThing tThing = TheThingRegistry.GetThingByMID(tSendMessage.ENG,TheCommonUtils.CGuid(tSendMessage.OWN),true, true);
                                 tThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(tSendMessage.OWN));
                                 if (tThing != null)
                                 {

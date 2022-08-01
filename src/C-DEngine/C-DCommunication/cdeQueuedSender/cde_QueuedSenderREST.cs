@@ -36,7 +36,7 @@ namespace nsCDEngine.Communication
                 if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON && TheBaseAssets.MyServiceHostInfo.WsJsThrottle > QDelay)
                     QDelay = TheBaseAssets.MyServiceHostInfo.WsJsThrottle;
                 mre = new ManualResetEvent(false);
-                if (eventSenderThreadRunning != null)
+                if (eventSenderThreadRunning != null && TheBaseAssets.MasterSwitch)
                     TheCommonUtils.cdeRunAsync("EventSenderThreadRunning", true, (p) => { eventSenderThreadRunning(this); });
                 MyISBlock?.FireEvent("SenderThreadCreated");
                 while (TheBaseAssets.MasterSwitch && IsAlive && IsSenderThreadRunning)
