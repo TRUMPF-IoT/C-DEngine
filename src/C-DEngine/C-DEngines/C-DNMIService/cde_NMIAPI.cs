@@ -2365,8 +2365,8 @@ namespace nsCDEngine.Engines.NMIService
             block["Header"] = tF;
             if (pMaxFormSize > 6)
             {
-                tF.AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiPlatBag { MaxTileWidth = 6 });
-                tF.AddOrUpdatePlatformBag(eWebPlatform.HoloLens, new nmiPlatBag { MaxTileWidth = 12 });
+                tF?.AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiPlatBag { MaxTileWidth = 6 });
+                tF?.AddOrUpdatePlatformBag(eWebPlatform.HoloLens, new nmiPlatBag { MaxTileWidth = 12 });
             }
             if (IsFacePlate)
             {
