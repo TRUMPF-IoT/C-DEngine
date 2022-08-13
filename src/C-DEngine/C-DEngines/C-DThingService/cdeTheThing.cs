@@ -3011,18 +3011,19 @@ namespace nsCDEngine.Engines.ThingService
                                         tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UANodeId), uaAttribute.UANodeId);
                                     if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
                                         tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
-                                    if (uaAttribute.UARangeMin != null)
+                                    if (uaAttribute.UARangeMin != 0)
                                         tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
-                                    if (uaAttribute.UARangeMax != null)
+                                    if (uaAttribute.UARangeMax != 0)
                                         tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMax), uaAttribute.UARangeMax);
-                                    if (uaAttribute.UAWriteMask != null)
+                                    if (uaAttribute.UAWriteMask != 0)
                                         tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
-                                    if (uaAttribute.UAUserWriteMask != null)
+                                    if (uaAttribute.UAUserWriteMask != 0)
                                         tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
                                 }
                             }
                         }
-                        catch { 
+                        catch
+                        {
                             //ignored
                         }
                     }
@@ -3045,12 +3046,12 @@ namespace nsCDEngine.Engines.ThingService
         // Possible future enhancements. All these should be defined in the UA NodeSet referenced in the UATypeNodeId of TheThing
         public string UASourceType;
         public string UAUnits;
-        public double? UARangeMin;
-        public double? UARangeMax;
+        public double UARangeMin;
+        public double UARangeMax;
         public string UADescription;
         public string UADisplayName;
         public string UANodeId;
-        public int? UAWriteMask;
-        public int? UAUserWriteMask;
+        public int UAWriteMask;
+        public int UAUserWriteMask;
     }
 }

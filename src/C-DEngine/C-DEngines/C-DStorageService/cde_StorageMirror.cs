@@ -2134,7 +2134,11 @@ namespace nsCDEngine.Engines.StorageService
                                     }
                                     if (tNewItem is TheThing tNewThing)
                                     {
-                                        cdeP tSourceP = tNewThing.GetProperty(tPropName);
+                                        cdeP tSourceP = null;
+                                        if (tPropName.StartsWith("["))
+                                            tNewThing.MyPropertyBag.TryGetValue(tPropName, out tSourceP);
+                                        else
+                                            tSourceP = tNewThing.GetProperty(tPropName);
                                         cdeP tTargetP = tThing.GetProperty(tPropName);
 
                                         if (tSourceP != null && tTargetP != null)
