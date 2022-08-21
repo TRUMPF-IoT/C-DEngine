@@ -6,6 +6,7 @@ using nsCDEngine.BaseClasses;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace nsCDEngine.Communication.HttpService
 {
@@ -158,25 +159,27 @@ namespace nsCDEngine.Communication.HttpService
         public void ShutDown()
         {
             IsActive = false;
-            if (mHttpListener != null)
+
+            var httpListener = Interlocked.Exchange(ref mHttpListener, null);
+            if (httpListener != null)
             {
                 try
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(4345, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("HttpMidiServer", "Stopping Http Listener", eMsgLevel.l6_Debug));
-                    mHttpListener.Stop();
-                    mHttpListener.Prefixes.Remove(MyHttpUrl);
+                    httpListener.Stop();
+                    httpListener.Prefixes.Remove(MyHttpUrl);
                 }
                 catch
                 {
                     //Ignored
                 }
-                mHttpListener = null;
             }
-            if (mListener != null)
+
+            var listener = Interlocked.Exchange(ref mListener, null);
+            if (listener != null)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4345, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("HttpMidiServer", "Stopping Listener", eMsgLevel.l6_Debug));
-                mListener.Stop();
-                mListener = null;
+                listener.Stop();
             }
         }
     }
