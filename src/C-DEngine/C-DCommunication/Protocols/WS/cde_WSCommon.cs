@@ -60,8 +60,22 @@ namespace nsCDEngine.Communication
             mre = new ManualResetEventSlim(true);
             var oldCancelToken = mCancelToken;
             mCancelToken = new();
-            oldCancelToken?.Cancel();
-            oldCancelToken?.Dispose();
+            try
+            {
+                oldCancelToken?.Cancel();
+            }
+            catch
+            {
+                //intent blank
+            }
+            try
+            {
+                oldCancelToken?.Dispose();
+            }
+            catch
+            {
+                //intent blank
+            }
             IsActive = true;
             CloseFired = false;
             try
