@@ -22,7 +22,7 @@ namespace nsCDEngine.Communication
         protected TheRequestData MySessionRequestData;
         protected bool CloseFired;
         protected bool IsClient = false;
-        protected readonly CancellationTokenSource mCancelToken=new ();
+        protected CancellationTokenSource mCancelToken = new();
 
         protected ManualResetEventSlim mre; //NEW:V3BETA2: Was AutoReset Event
         internal bool ProcessingAllowed
@@ -83,8 +83,9 @@ namespace nsCDEngine.Communication
                 eventConnected = null;
                 if (mre != null) mre.Dispose();
                 mre = null;
-                if (mCancelToken != null)
-                    mCancelToken.Cancel();
+                mCancelToken?.Cancel();
+                mCancelToken?.Dispose();
+                mCancelToken = null;
                 iDispose();
             }
         }
