@@ -645,6 +645,7 @@ namespace nsCDEngine.Communication
                     {
                         MyWebSocketProcessor.eventConnected -= sinkCloudConnectedToWS;
                         MyWebSocketProcessor.eventConnected += sinkCloudConnectedToWS;
+                        MyWebSocketProcessor.SetRequest(null);
                         MyWebSocketProcessor.Connect(this);
                     }
                     else

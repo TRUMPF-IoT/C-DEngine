@@ -58,6 +58,7 @@ namespace nsCDEngine.Communication
                 MySessionRequestData = pRequest;
             MySessionRequestData.WebSocket = this;
             mre = new ManualResetEventSlim(true);
+            mCancelToken = new();
             IsActive = true;
             CloseFired = false;
             try
