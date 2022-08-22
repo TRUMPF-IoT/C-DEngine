@@ -90,7 +90,6 @@ namespace nsCDEngine.Communication
                 CloseFired = false;
                 ConnectSuccess = false;
                 ClientWebSocket wsClientSocket = new ();
-                mCancelToken = new();
 
                 websocket = wsClientSocket;
                 if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUrl))
