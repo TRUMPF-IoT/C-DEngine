@@ -69,9 +69,6 @@ namespace nsCDEngine.Engines
         {
             if (mIsInitCalled) return false;
             mIsInitCalled = true;
-
-            //MyBaseThing.RegisterEvent(eEngineEvents.NewChannelActive, ChannelHasStarted);
-            //MyBaseThing.RegisterEvent(eEngineEvents.ChannelIsUpAgain, ChannelHasStarted);
             MyBaseThing.RegisterEvent(eEngineEvents.IncomingMessage, HandleMessage);
             mIsInitialized = true;
             return true;
@@ -80,7 +77,6 @@ namespace nsCDEngine.Engines
         public bool Delete()
         {
             mIsInitialized = false;
-            // TODO Properly implement delete
             return true;
         }
 
@@ -115,7 +111,7 @@ namespace nsCDEngine.Engines
         /// </summary>
         public void HandleMessage(ICDEThing sender, object pIncoming)
         {
-            if (!(pIncoming is TheProcessMessage pMsg)) return;
+            if (pIncoming is not TheProcessMessage pMsg) return;
 
             switch (pMsg.Message.TXT)
             {
@@ -125,7 +121,7 @@ namespace nsCDEngine.Engines
                 default:
                     if (pMsg.Message.TXT.Equals("CDE_INITIALIZE"))
                     {
-                        TSM tRelayMsg = new TSM(MyBaseEngine.GetEngineName(), "CDE_INITIALIZED")
+                        TSM tRelayMsg = new (MyBaseEngine.GetEngineName(), "CDE_INITIALIZED")
                         {
                             QDX = 3,
                             SID = pMsg.Message.SID

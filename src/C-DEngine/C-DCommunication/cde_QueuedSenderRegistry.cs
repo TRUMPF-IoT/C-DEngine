@@ -62,8 +62,7 @@ namespace nsCDEngine.Communication
             if (eventHBTimer == null) return;
             lock (HBTimerLock)
             {
-                if (mMyHBTimer == null)
-                    mMyHBTimer = new Timer(sinkHBTimer, null, 0, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
+                mMyHBTimer ??= new Timer(sinkHBTimer, null, 0, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
                 eventHBTimerFired -= eventHBTimer;
                 eventHBTimerFired += eventHBTimer;
             }
@@ -120,7 +119,7 @@ namespace nsCDEngine.Communication
         private static Timer mMyHBTimer;
         private static long mHBLockCounter = 0;
         private static long mHBTicker;
-        private static readonly object HBTimerLock = new object();
+        private static readonly object HBTimerLock = new ();
         #endregion
 
         #region Health Timer now doing all timer function in one
@@ -147,7 +146,7 @@ namespace nsCDEngine.Communication
         private static Timer mMyHealthTimer;
         private static long mHealthTicker;
         private static long mLockCounter = 0;
-        private static readonly object HealthTimerLock = new object();
+        private static readonly object HealthTimerLock = new ();
         private static void sinkHealthTimer(object NOTUSED)
         {
             if (TheCommonUtils.cdeIsLocked(HealthTimerLock))
@@ -164,7 +163,6 @@ namespace nsCDEngine.Communication
                     mHealthTicker++;
                     TheDiagnostics.SetThreadName("HealthTimer", true);
                     TheBaseAssets.MySYSLOG.WriteToLog(2803, TSM.L(eDEBUG_LEVELS.EVERYTHING) ? null : new TSM("QSRegistry", "Enter HealthTimer", eMsgLevel.l7_HostDebugMessage));
-                    TheTimeouts tTO = TheBaseAssets.MyServiceHostInfo.TO;
 
                     if (!TheCommonUtils.cdeIsLocked(lockUserCheck) && (mHealthTicker % TheBaseAssets.MyServiceHostInfo.TO.UserCheckRate) == 0)
                         TheCommonUtils.DoFireEvent<long>(UserCheck, mHealthTicker, true, 0);
@@ -194,22 +192,18 @@ namespace nsCDEngine.Communication
             }
         }
 
-        private static readonly object lockUserCheck = new object();
+        private static readonly object lockUserCheck = new ();
         private static void UserCheck(long NOTUSED)
         {
             if (TheCDEngines.MyContentEngine != null && TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper && !TheCommonUtils.cdeIsLocked(lockUserCheck))
             {
                 lock (lockUserCheck)
                 {
-                    //var tLogTime = DateTimeOffset.Now;
                     foreach (TheQueuedSender tQ in GetCloudNodes())
                     {
                         if (tQ.MyTargetNodeChannel != null && !TheUserManager.HasScopeUsers(tQ.MyTargetNodeChannel.RealScopeID))    //RScope-OK: Users only supported on primary ScopeID
                             TheCommCore.PublishToNode(tQ.MyTargetNodeChannel.cdeMID, TheBaseAssets.MyScopeManager.GetScrambledScopeID(tQ.MyTargetNodeChannel.RealScopeID, true), new TSM(eEngineName.ContentService, "CDE_INIT_SYNC"));       //GRSI: medium fequency on Cloud // RScope-OK
                     }
-                    //var tim = DateTimeOffset.Now.Subtract(tLogTime).TotalMilliseconds;
-                    //if (tim > 1)
-                    //    TheSystemMessageLog.ToCo($"Out UserCheck time:{tim}");
                 }
             }
         }
@@ -230,11 +224,8 @@ namespace nsCDEngine.Communication
                 MyTSMHistorySetTimer = new Timer(MyTSMHistorySetRemoveExpired, null, 0, TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime * 1000);
             }
             TheQueuedSender tQ = GetSenderByGuid(tOrg);
-            if (tQ != null)
-            {
-                if (tQ.WasTSMSeenBefore(pTSM, pRealScope, false))
-                    return true;
-            }
+            if (tQ != null && tQ.WasTSMSeenBefore(pTSM, pRealScope, false))
+                return true;
             double cFID = TheCommonUtils.CDbl(pTSM.FID);
             if (cFID == 0) return false;
             int tHas = 0;
@@ -253,7 +244,7 @@ namespace nsCDEngine.Communication
 
             var topicHash = (pTSM.TXT + pTopic).GetHashCode();
             var tCnt = 0;   //local variable is faster then Static Property Lookup
-            TheSentRegistryItemHS tS = new TheSentRegistryItemHS() { ORG = tOrg, SentTime = pTSM.TIM, FID = cFID, Engine = pTSM.ENG, IsOutgoing = false, SessionID = pSessionID, PLSHash = tHas, TopicHash = topicHash, cdeEXP = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime };
+            TheSentRegistryItemHS tS = new () { ORG = tOrg, SentTime = pTSM.TIM, FID = cFID, Engine = pTSM.ENG, IsOutgoing = false, SessionID = pSessionID, PLSHash = tHas, TopicHash = topicHash, cdeEXP = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime };
             lock (MyTSMHistorySetLock)
             {
                 HashSet<TheSentRegistryItemHS> ActHistorySet = null;
@@ -306,11 +297,10 @@ namespace nsCDEngine.Communication
                     CurrentSecondMyTSMHistory = 0;
             }
         }
-        //private static TheMirrorCache<TheSentRegistryItem> MyTSMSenderHistory;
         private static HashSet<TheSentRegistryItemHS> MyTSMHistorySet1 = null;
         private static HashSet<TheSentRegistryItemHS> MyTSMHistorySet2 = null;
         private static HashSet<TheSentRegistryItemHS> MyTSMHistorySet3 = null;
-        private static readonly object MyTSMHistorySetLock = new object();
+        private static readonly object MyTSMHistorySetLock = new ();
         private static bool MyTSMHistorySetMoreThanOneOnLock = false;
         private static int CurrentSecondMyTSMHistory = 0;
         private static Timer MyTSMHistorySetTimer = null;
@@ -376,12 +366,12 @@ namespace nsCDEngine.Communication
             {
                 return tSender.GetSubscriptions();
             }
-            return null;
+            return new List<string>();
         }
 
         internal static List<Guid> GetSendersBySenderType(cdeSenderType pType)
         {
-            List<Guid> tL = new List<Guid>();
+            List<Guid> tL = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ.MyTargetNodeChannel != null && tQ.MyTargetNodeChannel.SenderType == pType) // && (!IgnoreServiceNodes || string.IsNullOrEmpty(tQ.MyTargetNodeChannel.RealScopeID))) //New: Dont sync with ServiceNodes (DMZ nodes) - only clouds with no Scoping - There is no way to detect if a connected node is unscoped. Need to be added in later version then brought back
@@ -391,7 +381,7 @@ namespace nsCDEngine.Communication
         }
         internal static List<Guid> GetSendersByBackChannelAndCloudRoute()
         {
-            List<Guid> tL = new List<Guid>();
+            List<Guid> tL = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ.MyTargetNodeChannel != null && (tQ.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL || tQ.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE))
@@ -402,9 +392,9 @@ namespace nsCDEngine.Communication
 
         internal static List<string> GetKnownScopes()
         {
-            if (!TheBaseAssets.MyServiceHostInfo.IsCloudService) return null;
+            if (!TheBaseAssets.MyServiceHostInfo.IsCloudService) return new();
 
-            List<string> tData = new List<string>();
+            List<string> tData = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (!string.IsNullOrEmpty(tQ.MyTargetNodeChannel.RealScopeID) && !tData.Contains(tQ.MyTargetNodeChannel.RealScopeID))   //RScope-NOK: Only collects primary scopes
@@ -434,7 +424,7 @@ namespace nsCDEngine.Communication
 
         internal static List<TheChannelInfo> GetSendersByRealScope(string tRealScope)
         {
-            List<TheChannelInfo> tLst = new List<TheChannelInfo>();
+            List<TheChannelInfo> tLst = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ.MyTargetNodeChannel != null && tQ.MyTargetNodeChannel.HasRScope(tRealScope))
@@ -445,9 +435,9 @@ namespace nsCDEngine.Communication
             return tLst;
         }
 
-        private static readonly cdeConcurrentDictionary<string,int> LastCountByRealScope = new cdeConcurrentDictionary<string, int>();
+        private static readonly cdeConcurrentDictionary<string,int> LastCountByRealScope = new ();
         private static int LastQSenderCount = 0;
-        private static readonly object LastQSenderCountLock = new object();
+        private static readonly object LastQSenderCountLock = new ();
         internal static int CountRelaySendersByRealScope(string tRealScope)
         {
             if (string.IsNullOrEmpty(tRealScope))
@@ -493,16 +483,14 @@ namespace nsCDEngine.Communication
 
         #region CDEPUBSUB Hack - DO NOT SHIP EXCEPT IN CLOUDGATE
 
-        internal static List<Guid> hackMachineGateIDs = new List<Guid>();
+        internal static readonly List<Guid> hackMachineGateIDs = new ();
 
         internal static void hackAddMachineGates()
         {
 
             var tCustomerGates = GetNodesBySubscriptionFragment("TLD_CustomerGate_");
-            //if (pSender.MySubscriptionContainsFragment("TLD_CustomerGate_"))
             foreach (TheQueuedSender pSender in tCustomerGates)
             {
-                //TheBaseAssets.MySYSLOG.WriteToLog(2824, new TSM("QSRegistry", $"TLD_CustomerGate: {pSender.MyTargetNodeChannel}"));
                 if (!pSender.IsAlive)
                     continue;
                 var nodes = GetNodesByRScope(pSender.MyTargetNodeChannel.RealScopeID);  //RScope-NOK: Only collects nodes from primary scope but for hack ok
@@ -523,7 +511,7 @@ namespace nsCDEngine.Communication
         }
         internal static List<TheQueuedSender> GetNodesBySubscriptionFragment(string fragment)
         {
-            List<TheQueuedSender> tData = new List<TheQueuedSender>();
+            List<TheQueuedSender> tData = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ != null && tQ.MySubscriptionContainsFragment(fragment))
@@ -534,7 +522,7 @@ namespace nsCDEngine.Communication
 
         internal static List<Guid> GetNodesByRScope(string RScope)
         {
-            List<Guid> tData = new List<Guid>();
+            List<Guid> tData = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ != null && tQ.MyTargetNodeChannel != null && tQ.MyTargetNodeChannel.HasRScope(RScope))
@@ -544,7 +532,7 @@ namespace nsCDEngine.Communication
         }
         internal static List<string> GetNodeNamesByRScope(string RScope)
         {
-            List<string> tData = new List<string>();
+            List<string> tData = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ != null && tQ.MyTargetNodeChannel != null && tQ.MyTargetNodeChannel.HasRScope(RScope))
@@ -563,7 +551,7 @@ namespace nsCDEngine.Communication
 
         internal static List<string> GetSenderListNodes()
         {
-            List<string> tData = new List<string>();
+            List<string> tData = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ != null && tQ.MyTargetNodeChannel != null)
@@ -573,9 +561,7 @@ namespace nsCDEngine.Communication
         }
         internal static List<TheQueuedSender> GetISBConnectSender(string pRScopeID)
         {
-            //if (!MyQueuedSenderList.TheValues.Any(s => (s.MyISBlock!=null && s.IsAlive==true && s.MyTargetNodeChannel.HasRScope(pRScopeID))))
-              //  return null;
-            return MyQueuedSenderList.TheValues.Where(s => (s.MyISBlock != null && s.IsAlive == true && s.MyTargetNodeChannel.HasRScope(pRScopeID)))?.ToList();
+            return MyQueuedSenderList.TheValues.Where(s => (s.MyISBlock != null && s.IsAlive && s.MyTargetNodeChannel.HasRScope(pRScopeID)))?.ToList();
         }
 
         internal static List<TheQueuedSender> GetCloudNodes()
@@ -608,12 +594,8 @@ namespace nsCDEngine.Communication
             if (pSend == null || pSend.MyTargetNodeChannel == null || pSend.MyTargetNodeChannel.cdeMID == Guid.Empty) return 0;
             try
             {
-                //MyQueuedSenderList.MyRecordsLockSlim.EnterUpgradeableReadLock(); // lock (MyQueuedSenderList.MyRecordsLock) //LOCK-REVIEW: Is this look really neccesary here?
-                {
-                    if (MyQueuedSenderList.ContainsID(pSend.MyTargetNodeChannel.cdeMID)) return 1;
-                    MyQueuedSenderList.AddOrUpdateItem(pSend.MyTargetNodeChannel.cdeMID, pSend, null);
-                }
-                //MyQueuedSenderList.MyRecordsLockSlim.ExitUpgradeableReadLock();
+                if (MyQueuedSenderList.ContainsID(pSend.MyTargetNodeChannel.cdeMID)) return 1;
+                MyQueuedSenderList.AddOrUpdateItem(pSend.MyTargetNodeChannel.cdeMID, pSend, null);
                 return 2;
             }
             catch (Exception e)
@@ -655,9 +637,9 @@ namespace nsCDEngine.Communication
 
         internal static void UpdateServiceState(ref TheEngineState tState)
         {
-            if (tState.ConnectedClientsList == null) tState.ConnectedClientsList = new List<Guid>();
+            tState.ConnectedClientsList ??= new List<Guid>();
             tState.ConnectedClientsList.Clear();
-            if (tState.ConnectedNodesList == null) tState.ConnectedNodesList = new List<Guid>();
+            tState.ConnectedNodesList ??= new List<Guid>();
             tState.ConnectedNodesList.Clear();
             tState.ConnectedClientNodes = 0;
             tState.ConnectedServiceNodes = 0;
@@ -665,20 +647,17 @@ namespace nsCDEngine.Communication
             {
                 foreach (var t in QS.GetSubscriptionValues())
                 {
-                    if (t?.RScopeID?.Length > 0)
+                    if (t?.RScopeID?.Length > 0 && t.Topic.Equals(tState.ClassName) && QS?.MyTargetNodeChannel != null)
                     {
-                        if (t.Topic.Equals(tState.ClassName) && QS?.MyTargetNodeChannel!=null)
+                        if (TheCommonUtils.IsDeviceSenderType(QS.MyTargetNodeChannel.SenderType))   //IDST-ok: Count clients
                         {
-                            if (TheCommonUtils.IsDeviceSenderType(QS.MyTargetNodeChannel.SenderType))   //IDST-ok: Count clients
-                            {
-                                tState.ConnectedClientsList.Add(QS.MyTargetNodeChannel.cdeMID);
-                                tState.ConnectedClientNodes++;
-                            }
-                            else
-                            {
-                                tState.ConnectedNodesList.Add(QS.MyTargetNodeChannel.cdeMID);
-                                tState.ConnectedServiceNodes++;
-                            }
+                            tState.ConnectedClientsList.Add(QS.MyTargetNodeChannel.cdeMID);
+                            tState.ConnectedClientNodes++;
+                        }
+                        else
+                        {
+                            tState.ConnectedNodesList.Add(QS.MyTargetNodeChannel.cdeMID);
+                            tState.ConnectedServiceNodes++;
                         }
                     }
                 }
@@ -688,7 +667,7 @@ namespace nsCDEngine.Communication
 
         internal static List<string> ShowQSenderDetails(bool ShowQueueDetails)
         {
-            List<string> res = new List<string>();
+            List<string> res = new ();
             foreach (TheQueuedSender tQ in MyQueuedSenderList.TheValues)
             {
                 if (tQ == null)
@@ -710,7 +689,7 @@ namespace nsCDEngine.Communication
             if(tPrefix == "All known Nodes")
                 tW = "750px";
             string tableID = tPrefix.Replace(' ', '-').Replace('=', '-');
-            StringBuilder outText = new StringBuilder($"<div class=\"cdeInfoBlock\" style=\"max-width:1570px; width:{tW}; min-height:initial;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id={tableID}>{tPrefix}" + ": {0} ");
+            StringBuilder outText = new ($"<div class=\"cdeInfoBlock\" style=\"max-width:1570px; width:{tW}; min-height:initial;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id={tableID}>{tPrefix}" + ": {0} ");
             if(tPrefix != "All known Nodes")
                 outText.Append($"<a download=\"{tableID}_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, '{tableID}-table');\">(Export as CSV)</a>");
             outText.Append("</div>");
@@ -763,7 +742,9 @@ namespace nsCDEngine.Communication
                 {
                     return string.Format(outText.ToString(), count);
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
             }
             return "";
         }
@@ -806,9 +787,9 @@ namespace nsCDEngine.Communication
 
         internal static string AssembleBackChannelSubscriptions(string pTopics, string pRealScopeID)
         {
-            string sendTopics = "";
+            StringBuilder sendTopics = new ();
             if (!string.IsNullOrEmpty(pTopics))
-                sendTopics = pTopics;
+                sendTopics.Append(pTopics);
             else
             {
                 if (string.IsNullOrEmpty(pRealScopeID)) //No unscoped Subscriptions allowed to be sent to Backchannels or clouds
@@ -830,19 +811,19 @@ namespace nsCDEngine.Communication
                     {
                         if (topic != null && !TheCommonUtils.IsGuid(topic?.Topic))
                         {
-                            if (sendTopics.Length > 0) sendTopics += ";";
-                            sendTopics += topic.Topic;
+                            if (sendTopics.Length > 0) sendTopics.Append(";");
+                            sendTopics.Append(topic.Topic);
                             if (!string.IsNullOrEmpty(pRealScopeID) && !string.IsNullOrEmpty(topic.RScopeID))
                             {
                                 if (tScramble == null || !TheBaseAssets.MyServiceHostInfo.EnableFastSecurity)
                                     tScramble = TheBaseAssets.MyScopeManager.GetScrambledScopeID(pRealScopeID, true);   //GRSI: medium freq
-                                sendTopics += $"@{tScramble}";
+                                sendTopics.Append($"@{tScramble}");
                             }
                         }
                     }
                 }
             }
-            return sendTopics;
+            return sendTopics.ToString();
         }
 
         private static bool ContainsOwnBase(List<TheSubscriptionInfo> tScopedTopic, string pEngineName)
@@ -855,8 +836,8 @@ namespace nsCDEngine.Communication
             return false;
         }
 
-        private static readonly List<TSM> MyMasterQueue = new List<TSM>();
-        private static readonly object MyMasterQueueLock = new object();
+        private static readonly List<TSM> MyMasterQueue = new ();
+        private static readonly object MyMasterQueueLock = new ();
         private static TheQueuedSender MyMasterNodeQS = null;
         internal static bool PublishToMasterNode(TSM pMsg, bool DontQueue=false)
         {
@@ -869,8 +850,7 @@ namespace nsCDEngine.Communication
                 }
                 return false;
             }
-            if (MyMasterNodeQS==null)
-                MyMasterNodeQS = GetSenderByGuid(TheBaseAssets.MyServiceHostInfo.MasterNode);
+            MyMasterNodeQS ??= GetSenderByGuid(TheBaseAssets.MyServiceHostInfo.MasterNode);
             if (MyMasterNodeQS == null && !DontQueue)
             {
                 lock (MyMasterQueueLock)
@@ -903,7 +883,7 @@ namespace nsCDEngine.Communication
             if (string.IsNullOrEmpty(pTopic))
                 pTopic = string.Empty;
             bool ScopedAdded = false;
-            string tTopicNameOnly = pTopic;
+            string tTopicNameOnly;
             Guid tDirectGuid = Guid.Empty;
             bool hasDirectGuid = pTopic.Contains(";");
             string tTopicRScope = null;
@@ -971,13 +951,10 @@ namespace nsCDEngine.Communication
                     if (tSend != null && tSend.IsAlive)
                     {
                         var targetNodeChannel = tSend.MyTargetNodeChannel;
-                        if (targetNodeChannel?.IsOneWay == true)
+                        if (targetNodeChannel?.IsOneWay == true && (!IsTrustedSender || targetNodeChannel.OneWayTSMFilter == null || !MatchTSMFilter(pMsg, targetNodeChannel.OneWayTSMFilter)))
                         {
-                            if (!IsTrustedSender || targetNodeChannel.OneWayTSMFilter == null || !MatchTSMFilter(pMsg, targetNodeChannel.OneWayTSMFilter))
-                            {
-                                // Don't send to this channel
-                                continue;
-                            }
+                            // Don't send to this channel
+                            continue;
                         }
                         if (MightnotRelay && !tSend.MyTargetNodeChannel.IsDeviceType && !IsFromJS)
                         {
@@ -999,7 +976,7 @@ namespace nsCDEngine.Communication
             return false;
         }
 
-        static char[] wildcard = {'*'};
+        static readonly char[] wildcard = {'*'};
         private static bool MatchTSMFilter(TSM pMsg, string[] TSMFilter)
         {
             bool match = false;
@@ -1029,13 +1006,13 @@ namespace nsCDEngine.Communication
 
         internal static int GetUnsignedNodeCount()
         {
-            int unsignedNodes = MyQueuedSenderList.TheValues.Where(sender => { return !sender.IsTrusted; }).Count();
+            int unsignedNodes = MyQueuedSenderList.TheValues.Count(sender => { return !sender.IsTrusted; });
             return unsignedNodes;
         }
 
         internal static List<TheSubscriptionInfo> GetCurrentKnownTopics(bool bExcludeCloudRoutes, string pRealScopeID)
         {
-            List<TheSubscriptionInfo> retList = new List<TheSubscriptionInfo>();
+            List<TheSubscriptionInfo> retList = new ();
             foreach (TheQueuedSender srv in MyQueuedSenderList.TheValues)
             {
                 if (!bExcludeCloudRoutes || srv.MyTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL)
@@ -1046,13 +1023,13 @@ namespace nsCDEngine.Communication
 
         internal static List<TheNodeTopics> GetNodeTopics(bool ReturnAll=false)
         {
-            List<TheNodeTopics> retList = new List<TheNodeTopics>();
+            List<TheNodeTopics> retList = new ();
             foreach (TheQueuedSender srv in MyQueuedSenderList.TheValues)
             {
                 if (srv?.MyTargetNodeChannel == null)
                     continue;
                 var t = new TheNodeTopics() { DeviceID=srv.MyTargetNodeChannel.cdeMID, NodeType=srv.MyTargetNodeChannel.SenderType, Topics=new List<string>() };
-                List<TheSubscriptionInfo> retSList = new List<TheSubscriptionInfo>();
+                List<TheSubscriptionInfo> retSList = new ();
                 srv.GetUniqueSubscriptions(ref retSList, "");
                 foreach (var s in retSList)
                 {
@@ -1064,28 +1041,14 @@ namespace nsCDEngine.Communication
             return retList;
         }
 
-        //internal static List<string> GetUrlForTopic(string pTopic, bool bExcludeCloudRoutes)
-        //{
-        //    string tTopicName;
-        //    string tTopicRealScope = TheBaseAssets.MyScopeManager.GetRealScopeIDFromTopic(pTopic, out tTopicName);
-        //    List<string> retList = new List<string>();
-        //    foreach (TheQueuedSender srv in MyQueuedSenderList.TheValues)
-        //    {
-        //        if ((!bExcludeCloudRoutes || srv.MyTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL) && srv.MySubscriptionContains(tTopicName,tTopicRealScope))
-        //        {
-        //            retList.Add(srv.MyTargetNodeChannel + (string.IsNullOrEmpty(tTopicRealScope) ? "" : string.Format(" <span style='color:orange'>({0})</span>", tTopicRealScope.Substring(0, 4).ToUpper())));
-        //        }
-        //    }
-        //    return retList;
-        //}
         internal static List<string> GetUrlForTopic(TheSubscriptionInfo pTopic, bool bExcludeCloudRoutes)
         {
-            List<string> retList = new List<string>();
+            List<string> retList = new ();
             foreach (TheQueuedSender srv in MyQueuedSenderList.TheValues)
             {
                 if ((!bExcludeCloudRoutes || srv.MyTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL) && srv.MySubscriptionContains(pTopic?.Topic, pTopic?.RScopeID, false))
                 {
-                    retList.Add(srv.MyTargetNodeChannel?.ToMLString()); // + (string.IsNullOrEmpty(pTopic?.RScopeID) ? "" : $" <span style='color:orange'>({0})</span>", pTopic?.RScopeID.Substring(0, 4).ToUpper())));
+                    retList.Add(srv.MyTargetNodeChannel?.ToMLString()); 
                 }
             }
             return retList;
@@ -1115,7 +1078,7 @@ namespace nsCDEngine.Communication
         /// <param name="token">The token used to access the mesh info</param>
         public static TheMeshInfoStatus GetMeshInfoForNodeID(Guid pID, string token)
         {
-            TheMeshInfoStatus meshInfoStatus = new TheMeshInfoStatus();
+            TheMeshInfoStatus meshInfoStatus = new ();
             if (DateTimeOffset.Now.Subtract(LastMeshInfoCall).TotalSeconds > 5)
             {
                 LastMeshInfoCall = DateTimeOffset.Now;
@@ -1130,9 +1093,9 @@ namespace nsCDEngine.Communication
                         {
                             List<TheQueuedSender> allQSInMesh = MyQueuedSenderList.TheValues.Where(sender => sender.MyTargetNodeChannel?.RealScopeID == qs.MyTargetNodeChannel?.RealScopeID).ToList();
                             meshInfoStatus.MeshInfo.NodeIDs = allQSInMesh.Where(s => s.MyTargetNodeChannel != null).Select(s => s.MyTargetNodeChannel.cdeMID).ToList();
-                            meshInfoStatus.MeshInfo.TotalMeshSize = allQSInMesh.Count();
-                            meshInfoStatus.MeshInfo.MeshSize = allQSInMesh.Where(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL).Count();
-                            meshInfoStatus.MeshInfo.ConnectedBrowsers = allQSInMesh.Where(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON).Count();
+                            meshInfoStatus.MeshInfo.TotalMeshSize = allQSInMesh.Count;
+                            meshInfoStatus.MeshInfo.MeshSize = allQSInMesh.Count(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL);
+                            meshInfoStatus.MeshInfo.ConnectedBrowsers = allQSInMesh.Count(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON);
                             meshInfoStatus.MeshInfo.ScopeIDHash = qs.MyTargetNodeChannel.ScopeIDHash ?? (qs.MyTargetNodeChannel.RealScopeID == null ? "unscoped" : qs.MyTargetNodeChannel.RealScopeID.ToUpper().Substring(0, 4));
                             meshInfoStatus.MeshInfo.NodeDiagInfo = qs.GetNodeDiagInfo();
                         }
@@ -1380,7 +1343,7 @@ namespace nsCDEngine.Communication
 
         #region MeshManager (temporary) CODE-REVIEW: How do we make this permanent?
 
-        static readonly cdeConcurrentDictionary<Guid, TheQueuedSender> sessionToSenderDict = new cdeConcurrentDictionary<Guid, TheQueuedSender>();
+        static readonly cdeConcurrentDictionary<Guid, TheQueuedSender> sessionToSenderDict = new ();
 
         /// <summary>
         /// Connects to an unconfigured Node
@@ -1392,11 +1355,10 @@ namespace nsCDEngine.Communication
         public static Task<Guid> ConnectToUnconfiguredRelayAsync(Guid nodeId, string targetUrl, CancellationToken token)
         {
             var channel = new TheChannelInfo(nodeId, cdeSenderType.CDE_SERVICE, targetUrl);
-            TheQueuedSender tSend = new TheQueuedSender();
+            TheQueuedSender tSend = new ();
             if (tSend.StartSender(channel, null, false))    //CODEREVIEW: @Markus: you might have to subscribe to the MeshManager Topic?
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("MeshManager", $"Started Sender for node:{targetUrl} - {TheCommonUtils.GetDeviceIDML(nodeId)}"));
-                //var nodeId = TheCommonUtils.CGuid(tSend.ToString().Split(';')[1]); // TODO: Turn this into an API...
 
                 var r = new TheRequestData
                 {
@@ -1407,7 +1369,7 @@ namespace nsCDEngine.Communication
                 var session = TheBaseAssets.MySession.CreateSession(r, Guid.Empty);
                 if (string.IsNullOrEmpty(session.RSAKey))
                     TheCommonUtils.CreateRSAKeys(session);
-                TSM tTsmRsa = new TSM(eEngineName.ContentService, "CDE_REQUEST_RSA:" + session.RSAPublic);
+                TSM tTsmRsa = new (eEngineName.ContentService, "CDE_REQUEST_RSA:" + session.RSAPublic);
                 TheCommCore.PublishToNode(nodeId, tTsmRsa);
 
                 if (!token.IsCancellationRequested)
@@ -1482,7 +1444,7 @@ namespace nsCDEngine.Communication
                         tRes.ERR = "No ISBConnect Request found";
                         return tRes;
                     }
-                    string tPLS = TheCommonUtils.Decrypt(tSM.PLB, TheBaseAssets.MySecrets.GetNodeKey());    //Only Post encrypted with this deviceID will be accepted;
+                    string tPLS = TheCommonUtils.Decrypt(tSM.PLB, TheBaseAssets.MySecrets.GetNodeKey());    //Only Post encrypted with this deviceID will be accepted
                     if (string.IsNullOrEmpty(tPLS))
                     {
                         tRes.ERR = "Decryption failed - illegal request";
@@ -1512,7 +1474,7 @@ namespace nsCDEngine.Communication
                 }
             }
             pRequestData.SessionState.MyDevice = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(pSenderType);
-            TheQueuedSender tSend = new TheQueuedSender();
+            TheQueuedSender tSend = new ();
             if (tSend.StartSender(new TheChannelInfo(pRequestData.SessionState.MyDevice, pSenderType, pRequestData.SessionState), null, true))
             {
                 tSend.eventErrorDuringUpload += TheCommCore.OnCommError;

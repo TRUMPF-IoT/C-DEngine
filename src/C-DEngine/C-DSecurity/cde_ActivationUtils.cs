@@ -31,7 +31,7 @@ namespace nsCDEngine.Activation
         VerifyExpiration = 2,
     }
 
-    public class TheActivationUtils
+    public static class TheActivationUtils
     {
         /// <summary>
         /// Flags requesting additional activation behaviors.
@@ -74,7 +74,6 @@ namespace nsCDEngine.Activation
 
             licenseAuth[i] = (byte)licenses.Length;
             i++;
-            //int j = 0;
             foreach (var license in licenses)
             {
                 license.LicenseId.ToByteArray().CopyTo(licenseAuth, i);
@@ -84,15 +83,6 @@ namespace nsCDEngine.Activation
 
             byte[] signingKey = Encoding.UTF8.GetBytes(licenseSigningKey); //SECURITY-REVIEW: Please do not use appID here!starting 4.106 this will be only 5 digits the cdeAK is (will be) the hashed version of the AppID
             string additionalSigningKeyString = TheLicense.GetAdditionalSigningKeyString(licenses);
-            //licenses.Aggregate("", (s, l) =>
-            //{
-            //    if (!String.IsNullOrEmpty(l.ActivationKeyValidator))
-            //    {
-            //        string decryptedKeyValidator = TheCommonUtils.Decrypt(Encoding.UTF8.GetBytes(l.ActivationKeyValidator), TheScopeManager.cdeAI);
-            //        return s + decryptedKeyValidator;
-            //    }
-            //    return s;
-            //});
             if (additionalSigningKeyString.Length > 0)
             {
                 byte[] additionalSigningKey = Encoding.UTF8.GetBytes(additionalSigningKeyString);
@@ -148,14 +138,6 @@ namespace nsCDEngine.Activation
                 }
                 int digit = (int)(x % 32);
                 output += base32CodeArray[digit];
-                //if (digit < 10)
-                //{
-                //    output += char.ToString((char)('0' + digit));
-                //}
-                //else
-                //{
-                //    output += char.ToString((char)('A' + digit - 10));
-                //}
                 x /= 32;
             } while (x != 0);
             return output.Reverse().Aggregate("", (s, c) => s + c);
@@ -176,15 +158,6 @@ namespace nsCDEngine.Activation
                 char digit = text[i];
                 var digitValue = base32CodeArray.IndexOf(digit);
                 if (digitValue < 0)
-                //if (digit >= 'A' && digit <= 'Z')
-                //{
-                //    digit = (char)(digit + 10 - 'A');
-                //}
-                //else if (digit >= '0' & digit <= '9')
-                //{
-                //    digit = (char) (digit - '0');
-                //}
-                //else
                 {
                     return null;
                 }

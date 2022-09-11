@@ -60,7 +60,7 @@ namespace nsCDEngine.Communication
         /// <param name="pCookies">Cookies to send to the REST server</param>
         public static void GetRESTAsync(Uri pUri, int tTimeOut, string UID, string PWD, string Domain, Action<TheRequestData> tCallback, object pCookie, cdeConcurrentDictionary<string, string> pCookies)
         {
-            TheRequestData pData = new TheRequestData();
+            TheRequestData pData = new ();
             if (TheBaseAssets.MyServiceHostInfo != null)
                 pData.RemoteAddress = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false);
             pData.RequestUri = pUri;
@@ -172,7 +172,7 @@ namespace nsCDEngine.Communication
         /// <param name="pCookies">Cookies to send with the POST</param>
         public void PostRESTAsync(Uri pUri, Action<TheRequestData> pCallback, byte[] pPostBuffer, string pContentType, Guid pRequestor, object pCookie, Action<TheRequestData> pErrorCallback, cdeConcurrentDictionary<string, string> pCookies)
         {
-            TheRequestData pData = new TheRequestData
+            TheRequestData pData = new ()
             {
                 RemoteAddress = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false),
                 RequestUri = pUri,
@@ -199,7 +199,7 @@ namespace nsCDEngine.Communication
         /// <param name="pCookies">Cookies to send with the POST</param>
         public void PostRESTAsync(Uri pUri, Action<TheRequestData> pCallback, Stream stmPostBuffer, string pContentType, Guid pRequestor, object pCookie, Action<TheRequestData> pErrorCallback, cdeConcurrentDictionary<string, string> pCookies)
         {
-            TheRequestData pData = new TheRequestData
+            TheRequestData pData = new ()
             {
                 RemoteAddress = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false),
                 RequestUri = pUri,
@@ -226,10 +226,8 @@ namespace nsCDEngine.Communication
                         if (string.IsNullOrEmpty(tVal)) continue;
                         string[] co = tVal.Split(';');
                         string val = co[0];
-                        string pat = "/"; //if (co.Length > 1) pat = co[1];
-                        //string dom = ""; if (co.Length > 2) dom = co[2];
+                        string pat = "/"; 
                         string dom = myRequestState.MyRequestData.RequestUri.Host.Trim(); //if (string.IsNullOrEmpty(dom))
-                        //TheSystemMessageLog.ToCo(string.Format("GetREST: Cookie: ({0}) ({1}) ({2}) ({3})", nam,val,pat,dom));
                         myRequestState.MyRequestData.TempCookies.Add(myRequestState.MyRequestData.RequestUri, new Cookie(nam.Trim(), val.Trim(), pat, dom));
                     }
                     catch (Exception e)
@@ -238,15 +236,14 @@ namespace nsCDEngine.Communication
                             TheBaseAssets.MySYSLOG.WriteToLog(254, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "SetCookies Exception: " + myRequestState.MyRequestData.RequestUri, eMsgLevel.l1_Error, e.Message));
                     }
                 }
-                //TheSystemMessageLog.ToCo(string.Format("GetREST: CookieCont: ({0})", myRequestState.MyRequestData.TempCookies.GetCookieHeader(myRequestState.MyRequestData.RequestUri)));
             }
         }
         private static bool ProcessRedirect(TheRequestData pRequestData, string tTarget)
         {
-            if (tTarget.StartsWith(pRequestData.RequestUri.Scheme))  //TODO:SSL to non SSL Scheme Mapping
+            if (tTarget.StartsWith(pRequestData.RequestUri.Scheme))  
             {
 #if !CDE_NET35
-                Uri tTargetUri = new Uri(tTarget);
+                Uri tTargetUri = new (tTarget);
                 Uri tUrl = pRequestData.RequestUri;
 #else
                 Uri tTargetUri = TheCommonUtils.CUri(tTarget, false);
@@ -261,9 +258,8 @@ namespace nsCDEngine.Communication
                     tUrl = TheCommonUtils.CUri(pRequestData.RequestUriString, false);
 #endif
                 }
-                Uri tCloudUri = new Uri(tUrl.Scheme + "://" + tUrl.Host + ":" + tUrl.Port + tTargetUri.LocalPath + tTargetUri.Query);
-                if (pRequestData.Header == null)
-                    pRequestData.Header = new cdeConcurrentDictionary<string, string>();
+                Uri tCloudUri = new (tUrl.Scheme + "://" + tUrl.Host + ":" + tUrl.Port + tTargetUri.LocalPath + tTargetUri.Query);
+                pRequestData.Header ??= new cdeConcurrentDictionary<string, string>();
                 pRequestData.Header.TryAdd("Location", tCloudUri.ToString());
                 pRequestData.NewLocation = tCloudUri.ToString();
 
@@ -282,10 +278,8 @@ namespace nsCDEngine.Communication
                     pRequestData.ResponseBufferStr += "table.MyFullTableCentered { border: 0px; border-collapse: collapse; padding: 0px; width: 100%; height:100%; margin-left: auto; margin-right: auto; text-align: center; } ";
                     pRequestData.ResponseBufferStr += "div.cdeTileText { margin: 5%; cursor: pointer; }";
                     pRequestData.ResponseBufferStr += "</style></head><body><div class='cdeLiveTile' onclick='location.href=\"" + tTargetUri + "\"'><table class='MyFullTableCentered'><tbody><tr><td><div class='cdeTileText'>Redirected!<br>Touch to go to App</div></td></tr></tbody></table></div></body></html>";
-                    //pRequestData.ResponseBufferStr = "<html><a href='" + tTargetUri + "'>Click to see result</a><p>" + pRequestData.RequestUri + "<br>" + pRequestData.RequestUriString + "</html>";
                     pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr.Replace(tTgtHost, tReplUri));
                     pRequestData.ResponseMimeType = "text/html";
-                    //pRequestData.StatusCode = 200;
                 }
                 pRequestData.RequestUri = tTargetUri;
                 if (!string.IsNullOrEmpty(tTargetUri.AbsolutePath) && tTargetUri.AbsolutePath.Length > 1 && tTargetUri.AbsolutePath.Substring(1).Contains("/"))

@@ -51,17 +51,16 @@ namespace nsCDEngine.BaseClasses
             set
             {
                 _status_level = value;
-                switch (value)
+                mlevel = value switch
                 {
-                    default: mlevel = value; break;
-                    case 1: mlevel = 3; break;
-                    case 2: mlevel = 4; break;
-                    case 3: mlevel = 5; break;
-                    case 4: mlevel = 6; break;
-                    case 5: mlevel = 6; break;
-                    case 6: mlevel = 7; break;
-                    case 7: mlevel = 7; break;
-                }
+                    1 => 3,
+                    2 => 4,
+                    3 => 5,
+                    4 => 6,
+                    5 => 6,
+                    6 => 7,
+                    _ => value,
+                };
             }
         }
         /// <summary>
@@ -160,13 +159,13 @@ namespace nsCDEngine.BaseClasses
             return LastError;
         }
 
-        internal List<string> LogFilter = new List<string>();
-        internal List<string> LogIgnore = new List<string>();
-        internal List<string> LogOnly = new List<string>();
+        internal List<string> LogFilter = new ();
+        internal List<string> LogIgnore = new ();
+        internal List<string> LogOnly = new ();
         internal TheStorageMirror<TheEventLogEntry> MyMessageLog;
         private void Add(int pEventID, long pSerial, string pSource, TSM AMessage)
         {
-            TheEventLogEntry tLog = new TheEventLogEntry
+            TheEventLogEntry tLog = new ()
             {
                 Message = AMessage,
                 Serial = pSerial,
@@ -178,6 +177,7 @@ namespace nsCDEngine.BaseClasses
                 FireEvent("NewLogEntry", new TheProcessMessage() { Message=AMessage, Cookie = tLog }, true);    //Prevents a call to AddScopeID for the TOPIC
         }
         internal int MaxMessageBirthBuffer = 100;
+        bool UseSysLogQueue;
 
         internal TheSystemMessageLog()
         {
@@ -187,7 +187,6 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        bool UseSysLogQueue;
         internal TheSystemMessageLog(int MaxEntries, bool UseQueue = false)
         {
             UseSysLogQueue = UseQueue;
@@ -236,7 +235,9 @@ namespace nsCDEngine.BaseClasses
                 {
                     syslogCancel?.Cancel();
                 }
-                catch { }
+                catch { 
+                    //intent
+                }
             }
         }
         /// <summary>
@@ -245,9 +246,10 @@ namespace nsCDEngine.BaseClasses
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
-        private readonly object writeLock = new object();
+        private readonly object writeLock = new ();
         private int LogCounter;
         private string MySystemFileLogName = "";
         private string MyCurLog = "";
@@ -259,34 +261,42 @@ namespace nsCDEngine.BaseClasses
                 return;
             }
             // ReSharper disable once EmptyEmbeddedStatement
-            if (WaitForLock) while (TheCommonUtils.cdeIsLocked(writeLock)) ; // CODE REVIEW: This can go into a tight loop - should yield the thread or sleep for 1 few milliseconds before checking again
+            if (WaitForLock)
+            {
+                while (TheCommonUtils.cdeIsLocked(writeLock)) // FIXED: This can go into a tight loop - should yield the thread or sleep for 1 few milliseconds before checking again
+                {
+                    TheCommonUtils.SleepOneEye(5, 5);
+                    if (!TheBaseAssets.MasterSwitch)
+                        return;
+                }
+            }
             if (!TheCommonUtils.cdeIsLocked(writeLock))
             {
                 lock (writeLock)
                 {
-                    var bLogFileExists = System.IO.File.Exists(MyCurLog);
+                    var bLogFileExists = File.Exists(MyCurLog);
                     if (MaxLogFileSize > 0 && bLogFileExists)
                     {
                         try
                         {
-                            System.IO.FileInfo f2 = new System.IO.FileInfo(MyCurLog);
+                            FileInfo f2 = new (MyCurLog);
                             if (f2.Length > MaxLogFileSize * (1024 * 1024))
                             {
                                 LogFilePath = mLogFilePath;
-                                System.IO.File.Move(MyCurLog, MySystemFileLogName);
+                                File.Move(MyCurLog, MySystemFileLogName);
                                 CheckFileRollover();
                             }
                         }
                         catch {
                             //ignored
                         }
-                        bLogFileExists = System.IO.File.Exists(MyCurLog);
+                        bLogFileExists = File.Exists(MyCurLog);
                     }
                     try
                     {
-                        using (System.IO.StreamWriter fs = new System.IO.StreamWriter(MyCurLog, bLogFileExists))
+                        using (StreamWriter fs = new (MyCurLog, bLogFileExists))
                         {
-                            foreach (TheEventLogEntry tLogs in MyMessageLog.MyMirrorCache.MyRecords.Values.Where(s => s.WasWritten == false).OrderBy(s => s.Serial).ToList())   //serial is more precise than CTIM
+                            foreach (TheEventLogEntry tLogs in MyMessageLog.MyMirrorCache.MyRecords.Values.Where(s => !s.WasWritten).OrderBy(s => s.Serial).ToList())   //serial is more precise than CTIM
                             {
                                 fs.WriteLine($"{tLogs.Source} : {tLogs.EventID} : {tLogs.Serial} : {tLogs.Message}");   //Serial is required to see the exact order of messages put in the log if the ms in the timestamp is the same
                                 tLogs.WasWritten = true;
@@ -304,13 +314,13 @@ namespace nsCDEngine.BaseClasses
         private void CheckFileRollover()
         {
             if (string.IsNullOrEmpty(LogFilePath) || MaxLogFiles==0) return;
-            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(LogFilePath);
-            System.IO.FileInfo[] fileInfo = di.GetFiles();
+            DirectoryInfo di = new (LogFilePath);
+            FileInfo[] fileInfo = di.GetFiles();
             if (!fileInfo.Any()) return;
 
-            List<System.IO.FileInfo> InfoList = new List<System.IO.FileInfo>();
+            List<FileInfo> InfoList = new ();
 
-            foreach (System.IO.FileInfo fiNext in fileInfo)
+            foreach (FileInfo fiNext in fileInfo)
             {
                 if (fiNext.Extension.ToUpper().Equals(".TXT") && fiNext.Name.StartsWith(TheBaseAssets.MyServiceHostInfo.ApplicationName + "_SYSTEMLOG_"))
                 {
@@ -319,9 +329,9 @@ namespace nsCDEngine.BaseClasses
             }
             if (InfoList.Count > 0 && InfoList.Count > MaxLogFiles)
             {
-                System.IO.FileInfo tI = InfoList.OrderBy(s => s.CreationTime).First();
+                FileInfo tI = InfoList.OrderBy(s => s.CreationTime).First();
                 if (tI != null)
-                    System.IO.File.Delete(tI.FullName);
+                    File.Delete(tI.FullName);
             }
         }
 
@@ -370,7 +380,7 @@ namespace nsCDEngine.BaseClasses
                             }
                             mLogFilePath = Path.Combine(root, mLogFilePath);
                         }
-                        if (!string.IsNullOrEmpty(value) && !value.EndsWith("\\"))
+                        if (!value.EndsWith("\\"))
                             mLogFilePath += "\\";
                         TheCommonUtils.CreateDirectories(mLogFilePath);
                     }
@@ -407,7 +417,7 @@ namespace nsCDEngine.BaseClasses
         [Conditional("CDE_SYSLOG")]
         internal static void ToCo(string text, bool Force)
         {
-            if (!(TheBaseAssets.MyServiceHostInfo?.DisableConsole==true))
+            if (TheBaseAssets.MyServiceHostInfo?.DisableConsole != true)
             {
                 if (TheBaseAssets.MyServiceHostInfo == null || TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.OFF || Force)
                     Console.WriteLine("{0}:{1}", Interlocked.Increment(ref LogSerial), text);
@@ -437,12 +447,6 @@ namespace nsCDEngine.BaseClasses
                 WriteToLog(LogID, text, false);
             }
         }
-
-        //   public delegate TSM TheCreateMyText();
-        //   public void WriteToLog(int LogID, eDEBUG_LEVELS logLevel, TheCreateMyText createMyText)
-        // Either of these calling syntax works with either declaration (with regular C# compiler):
-        //   WriteToLog(100, eDEBUG_LEVELS.OFF, () => new TSM(ENG));
-        //   WriteToLog(100, eDEBUG_LEVELS.OFF, delegate() { return new TSM(ENG); });
 
         /// <summary>
         /// Writes a TSM to the SystemLog with a given ID, if the logLevel is greater than the configured debug level (TheBaseAssets.MyServiceHostInfo.DebugLevel).
@@ -571,27 +575,16 @@ namespace nsCDEngine.BaseClasses
             }
             if (!TheBaseAssets.MyServiceHostInfo.DisableConsole)
             {
-                switch (MyText.LVL)
+                Console.ForegroundColor = MyText.LVL switch
                 {
-                    case eMsgLevel.l1_Error:
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        break;
-                    case eMsgLevel.l2_Warning:
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        break;
-                    case eMsgLevel.l3_ImportantMessage:
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        break;
-                    case eMsgLevel.l6_Debug:
-                    case eMsgLevel.l7_HostDebugMessage:
-                        Console.ForegroundColor = ConsoleColor.Gray;
-                        break;
-                    default:
-                        Console.ForegroundColor = ConsoleColor.White;
-                        break;
-                }
+                    eMsgLevel.l1_Error => ConsoleColor.Red,
+                    eMsgLevel.l2_Warning => ConsoleColor.Yellow,
+                    eMsgLevel.l3_ImportantMessage => ConsoleColor.Green,
+                    eMsgLevel.l6_Debug or eMsgLevel.l7_HostDebugMessage => ConsoleColor.Gray,
+                    _ => ConsoleColor.White,
+                };
                 string tout = null;
-                if (TheBaseAssets.MyServiceHostInfo.UseGELFLoggingFormat == true)
+                if (TheBaseAssets.MyServiceHostInfo.UseGELFLoggingFormat)
                 {
                     var t = new TheGELFLogEntry()
                     {
@@ -621,7 +614,6 @@ namespace nsCDEngine.BaseClasses
             }
             if (AddEntry)
             {
-                //if (MyText.Text == "True")              return;
                 if (MyMessageLog != null)
                     Add(pLogID, tLogSerial, "", MyText);
                 if (MyText.LVL == eMsgLevel.l1_Error)
@@ -674,7 +666,7 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        readonly BlockingCollection<LogArgs> sysLogQueue = new BlockingCollection<LogArgs>(); // CODEREVIEW: we currently don't put a limit on the pending tasks. Should we put a limit on the queue size?
+        readonly BlockingCollection<LogArgs> sysLogQueue = new (); // CODEREVIEW: we currently don't put a limit on the pending tasks. Should we put a limit on the queue size?
         CancellationTokenSource syslogCancel;
 
         private void DequeueSysLog(object cancelTokenObj)
@@ -695,10 +687,14 @@ namespace nsCDEngine.BaseClasses
                             WriteToLogInternal(pLogID, MyText, NoLog, tLogSerial);
                         }
                     }
-                    catch { }
+                    catch { 
+                        //intent
+                    }
                 }
             }
-            catch { }
+            catch { 
+                //intent
+            }
         }
         internal string GetNodeLog(TheSessionState pSession, string InTopic, bool ShowLinks)
         {
@@ -713,7 +709,6 @@ namespace nsCDEngine.BaseClasses
                 outText += "<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; \">LogID</th>";
                 outText += "<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; \">Entry Date</th>";
                 outText += "<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; \">Level</th>";
-                //outText += "<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; \">ORG</th>";
                 outText += "<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; \">Engine</th>";
                 outText += "<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; \">Text</th><tr>";
                 int MaxCnt = MyMessageLog.MyMirrorCache.Count;
@@ -721,10 +716,7 @@ namespace nsCDEngine.BaseClasses
                 {
                     TSM tMsg = tLogEntry.Message;
                     if (!string.IsNullOrEmpty(InTopic) && !tMsg.ENG.Equals(InTopic)) continue;
-                    if (tMsg.TXT == null)
-                    {
-                        tMsg.TXT = "";
-                    }
+                    tMsg.TXT ??= "";
                     var tColor = "black";
                     if (tMsg.TXT.Contains("ORG:2;"))
                         tColor = "blue";

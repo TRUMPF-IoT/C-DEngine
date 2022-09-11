@@ -29,7 +29,6 @@ namespace nsCDEngine.ViewModels
 
     internal class TheCoreQueueContent : TheDataBase
     {
-        //public int Method { get; set; }
         public int QueueIdx { get; set; }
         public string Topic { get; set; }
         public TSM OrgMessage { get; set; }
@@ -131,7 +130,7 @@ namespace nsCDEngine.ViewModels
 		public TheUserDetailsI()
 		{
 			HomeNode = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID;
-			NodeScope = HomeNode.ToString(); // "this";
+			NodeScope = HomeNode.ToString(); 
 		}
 
 		internal TheUserDetails CloneToUser(Guid pUserID)
@@ -141,7 +140,7 @@ namespace nsCDEngine.ViewModels
 
 			Guid pSessionID = tMinUser.CurrentSessionID;
 
-            TheUserDetails tU = new TheUserDetails
+            TheUserDetails tU = new ()
             {
                 ApplicationName = ApplicationName,
                 AssignedEasyScope = AssignedEasyScope,  //OK
@@ -220,12 +219,7 @@ namespace nsCDEngine.ViewModels
 				}
 				else
 				{
-                    //Should no come here
-					//tU.Password = tSec[0]; //PW-SECURITY-REVIEW: should contain hash
-     //               if (tSec.Length > 1)
-					//	tU.AssignedEasyScope = tSec[1]; //ok - not used at this point
-					//if (tSec.Length > 2)
-					//	tU.AccessMask = TheCommonUtils.CInt(tSec[2]);
+                    //Should not come here
 				}
 			}
 			else
@@ -263,7 +257,7 @@ namespace nsCDEngine.ViewModels
 	{
 		public string UID { get; set; }
 
-		public string PWD { get; set; } //TODO: Code Review: This class is only used during Coufs. is this safe????
+		public string PWD { get; set; } 
 		public string Name { get; set; }
 		public string ThemeName { get; set; }
 		public string Role { get; set; }
@@ -323,17 +317,13 @@ namespace nsCDEngine.ViewModels
 		internal int AccessMask { get; set; }
 		public List<string> Permissions { get; set; } // CODE REVIEW: Do these need to be hidden/encrypted like the AccessMask? What UX do we provide?
 		internal string Password { get; set; }
-        //internal TheMirrorCache<TheRefreshToken> RefreshTokens;
         private TheMirrorCache<TheRefreshToken> _refreshTokens;
         internal TheMirrorCache<TheRefreshToken> RefreshTokens
         {
             set { _refreshTokens = value; }
             get
             {
-                if (_refreshTokens == null)
-                {
-                    _refreshTokens = new TheMirrorCache<TheRefreshToken>(5);
-                }
+                _refreshTokens ??= new TheMirrorCache<TheRefreshToken>(5);
                 return _refreshTokens;
             }
         }
@@ -351,7 +341,7 @@ namespace nsCDEngine.ViewModels
 		public TheUserDetails()
 		{
 			HomeNode = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID;
-			NodeScope = HomeNode.ToString(); // "this";
+			NodeScope = HomeNode.ToString(); 
 			IsTempUser = false;
 		}
 
@@ -373,14 +363,14 @@ namespace nsCDEngine.ViewModels
 			PrimaryDeviceID = pPrimDeviceGuid == Guid.Empty ? TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID : pPrimDeviceGuid;
 			HomeNode = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID;
             HomeNodeName = TheBaseAssets.MyServiceHostInfo.MyStationName;
-			NodeScope = HomeNode.ToString(); // "this";
+			NodeScope = HomeNode.ToString(); 
             IsTempUser = false;
 			LCID = 0;
 		}
 
         internal string GetUserPrefString()
         {
-            TheUserPreferences tPr = new TheUserPreferences
+            TheUserPreferences tPr = new ()
             {
                 ShowClassic = ShowClassic,
                 LCID = LCID,
@@ -431,7 +421,7 @@ namespace nsCDEngine.ViewModels
 
 		public static TheUserLog GetDefaults()
 		{
-			TheUserLog tULG = new TheUserLog
+			TheUserLog tULG = new ()
 			{
 				UserAction = "Unknown",
 				UserInfo = "Unknown",
@@ -545,68 +535,4 @@ namespace nsCDEngine.ViewModels
         public cdeConcurrentDictionary<string, string> CustomParameter { get; set; }
     }
     #endregion
-
-    //internal class DateTimePrecise
-    //   {
-    //       private static readonly DateTimePrecise Instance = new DateTimePrecise(10);
-
-    //       public static DateTime Now
-    //       {
-    //           get { return Instance.GetUtcNow().LocalDateTime; }
-    //       }
-
-    //       public static DateTime UtcNow
-    //       {
-    //           get { return Instance.GetUtcNow().UtcDateTime; }
-    //       }
-
-    //       public static DateTimeOffset NowOffset
-    //       {
-    //           get { return Instance.GetUtcNow().ToLocalTime(); }
-    //       }
-
-    //       public static DateTimeOffset UtcNowOffset
-    //       {
-    //           get { return Instance.GetUtcNow(); }
-    //       }
-
-    //       private const long TicksInOneSecond = 10000000L;
-
-    //       private readonly double _syncSeconds;
-    //       private readonly System.Diagnostics.Stopwatch _stopwatch;
-    //       private DateTimeOffset _baseTime;
-
-    //       public DateTimePrecise(int syncSeconds)
-    //       {
-    //           _syncSeconds = syncSeconds;
-    //           _stopwatch = new System.Diagnostics.Stopwatch();
-
-    //           Syncronize();
-    //       }
-
-    //       private void Syncronize()
-    //       {
-    //           lock (_stopwatch)
-    //           {
-    //               _baseTime = DateTimeOffset.UtcNow;
-    //               _stopwatch.Restart();
-    //           }
-    //       }
-
-    //       public DateTimeOffset GetUtcNow()
-    //       {
-    //           var elapsedSeconds = _stopwatch.ElapsedTicks / (double)System.Diagnostics.Stopwatch.Frequency;
-
-    //           if (elapsedSeconds > _syncSeconds)
-    //           {
-    //               Syncronize();
-
-    //               // account for any time that has passed since the stopwatch was syncronized
-    //               elapsedSeconds = _stopwatch.ElapsedTicks / (double)System.Diagnostics.Stopwatch.Frequency;
-    //           }
-
-    //           var elapsedTicks = Convert.ToInt64(elapsedSeconds * TicksInOneSecond);
-    //           return _baseTime.AddTicks(elapsedTicks);
-    //       }
-    //   }
 }

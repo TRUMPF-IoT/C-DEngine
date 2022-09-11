@@ -416,7 +416,6 @@ namespace nsCDEngine.Engines.ThingService
                 }
                 else
                 {
-                    // TODO Adjust license counts if devicetype has changed or enforce that devicetype can not change?
                     TheCDEngines.MyThingEngine.FireEvent(eThingEvents.ThingUpdated, tThing, null, true);
                     tBase?.FireEvent(eEngineEvents.ThingUpdated, tThing, true);
                 }
@@ -568,7 +567,7 @@ namespace nsCDEngine.Engines.ThingService
         internal static bool RegisterEngine(TheBaseEngine tBase, bool IsIsolated = false, bool WillBeIsolated = false)
         {
             // CODE REVIEW: Better way to allow Mini Relays? Or do we want to have a license check here as well?
-            if (!(tBase.AssociatedPlugin is TheMiniRelayEngine) && !tBase.CheckEngineLicense())
+            if (tBase.AssociatedPlugin is not TheMiniRelayEngine && !tBase.CheckEngineLicense())
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("No valid license for {0}", tBase.GetEngineName()), eMsgLevel.l1_Error, ""));
                 return false;
@@ -648,11 +647,6 @@ namespace nsCDEngine.Engines.ThingService
             var thing = GetThingByMID(thingAddress.ThingMID);
             if (thing == null)
             {
-                // TODO create a thing proxy that uses messages to implement thing functionality
-                //if (thingAddress.Node != TheBaseAssets.MyServiceHostInfo.MyDeviceInfo?.DeviceID)
-                //{
-                //    //return new TheRemoteThing(thingAddress).GetBaseThing(); 
-                //}
                 return TheCommonUtils.TaskFromResult<TheThing>(null);
             }
             return WaitForInitializeAsync(thing, timeout);
@@ -856,10 +850,7 @@ namespace nsCDEngine.Engines.ThingService
                         }
                         else
                         {
-                            if (ownedThing == null)
-                            {
-                                ownedThing = ownedThings.FirstOrDefault(t => t.Address == createParams.Address || (string.IsNullOrEmpty(t.Address) && string.IsNullOrEmpty(createParams.Address)));
-                            }
+                            ownedThing ??= ownedThings.FirstOrDefault(t => t.Address == createParams.Address || (string.IsNullOrEmpty(t.Address) && string.IsNullOrEmpty(createParams.Address)));
                             if (ownedThing == null)
                             {
                                 var matchingThings = GetThingsOfEngine(createParams.EngineName, true, true)
@@ -1049,7 +1040,6 @@ namespace nsCDEngine.Engines.ThingService
 
         public static Task<bool> DeleteOwnedThingAsync(TheMessageAddress thingAddress)
         {
-            // TODO also make this work cross-node
             var tThing = GetThingByMID(thingAddress.ThingMID);
             return TheCommonUtils.TaskFromResult<bool>(TheThingRegistry.DeleteThing(tThing));
         }
@@ -1583,10 +1573,7 @@ namespace nsCDEngine.Engines.ThingService
             }
             List<TheThing> tList = GetThingsOfEngine(pEngineName, allowRemoteEngine);
             var tThing = tList?.Find(s => TheThing.GetSafePropertyString(s, "ID") == pID);
-            if (_thingByIdCache == null)
-            {
-                _thingByIdCache = new cdeConcurrentDictionary<string, TheThing>();
-            }
+            _thingByIdCache ??= new cdeConcurrentDictionary<string, TheThing>();
             _thingByIdCache?.TryAdd(cacheKey, tThing);
             return tThing;
         }

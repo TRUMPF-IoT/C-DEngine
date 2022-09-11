@@ -68,8 +68,7 @@ namespace nsCDEngine.Communication
                 return true;
 
             IsClient = true;
-            if (MyQSender == null)
-                MyQSender = pSender;
+            MyQSender ??= pSender;
 
             var _MyTargetNodeChannel = pSender?.MyTargetNodeChannel;
             Uri TargetUri = TheCommonUtils.CUri(_MyTargetNodeChannel?.TargetUrl, true);
@@ -137,7 +136,7 @@ namespace nsCDEngine.Communication
                 {
                     // CODE REVIEW MH: ProcessWS synchronously can run for quite a bit until the first await. Should we start this as a new task?
                     ConnectSuccess = true;
-                    var taskNoWait = ProcessWS(); //Sets Connecting and Connected when ready
+                    ProcessWS(); //Sets Connecting and Connected when ready
                 }
                 else
                 {

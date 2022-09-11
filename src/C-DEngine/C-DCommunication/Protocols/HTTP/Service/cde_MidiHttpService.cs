@@ -21,6 +21,12 @@ namespace nsCDEngine.Communication.HttpService
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             mHttpListener?.Close();
             mHttpListener = null;
         }
@@ -38,13 +44,13 @@ namespace nsCDEngine.Communication.HttpService
                 {
                     mHttpListener = new HttpListener();
 #if !CDE_NET35
-                    Uri tUri = new Uri(TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false));
+                    Uri tUri = new (TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false));
 #else
                 Uri tUri = TheCommonUtils.CUri(TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false), false);
 #endif
-                    MyHttpUrl = tUri.Scheme + "://*"; // +tUri.Host;
+                    MyHttpUrl = tUri.Scheme + "://*"; 
                     if ((tUri.Scheme.Equals("https") && tUri.Port != 443) || (tUri.Scheme.Equals("http") && tUri.Port != 80))
-                        MyHttpUrl += ":" + pPort; // tUri.Port;
+                        MyHttpUrl += ":" + pPort; 
                     MyHttpUrl += "/";
                     mHttpListener.Prefixes.Add(MyHttpUrl);
                     mHttpListener.Start();
@@ -79,7 +85,7 @@ namespace nsCDEngine.Communication.HttpService
                 }
                 catch (Exception ee)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(4343, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpMidiServer", $"HttpMidiServer:TcpListener start Failed - Port Conflict? There might be another application/server using Port {mPort}", eMsgLevel.l2_Warning, $"{ee.ToString()}"));
+                    TheBaseAssets.MySYSLOG.WriteToLog(4343, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpMidiServer", $"HttpMidiServer:TcpListener start Failed - Port Conflict? There might be another application/server using Port {mPort}", eMsgLevel.l2_Warning, $"{ee}"));
                     return IsActive;
                 }
             }
@@ -118,7 +124,6 @@ namespace nsCDEngine.Communication.HttpService
                             {
                                 TheCommonUtils.cdeRunAsync("MidiWebServer-HttpProcessing", false, (p) =>
                                 {
-                                    //TheSystemMessageLog.ToCo("HTTP Connected and processing", true);
                                     var tmyProcessor = new cdeHttpProcessor();
                                     tmyProcessor.ProcessHttpRequest(p as HttpListenerContext);
                                 }, context);
@@ -130,7 +135,6 @@ namespace nsCDEngine.Communication.HttpService
                             TheCommonUtils.cdeRunAsync("MidiWebServer-Processing", false, p =>
                             {
                                 var tmyProcessor = new cdeHttpProcessor();
-                                //TheSystemMessageLog.ToCo("TCP Connected and processing", true);
                                 tmyProcessor.ProcessRequest(p as TcpClient, this);
                             }, s);
                         }
@@ -139,7 +143,7 @@ namespace nsCDEngine.Communication.HttpService
                     {
                         if (TheBaseAssets.MasterSwitch)
                         {
-                            if (!(e is HttpListenerException))
+                            if (e is not HttpListenerException)
                             {
                                 TheBaseAssets.MySYSLOG.WriteToLog(4345, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpMidiServer", "Failed - Will Stop!", eMsgLevel.l1_Error, e.ToString()));
                             }
@@ -152,7 +156,7 @@ namespace nsCDEngine.Communication.HttpService
                     }
                 }
                 ShutDown();
-            }, null, true); //.Start();
+            }, null, true); 
             return IsActive;
         }
 

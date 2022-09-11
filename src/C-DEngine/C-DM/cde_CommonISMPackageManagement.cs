@@ -131,12 +131,12 @@ namespace nsCDEngine.PluginManagement
         public static string CreatePluginPackage(ThePluginInfo tInfo, TheServicesMarketPlace tPlace, string outputDirectory, bool bForce, out string packageFilePath)
         {
             packageFilePath = null;
-            string tMetaFile = "";
+            string tMetaFile;
             if (tInfo != null)
             {
                 if (tInfo.Capabilities != null && tInfo.Capabilities.Contains(eThingCaps.Internal))
                     return $"{tInfo.ServiceName} Is Internal Only";
-                if (String.IsNullOrEmpty(outputDirectory))
+                if (string.IsNullOrEmpty(outputDirectory))
                 {
                     tMetaFile = TheCommonUtils.cdeFixupFileName($"store\\{tInfo.cdeMID}\\{tInfo.Platform}\\");
                 }
@@ -206,7 +206,6 @@ namespace nsCDEngine.PluginManagement
                         catch (Exception e)
                         {
                             return string.Format("Manifest File {0} could not be copied: {1}", tFile, e.ToString());
-                            //TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", string.Format("Manifest Filer {0} could not be copied.", tFile), eMsgLevel.l1_Error, e.ToString())); //Log Entry that service has been started
                         }
 
                     }
@@ -220,7 +219,7 @@ namespace nsCDEngine.PluginManagement
             if (tPlace != null && File.Exists(tMetaFile + "META.CDEM"))
             {
                 TheServicesMarketPlace tPl = null;
-                using (StreamReader sr = new StreamReader(tMetaFile + "META.CDEM"))
+                using (StreamReader sr = new (tMetaFile + "META.CDEM"))
                 {
                     String line = sr.ReadToEnd();
                     tPl = TheCommonUtils.DeserializeJSONStringToObject<TheServicesMarketPlace>(line);
@@ -230,30 +229,32 @@ namespace nsCDEngine.PluginManagement
             }
             if (tPlace == null)
             {
-                tPlace = new TheServicesMarketPlace();
-                tPlace.Capabilities = tInfo.Capabilities;
-                tPlace.Categories = tInfo.Categories;
-                tPlace.PluginID = tInfo.cdeMID; //PluginID now contains ThePluginInfo.cdeMID
-                tPlace.CurrentVersion = tInfo.CurrentVersion;
-                tPlace.LongDescription = tInfo.LongDescription;
-                tPlace.Developer = tInfo.Developer;
-                tPlace.DeveloperUrl = tInfo.DeveloperUrl;
-                tPlace.HomeUrl = tInfo.HomeUrl;
-                tPlace.Platform = tInfo.Platform;
-                tPlace.Price = tInfo.Price;
-                tPlace.ServiceName = tInfo.ServiceName;
-                tPlace.AvailableSince = DateTime.Now;
-                tPlace.RaterCount = new List<int>() { 0, 0, 0, 0, 0 };
-                tPlace.Rating = 0;
-                tPlace.DownloadCounter = 0;
-                tPlace.ServiceDescription = string.IsNullOrEmpty(tInfo.ServiceDescription) ? tInfo.ServiceName : tInfo.ServiceDescription;
+                tPlace = new ()
+                {
+                    Capabilities = tInfo.Capabilities,
+                    Categories = tInfo.Categories,
+                    PluginID = tInfo.cdeMID, //PluginID now contains ThePluginInfo.cdeMID
+                    CurrentVersion = tInfo.CurrentVersion,
+                    LongDescription = tInfo.LongDescription,
+                    Developer = tInfo.Developer,
+                    DeveloperUrl = tInfo.DeveloperUrl,
+                    HomeUrl = tInfo.HomeUrl,
+                    Platform = tInfo.Platform,
+                    Price = tInfo.Price,
+                    ServiceName = tInfo.ServiceName,
+                    AvailableSince = DateTime.Now,
+                    RaterCount = new List<int>() { 0, 0, 0, 0, 0 },
+                    Rating = 0,
+                    DownloadCounter = 0,
+                    ServiceDescription = string.IsNullOrEmpty(tInfo.ServiceDescription) ? tInfo.ServiceName : tInfo.ServiceDescription
+                };
                 if (TheBaseAssets.MyServiceHostInfo != null)
                 {
                     if (string.IsNullOrEmpty(tPlace.HomeUrl))
                         tPlace.HomeUrl = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false) + "/%PluginID%";
                     tPlace.IconUrl = tInfo.IconUrl;
                     if (string.IsNullOrEmpty(tPlace.IconUrl) || tPlace.IconUrl == "toplogo-150.png")
-                        tPlace.IconUrl = "<i class=\"cl-font cl-Logo cl-4x\"></i>"; // TheBaseAssets.MyServiceHostInfo.UPnPIcon;
+                        tPlace.IconUrl = "<i class=\"cl-font cl-Logo cl-4x\"></i>"; 
                     if (tPlace.IconUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || tPlace.IconUrl.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
                         tPlace.IconUrl = $"<img src='{tPlace.IconUrl}' class='Blocked' width='78' height='78'></img>";
                     else if (tPlace.IconUrl.StartsWith("FA"))
@@ -266,7 +267,6 @@ namespace nsCDEngine.PluginManagement
                     var res = CreateCDEX(tPlace, tMetaFile, true, out packageFilePath);
                     if (res != null)
                         return res;
-                    //Directory.Move(tMetaFile + "new", tMetaFile + "DONE_" + TheCommonUtils.GetTimeStamp());
                 }
                 else
                 {
@@ -284,7 +284,7 @@ namespace nsCDEngine.PluginManagement
                     return res;
             }
             tPlace.LastUpdate = DateTime.Now;
-            using (StreamWriter sr = new StreamWriter(tMetaFile + "META.CDEM"))
+            using (StreamWriter sr = new (tMetaFile + "META.CDEM"))
                 sr.Write(TheCommonUtils.SerializeObjectToJSONString<TheServicesMarketPlace>(tPlace));
             return "";
         }
@@ -301,8 +301,8 @@ namespace nsCDEngine.PluginManagement
                 TheCommonUtils.CreateDirectories(tTarget);
                 if (File.Exists(tTarget))
                     File.Delete(tTarget);
-                System.IO.Compression.ZipFile.CreateFromDirectory(tMetaFile + "new", tTarget, System.IO.Compression.CompressionLevel.Optimal, false);
-                FileInfo f = new FileInfo(tTarget);
+                ZipFile.CreateFromDirectory(tMetaFile + "new", tTarget, CompressionLevel.Optimal, false);
+                FileInfo f = new (tTarget);
                 tPlace.Size = f.Length;
                 Directory.Delete(tMetaFile + "new", true);
             }
@@ -325,7 +325,7 @@ namespace nsCDEngine.PluginManagement
             {
                 tInfoFile = Path.Combine(storePath, $"{tInfo.ServiceName}.CDES");
             }
-            using (StreamWriter sr = new StreamWriter(tInfoFile))
+            using (StreamWriter sr = new (tInfoFile))
                 sr.Write(TheCommonUtils.SerializeObjectToJSONString<ThePluginInfo>(tInfo));
         }
 

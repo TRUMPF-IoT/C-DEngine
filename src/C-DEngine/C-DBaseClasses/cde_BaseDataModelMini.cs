@@ -777,7 +777,7 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Lock Object that can be used to test if this class is in use by another thread
         /// </summary>
-        public object MyLock = new object();
+        public object MyLock = new ();
 
         /// <summary>
         /// Removes the record with the corresponding key and does not care if it was successful
@@ -834,7 +834,7 @@ namespace nsCDEngine.ViewModels
         /// This returns a consistent snapshot of the dictionary
         /// </summary>
         /// <returns></returns>
-        public Dictionary<TKey, TValue> GetDictionarySnapshot() => new Dictionary<TKey, TValue>(this);
+        public Dictionary<TKey, TValue> GetDictionarySnapshot() => new (this);
 
         /// <summary>
         /// This enumerator does not take a lock/snapshot and may reflect changes to the dictionary after it was obtained

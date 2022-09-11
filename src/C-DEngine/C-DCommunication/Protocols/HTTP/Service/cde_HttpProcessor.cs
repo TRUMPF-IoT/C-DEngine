@@ -32,6 +32,12 @@ namespace nsCDEngine.Communication.HttpService
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             if (mRequestStream != null)
                 mRequestStream.Dispose();
         }
@@ -74,11 +80,10 @@ namespace nsCDEngine.Communication.HttpService
 
         public void ProcessHttpRequest(HttpListenerContext mContext)
         {
-            TheRequestData tRequestData = new TheRequestData();
+            TheRequestData tRequestData = new ();
             try
             {
                 tRequestData.RequestUri = mContext.Request.Url;
-                // TheSystemMessageLog.ToCo(tRequestData.RequestUri.ToString(), true);
                 tRequestData.UserAgent = mContext.Request.UserAgent;
                 tRequestData.ServerTags = null;
                 tRequestData.HttpMethod = mContext.Request.HttpMethod;  //NEW 3.200
@@ -108,7 +113,7 @@ namespace nsCDEngine.Communication.HttpService
                     }
 #else
                     byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
-                    using (MemoryStream ms = new MemoryStream())
+                    using (MemoryStream ms = new ())
                     {
                         int read;
                         while ((read = mContext.Request.InputStream.Read(buffer, 0, buffer.Length)) > 0)
@@ -154,10 +159,8 @@ namespace nsCDEngine.Communication.HttpService
                         {
                             try
                             {
-                                if (tCookie.Length > 0) tCookie += ";";
                                 string[] cp = tRequestData.SessionState.StateCookies[nam].Split(';');
-                                tCookie = "";
-                                tCookie +=$"{nam}={cp[0]}; SameSite=none; Secure";
+                                tCookie =$"{nam}={cp[0]}; SameSite=none; Secure";
                                 mContext.Response.Headers.Add(HttpResponseHeader.SetCookie, tCookie);
                             }
                             catch
@@ -262,16 +265,13 @@ namespace nsCDEngine.Communication.HttpService
             mHServer = pService;
             mRequestStream = new BufferedStream(mSocket.GetStream());
 
-            TheRequestData tRequestData = new TheRequestData();
+            TheRequestData tRequestData = new ();
             try
             {
                 parseRequest(tRequestData);
                 readHeaders(tRequestData);
-                if (tRequestData.HttpVersion > 1.0)
-                {
-                    if (tRequestData.Header.ContainsKey("Expect") && tRequestData.Header["Expect"].Equals("100-Continue"))
-                        mRequestStream.Write(mContinue100, 0, mContinue100.Length);//Per HTTP1.1 Requirement
-                }
+                if (tRequestData.HttpVersion > 1.0 && tRequestData.Header.ContainsKey("Expect") && tRequestData.Header["Expect"].Equals("100-Continue"))
+                    mRequestStream.Write(mContinue100, 0, mContinue100.Length);//Per HTTP1.1 Requirement
                 if (tRequestData.StatusCode != (int)eHttpStatusCode.NotFound)
                 {
                     if (tRequestData.HttpMethod.Equals("GET"))
@@ -340,7 +340,7 @@ namespace nsCDEngine.Communication.HttpService
             string tHeaderLine;
             while ((tHeaderLine = streamReadLine(mRequestStream)) != null && mHServer.IsActive)
             {
-                if (tHeaderLine.Equals(""))
+                if (string.IsNullOrEmpty(tHeaderLine))
                     break;
 
                 int separator = tHeaderLine.IndexOf(':');
@@ -360,7 +360,7 @@ namespace nsCDEngine.Communication.HttpService
         {
             if (pRequest.Header.ContainsKey("Content-Length"))
             {
-                using (MemoryStream ms = new MemoryStream())
+                using (MemoryStream ms = new ())
                 {
                     var tContentLength = TheCommonUtils.CInt(pRequest.Header["Content-Length"]);
                     if (tContentLength > MAX_POST_SIZE)

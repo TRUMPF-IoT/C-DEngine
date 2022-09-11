@@ -2996,7 +2996,7 @@ namespace nsCDEngine.Engines.ThingService
                             uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
                             if (uaAttribute != null)
                             {
-                                var tProp = pThing.GetProperty(prop.Name);
+                                var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
                                 if (tProp != null)
                                 {
                                     if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
@@ -3053,5 +3053,6 @@ namespace nsCDEngine.Engines.ThingService
         public string UANodeId;
         public int UAWriteMask;
         public int UAUserWriteMask;
+        public bool UAMandatory;
     }
 }

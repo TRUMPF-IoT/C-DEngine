@@ -99,7 +99,7 @@ namespace nsCDEngine.Security
         {
             if (string.IsNullOrEmpty(pThumbPrint))
             {
-                // TODO Load .pfx given file name and password from config? Might be required on Linux to avoid unencrypted .pfx's in the dotNet Core User Cert store (current dotNet Core behavior).
+                // Load .pfx given file name and password from config? Might be required on Linux to avoid unencrypted .pfx's in the dotNet Core User Cert store (current dotNet Core behavior).
                 // Best practice with k8s seems to be to place .pfx and password into separate secrets and load in code
                 return null;
             }
@@ -109,7 +109,7 @@ namespace nsCDEngine.Security
             {
                 try
                 {
-                    X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+                    X509Store store = new (StoreName.My, StoreLocation.LocalMachine);
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                     // OK to accept invalid certs here, as the thumbprint prevents use of certs that may have been tampered with etc. This allows
                     // - Use of certs without a matching root cert / intermediate certs on the client
@@ -128,33 +128,33 @@ namespace nsCDEngine.Security
                     ////caStore.Add(newCert);
                     ////caStore.Close();
 
-                    // This populates the .Net Core cert store with a preinstalled PFX from the image (useful for local testing)
-                    //X509Store userStore = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-                    //userStore.Open(OpenFlags.ReadWrite);
-                    //var fileName5 = Path.Combine("/etc/ssl/certs/private", $"TestClient05_02.pfx");
-                    //var password5 = "supersecret";
-                    //var newCert2 = new X509Certificate2(fileName5, password5);
-                    //userStore.Add(newCert2);
-                    //userStore.Close();
+                    ////This populates the .Net Core cert store with a preinstalled PFX from the image (useful for local testing)
+                    ////X509Store userStore = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                    ////userStore.Open(OpenFlags.ReadWrite);
+                    ////var fileName5 = Path.Combine("/etc/ssl/certs/private", $"TestClient05_02.pfx");
+                    ////var password5 = "supersecret";
+                    ////var newCert2 = new X509Certificate2(fileName5, password5);
+                    ////userStore.Add(newCert2);
+                    ////userStore.Close();
 
-                    //X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                    ////X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
                     ////X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.LocalMachine);
-                    //store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
-                    //var certs = store.Certificates.Find(X509FindType.FindByThumbprint, pThumbPrint, true);
-                    //var firstCert = certs?.Count > 0 ? certs[0] : null;
-                    //if (firstCert?.HasPrivateKey == false)
-                    //{
-                    //    var cert1 = certs[0];
-                    //    var cert = new X509Certificate2(cert1.RawData, "clabs1234", X509KeyStorageFlags.DefaultKeySet);
-                    //    var fileName2 = Path.Combine("/etc/ssl/certs/private", $"{cert1.Subject.Substring(3)}.pem");
-                    //    var password2 = "supersecret";
-                    //    var cert2 = new X509Certificate2(fileName2, password2, X509KeyStorageFlags.DefaultKeySet);
-                    //    var fileName3 = Path.Combine("/etc/ssl/certs/private", $"{cert1.Subject.Substring(3)}.pfx");
-                    //    var password3 = "supersecret";
-                    //    var cert3 = new X509Certificate2(fileName3, password3);
-                    //    //var cert4 = cert1.CopyWithPrivateKey(); // NetStandard 2.1 only (or NetCoreApp 2.x)
-                    //    certs = new X509Certificate2Collection(cert);
-                    //}
+                    ////store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+                    ////var certs = store.Certificates.Find(X509FindType.FindByThumbprint, pThumbPrint, true);
+                    ////var firstCert = certs?.Count > 0 ? certs[0] : null;
+                    ////if (firstCert?.HasPrivateKey == false)
+                    ////{
+                    ////    var cert1 = certs[0];
+                    ////    var cert = new X509Certificate2(cert1.RawData, "clabs1234", X509KeyStorageFlags.DefaultKeySet);
+                    ////    var fileName2 = Path.Combine("/etc/ssl/certs/private", $"{cert1.Subject.Substring(3)}.pem");
+                    ////    var password2 = "supersecret";
+                    ////    var cert2 = new X509Certificate2(fileName2, password2, X509KeyStorageFlags.DefaultKeySet);
+                    ////    var fileName3 = Path.Combine("/etc/ssl/certs/private", $"{cert1.Subject.Substring(3)}.pfx");
+                    ////    var password3 = "supersecret";
+                    ////    var cert3 = new X509Certificate2(fileName3, password3);
+                    ////    //var cert4 = cert1.CopyWithPrivateKey(); // NetStandard 2.1 only (or NetCoreApp 2.x)
+                    ////    certs = new X509Certificate2Collection(cert);
+                    ////}
                     #endregion
                 }
                 if (certs == null || certs.Count == 0)
@@ -163,7 +163,7 @@ namespace nsCDEngine.Security
                     // - On Linux/dotNet Core (as of V2.2 and v3.0), only certs (*.pfx's) in the dotNet Core "user" store are loaded with private keys. For global certs, dotNet Core only loads the public key.
                     //   https://github.com/dotnet/corefx/blob/master/Documentation/architecture/cross-platform-cryptography.md
                     // - Useful on Windows for developer scenarios or advanced scenarios where a service runs with a specific user account
-                    X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                    X509Store store = new (StoreName.My, StoreLocation.CurrentUser);
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                     certs = store.Certificates.Find(X509FindType.FindByThumbprint, pThumbPrint, false);
                 }
@@ -192,10 +192,9 @@ namespace nsCDEngine.Security
                             var signed = rsa.SignData(System.Text.Encoding.UTF8.GetBytes("Hello World"), SHA1.Create());
                         }
 #else
-                        var rsa = cert.PrivateKey as RSA;
-                        if (rsa != null)
+                        if (cert.PrivateKey is RSA rsa)
                         {
-                            var signed = rsa.SignData(System.Text.Encoding.UTF8.GetBytes("Hello World"), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
+                            rsa.SignData(System.Text.Encoding.UTF8.GetBytes("Hello World"), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
                         }
 
 #endif
@@ -218,11 +217,11 @@ namespace nsCDEngine.Security
         internal static List<string> GetScopesFromCertificate(X509Certificate2 x509cert, ref string error)
         {
             string extensions = "";
-            List<string> scopeIds = new List<string>();
+            List<string> scopeIds = new ();
             foreach (X509Extension extension in x509cert.Extensions)
             {
                 // Create an AsnEncodedData object using the extensions information.
-                AsnEncodedData asndata = new AsnEncodedData(extension.Oid, extension.RawData);
+                AsnEncodedData asndata = new (extension.Oid, extension.RawData);
                 extensions += $"{extension.Oid.FriendlyName} {asndata.Oid.Value} {asndata.RawData.Length} {asndata.Format(false)}";
                 try
                 {
@@ -244,7 +243,7 @@ namespace nsCDEngine.Security
                                         scopeIds.Add(scopeid);
                                     }
                                 }
-                                else if (line.StartsWith("URI:")) // TODO check why .Net Core on Linux returns a different prefix (openssl?) - are there platform agnostic ways of doing this? Are there other platforms with different behavior?
+                                else if (line.StartsWith("URI:")) // check why .Net Core on Linux returns a different prefix (openssl?) - are there platform agnostic ways of doing this? Are there other platforms with different behavior?
                                 {
                                     var scopeidUriStr = line.Substring("URI:".Length);
                                     var scopeidUri = TheCommonUtils.CUri(scopeidUriStr, true);
@@ -267,10 +266,6 @@ namespace nsCDEngine.Security
                 {
                     error += e.ToString();
                 }
-                //Console.WriteLine("Extension type: {0}", extension.Oid.FriendlyName);
-                //Console.WriteLine("Oid value: {0}", asndata.Oid.Value);
-                //Console.WriteLine("Raw data length: {0} {1}", asndata.RawData.Length, Environment.NewLine);
-                //Console.WriteLine(asndata.Format(true));
             }
             TheBaseAssets.MySYSLOG.WriteToLog(2351, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpService", $"{DateTimeOffset.Now}: {x509cert?.Subject} ScopeIds: {TheCommonUtils.CListToString(scopeIds, ",")} {error} [ Raw: {extensions} ] [Cert: {Convert.ToBase64String(x509cert.RawData)}]"));
             return scopeIds;

@@ -216,8 +216,7 @@ namespace nsCDEngine.ISM
         /// <summary>
         /// Retired!
         /// </summary>
-        [Obsolete("Please use WaitForISMStarted")]
-        public static Action eventISMStarted;
+        //Please use WaitForISMStarted Action eventISMStarted has been retired
         private static Action eventOnISMStarted = null;
 
         /// <summary>
@@ -240,13 +239,7 @@ namespace nsCDEngine.ISM
         /// <param name="pOnISMStarted"></param>
         public void WaitForISMIsStarted(Action pOnISMStarted)
         {
-            if (pOnISMStarted == null) return;
-            if (IsReady)
-            {
-                TheCommonUtils.cdeRunAsync("ISM STarted", true, (o) => pOnISMStarted?.Invoke());
-                return;
-            }
-            eventOnISMStarted += pOnISMStarted;
+            WaitForISMStarted(pOnISMStarted);
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -470,7 +463,7 @@ namespace nsCDEngine.ISM
 
         internal List<ThePluginInfo> FoundUpdatesToPluginInfo()
         {
-            List<ThePluginInfo> tList = new List<ThePluginInfo>();
+            List<ThePluginInfo> tList = new ();
             if (string.IsNullOrEmpty(ISMLastFirmwareFileName))
             {
                 return tList;
@@ -481,7 +474,7 @@ namespace nsCDEngine.ISM
             {
                 string tMainName = FileFound.Substring(FileFound.LastIndexOf(Path.DirectorySeparatorChar) + 1);
                 string tName = GetServiceNameFromCDEX(tMainName, out double tVersion);
-                ThePluginInfo tInfo = new ThePluginInfo()
+                ThePluginInfo tInfo = new ()
                 {
                     CurrentVersion = tVersion,
                     Platform = TheBaseAssets.MyServiceHostInfo.cdePlatform,
@@ -575,12 +568,6 @@ namespace nsCDEngine.ISM
             return ThePluginPackager.CreatePluginPackage(tInfo, tPlace, outputDirectory, bForce, out packageFilePath);
         }
 
-
-        //internal void AddUpdateFileForInstall(string fileWithFullPath)
-        //{
-        //    AddUpdateFileForInstall(fileWithFullPath);
-        //}
-
         /// <summary>
         /// Returns true if updates are available
         /// </summary>
@@ -612,6 +599,7 @@ namespace nsCDEngine.ISM
                 return ISMLastFirmwareVersion;
             return "";
         }
+        bool UpdaterStarted = false;
 
         /// <summary>
         /// Launches the updater to install the updates
@@ -629,7 +617,7 @@ namespace nsCDEngine.ISM
             else
                 LaunchUpdater(pSourceFile, pUpdateDir, ISMCurrentVersion, ShutdownRequired);
         }
-        bool UpdaterStarted = false;
+
         /// <summary>
         /// Launches the updater to install the updates
         /// </summary>
@@ -658,7 +646,7 @@ namespace nsCDEngine.ISM
                 TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"Updating files: {pSourceFile} to: {uDir}"));
 
                 string[] NewFiles = TheCommonUtils.cdeSplit(pSourceFile, ";:;", true, true);
-                List<string> MyNewFiles = new List<string>();
+                List<string> MyNewFiles = new ();
                 foreach (string tFile in NewFiles)
                 {
                     if (File.Exists(tFile))
@@ -755,7 +743,7 @@ namespace nsCDEngine.ISM
                     }
                     catch (Exception ee)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"File: {tFile} failed to upgrade: {ee.ToString()}"));
+                        TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"File: {tFile} failed to upgrade: {ee}"));
                     }
                 }
                 if (ShutdownRequired)
@@ -769,7 +757,7 @@ namespace nsCDEngine.ISM
                 {
                     try
                     {
-                        Process mainProcess = new Process();
+                        Process mainProcess = new ();
                         if (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.IIS)
                         {
                             mainProcess.StartInfo.FileName = Path.Combine(uDir, "C-DEngine.exe");
@@ -857,7 +845,7 @@ namespace nsCDEngine.ISM
 
                     try
                     {
-                        Process mainProcess = new Process();
+                        Process mainProcess = new ();
                         mainProcess.StartInfo.FileName = Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".exe");
                         mainProcess.StartInfo.WorkingDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
                         switch (TheBaseAssets.MyServiceHostInfo.cdeHostingType)
@@ -890,7 +878,7 @@ namespace nsCDEngine.ISM
 
         private List<string> ScanForUpdateFile(bool pFallBack, bool IncludeOldF)
         {
-            List<string> tList = new List<string>();
+            List<string> tList = new ();
             var tDocFolder = TheCommonUtils.GetTargetFolder(true, true);
             DirectoryInfo di = null;
             if (tDocFolder != null)
@@ -909,7 +897,7 @@ namespace nsCDEngine.ISM
                 if (IncludeOldF)
                 {
                     ProcessDirectory(di, ref tList, "", ".CDEF.old", false, false);
-                    List<string> OldCDEX = new List<string>();
+                    List<string> OldCDEX = new ();
                     ProcessDirectory(di, ref OldCDEX, "", ".CDEX.old", false, false); //this will prevent updates to 99999 plugins V4.208 if this is removed CDEX in the extra file folder will no longer work (i.e. License file as CDEX)
                     if (OldCDEX?.Count > 0)
                     {
@@ -930,15 +918,15 @@ namespace nsCDEngine.ISM
                 tList.Sort();
                 return tList;
             }
-            return null;
+            return new();
         }
 
         private void CleanupOldFiles()
         {
             try
             {
-                List<string> tList = new List<string>();
-                DirectoryInfo di = new DirectoryInfo(TheBaseAssets.MyServiceHostInfo.BaseDirectory);
+                List<string> tList = new ();
+                DirectoryInfo di = new (TheBaseAssets.MyServiceHostInfo.BaseDirectory);
                 ProcessDirectory(di, ref tList, "", ".tmp", false, false);
                 if (tList.Count > 0)
                 {
@@ -1100,7 +1088,7 @@ namespace nsCDEngine.ISM
 
             try
             {
-                using (FileStream target = new FileStream(fileName, FileMode.Create))
+                using (FileStream target = new (fileName, FileMode.Create))
                 {
                     target.Write(buffer, 0, buffer.Length);
                 }
@@ -1119,7 +1107,7 @@ namespace nsCDEngine.ISM
         {
             try
             {
-                Process mainProcess = new Process();
+                Process mainProcess = new ();
                 mainProcess.StartInfo.FileName = Path.ChangeExtension(Assembly.GetEntryAssembly().Location, ".exe");
                 mainProcess.StartInfo.WorkingDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
                 mainProcess.StartInfo.Arguments = $"ISOEN={pSourceFile} PresetDeviceID={pDeviceID}";
@@ -1183,7 +1171,7 @@ namespace nsCDEngine.ISM
             if (!TheBaseAssets.MasterSwitch || IsRequesting || TheCommonUtils.IsDeviceSenderType(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType)) //IDST-OK: No Updates supported on Device Nodes
                 return;
             IsRequesting = true;
-            List<ThePluginInfo> mList = new List<ThePluginInfo>();
+            List<ThePluginInfo> mList = new ();
             List<IBaseEngine> tBases = TheThingRegistry.GetBaseEngines(false); //4.301: We must include offline plugins otherwise they will get sent to the node everytime an update push from ProSe happens
             foreach (IBaseEngine tBase in tBases)
             {
@@ -1204,13 +1192,10 @@ namespace nsCDEngine.ISM
                     if (tP != null)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(4010, new TSM(eEngineName.ContentService, $"Found updated plugin {tF.ServiceName} with Version {tF.CurrentVersion} higher then installed {tP.CurrentVersion}", eMsgLevel.l3_ImportantMessage));
-                        //tP.CurrentVersion = tF.CurrentVersion;
                         mList.Remove(tP);
                     }
-                    //else
                     mList.Add(tF);
                 }
-                //mList.AddRange(ISM.TheISMManager.FoundUpdatesToPluginInfo());
             }
             string toSend = TheCommonUtils.SerializeObjectToJSONString(mList);
             if (MyRoute != null)
@@ -1292,8 +1277,6 @@ namespace nsCDEngine.ISM
 
         private void sinkDisconnected(TheProcessMessage pMsg, object sender)
         {
-            //MyBaseThing.LastMessage = $"{DateTimeOffset.Now} Disconnected";
-            //TheThing.SetSafePropertyString(MyBaseThing, "FedID", "");
             MyRoute = null;
             if (TheBaseAssets.MasterSwitch)
             {
@@ -1307,7 +1290,6 @@ namespace nsCDEngine.ISM
 
         private void sinkConnected(TheProcessMessage pMsg, object sender)
         {
-            //MyBaseThing.LastMessage = $"{DateTimeOffset.Now} Connected";
             MyRoute.Subscribe($"{eEngineName.ContentService};CDMyMeshManager.TheMeshEngine");
         }
 
@@ -1352,7 +1334,7 @@ namespace nsCDEngine.ISM
                 TimeSpan startFromNow = TheCommonUtils.CDate(TheBaseAssets.MySettings.GetSetting("BackupStart")).Subtract(DateTimeOffset.Now);
                 if (startFromNow.Ticks < 0)
                     startFromNow = new TimeSpan();
-                TimeSpan period = new TimeSpan(TheCommonUtils.CLng(TheBaseAssets.MySettings.GetSetting("BackupFrequency")) * 10000);
+                TimeSpan period = new (TheCommonUtils.CLng(TheBaseAssets.MySettings.GetSetting("BackupFrequency")) * 10000);
                 if (period.Ticks < TimeSpan.TicksPerHour * 15)    //Shortest AutoBackup frequency is 15minutes
                 {
                     if (period.Ticks == 0)  //If period is 0 default to once per day
@@ -1367,7 +1349,7 @@ namespace nsCDEngine.ISM
                 }
                 if (startFromNow.TotalMinutes < 0)
                     startFromNow = new TimeSpan();
-                Timer AutoBackupTimer = new Timer(timerAutoBackup, null, startFromNow, period);
+                _ = new Timer (timerAutoBackup, null, startFromNow, period);
                 TheBaseAssets.MySYSLOG.WriteToLog(466, new TSM("ISMManager", $"Auto Backup Started every {period.TotalMinutes} minutes", eMsgLevel.l4_Message));
             }
         }
@@ -1417,23 +1399,22 @@ namespace nsCDEngine.ISM
                             var imgStream = TheCommonUtils.cdeOpenFile(FileToReturn1, FileMode.Open, FileAccess.Read);
                             if (imgStream != null)
                             {
-                                using (MemoryStream ms = new MemoryStream())
+                                using (MemoryStream ms = new ())
                                 {
                                     imgStream.CopyTo(ms);
                                     tToSend.PLB = ms.ToArray();
                                 }
                                 SendToProvisioningService(tToSend);
-                                TheBackupDefinition tBackup = new TheBackupDefinition { BackupSize = tToSend.PLB.Length, BackupTime = tNow, FileName = FileToReturn1, Title = pTitle };
+                                TheBackupDefinition tBackup = new () { BackupSize = tToSend.PLB.Length, BackupTime = tNow, FileName = FileToReturn1, Title = pTitle };
                                 TheCDEngines.MyContentEngine?.FireEvent("BackupCreated", TheCDEngines.MyContentEngine, tBackup, true);
                                 TheBaseAssets.MySYSLOG.WriteToLog(466, new TSM("ISMManager", $"Backup {pTitle} created", eMsgLevel.l4_Message));
                             }
-                            //Todo: Send Backup to cloud
                         }
                         int Keepers = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetSetting("BackupKeepLast"));
                         if (Keepers > 0)
                         {
-                            DirectoryInfo di = new DirectoryInfo(Path.GetDirectoryName(FileToReturn1));
-                            List<TheFileInfo> tList = new List<TheFileInfo>();
+                            DirectoryInfo di = new (Path.GetDirectoryName(FileToReturn1));
+                            List<TheFileInfo> tList = new ();
                             TheISMManager.ProcessDirectory(di, ref tList, "", ".CDEB", false, true);
                             if (tList != null && tList.Count > Keepers)
                             {
@@ -1492,7 +1473,7 @@ namespace nsCDEngine.ISM
             }
             catch (Exception)
             {
-
+                //intent
             }
             return false;
         }

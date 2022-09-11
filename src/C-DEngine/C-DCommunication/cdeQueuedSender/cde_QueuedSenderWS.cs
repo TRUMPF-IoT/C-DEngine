@@ -85,7 +85,7 @@ namespace nsCDEngine.Communication
             mre = new ManualResetEvent(false);
 
             CloudCounter++;
-            StringBuilder tSendBufferStr = new StringBuilder(TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
+            StringBuilder tSendBufferStr = new (TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
             int QDelay = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetSetting("ThrottleWS"));
             if (QDelay < 2) QDelay = 2;
             if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON && TheBaseAssets.MyServiceHostInfo.WsJsThrottle > QDelay)
@@ -110,7 +110,7 @@ namespace nsCDEngine.Communication
                     }
                     if (!TheBaseAssets.MasterSwitch || !IsAlive || !MyWebSocketProcessor.IsActive || MyTargetNodeChannel.MySessionState == null)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSSender Thread Condition failed - Ending SenderThread IsAlive:{IsAlive} MyWSProccAlive:{(MyWebSocketProcessor == null ? false : MyWebSocketProcessor.IsActive)},SessionState:{(MyTargetNodeChannel?.MySessionState != null)} IsConnecting:{IsConnecting} IsConnected:{IsConnected}", eMsgLevel.l2_Warning));
+                        TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSSender Thread Condition failed - Ending SenderThread IsAlive:{IsAlive} MyWSProccAlive:{(MyWebSocketProcessor != null && MyWebSocketProcessor.IsActive)},SessionState:{(MyTargetNodeChannel?.MySessionState != null)} IsConnecting:{IsConnecting} IsConnected:{IsConnected}", eMsgLevel.l2_Warning));
                         break;
                     }
                     IsInWSPost = true;
@@ -129,7 +129,7 @@ namespace nsCDEngine.Communication
                         TheCoreQueueContent tQueued = GetNextMessage(out MCQCount);
                         if (tQueued != null)
                         {
-                            TheDeviceMessage tDev = new TheDeviceMessage();
+                            TheDeviceMessage tDev = new ();
                             if (tQueued.OrgMessage != null)
                             {
                                 if (tQueued.OrgMessage.ToCloudOnly() && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE)

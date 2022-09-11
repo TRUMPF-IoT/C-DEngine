@@ -22,12 +22,12 @@ namespace nsCDEngine.BaseClasses
     ///
     /// </summary>
     /// <typeparam name="T">The Class of the object that will be called</typeparam>
-    public class TheTimedCallbacks<T>
+    public static class TheTimedCallbacks<T>
     {
 
-        private static readonly cdeConcurrentDictionary<string, TheTimedRequest<T>> MyStoreRequests = new cdeConcurrentDictionary<string, TheTimedRequest<T>>();
+        private static readonly cdeConcurrentDictionary<string, TheTimedRequest<T>> MyStoreRequests = new ();
         // ReSharper disable once StaticMemberInGenericType
-        private static readonly object MyStoreRequestsLock = new object();
+        private static readonly object MyStoreRequestsLock = new ();
 
         /// <summary>
         /// Adds a new callback to the waiting list
@@ -38,7 +38,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static string AddTimedRequest(Action<string, T> pCallBack,int pTimeOut, object pCookie)
         {
-            TheTimedRequest<T> tReq = new TheTimedRequest<T>
+            TheTimedRequest<T> tReq = new ()
             {
                 MyRequest = pCallBack,
                 MagicID = Guid.NewGuid(),
@@ -73,8 +73,7 @@ namespace nsCDEngine.BaseClasses
         {
             lock (MyStoreRequestsLock)
             {
-                TheTimedRequest<T> tReq;
-                MyStoreRequests.TryGetValue(LastID, out tReq);
+                MyStoreRequests.TryGetValue(LastID, out TheTimedRequest<T> tReq);
                 if (tReq != null)
                 {
                     if (tReq.MyTimer != null)
@@ -99,8 +98,7 @@ namespace nsCDEngine.BaseClasses
         {
             lock (MyStoreRequestsLock)
             {
-                TheTimedRequest<T> tReq;
-                MyStoreRequests.TryGetValue(LastID, out tReq);
+                MyStoreRequests.TryGetValue(LastID, out TheTimedRequest<T> tReq);
                 if (tReq != null)
                 {
                     if (tReq.MyTimer != null)

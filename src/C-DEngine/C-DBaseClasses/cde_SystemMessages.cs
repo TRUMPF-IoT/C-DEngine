@@ -196,7 +196,6 @@ namespace nsCDEngine.BaseClasses
                 return true;
             else
             {
-                //if (t==3) TheSystemMessageLog.ToCo($"DID:{TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID} ORG:{ORG} LastURL:{TheCommonUtils.GetLastURL(ORG)} ");
                 return false;
             }
         }
@@ -212,7 +211,6 @@ namespace nsCDEngine.BaseClasses
                 return true;
             else
             {
-                //if (t==3) TheSystemMessageLog.ToCo($"DID:{TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID} ORG:{ORG} LastURL:{TheCommonUtils.GetLastURL(ORG)} ");
                 return false;
             }
         }
@@ -381,7 +379,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (string.IsNullOrEmpty(CST)) return null;
             string[] tItems = TheCommonUtils.cdeSplit(CST, ";:;", true,true);
-            TSMTotalCost tTotal = new TSMTotalCost()
+            TSMTotalCost tTotal = new ()
             {
                 Items = new List<TSMCosting>()
             };
@@ -389,7 +387,7 @@ namespace nsCDEngine.BaseClasses
             {
                 string[] tt = TheCommonUtils.cdeDecrypt(t, TheBaseAssets.MySecrets.GetAI()).Split(';');     //3.083: Must be cdeAI
                 if (tt.Length < 4) continue;
-                TSMCosting tCost = new TSMCosting(TheCommonUtils.CInt(tt[0]), TheCommonUtils.CStr(tt[1]), TheCommonUtils.CStr(tt[2]), TheCommonUtils.CStr(tt[3]));
+                TSMCosting tCost = new (TheCommonUtils.CInt(tt[0]), TheCommonUtils.CStr(tt[1]), TheCommonUtils.CStr(tt[2]), TheCommonUtils.CStr(tt[3]));
                 tTotal.Items.Add(tCost);
                 tTotal.TotalCredits += tCost.Credits;
                 tTotal.TotalItems++;
@@ -439,7 +437,6 @@ namespace nsCDEngine.BaseClasses
         public TSM()
         {
             //NEW4.207: No Org, SID or TXT set for "deserializing" TSMs - had to be reversed as several scenarios did not work anymore
-            //TXT = "empty";
             SetOrigin();
         }
 
@@ -505,7 +502,7 @@ namespace nsCDEngine.BaseClasses
             PLS = pPayload;
             TXT = pText;
             LVL = pLevel;
-            SetOrigin(TheBaseAssets.MyServiceHostInfo?.DisableFastTSMs==true?false:true);
+            SetOrigin((TheBaseAssets.MyServiceHostInfo?.DisableFastTSMs) != true);
         }
 
         /// <summary>
@@ -598,7 +595,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static TSM Clone(TSM tMsg, bool DoClonePLB)
         {
-            TSM tRes = new TSM(tMsg.SID)    //Save not to set ORG or SID for fast cloning
+            TSM tRes = new (tMsg.SID)    //Save not to set ORG or SID for fast cloning
             {
                 TXT = tMsg.TXT,
                 TIM = tMsg.TIM,
@@ -757,7 +754,7 @@ namespace nsCDEngine.BaseClasses
             int dataByteCounter = 0;
 
             byte[] dataBytes = null;
-            using (MemoryStream dataByteWriter = new MemoryStream())
+            using (MemoryStream dataByteWriter = new ())
             {
                 byte[] dataStringBytes = null;
                 foreach (string dataString in Data)
@@ -788,7 +785,7 @@ namespace nsCDEngine.BaseClasses
             int totalBytes = 21 + PLBLength + dataByteCounter + pOffset;
 
             byte[] packetBuffer = null;
-            using (MemoryStream stream = new MemoryStream())
+            using (MemoryStream stream = new ())
             {
                 stream.WriteByte((byte)((totalBytes >> 0) & 0xff));
                 stream.WriteByte((byte)((totalBytes >> 8) & 0xff));
@@ -843,9 +840,9 @@ namespace nsCDEngine.BaseClasses
         {
             int numberOfDataEntries = 0;
             byte[] dataBytes = null;
-            TSM tNewTSM = new TSM();    //Save not to write ORG or SID
+            TSM tNewTSM = new ();    //Save not to write ORG or SID
 
-            using (MemoryStream byteStream = new MemoryStream(pInBuffer, pOffset, pInBuffer.Length - pOffset))
+            using (MemoryStream byteStream = new (pInBuffer, pOffset, pInBuffer.Length - pOffset))
             {
                 int packetSize = (byteStream.ReadByte() << 0);
                 packetSize |= (byteStream.ReadByte() << 8);
@@ -890,7 +887,6 @@ namespace nsCDEngine.BaseClasses
             int byteIndex = 0;
             for (int n = 0; n < numberOfDataEntries; n++)
             {
-                //int dataStringLength = BitConverter.ToInt32(dataBytes, byteIndex);
                 int dataStringLength = (dataBytes[byteIndex] << 0);
                 dataStringLength |= (dataBytes[byteIndex+1] << 8);
                 dataStringLength |= (dataBytes[byteIndex+2] << 16);

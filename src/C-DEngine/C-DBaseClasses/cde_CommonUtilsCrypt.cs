@@ -85,7 +85,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static string cdeRSACreateKeys(out string PrivateKey)
         {
-            TheSessionState tSess = new TheSessionState();
+            TheSessionState tSess = new ();
             CreateRSAKeys(tSess, true);
             PrivateKey = tSess.RSAKey;
             return tSess.RSAPublic;

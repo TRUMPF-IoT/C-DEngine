@@ -71,7 +71,7 @@ namespace nsCDEngine.ViewModels
         /// <returns>The copy of the baseItem TheThingStore</returns>
         internal TheThingStore CloneForThingSnapshot(TheThing thingWithMeta, TheThingStore baseItem, bool ResetBase, TheHistoryParameters propFilter, bool forExternalConsumption, out bool bUpdated)
         {
-            TheThingStore tThing = new TheThingStore();
+            TheThingStore tThing = new ();
             if (ResetBase)
             {
                 tThing.cdeCTIM = DateTimeOffset.Now;
@@ -190,11 +190,6 @@ namespace nsCDEngine.ViewModels
             return CloneFromTheThingInternal(iThing, ResetBase, false, true);
         }
 
-        //internal static TheThingStore CloneFromTheThing(ICDEThing iThing, bool ResetBase, bool cloneOnlyChangedPropertiesForHistorian)
-        //{
-        //    return CloneFromTheThing(iThing, ResetBase, cloneOnlyChangedPropertiesForHistorian);
-        //}
-
         /// <summary>
         /// Clones all public properties and returns a TheThingStore class
         /// </summary>
@@ -240,7 +235,7 @@ namespace nsCDEngine.ViewModels
         /// <returns></returns>
         internal static TheThingStore CloneFromTheThingInternal(ICDEThing iThing, bool ResetBase, bool bUsePropertyTimestamp, bool cloneProperties, ThePropertyFilter cloneFilter)
         { 
-            TheThingStore tThing = new TheThingStore();
+            TheThingStore tThing = new ();
             if (iThing == null) return tThing;
             TheThing pThing = iThing.GetBaseThing();
             if (pThing != null)
@@ -262,9 +257,7 @@ namespace nsCDEngine.ViewModels
                 tThing.cdeF = pThing.cdeF;
                 tThing.cdeM = pThing.cdeM;
                 tThing.cdeN = pThing.cdeN;
-                //tThing.cdeO = pThing.cdeO;
                 tThing.cdeO = pThing.cdeMID;    //CODE-REVIEW: Since tThing is a "TheThingStore" and is "owned" by the pThing, the cdeO (Owner) property should be updated. Does this break anything for TDS01 etc???
-                //tThing.OwnerThingMID = pThing.cdeMID; //Alternative we need to add a OwnerThingMID to TheThingStore to be able to segregate retrieval of TheThingStore records from the SQL Server
                 tThing.cdeSEQ = pThing.cdeSEQ;
 
                 if (cloneProperties)
@@ -279,23 +272,20 @@ namespace nsCDEngine.ViewModels
                             cdeP prop;
                             if ((prop = pThing.GetProperty(key)) != null) // .MyPropertyBag.TryGetValue(key, out prop))
                             {
-                                //if (prop.CheckAndResetTouchedSinceLastHistorySnapshot() || cloneProperties) // Have to always check and reset, so do this first
+                                tThing.PB[key] = prop.Value;
+                                if (bUsePropertyTimestamp)
                                 {
-                                    tThing.PB[key] = prop.Value;
-                                    if (bUsePropertyTimestamp)
+                                    if (prop.cdeCTIM > tThing.cdeCTIM)
                                     {
-                                        if (prop.cdeCTIM > tThing.cdeCTIM)
+                                        if (tThing.cdeCTIM.Ticks != 0 && tThing.PB.Count > 1)
                                         {
-                                            if (tThing.cdeCTIM.Ticks != 0 && tThing.PB.Count > 1)
-                                            {
-                                                TheBaseAssets.MySYSLOG.WriteToLog(1, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian timestamp changed by property when cloning for snapshot", eMsgLevel.l6_Debug, $"{prop.Name}: {tThing.cdeCTIM:O} changed to {prop.cdeCTIM:O}. Possible victims: {tThing.PB.Aggregate("", (s, kv) => kv.Key != prop.Name ? $"{s}{kv.Key}," : s)}"));
-                                            }
-                                            tThing.cdeCTIM = prop.cdeCTIM;
+                                            TheBaseAssets.MySYSLOG.WriteToLog(1, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian timestamp changed by property when cloning for snapshot", eMsgLevel.l6_Debug, $"{prop.Name}: {tThing.cdeCTIM:O} changed to {prop.cdeCTIM:O}. Possible victims: {tThing.PB.Aggregate("", (s, kv) => kv.Key != prop.Name ? $"{s}{kv.Key}," : s)}"));
                                         }
-                                        else if (prop.cdeCTIM != tThing.cdeCTIM)
-                                        {
-                                            TheBaseAssets.MySYSLOG.WriteToLog(1, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian timestamp on property not applied when cloning for snapshot", eMsgLevel.l6_Debug, $"{prop.Name}: {prop.cdeCTIM:O} changed to {tThing.cdeCTIM:O}. Possible offenders: {tThing.PB.Aggregate("", (s, kv) => kv.Key != prop.Name ? $"{s}{kv.Key}," : s)}"));
-                                        }
+                                        tThing.cdeCTIM = prop.cdeCTIM;
+                                    }
+                                    else if (prop.cdeCTIM != tThing.cdeCTIM)
+                                    {
+                                        TheBaseAssets.MySYSLOG.WriteToLog(1, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian timestamp on property not applied when cloning for snapshot", eMsgLevel.l6_Debug, $"{prop.Name}: {prop.cdeCTIM:O} changed to {tThing.cdeCTIM:O}. Possible offenders: {tThing.PB.Aggregate("", (s, kv) => kv.Key != prop.Name ? $"{s}{kv.Key}," : s)}"));
                                     }
                                 }
                             }

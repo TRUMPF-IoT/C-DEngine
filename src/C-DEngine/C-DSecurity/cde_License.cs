@@ -224,19 +224,17 @@ namespace nsCDEngine.Activation
             if (l.PluginLicenses != null)
             {
                 PluginLicenses = new ThePluginLicense[l.PluginLicenses.Length];
-                {
-                    int licIndex = 0;
+                int licIndex = 0;
 
-                    foreach (var pluginLicense in l.PluginLicenses)
+                foreach (var pluginLicense in l.PluginLicenses)
+                {
+                    PluginLicenses[licIndex] = new ThePluginLicense
                     {
-                        PluginLicenses[licIndex] = new ThePluginLicense
-                        {
-                            PlugInId = pluginLicense.PlugInId,
-                            DeviceTypes = pluginLicense.DeviceTypes.ToArray(),
-                            AllowGlobalThingEntitlements = pluginLicense.AllowGlobalThingEntitlements,
-                        };
-                        licIndex++;
-                    }
+                        PlugInId = pluginLicense.PlugInId,
+                        DeviceTypes = pluginLicense.DeviceTypes.ToArray(),
+                        AllowGlobalThingEntitlements = pluginLicense.AllowGlobalThingEntitlements,
+                    };
+                    licIndex++;
                 }
             }
             Expiration = l.Expiration;
@@ -278,7 +276,7 @@ namespace nsCDEngine.Activation
         /// <returns></returns>
         public bool ValidateSignature(List<byte[]> rsaPublicKeyCSPBlobs)
         {
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048); //CM: new in 5.146.0 - will render old licenses unusable
+            RSACryptoServiceProvider rsa = new (2048); //CM: new in 5.146.0 - will render old licenses unusable
             var payload = CU.CUTF8String2Array(GetCanonicalLicense());
             foreach (var key in rsaPublicKeyCSPBlobs)
             {
@@ -296,15 +294,9 @@ namespace nsCDEngine.Activation
                 foreach (var signature in Signatures)
                 {
                     var parts = signature.Split('.');
-                    if (parts.Length == 3)
+                    if (parts.Length == 3 && parts[0] == header && rsa.VerifyData(payload, "SHA1", Convert.FromBase64String(parts[2])))
                     {
-                        if (parts[0] == header)
-                        {
-                            if (rsa.VerifyData(payload, "SHA1", Convert.FromBase64String(parts[2])))
-                            {
-                                return true;
-                            }
-                        }
+                        return true;
                     }
                 }
             }
@@ -327,7 +319,7 @@ namespace nsCDEngine.Activation
 
         internal string GetCanonicalLicense()
         {
-            TheLicense tempLicense = new TheLicense(this);
+            TheLicense tempLicense = new (this);
             // Bug in original License constructor did not copy the Description field, so it was not included in the signature. Only shipped license was this one (P08 Project, OPC Client)
             //CODE-REVIEW: Is this still necessary?
             if (tempLicense.LicenseId == new Guid("6a78a4cb-1d9b-4a53-a41b-c57497085026"))
@@ -358,7 +350,7 @@ namespace nsCDEngine.Activation
             bool success = false;
             try
             {
-                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048); //CM: new in 5.146.0 - will render old licenses unusable
+                RSACryptoServiceProvider rsa = new (2048); //CM: new in 5.146.0 - will render old licenses unusable
                 rsa.ImportCspBlob(rsaPrivateKeyCSPBlob);
                 if (rsa.PublicOnly)
                 {

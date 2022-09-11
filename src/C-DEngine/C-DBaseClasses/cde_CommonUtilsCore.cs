@@ -52,6 +52,7 @@ namespace nsCDEngine.BaseClasses
             }
             catch
             {
+                //intent
             }
 #endif
             return false;
@@ -96,7 +97,7 @@ namespace nsCDEngine.BaseClasses
         public static bool CBool(object inObj)
         {
             if (inObj == null) return false;
-            if (inObj is bool) return (bool)inObj;
+            if (inObj is bool b1) return b1;
             if (inObj is string strInObj)
             {
                 if (string.IsNullOrEmpty(strInObj)) return false;
@@ -138,7 +139,7 @@ namespace nsCDEngine.BaseClasses
         public static ushort CUShort(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is ushort) return (ushort)inObj;
+            if (inObj is ushort s1) return s1;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return 0;
             ushort retVal;
@@ -156,7 +157,6 @@ namespace nsCDEngine.BaseClasses
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = 0;
             }
             return retVal;
@@ -176,7 +176,7 @@ namespace nsCDEngine.BaseClasses
         public static int CInt(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is int) return (int)inObj;
+            if (inObj is int i1) return i1;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return 0;
             int retVal;
@@ -194,7 +194,6 @@ namespace nsCDEngine.BaseClasses
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = 0;
             }
             return retVal;
@@ -212,19 +211,19 @@ namespace nsCDEngine.BaseClasses
         public static Guid CGuid(object inObj)
         {
             if (inObj == null) return Guid.Empty;
-            if (inObj is Guid) return (Guid)inObj;
-            if (inObj is cdeP)
+            if (inObj is Guid g1) return g1;
+            if (inObj is cdeP p1)
             {
-                inObj = ((cdeP)inObj).GetValue();
+                inObj = p1.GetValue();
             }
             Guid retGuid = Guid.Empty;
             try
             {
                 if (inObj is byte[]) return (new Guid(inObj as byte[]));
-                if (inObj is string && (string)inObj == "") return Guid.Empty;
-                if (inObj is string && ((string)inObj).Length == 32)
+                if (inObj is string s2 && s2 == "") return Guid.Empty;
+                if (inObj is string s1 && s1.Length == 32)
                 {
-                    return cdeUUIDtoGuid((string)inObj);
+                    return cdeUUIDtoGuid(s1);
                 }
 #if CDE_NET35
                 retGuid = new Guid(CStr(inObj));
@@ -247,9 +246,9 @@ namespace nsCDEngine.BaseClasses
         /// <remarks>If the object is boolean, 'true' converts to 1 and 'false' converts to 0.</remarks>
         public static double CDblWithBool(object inObj)
         {
-            if (inObj is bool)
+            if (inObj is bool b1)
             {
-                return ((bool)inObj) ? 1 : 0;
+                return b1 ? 1 : 0;
             }
             else if (CBool(inObj))
                 return 1;
@@ -272,7 +271,7 @@ namespace nsCDEngine.BaseClasses
         public static float CFloat(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is float) return (float)inObj;
+            if (inObj is float f1) return f1;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return 0;
             float retVal;
@@ -326,7 +325,7 @@ namespace nsCDEngine.BaseClasses
                         milis = milis.Substring(0, offsetIndex);
                     }
 
-                    DateTimeOffset origin = new DateTimeOffset(1970, 1, 1, 0, 0, 0, offset);
+                    DateTimeOffset origin = new (1970, 1, 1, 0, 0, 0, offset);
                     return origin.AddMilliseconds(CLng(milis));
                 }
             }
@@ -343,8 +342,8 @@ namespace nsCDEngine.BaseClasses
             long ticks = tDate.Subtract(iEpochTime).Ticks / 10000; //Epoch no need for Offset
             return string.Format("Date({0})", ticks);
         }
-        private static readonly DateTime iEpochTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        private static DateTimeOffset iEpochTimeOffsetUtc = new DateTimeOffset(iEpochTime, new TimeSpan(0));
+        private static readonly DateTime iEpochTime = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        private static DateTimeOffset iEpochTimeOffsetUtc = new (iEpochTime, new TimeSpan(0));
 
         /// <summary>
         /// Converts an incoming object to a TimeSpan
@@ -354,35 +353,41 @@ namespace nsCDEngine.BaseClasses
         public static TimeSpan CTimeSpan(object inObj)
         {
             TimeSpan ret = TimeSpan.Zero;
-            if (inObj is cdeP)
+            if (inObj is cdeP p1)
             {
-                inObj = ((cdeP)inObj)?.GetValue();
+                inObj = p1?.GetValue();
             }
-            if (inObj is TimeSpan)
+            if (inObj is TimeSpan s1)
             {
-                ret = (TimeSpan)inObj;
+                ret = s1;
             }
-            else if (inObj is DateTimeOffset)
-            {
-                try
-                {
-                    ret = (((DateTimeOffset)inObj) - iEpochTimeOffsetUtc);
-                }
-                catch { }
-            }
-            else if (inObj is DateTime)
+            else if (inObj is DateTimeOffset d1)
             {
                 try
                 {
-                    ret = (((DateTime)inObj).ToUniversalTime() - iEpochTimeOffsetUtc);
+                    ret = (d1 - iEpochTimeOffsetUtc);
                 }
-                catch { }
+                catch { 
+                    //intent
+                }
             }
-            else if (inObj is string)
+            else if (inObj is DateTime t1)
+            {
+                try
+                {
+                    ret = (t1.ToUniversalTime() - iEpochTimeOffsetUtc);
+                }
+                catch { 
+                    //intent
+                }
+            }
+            else if (inObj is string s2)
             {
 #if !CDE_NET35
-                if (!TimeSpan.TryParse((string)inObj, CultureInfo.InvariantCulture, out ret))
-                { }
+                if (!TimeSpan.TryParse(s2, CultureInfo.InvariantCulture, out ret))
+                { 
+                    //intent
+                }
 #else
                 if (!TimeSpan.TryParse((string)inObj, out ret))
                 { }
@@ -404,7 +409,7 @@ namespace nsCDEngine.BaseClasses
         public static Char CChar(object inObj)
         {
             if (inObj == null) return (char)0;
-            if (inObj is Char) return (Char)inObj;
+            if (inObj is Char c1) return c1;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return (char)0;
 
@@ -415,7 +420,6 @@ namespace nsCDEngine.BaseClasses
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = (Char)0;
             }
             return retVal;
@@ -434,7 +438,7 @@ namespace nsCDEngine.BaseClasses
         public static Byte CByte(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is Byte) return (Byte)inObj;
+            if (inObj is Byte b1) return b1;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             Byte retVal;
@@ -445,7 +449,6 @@ namespace nsCDEngine.BaseClasses
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = 0;
             }
             return retVal;
@@ -466,7 +469,7 @@ namespace nsCDEngine.BaseClasses
         public static SByte CSByte(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is SByte) return (SByte)inObj;
+            if (inObj is SByte b1) return b1;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             SByte retVal;
@@ -477,7 +480,6 @@ namespace nsCDEngine.BaseClasses
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = 0;
             }
             return retVal;
@@ -497,7 +499,7 @@ namespace nsCDEngine.BaseClasses
         public static short CShort(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is short) return (short)inObj;
+            if (inObj is short c1) return c1;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             short retVal;
@@ -515,7 +517,6 @@ namespace nsCDEngine.BaseClasses
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = 0;
             }
             return retVal;
@@ -563,17 +564,17 @@ namespace nsCDEngine.BaseClasses
         public static DateTimeOffset CDate(object inObj)
         {
             DateTimeOffset ret;
-            if (inObj is DateTimeOffset)
+            if (inObj is DateTimeOffset d1)
             {
-                ret = (DateTimeOffset)inObj;
+                ret = d1;
             }
-            else if (inObj is DateTime)
+            else if (inObj is DateTime t1)
             {
-                return CDateTimeToDateTimeOffsetInternal((DateTime)inObj);
+                return CDateTimeToDateTimeOffsetInternal(t1);
             }
-            else if (inObj is string)
+            else if (inObj is string s1)
             {
-                ret = CDate((string)inObj);
+                ret = CDate(s1);
             }
             else
             {
@@ -644,30 +645,30 @@ namespace nsCDEngine.BaseClasses
         public static double CDbl(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is double) return (double)inObj;
+            if (inObj is double d1) return d1;
             var inObjStr = CStr(inObj);
             if (string.IsNullOrEmpty(inObjStr)) return 0;
             double retVal;
             try
             {
                 if (inObj is bool && CBool(inObj)) return 1;
-                if (inObj is string)
+                if (inObj is string s2)
                 {
-                    if (String.Equals((string)inObj, "true", StringComparison.OrdinalIgnoreCase))
+                    if (String.Equals(s2, "true", StringComparison.OrdinalIgnoreCase))
                     {
                         return 1;
                     }
-                    if (((string)inObj).StartsWith("0x"))
+                    if (s2.StartsWith("0x"))
                     {
-                        return double.Parse((string)inObj, NumberStyles.HexNumber);
+                        return double.Parse(s2, NumberStyles.HexNumber);
                     }
                 }
                 if (inObj is cdeP)
                     retVal = Convert.ToDouble(inObjStr, CultureInfo.InvariantCulture);
                 else
                 {
-                    if (inObj is string)
-                        double.TryParse((string)inObj, NumberStyles.Any, CultureInfo.InvariantCulture, out retVal);
+                    if (inObj is string s3)
+                        double.TryParse(s3, NumberStyles.Any, CultureInfo.InvariantCulture, out retVal);
                     else
                         retVal = Convert.ToDouble(inObj, CultureInfo.InvariantCulture);
                 }
@@ -694,7 +695,7 @@ namespace nsCDEngine.BaseClasses
         public static uint CUInt(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is uint) return (uint)inObj;
+            if (inObj is uint u1) return u1;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             uint retVal;
@@ -712,7 +713,6 @@ namespace nsCDEngine.BaseClasses
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = 0;
             }
             return retVal;
@@ -734,7 +734,7 @@ namespace nsCDEngine.BaseClasses
         public static ulong CULng(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is ulong) return (ulong)inObj;
+            if (inObj is ulong u1) return u1;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             ulong retVal;
@@ -782,7 +782,7 @@ namespace nsCDEngine.BaseClasses
         public static long CLng(object inObj)
         {
             if (inObj == null) return 0;
-            if (inObj is long) return (long)inObj;
+            if (inObj is long l1) return l1;
             var inObjStr = CStr(inObj);
             if (String.IsNullOrEmpty(inObjStr)) return 0;
             long retVal;
@@ -843,31 +843,33 @@ namespace nsCDEngine.BaseClasses
         public static string CStr(object inObj)
         {
             if (inObj == null) return "";
-            if (inObj is string) return (string)inObj;
+            if (inObj is string s1) return s1;
             try
             {
-                if (inObj is DateTime) // DateTime is IConvertible so must check this first
+                if (inObj is DateTime t1) // DateTime is IConvertible so must check this first
                 {
-                    return ((DateTime)inObj).ToString("O", CultureInfo.InvariantCulture);
+                    return t1.ToString("O", CultureInfo.InvariantCulture);
                 }
-                else if (inObj is IConvertible)
+                else if (inObj is IConvertible ic)
                 {
-                    return ((IConvertible)inObj).ToString(CultureInfo.InvariantCulture);
+                    return ic.ToString(CultureInfo.InvariantCulture);
                 }
-                else if (inObj is DateTimeOffset)
+                else if (inObj is DateTimeOffset d1)
                 {
-                    return ((DateTimeOffset)inObj).ToString("O", CultureInfo.InvariantCulture);
+                    return d1.ToString("O", CultureInfo.InvariantCulture);
                 }
-                else if (inObj is IFormattable)
+                else if (inObj is IFormattable formattable)
                 {
-                    return ((IFormattable)inObj).ToString(null, CultureInfo.InvariantCulture);
+                    return formattable.ToString(null, CultureInfo.InvariantCulture);
                 }
                 else if (inObj is byte[])
                 {
                     return Convert.ToBase64String(inObj as byte[]);
                 }
             }
-            catch { }
+            catch { 
+                //intent
+            }
             return inObj.ToString(); // ToString() OK - last resort, all cultureinvariant ways to convert to string exhausted
         }
 
@@ -900,8 +902,6 @@ namespace nsCDEngine.BaseClasses
         {
             if (string.IsNullOrEmpty(str))
                 return null;
-            // To Do -- Handle arrays with an odd number of bytes (which cause an exception).
-            // Example: byte[] aOut = TheCommonUtils.ToHexByte("FAFAEEE");
             if (str.Length % 2 == 1) //Fix here
                 str += "0";
             byte[] b = new byte[str.Length / 2];
@@ -979,9 +979,7 @@ namespace nsCDEngine.BaseClasses
         /// </remarks>
         public static string cdeCreateXMLElement(string strInput, string pTag)
         {
-            // ToDo: Need parameter checking for strInput. But -- should we return null or ""??
             if (string.IsNullOrEmpty(strInput)) return null;
-
             return string.IsNullOrEmpty(pTag) ? string.Format("<{0} />\n", strInput) : string.Format("<{0}>{1}</{0}>\n", strInput, cdeESCXML(pTag));
         }
         /// <summary>
@@ -997,9 +995,7 @@ namespace nsCDEngine.BaseClasses
         /// </remarks>
         public static string cdeCreateXMLElement(string strInput, byte[] pTag)
         {
-            // ToDo: Need parameter checking for strInput. But -- should we return null or ""??
             if (string.IsNullOrEmpty(strInput)) return null;
-
             return pTag == null ? string.Format("<{0} />\n", strInput) : string.Format("<{0}>{1}</{0}>", strInput, Convert.ToBase64String(pTag));
         }
 
@@ -1023,7 +1019,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>The converted string.</returns>
         public static string CArray2UTF8String(byte[] pIn, int index, int count)
         {
-            UTF8Encoding enc = new UTF8Encoding();
+            UTF8Encoding enc = new ();
             return enc.GetString(pIn, index, count);
         }
 
@@ -1034,7 +1030,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A byte array.</returns>
         public static byte[] CUTF8String2Array(string strIn)
         {
-            UTF8Encoding enc = new UTF8Encoding();
+            UTF8Encoding enc = new ();
             return enc.GetBytes(strIn);
         }
 
@@ -1047,7 +1043,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A string.</returns>
         public static string CArray2UnicodeString(byte[] pIn, int index, int count)
         {
-            UnicodeEncoding enc = new UnicodeEncoding();
+            UnicodeEncoding enc = new ();
             return enc.GetString(pIn, index, count);
         }
 
@@ -1059,7 +1055,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A byte array.</returns>
         public static byte[] CUnicodeString2Array(string strIn)
         {
-            UnicodeEncoding enc = new UnicodeEncoding();
+            UnicodeEncoding enc = new ();
             return enc.GetBytes(strIn);
         }
 
@@ -1209,7 +1205,7 @@ namespace nsCDEngine.BaseClasses
         public static string CListToString(List<string> pList, string Sep)
         {
             if (pList == null) return null;
-            StringBuilder AllTopics = new StringBuilder(512);
+            StringBuilder AllTopics = new (512);
             foreach (string t in pList)
             {
                 if (string.IsNullOrEmpty(t)) continue;
@@ -1290,9 +1286,7 @@ namespace nsCDEngine.BaseClasses
                 if (pMin == pMax) return pMin;
                 if (pMin > pMax)
                 {
-                    var t = pMax;
-                    pMax = pMin;
-                    pMin = t;
+                    (pMin, pMax) = (pMax, pMin);
                 }
                 lock (mRandom)
                 {
@@ -1367,7 +1361,7 @@ namespace nsCDEngine.BaseClasses
                             if (innerAction == null)
                             {
                                 // This should never happen
-                            };
+                            }
                             innerAction?.Invoke(para);
                         }, pFireEventTimeout);
 
@@ -1433,7 +1427,7 @@ namespace nsCDEngine.BaseClasses
                             if (innerAction == null)
                             {
                                 // This should never happen
-                            };
+                            }
                             innerAction?.Invoke(para, Para2);
                         }, pFireEventTimeout);
 
@@ -1479,7 +1473,6 @@ namespace nsCDEngine.BaseClasses
                     pendingTask.startTime = DateTime.UtcNow;
                 }
 
-                //TheDiagnostics.SetThreadName(pThreadName, true);
                 callBack?.Invoke(pState);
 
                 if (pendingTask != null)
@@ -1569,7 +1562,7 @@ namespace nsCDEngine.BaseClasses
             };
             if (newPort == 443)
                 builder.Scheme = "https";
-            else // CODE REVIEW: SHouldn't this be something like else if (builder.Scheme?.ToLowerInvariant().StartsWith("http") != true)
+            else 
                 builder.Scheme = "http";
             return builder.Uri;
         }

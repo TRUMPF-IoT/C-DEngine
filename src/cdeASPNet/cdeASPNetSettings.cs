@@ -29,7 +29,7 @@ namespace cdeASPNetMiddleware
 
         public override string GetAppSetting(string pSetting, string alt, bool IsEncrypted, bool IsAltDefault = false, Guid? pOwner = null)
         {
-            string tres=mConfig.GetValue<string>(pSetting, alt);
+            string tres=mConfig.GetValue<string>(pSetting);
             if (!string.IsNullOrEmpty(tres)) return tres;
             return base.GetAppSetting(pSetting, alt, IsEncrypted, IsAltDefault, pOwner);
         }

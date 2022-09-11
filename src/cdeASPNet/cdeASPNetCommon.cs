@@ -17,7 +17,7 @@ namespace cdeASPNetMiddleware
         internal static TheRequestData CreateRequest(HttpContext pContext)
         {
             var tCon = pContext.Connection;
-            TheRequestData tReq = new TheRequestData
+            TheRequestData tReq = new ()
             {
                 RequestUri = TheCommonUtils.CUri(UriHelper.GetDisplayUrl(pContext.Request), false),
                 HttpMethod = pContext.Request.Method,
@@ -42,12 +42,6 @@ namespace cdeASPNetMiddleware
             {
                 tReq.Header[t.Key] = t.Value;
             }
-            //if (Request.Browser != null)
-            //{
-            //    tReq.BrowserType = Request.Browser.Browser + " " + Request.Browser.Version;
-            //    tReq.BrowserPlatform = Request.Browser.Platform;
-            //    tReq.BrowserScreenWidth = Request.Browser.ScreenPixelsWidth;
-            //}
             return tReq;
         }
 
@@ -88,10 +82,7 @@ namespace cdeASPNetMiddleware
         {
             if (sectok == "")
                 return false; //Default no access
-            if (sectok == null)
-            {
-                sectok = TheBaseAssets.MySettings.GetSetting("StatusToken");
-            }
+            sectok ??= TheBaseAssets.MySettings.GetSetting("StatusToken");
             if (!string.IsNullOrEmpty(sectok) && pRequestData.Query.ContainsKey(sectok))
                 return true;
             return false;

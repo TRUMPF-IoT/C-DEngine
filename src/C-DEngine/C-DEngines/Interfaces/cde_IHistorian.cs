@@ -279,9 +279,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (n1 < n2)
             {
-                var ntemp = n2;
-                n2 = n1;
-                n1 = ntemp;
+                (n1, n2) = (n2, n1);
             }
             long mod;
             while ((mod = n1 % n2) > 0)
@@ -459,10 +457,7 @@ namespace nsCDEngine.Engines.ThingService
         TheThing _thing;
         internal TheThing GetThing()
         {
-            if (_thing == null)
-            {
-                _thing = TheThingRegistry.GetThingByMID(ThingMid, true);
-            }
+            _thing ??= TheThingRegistry.GetThingByMID(ThingMid, true);
             return _thing;
         }
     }

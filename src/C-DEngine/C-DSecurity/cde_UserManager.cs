@@ -78,16 +78,13 @@ namespace nsCDEngine.Security
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4311, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheUserManager", "Creating DeviceRegistry", eMsgLevel.l3_ImportantMessage));
                 MyDeviceRegistry = new TheStorageMirror<TheDeviceRegistryData>(TheCDEngines.MyIStorageService) { IsRAMStore = StoreUsersInRam };
-                //if (!StoreUsersInRam)
-                //{
                 MyDeviceRegistry.RegisterEvent(eStoreEvents.StoreReady, sinkDeviceRegistryIsUp);
-                MyDeviceRegistry.IsCachePersistent = !TheBaseAssets.MyServiceHostInfo.IsCloudService && !TheCommonUtils.IsHostADevice(); // TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay;
+                MyDeviceRegistry.IsCachePersistent = !TheBaseAssets.MyServiceHostInfo.IsCloudService && !TheCommonUtils.IsHostADevice(); 
                 MyDeviceRegistry.AllowFireUpdates = false;
                 if (TheCDEngines.MyIStorageService != null && TheCDEngines.MyIStorageService.GetBaseEngine().GetEngineState().IsService)
                     MyDeviceRegistry.CreateStore(TheBaseAssets.MyServiceHostInfo.ApplicationName + ": DeviceRegistry", "Registry of all Devices for application " + TheBaseAssets.MyServiceHostInfo.ApplicationTitle, null, false, false);
                 else
                     MyDeviceRegistry.InitializeStore(false, TheBaseAssets.MyServiceHostInfo.IsNewDevice);
-                //}
             }
         }
 
@@ -112,12 +109,11 @@ namespace nsCDEngine.Security
             if (TheBaseAssets.MyServiceHostInfo.IsViewer)
             {
                 if (LoggedOnUser != null)
-                    UpdateUserRecord(LoggedOnUser); // MyUserRegistry.UpdateItem(LoggedOnUser, null);
+                    UpdateUserRecord(LoggedOnUser); 
                 AddRegisteredRoles();
             }
             AddRegisteredUser();
             AddRegisteredUserByRole();
-            //string tL = TheCommonUtils.SerializeObjectToJSONString(MyUserRegistry.MyMirrorCache.MyRecords.Values);
             if (TheBaseAssets.MyServiceHostInfo.IsNewDevice && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.Coufs))
             {
                 try
@@ -184,10 +180,10 @@ namespace nsCDEngine.Security
         internal TheStorageMirror<TheUserDetails> MyUserRegistry;
         private TheStorageMirror<TheDeviceRegistryData> MyDeviceRegistry;
         private static TheStorageMirror<TheUserRole> MyUserRoles;
-        private static readonly List<TheUserDetails> listAddUsers = new List<TheUserDetails>();
-        private static readonly List<TheUserRole> listAddRoles = new List<TheUserRole>();
-        private static readonly List<TheUserDetails> listAddUsersByRole = new List<TheUserDetails>();
-        private static readonly List<TheDeviceRegistryData> MyDevices = new List<TheDeviceRegistryData>();
+        private static readonly List<TheUserDetails> listAddUsers = new ();
+        private static readonly List<TheUserRole> listAddRoles = new ();
+        private static readonly List<TheUserDetails> listAddUsersByRole = new ();
+        private static readonly List<TheDeviceRegistryData> MyDevices = new ();
 
         internal TheUserDetails LoggedOnUser;
         internal void UserHasLoggedIn(Guid pUserID)
@@ -212,7 +208,7 @@ namespace nsCDEngine.Security
                 }
 
                 if (pUser != null && MyUserRegistry.IsReady && (LoggedOnUser == null || !LoggedOnUser.cdeMID.Equals(pUser.cdeMID)))
-                    UpdateUserRecord(pUser); // MyUserRegistry.UpdateItem(pUser, null);
+                    UpdateUserRecord(pUser); 
                 LoggedOnUser = pUser;
                 UpdateDevice(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo, pUser == null);
             }
@@ -299,8 +295,6 @@ namespace nsCDEngine.Security
                 {
                     string HashToken = TheBaseAssets.MySecrets.CreatePasswordHash($"{Teto.ToUpper()}@@{pPin}");
 
-                    //TheBaseAssets.MySYSLOG.WriteToLog(4313, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheUserManager", $"Teto:{Teto} Pin:{pPin} Hash:{HashToken}", eMsgLevel.l3_ImportantMessage));
-
                     try
                     {
                             tUsers = MyUserRegistry.MyMirrorCache.GetEntriesByFunc(
@@ -330,32 +324,29 @@ namespace nsCDEngine.Security
         internal List<TheUserDetails> LoginByRefreshToken(TheRequestData pData, string pToken)
         {
             List<TheUserDetails> tUsers = null;
-            if (MyUserRegistry.Count > 0)
+            if (MyUserRegistry.Count > 0 && pToken?.StartsWith("UT") == true)
             {
-                if (pToken?.StartsWith("UT")==true)
+                Guid tToken = Guid.Empty;
+                try
                 {
-                    Guid tToken=Guid.Empty;
-                    try
+                    var tReTok = TheCommonUtils.cdeDecrypt(pToken.Substring(2), TheBaseAssets.MySecrets.GetNodeKey());  //token cryped against deviceID
+                    if (tReTok?.Split(':')?.Length > 1)
+                        tToken = TheCommonUtils.CGuid(tReTok?.Split(':')[1]);
+                    if (tToken != Guid.Empty)
                     {
-                        var tReTok = TheCommonUtils.cdeDecrypt(pToken.Substring(2), TheBaseAssets.MySecrets.GetNodeKey());  //token cryped against deviceID
-                        if (tReTok?.Split(':')?.Length > 1)
-                            tToken = TheCommonUtils.CGuid(tReTok?.Split(':')[1]);
-                        if (tToken != Guid.Empty)
-                        {
-                            tUsers = MyUserRegistry.MyMirrorCache.GetEntriesByFunc(
-                                s => (!s.IsTempUser &&
-                                        s.RefreshTokens?.GetEntryByID(tToken) != null &&
-                                        !string.IsNullOrEmpty(s.NodeScope) &&
-                                        (s.NodeScope.ToUpper().Equals("ALL") || TheCommonUtils.IsLocalhost(TheCommonUtils.CGuid(s.NodeScope)))
-                                    ));
-                        }
+                        tUsers = MyUserRegistry.MyMirrorCache.GetEntriesByFunc(
+                            s => (!s.IsTempUser &&
+                                    s.RefreshTokens?.GetEntryByID(tToken) != null &&
+                                    !string.IsNullOrEmpty(s.NodeScope) &&
+                                    (s.NodeScope.ToUpper().Equals("ALL") || TheCommonUtils.IsLocalhost(TheCommonUtils.CGuid(s.NodeScope)))
+                                ));
                     }
-                    catch (Exception)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(4313,TSM.L(eDEBUG_LEVELS.ESSENTIALS)?null: new TSM("TheUserManager", "Error during Token Login", eMsgLevel.l1_Error));
-                    }
-                    FinalizeUserLogin(pData, tUsers, tToken);
                 }
+                catch (Exception)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(4313, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheUserManager", "Error during Token Login", eMsgLevel.l1_Error));
+                }
+                FinalizeUserLogin(pData, tUsers, tToken);
             }
             if (tUsers?.Count == 0)
             {
@@ -371,7 +362,7 @@ namespace nsCDEngine.Security
         {
             if (tUsers?.Count > 0)
             {
-                List<TheUserDetails> toDelet = new List<TheUserDetails>();
+                List<TheUserDetails> toDelet = new ();
                 foreach (var tUser in tUsers)
                 {
                     if (tToken!=Guid.Empty)
@@ -400,15 +391,19 @@ namespace nsCDEngine.Security
                     }
                     else if (tUsers?.Count > 1)
                     {
-                        List<TheMeshPicker> tMeshes = new List<TheMeshPicker>();
+                        List<TheMeshPicker> tMeshes = new ();
                         foreach (var tUser in tUsers)
                         {
                             string tScope = "*".Equals(tUser.AssignedEasyScope) ? TheBaseAssets.MyScopeManager.ScopeID : TheBaseAssets.MyScopeManager.GetRealScopeID(tUser.AssignedEasyScope);      //SECURITY-REVIEW: starting 4.106 AES contains SScopeID
                             if (tScope.Length < 4)
                                 continue; //This should not happen (i.e. an unscoped user) but better check
-                            TheMeshPicker tPick = new TheMeshPicker() { UserID = tUser.cdeMID, MeshHash = tScope.Substring(0, 4).ToUpper() };
-                            tPick.NodeNames = TheQueuedSenderRegistry.GetNodeNamesByRScope(tScope);
-                            tPick.HomeNode = TheQueuedSenderRegistry.GetNodeNameByNodeID(tUser.HomeNode);
+                            TheMeshPicker tPick = new()
+                            {
+                                UserID = tUser.cdeMID,
+                                MeshHash = tScope.Substring(0, 4).ToUpper(),
+                                NodeNames = TheQueuedSenderRegistry.GetNodeNamesByRScope(tScope),
+                                HomeNode = TheQueuedSenderRegistry.GetNodeNameByNodeID(tUser.HomeNode)
+                            };
                             tMeshes.Add(tPick);
                         }
                         pData.SessionState.Meshes = tMeshes;
@@ -431,20 +426,17 @@ namespace nsCDEngine.Security
         internal List<TheUserDetails> LoginUser(TheRequestData pData, string pUID, string pRealPW)
         {
             List<TheUserDetails> tUsers = null;
-            if (MyUserRegistry.Count > 0)
+            if (MyUserRegistry.Count > 0 && !string.IsNullOrEmpty(pUID) && !string.IsNullOrEmpty(pRealPW))
             {
-                if (!string.IsNullOrEmpty(pUID) && !string.IsNullOrEmpty(pRealPW))
-                {
-                    tUsers = MyUserRegistry.MyMirrorCache.GetEntriesByFunc(
-                        s => ((!s.IsTempUser &&
-                              (!string.IsNullOrEmpty(s.EMail) && s.EMail.Equals(pUID, StringComparison.CurrentCultureIgnoreCase))) &&
-                              TheBaseAssets.MySecrets.DoPasswordsMatch(s.Password, pRealPW) &&   //Hash to RealPW Compare
-                                !string.IsNullOrEmpty(s.NodeScope) &&
-                                (s.NodeScope.ToUpper().Equals("ALL") ||
-                                TheCommonUtils.IsLocalhost(TheCommonUtils.CGuid(s.NodeScope))
-                            )));
-                    FinalizeUserLogin(pData, tUsers, Guid.Empty);
-                }
+                tUsers = MyUserRegistry.MyMirrorCache.GetEntriesByFunc(
+                    s => ((!s.IsTempUser &&
+                          (!string.IsNullOrEmpty(s.EMail) && s.EMail.Equals(pUID, StringComparison.CurrentCultureIgnoreCase))) &&
+                          TheBaseAssets.MySecrets.DoPasswordsMatch(s.Password, pRealPW) &&   //Hash to RealPW Compare
+                            !string.IsNullOrEmpty(s.NodeScope) &&
+                            (s.NodeScope.ToUpper().Equals("ALL") ||
+                            TheCommonUtils.IsLocalhost(TheCommonUtils.CGuid(s.NodeScope))
+                        )));
+                FinalizeUserLogin(pData, tUsers, Guid.Empty);
             }
             if (tUsers?.Count == 0)
             {
@@ -467,7 +459,7 @@ namespace nsCDEngine.Security
 
         internal List<string> GetKnownRoles()
         {
-            List<string> tRoles = new List<string>();
+            List<string> tRoles = new ();
             foreach (string key in MyUserRoles.TheKeys)
                 tRoles.Add(MyUserRoles.GetEntryByID(key).RoleName);
             return tRoles;
@@ -493,7 +485,7 @@ namespace nsCDEngine.Security
         public static bool SentLoginCredentials(TSM pMsg, string pUID, string pRealPW)
         {
             if (!TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper || pMsg == null || string.IsNullOrEmpty(pMsg.SEID)) return false;
-            TSM tSend = new TSM(eEngineName.ContentService, "")
+            TSM tSend = new (eEngineName.ContentService, "")
             {
                 TXT = "CDE_LOGIN",
                 PLB = TheCommonUtils.cdeRSAEncrypt(TheCommonUtils.CGuid(pMsg.SEID), string.Format("{0}:;:{1}", pUID, pRealPW))
@@ -571,9 +563,15 @@ namespace nsCDEngine.Security
 
         #region Device Registry Stuff
 
+        private void sinkDeviceRegistryIsUp(StoreEventArgs nouse)
+        {
+            if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo != null)
+                RegisterNewDevice(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo);
+        }
+
         internal string RegisterNewDevice(string DeviceDescription,cdeSenderType tSenderType)
         {
-            TheDeviceRegistryData tData = new TheDeviceRegistryData
+            TheDeviceRegistryData tData = new ()
             {
                 DeviceID = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(tSenderType),
                 DeviceType = DeviceDescription,
@@ -583,11 +581,6 @@ namespace nsCDEngine.Security
             return tData.DeviceID.ToString();
         }
 
-        private void sinkDeviceRegistryIsUp(StoreEventArgs nouse)
-        {
-            if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo != null)
-                RegisterNewDevice(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo);
-        }
         internal void RegisterNewDevice(TheDeviceRegistryData pDevice)
         {
             if (MyDeviceRegistry == null) return;
@@ -633,12 +626,9 @@ namespace nsCDEngine.Security
                 {
                     tData = tRes.MyRecords[0];
                     tData.LastAccess = DateTimeOffset.Now;
-                    if (TheBaseAssets.MyServiceHostInfo.IsViewer && (!tData.PrimaryUserID.Equals(Guid.Empty)))
+                    if (TheBaseAssets.MyServiceHostInfo.IsViewer && (!tData.PrimaryUserID.Equals(Guid.Empty)) && (TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser == null || (TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser != null && TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser.cdeMID.Equals(tData.PrimaryUserID))))
                     {
-                        if (TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser == null || (TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser != null && TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser.cdeMID.Equals(tData.PrimaryUserID)))
-                        {
-                            eventDeviceRegistration?.Invoke(false, new List<TheDeviceRegistryData> { tData });
-                        }
+                        eventDeviceRegistration?.Invoke(false, new List<TheDeviceRegistryData> { tData });
                     }
                     if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo != null && tData.DeviceID.Equals(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID))
                         SetDeviceInfo = true;
@@ -715,7 +705,6 @@ namespace nsCDEngine.Security
             if (tUser == null)
                 return "";
             string tHomeScreen = tUser.HomeScreen;
-            //if (pRequestData == null || pRequestData.SessionState == null) return tHomeScreen;
             if (!string.IsNullOrEmpty(pRequestData?.SessionState?.HS))
                 tHomeScreen = pRequestData.SessionState.HS;
             else
@@ -736,14 +725,11 @@ namespace nsCDEngine.Security
                     if (!string.IsNullOrEmpty(pRequestData?.SessionState?.InitReferer))
                     {
                         string[] tP = pRequestData.SessionState.InitReferer.Split('?');
-                        if (tP.Length > 1)
+                        if (tP.Length > 1 && tP[1].StartsWith("CDEDL"))
                         {
-                            if (tP[1].StartsWith("CDEDL"))
-                            {
-                                var qs = tP[1].Substring(5).Split('&');
-                                tHomeScreen = qs[0]; // tP[1].Substring(5);
-                                HSSet = true;
-                            }
+                            var qs = tP[1].Substring(5).Split('&');
+                            tHomeScreen = qs[0]; 
+                            HSSet = true;
                         }
                     }
                 }
@@ -817,22 +803,6 @@ namespace nsCDEngine.Security
                     return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// returns true of false pending if the user has access to a resource with the ACL provided
-        /// </summary>
-        /// <param name="pUID">Username</param>
-        /// <param name="pRealPW">Password</param>
-        /// <param name="ACL">The ACL of the resource the user wants to have access to</param>
-        /// <returns></returns>
-        public static bool HasUserAccess(string pUID, string pRealPW, int ACL)
-        {
-            if (!TheUserManager.IsInitialized()) return false;
-            int tAcl = GetUserAccessLevel(pUID, pRealPW);
-            if (tAcl < 0) return false;
-            return ACL == 0 || ((tAcl & ACL) != 0);
-
         }
 
         /// <summary>
@@ -922,6 +892,22 @@ namespace nsCDEngine.Security
         }
 
         /// <summary>
+        /// returns true of false pending if the user has access to a resource with the ACL provided
+        /// </summary>
+        /// <param name="pUID">Username</param>
+        /// <param name="pRealPW">Password</param>
+        /// <param name="ACL">The ACL of the resource the user wants to have access to</param>
+        /// <returns></returns>
+        public static bool HasUserAccess(string pUID, string pRealPW, int ACL)
+        {
+            if (!TheUserManager.IsInitialized()) return false;
+            int tAcl = GetUserAccessLevel(pUID, pRealPW);
+            if (tAcl < 0) return false;
+            return ACL == 0 || ((tAcl & ACL) != 0);
+
+        }
+
+        /// <summary>
         /// Checks if the user with the gived ID has the access permission defined in ACL.
         ///
         /// </summary>
@@ -955,14 +941,13 @@ namespace nsCDEngine.Security
         public static bool HasUserAccess(Guid pCurrentUserID, int ACL, bool AdminHasAccess)
         {
             TheUserDetails tCurrentUser = GetUserByID(pCurrentUserID);
-            //int accessLevel = GetUserAccessLevel(tCurrentUser);
             return
                    ACL == 0                                                          // Anybody can see ACL 0
                 || (tCurrentUser != null
                      && ((AdminHasAccess && (tCurrentUser.AccessMask & 128) != 0) // Admins get access regardless of ACL
                           || (tCurrentUser.AccessMask & ACL) != 0                    // User has at least one of the flags in the ACL
                         )
-                    ); //TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper &&
+                    ); 
 
         }
 
@@ -1010,7 +995,6 @@ namespace nsCDEngine.Security
 
         private static List<PermissionGrant> GetUserPermissions(Guid pUser)
         {
-            // TODO Cache the permissions
             var permissionGrants = new List<PermissionGrant>();
             TheUserDetails tCurrentUser = GetUserByID(pUser);
             if (tCurrentUser != null)
@@ -1126,12 +1110,9 @@ namespace nsCDEngine.Security
             }
 
 #if !CDE_NET35 && !CDE_NET4
-            if (idTokenClaims.TryGetValue("role", out dynamic roles))
+            if (idTokenClaims.TryGetValue("role", out dynamic roles) && roles is string)
             {
-                if (roles is string)
-                {
-                    roles = new List<string> { roles as string };
-                }
+                roles = new List<string> { roles as string };
             }
 
             if (roles != null && bMapUsersByRole)
@@ -1156,12 +1137,9 @@ namespace nsCDEngine.Security
                     if (cdeRole != null)
                     {
                         var tUserTemp = TheUserManager.GetUserByRole(cdeRole);
-                        if (tUserTemp != null)
+                        if (tUserTemp != null && (tUser == null || tUserTemp.AccessMask > tUser.AccessMask))
                         {
-                            if (tUser == null || tUserTemp.AccessMask > tUser.AccessMask)
-                            {
-                                tUser = tUserTemp;
-                            }
+                            tUser = tUserTemp;
                         }
                     }
                 }
@@ -1218,10 +1196,7 @@ namespace nsCDEngine.Security
                     }
                     if (userRole != null)
                     {
-                        if (tUser.Roles == null)
-                        {
-                            tUser.Roles = new List<Guid>();
-                        }
+                        tUser.Roles ??= new List<Guid>();
                         if (!tUser.Roles.Contains(userRole.cdeMID))
                         {
                             tUser.Roles.Add(userRole.cdeMID);
@@ -1241,10 +1216,7 @@ namespace nsCDEngine.Security
                     var permissionString = permission as string;
                     if (!String.IsNullOrEmpty(permissionString))
                     {
-                        if (tUser.Permissions == null)
-                        {
-                            tUser.Permissions = new List<string>();
-                        }
+                        tUser.Permissions ??= new List<string>();
                         if (!tUser.Permissions.Contains(permissionString))
                         {
                             tUser.Permissions.Add(permissionString);
@@ -1257,7 +1229,6 @@ namespace nsCDEngine.Security
                             case "cdeUser":
                                 tUser.AccessMask |= 0x01;
                                 break;
-                                // TODO: add all other access levels
                         }
                     }
                 }
@@ -1270,7 +1241,9 @@ namespace nsCDEngine.Security
                 {
                     tUser.LCID = new CultureInfo(locale).LCID;
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
             }
 
             var existingUser = MyUserRegistry.MyMirrorCache.GetEntryByFunc(u => u.AccessMask == tUser.AccessMask && u.EMail == tUser.EMail && u.Name.StartsWith("External")
@@ -1288,8 +1261,6 @@ namespace nsCDEngine.Security
             return tUser;
         }
 
-        //static Dictionary<Guid, List<string>> TheExternalPermissionRequests = new Dictionary<Guid, List<string>>();
-
         class PermissionGrant
         {
             readonly string[] parts;
@@ -1301,15 +1272,6 @@ namespace nsCDEngine.Security
             public string[] Parts { get { return parts; } }
         }
 
-        private class AccessToken
-        {
-            public List<PermissionGrant> PermissionGrants { get; set; }
-            public string UserName { get; set; }
-            public string EMail { get; set; }
-            public List<string> Roles { get; set; }
-            public DateTimeOffset Expiration { get; set; }
-        }
-
         /// <summary>
         /// Login by username/password
         /// </summary>
@@ -1319,7 +1281,7 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         internal static List<TheUserDetails> PerformLogin(TheRequestData pData, string pUID, string pRealPW)
         {
-            if (!IsInitialized()) return null;
+            if (!IsInitialized()) return new();
 
             return TheBaseAssets.MyApplication.MyUserManager.LoginUser(pData,pUID, pRealPW);
         }
@@ -1332,7 +1294,7 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         internal static List<TheUserDetails> PerformLoginByRefreshToken(TheRequestData pData, string pToken)
         {
-            if (!IsInitialized()) return null;
+            if (!IsInitialized()) return new();
 
             return TheBaseAssets.MyApplication.MyUserManager.LoginByRefreshToken(pData, pToken);
         }
@@ -1351,7 +1313,7 @@ namespace nsCDEngine.Security
 
         internal static List<TheUserDetails> PerformLoginByPin(TheRequestData pData, string pPin)
         {
-            if (!IsInitialized()) return null;
+            if (!IsInitialized()) return new();
 
             return TheBaseAssets.MyApplication.MyUserManager.LoginUserByPin(pData, pPin);
         }
@@ -1405,7 +1367,7 @@ namespace nsCDEngine.Security
         }
         internal static List<TheUserDetails> GetAllUsers()
         {
-            if (!IsInitialized()) return null;
+            if (!IsInitialized()) return new();
             return TheBaseAssets.MyApplication.MyUserManager.MyUserRegistry.TheValues;
         }
         internal static string GetUserStatus()
@@ -1438,32 +1400,23 @@ namespace nsCDEngine.Security
         /// <param name="pRole"></param>
         public static void RegisterNewRole(TheUserRole pRole)
         {
-            if (pRole != null)
-            {
-                if (!listAddRoles.Contains(pRole))
-                    listAddRoles.Add(pRole);
-            }
+            if (pRole != null && !listAddRoles.Contains(pRole))
+                listAddRoles.Add(pRole);
             if (TheBaseAssets.MyApplication.MyUserManager != null && TheBaseAssets.MyApplication.MyUserManager.mIsInitialized)
                 TheBaseAssets.MyApplication.MyUserManager.AddRegisteredRoles();
         }
 
         internal static void AddNewUser(TheUserDetails pUser)
         {
-            if (pUser != null)
-            {
-                if (!listAddUsers.Contains(pUser))
-                    listAddUsers.Add(pUser);
-            }
+            if (pUser != null && !listAddUsers.Contains(pUser))
+                listAddUsers.Add(pUser);
             if (TheBaseAssets.MyApplication.MyUserManager != null && TheBaseAssets.MyApplication.MyUserManager.mIsInitialized)
                 TheBaseAssets.MyApplication.MyUserManager.AddRegisteredUser();
         }
         internal static void AddNewUserByRole(TheUserDetails pUser)
         {
-            if (pUser != null)
-            {
-                if (!listAddUsersByRole.Contains(pUser))
-                    listAddUsersByRole.Add(pUser);
-            }
+            if (pUser != null && !listAddUsersByRole.Contains(pUser))
+                listAddUsersByRole.Add(pUser);
             if (TheBaseAssets.MyApplication.MyUserManager != null && TheBaseAssets.MyApplication.MyUserManager.mIsInitialized)
                 TheBaseAssets.MyApplication.MyUserManager.AddRegisteredUserByRole();
         }
@@ -1476,7 +1429,6 @@ namespace nsCDEngine.Security
         {
             if (!TheUserManager.IsInitialized()) return;
             TheBaseAssets.MyApplication.MyUserManager.UpdateUserRecord(pUser);
-            //TheBaseAssets.MyApplication.MyUserManager.MyUserRegistry.UpdateItem(pUser,null);
         }
         internal static int UpdateUserI(TheUserDetails pUser)
         {
@@ -1512,7 +1464,6 @@ namespace nsCDEngine.Security
                     tOldUser.HomeNodeName = pUser.HomeNodeName;
                 tOldUser.SecToken = TheCommonUtils.cdeEncrypt(tOldUser.Password + ";:;" + tOldUser.AssignedEasyScope + ";:;" + tOldUser.AccessMask, TheBaseAssets.MySecrets.GetAI());  //AES OK PW is Hash
                 TheBaseAssets.MyApplication.MyUserManager.UpdateUserRecord(tOldUser);
-                //TheBaseAssets.MyApplication.MyUserManager.MyUserRegistry.UpdateItem(tOldUser,null);
                 return tOldUser.LCID;
             }
             return 0;
@@ -1539,12 +1490,8 @@ namespace nsCDEngine.Security
             }
         }
 
-        private readonly object IsMerging = new object();
+        private readonly object IsMerging = new ();
 
-        /// <summary>
-        /// TODO: Remove users that belong to a Node but have been removed from that node
-        /// </summary>
-        /// <param name="pUsers"></param>
         private void DoMergeUsers(List<TheUserDetails> pUsers)
         {
             if (mIsInitialized && pUsers != null)
@@ -1576,14 +1523,13 @@ namespace nsCDEngine.Security
                             var tExistingUser = MyUserRegistry.GetEntryByID(theUserDetails.cdeMID);
                             if (tExistingUser == null)
                             {
-                                if (theUserDetails.AssignedEasyScope == null)   //AES OK
-                                    theUserDetails.AssignedEasyScope = "*";     //AES OK
+                                theUserDetails.AssignedEasyScope ??= "*";     //AES OK
                                 MyUserRegistry.AddAnItem(theUserDetails, null);
                             }
                             else
                             {
                                 theUserDetails.RefreshTokens = tExistingUser.RefreshTokens; //New in 4.210: Tokens must survive Merge
-                                UpdateUserRecord(theUserDetails); //MyUserRegistry.UpdateItem(pUsers[i],null);
+                                UpdateUserRecord(theUserDetails); 
                             }
                         }
                     }
@@ -1624,8 +1570,7 @@ namespace nsCDEngine.Security
                     for (int i = listAddUsers.Count - 1; i >= 0; i--)
                     {
                         var theUserDetails = listAddUsers[i];
-                        if (theUserDetails.AssignedEasyScope == null)   //AES OK
-                            theUserDetails.AssignedEasyScope = "*";     //AES OK
+                        theUserDetails.AssignedEasyScope ??= "*";     //AES OK
                         if (!MyUserRegistry.ContainsID(theUserDetails.cdeMID) && !MyUserRegistry.MyMirrorCache.ContainsByFunc(s => s.EMail == theUserDetails.EMail))
                         {
                             theUserDetails.SecToken = TheCommonUtils.cdeEncrypt(theUserDetails.Password + ";:;" + theUserDetails.AssignedEasyScope + ";:;" + theUserDetails.AccessMask, TheBaseAssets.MySecrets.GetAI());  //AES OK PW is hash
@@ -1651,8 +1596,7 @@ namespace nsCDEngine.Security
                     for (int i = listAddUsersByRole.Count - 1; i >= 0; i--)
                     {
                         var theUserDetails = listAddUsersByRole[i];
-                        if (theUserDetails.AssignedEasyScope == null)       //AES OK
-                            theUserDetails.AssignedEasyScope = "*";         //AES OK
+                        theUserDetails.AssignedEasyScope ??= "*";         //AES OK
                         if (!MyUserRegistry.MyMirrorCache.ContainsByFunc(s =>
                                     (("*".Equals(theUserDetails.AssignedEasyScope) || TheBaseAssets.MyScopeManager.IsValidScopeID(theUserDetails.AssignedEasyScope,s.AssignedEasyScope)) && //4.106 AES contains SScopeID
                                     !string.IsNullOrEmpty(s.PrimaryRole) && s.PrimaryRole.Equals(theUserDetails.PrimaryRole, StringComparison.CurrentCultureIgnoreCase))
@@ -1675,28 +1619,25 @@ namespace nsCDEngine.Security
 
         private void LoadFromConfig()
         {
-            if (!TheBaseAssets.MyServiceHostInfo.IsCloudService)
+            if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && MyUserRegistry.Count > 0)
             {
-                if (MyUserRegistry.Count > 0)
+                foreach (TheUserDetails tUser in MyUserRegistry.TheValues)
                 {
-                    foreach (TheUserDetails tUser in MyUserRegistry.TheValues)
+                    string[] tSec = TheCommonUtils.cdeSplit(TheCommonUtils.cdeDecrypt(tUser.SecToken, TheBaseAssets.MySecrets.GetAI()), ";:;", false, false);
+                    if (tSec != null)
                     {
-                        string[] tSec = TheCommonUtils.cdeSplit(TheCommonUtils.cdeDecrypt(tUser.SecToken, TheBaseAssets.MySecrets.GetAI()), ";:;", false, false);
-                        if (tSec != null)
+                        if (string.IsNullOrEmpty(tSec[0]) || TheBaseAssets.MySecrets.IsHashLengthCorrect(tSec[0]))
+                            tUser.Password = tSec[0];  //SECURITY: pw is HashPW
+                        else
+                            tUser.Password = TheBaseAssets.MySecrets.CreatePasswordHash(tSec[0]);  //SECURITY: Incoming PW is legacy and needs to be converted to hash
+                        if (tSec.Length > 1 && tSec[1].Length > 0)
                         {
-                            if (string.IsNullOrEmpty(tSec[0]) || TheBaseAssets.MySecrets.IsHashLengthCorrect(tSec[0]))
-                                tUser.Password = tSec[0];  //SECURITY: pw is HashPW
+                            if (tSec[1] != "*" && tSec[1].Length < 10) //V4.106 backwards compatibility: Old Easy Scope ID found
+                                tUser.AssignedEasyScope = TheBaseAssets.MyScopeManager.GetScrambledScopeIDFromEasyID(tSec[1]);      //pre 4.106 lecacy convert
                             else
-                                tUser.Password = TheBaseAssets.MySecrets.CreatePasswordHash(tSec[0]);  //SECURITY: Incoming PW is legacy and needs to be converted to hash
-                            if (tSec.Length > 1 && tSec[1].Length > 0)
-                            {
-                                if (tSec[1] != "*" && tSec[1].Length < 10) //V4.106 backwards compatibility: Old Easy Scope ID found
-                                    tUser.AssignedEasyScope = TheBaseAssets.MyScopeManager.GetScrambledScopeIDFromEasyID(tSec[1]);      //pre 4.106 lecacy convert
-                                else
-                                    tUser.AssignedEasyScope = tSec[1]; //4.106 AES contains SScopeID
-                            }
-                            if (tSec.Length > 2) tUser.AccessMask = TheCommonUtils.CInt(tSec[2]);
+                                tUser.AssignedEasyScope = tSec[1]; //4.106 AES contains SScopeID
                         }
+                        if (tSec.Length > 2) tUser.AccessMask = TheCommonUtils.CInt(tSec[2]);
                     }
                 }
             }
@@ -1817,18 +1758,18 @@ namespace nsCDEngine.Security
         {
             ResetUserScopes(true, PushToTrustedNodes);
         }
-        private readonly static object lockResetUserScopes = new object();
+        private readonly static object lockResetUserScopes = new ();
         internal static void ResetUserScopes(bool SetCurrent, bool PushToTrustedNodes)
         {
             if (!IsInitialized() || TheCommonUtils.cdeIsLocked(lockResetUserScopes)) return;
             lock (lockResetUserScopes)
             {
-                string tScope = TheBaseAssets.MyScopeManager.GetScrambledScopeID(); //starting 4.106 AES contains SScopeID no longer Easy Scope ID = TheBaseAssets.MyScopeManager.GetCurrentEasyScope();
+                string tScope = TheBaseAssets.MyScopeManager.GetScrambledScopeID(); //starting 4.106 AES contains SScopeID no longer Easy Scope ID = TheBaseAssets.MyScopeManager.GetCurrentEasyScope()
                 if (string.IsNullOrEmpty(tScope))
                     tScope = "*";
                 List<TheUserDetails> tL = GetAllUsers();
                 if (tL == null) return;
-                if (!string.IsNullOrEmpty(tScope) && !tScope.Equals("*"))   //Only fixup Scopes if the Node is scoped (i.e. not on unscoped clouds)
+                if (!tScope.Equals("*"))   //Only fixup Scopes if the Node is scoped (i.e. not on unscoped clouds)
                 {
                     bool WriteUserFile = false;
                     foreach (TheUserDetails u in tL)
@@ -1872,7 +1813,7 @@ namespace nsCDEngine.Security
                     tL.RemoveAt(i);
             }
             if (tL.Count == 0) return false;
-            TSM uSync = new TSM(eEngineName.ContentService, "CDE_SYNCUSER", TheCommonUtils.SerializeObjectToJSONString(tL));
+            TSM uSync = new (eEngineName.ContentService, "CDE_SYNCUSER", TheCommonUtils.SerializeObjectToJSONString(tL));
             uSync.SetNoDuplicates(true);
             uSync.EncryptPLS();
             TSM tBlockSync = null;

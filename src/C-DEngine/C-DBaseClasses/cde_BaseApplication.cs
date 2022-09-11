@@ -14,7 +14,6 @@ using nsCDEngine.Security;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 // ReSharper disable UseNullPropagation
@@ -33,7 +32,7 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         /// <param name="force">If true the shutdown will be forced without any wait-time</param>
         /// <param name="waitIfPending">If true, the shutdown will wait for pending processes</param>
-        void Shutdown(bool force, bool waitIfPending);
+        void Shutdown(bool force, bool waitIfPending = false);
         /// <summary>
         /// Main Method to start the C-DEngine Based Application on the current Node
         /// </summary>
@@ -60,7 +59,6 @@ namespace nsCDEngine.BaseClasses
         /// <summary>
         /// The Root of the ISM Manager (Intelligent Service Management)
         /// </summary>
-        //public TheISMManager MyISMRoot;
         public ICDEISManager MyISMRoot;
         /// <summary>
         /// Constructor of TheBaseApplication class
@@ -77,6 +75,7 @@ namespace nsCDEngine.BaseClasses
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
         /// <summary>
         /// Allows to run code during the dispose function
@@ -123,12 +122,7 @@ namespace nsCDEngine.BaseClasses
             {
                 TheBaseAssets.IsStarting = true;
 
-                //AppDomain.CurrentDomain.UnhandledException += MyUnhandledExceptionHandler;
-
-                if (ArgList == null)
-                {
-                    ArgList = new Dictionary<string, string>();    //DIC-Allowed!
-                }
+                ArgList ??= new Dictionary<string, string>();
                 if (!TheBaseAssets.MySettings.ReadAllAppSettings(ref ArgList))
                 {
                     TheSystemMessageLog.ToCo("Not reading app.config: not supported by platform."); //Will never be called!
@@ -150,7 +144,10 @@ namespace nsCDEngine.BaseClasses
                     System.Threading.ThreadPool.GetMinThreads(out minWorker, out minCompletionPort);
                     System.Threading.ThreadPool.GetMaxThreads(out maxWorker, out maxCompletionPort);
                 }
-                catch { };
+                catch 
+                { 
+                    //intentionally
+                }
 
 #if CDE_STANDARD
                 var largeObjectHeapCompactionMode = System.Runtime.GCSettings.LargeObjectHeapCompactionMode;
@@ -181,16 +178,13 @@ namespace nsCDEngine.BaseClasses
                         {
                             TheCommonUtils.TaskDelayOneEye(60 * 60 * 1000, 100).ContinueWith((t) =>
                                 {
-                                    if (TheBaseAssets.MasterSwitch)
+                                    if (TheBaseAssets.MasterSwitch && !TheBaseAssets.MyActivationManager.CheckLicense(new Guid("{5737240C-AA66-417C-9B66-3919E18F9F4A}"), "", null, 1, false))
                                     {
-                                        if (!TheBaseAssets.MyActivationManager.CheckLicense(new Guid("{5737240C-AA66-417C-9B66-3919E18F9F4A}"), "", null, 1, false))
-                                        {
-                                            TheBaseAssets.MySYSLOG.WriteToLog(4148, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Licensing error: no activated license for Thing Service. Shutting down.", eMsgLevel.l1_Error));
-                                            if (TheBaseAssets.IsInAgentStartup)
-                                                MyISMRoot?.Restart(true);
-                                            else
-                                                Shutdown(true);
-                                        }
+                                        TheBaseAssets.MySYSLOG.WriteToLog(4148, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Licensing error: no activated license for Thing Service. Shutting down.", eMsgLevel.l1_Error));
+                                        if (TheBaseAssets.IsInAgentStartup)
+                                            MyISMRoot?.Restart(true);
+                                        else
+                                            Shutdown(true);
                                     }
                                 });
                         });
@@ -233,15 +227,6 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        //private void MyUnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)
-        //{
-        //    if (e?.IsTerminating == true)
-        //    {
-        //        TheBaseAssets.MySYSLOG.WriteToLog(4150, new BaseClasses.TSM("TheBaseApplication", "Unhandled exception: Calling Shutdown. Process will terminate.", eMsgLevel.l1_Error, e?.ExceptionObject?.ToString()));
-        //        Shutdown(true, true);
-        //    }
-        //}
-
         void sinkEnginesStarted()
         {
             if (MyCommonDisco != null)
@@ -268,10 +253,8 @@ namespace nsCDEngine.BaseClasses
         /// <param name="waitIfPending">Waits in case The shutdown is already initiated</param>
         public virtual void Shutdown(bool force, bool waitIfPending = false)
         {
-            if (!waitIfPending)
-            {
-                if (!TheBaseAssets.MasterSwitch || TheCommonUtils.cdeIsLocked(ShutdownLock)) return;                                   //Make sure we dont do this twice
-            }
+            if (!waitIfPending && (!TheBaseAssets.MasterSwitch || TheCommonUtils.cdeIsLocked(ShutdownLock))) 
+                return;                                   //Make sure we dont do this twice
             lock (ShutdownLock)
             {
                 if (TheBaseAssets.MasterSwitch)
@@ -331,7 +314,7 @@ namespace nsCDEngine.BaseClasses
                 }
             }
         }
-        private readonly object ShutdownLock = new object();
+        private readonly object ShutdownLock = new ();
         #endregion
 
         /// <summary>
@@ -365,7 +348,7 @@ namespace nsCDEngine.BaseClasses
                     if (configManagerType != null)
                     {
                         var openConfigMethod = configManagerType.GetMethod("OpenExeConfiguration", System.Reflection.BindingFlags.Static);
-                        tConfig = openConfigMethod?.Invoke(null, new object[] { (int)0 });
+                        tConfig = openConfigMethod?.Invoke(null, new object[] { 0 });
                     }
                 }
             }

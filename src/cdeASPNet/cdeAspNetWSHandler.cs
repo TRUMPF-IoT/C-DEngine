@@ -32,14 +32,11 @@ namespace cdeASPNetMiddleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (context.Request.Path.ToString().StartsWith("/ISB"))
+            if (context.Request.Path.ToString().StartsWith("/ISB") && context.WebSockets.IsWebSocketRequest)
             {
-                if (context.WebSockets.IsWebSocketRequest)
-                {
-                    WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                    await ProcessWSRequest(context, webSocket);
-                    return;
-                }
+                WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                await ProcessWSRequest(context, webSocket);
+                return;
             }
             await _next(context);
         }
@@ -49,7 +46,7 @@ namespace cdeASPNetMiddleware
         /// </summary>
         /// <param name="context">The http context.</param>
         /// <param name="ws">The incoming WebSockets.</param>
-        public async Task ProcessWSRequest(HttpContext context, WebSocket ws)
+        public static async Task ProcessWSRequest(HttpContext context, WebSocket ws)
         {
             try
             {

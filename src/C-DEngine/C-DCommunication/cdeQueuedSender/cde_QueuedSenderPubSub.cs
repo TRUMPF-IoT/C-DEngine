@@ -9,6 +9,7 @@ using nsCDEngine.BaseClasses;
 using nsCDEngine.ViewModels;
 using nsCDEngine.Engines.StorageService;
 using System;
+using System.Text;
 
 namespace nsCDEngine.Communication
 {
@@ -39,7 +40,7 @@ namespace nsCDEngine.Communication
         internal bool Unsubscribe(string pTopics, bool keepAlive=false)
         {
             int len = MySubscriptions.Count;
-            ReduceSubscriptions(pTopics); //, false);
+            ReduceSubscriptions(pTopics); 
             if (!keepAlive && MyTargetNodeChannel.SenderType != cdeSenderType.CDE_LOCALHOST && len > 0 && MySubscriptions.Count == 0)
             {
                 FireSenderProblem(new TheRequestData() { ErrorDescription = "1307:No more subscriptions - QSender will be removed" });
@@ -49,10 +50,7 @@ namespace nsCDEngine.Communication
             return false;
         }
 
-
-
-
-
+        private readonly object CombineSubscriptionLock = new();
         internal ICollection<string> CombineSubscriptions(string pTopics, out bool WasUpdated, bool AreOwnedSubs=false)
         {
             WasUpdated = false;
@@ -63,14 +61,10 @@ namespace nsCDEngine.Communication
                 return CombineSubscriptions(subs, out WasUpdated, AreOwnedSubs);
             }
         }
-
-
-        private readonly object CombineSubscriptionLock = new object();
-
         internal ICollection<string> CombineSubscriptions(List<string> pTopics, out bool WasUpdated, bool AreOwnedSubs = false)
         {
             WasUpdated = false;
-            if (pTopics == null) //pTopics = new List<string>();
+            if (pTopics == null) 
                 return MySubscriptions.TheKeys; //4.1042: Tuning
             lock (CombineSubscriptionLock)
             {
@@ -91,11 +85,11 @@ namespace nsCDEngine.Communication
                             continue;
                         }
                         //Coming later for more security: No more Unscoped subscriptions except the plugin service has "IsAllowedUnscopedProcessing" enabled
-                        //if (!TheBaseAssets.MyScopeManager.IsScopingEnabled && string.IsNullOrEmpty(tChannelRealScope) && pTopics[i] != eEngineName.ContentService && pTopics[i] != eEngineName.NMIService)
-                        //{
-                        //    TheBaseAssets.MySYSLOG.WriteToLog(296, string.IsNullOrEmpty(tTopicName) || TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"New Subscription to UNSCOPED Topic={pTopics[i]} not allowed on unscoped Node!", eMsgLevel.l2_Warning));
-                        //    continue;
-                        //}
+                        ////if (!TheBaseAssets.MyScopeManager.IsScopingEnabled && string.IsNullOrEmpty(tChannelRealScope) && pTopics[i] != eEngineName.ContentService && pTopics[i] != eEngineName.NMIService)
+                        ////{
+                        ////    TheBaseAssets.MySYSLOG.WriteToLog(296, string.IsNullOrEmpty(tTopicName) || TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"New Subscription to UNSCOPED Topic={pTopics[i]} not allowed on unscoped Node!", eMsgLevel.l2_Warning));
+                        ////    continue;
+                        ////}
                     }
                     bool WasFound = false;
                     foreach (string t in MySubscriptions.TheKeys)
@@ -170,7 +164,7 @@ namespace nsCDEngine.Communication
         /// <param name="pRealScopeID"></param>
         internal void UpdateSubscriptionScope(string pRealScopeID)
         {
-            MyTargetNodeChannel.SetRealScopeID(pRealScopeID); // TheBaseAssets.ScopeID;
+            MyTargetNodeChannel.SetRealScopeID(pRealScopeID); 
             lock (CombineSubscriptionLock)
             {
                 foreach (string t in MySubscriptions.TheKeys)
@@ -218,39 +212,33 @@ namespace nsCDEngine.Communication
 
         internal bool GetUniqueSubscriptions(ref List<TheSubscriptionInfo> pTopics, string pRealScopeID)
         {
-            //lock (CombineSubscriptionLock)
-            //{
-                //string tQS = "";
-                foreach (var t in MySubscriptions.TheValues)
+            foreach (var t in MySubscriptions.TheValues)
+            {
+                bool WasFound = false;
+                foreach (var tInSub in pTopics)
                 {
-                    bool WasFound = false;
-                    foreach (var tInSub in pTopics)
+                    if (string.IsNullOrEmpty(tInSub.Topic)) continue;
+                    if (!string.IsNullOrEmpty(tInSub.RScopeID))
                     {
-                        //string tTopicName = "";
-                        //tQS = TheBaseAssets.MyScopeManager.GetRealScopeIDFromTopic(pTopics[i], out tTopicName); //Low Frequency
-                        if (string.IsNullOrEmpty(tInSub.Topic)) continue;
-                        if (!string.IsNullOrEmpty(tInSub.RScopeID))
+                        if (tInSub.RScopeID.Equals(t.RScopeID) && tInSub.Topic.Equals(t.Topic))
                         {
-                            if (tInSub.RScopeID.Equals(t.RScopeID) && tInSub.Topic.Equals(t.Topic))
-                            {
-                                WasFound = true;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if (t.Topic.Equals(tInSub.Topic) && string.IsNullOrEmpty(t.RScopeID))
-                            {
-                                WasFound = true;
-                                break;
-                            }
+                            WasFound = true;
+                            break;
                         }
                     }
-                    if (!WasFound && (string.IsNullOrEmpty(pRealScopeID) || pRealScopeID.Equals(t.RScopeID)))
-                        pTopics.Add(t);
+                    else
+                    {
+                        if (t.Topic.Equals(tInSub.Topic) && string.IsNullOrEmpty(t.RScopeID))
+                        {
+                            WasFound = true;
+                            break;
+                        }
+                    }
                 }
-                return true;
-            //}
+                if (!WasFound && (string.IsNullOrEmpty(pRealScopeID) || pRealScopeID.Equals(t.RScopeID)))
+                    pTopics.Add(t);
+            }
+            return true;
         }
 
         internal ICollection<string> GetSubscriptions()
@@ -278,7 +266,7 @@ namespace nsCDEngine.Communication
 
         public string ShowHeader()
         {
-            string AllTopics = "";
+            StringBuilder AllTopics =new();
             foreach (var t in MySubscriptions.TheValues)
             {
                 if (t==null) continue;
@@ -309,7 +297,7 @@ namespace nsCDEngine.Communication
 
                 int tMinAlive = TheCommonUtils.CInt((DateTimeOffset.Now - t.cdeCTIM).TotalMinutes);
                 tt += $" ({Math.Round(t.Hits>0 && tMinAlive>0?t.Hits/tMinAlive:0.0,2)} , {t.Hits})</li>";
-                AllTopics += tt;
+                AllTopics.Append(tt);
             }
             return $"<li {(!IsTrusted? "style='color:red'" : "")}>{MyTargetNodeChannel.ToMLString()} ({GetNodeName()}) {(MyNodeInfo?.MyServiceInfo?.ClientCertificateThumb?.Length > 3 ? MyNodeInfo?.MyServiceInfo?.ClientCertificateThumb?.Substring(0, 4) : "No cert")}<ul>{AllTopics}</ul></li>";
         }
@@ -323,7 +311,7 @@ namespace nsCDEngine.Communication
             List<string> AllTopics = CombineSubscriptions(pTopics, out bool WasUpdated).ToList();
             if (WasUpdated)
             {
-                TSM tTsm = new TSM("CLOUDSYNC", "CDE_SUBSCRIBE", TheCommonUtils.CListToString(AllTopics, ";")) { SID = TheBaseAssets.MyScopeManager.GetScrambledScopeID(MyTargetNodeChannel.RealScopeID, true) };       //GRSI: rare
+                TSM tTsm = new ("CLOUDSYNC", "CDE_SUBSCRIBE", TheCommonUtils.CListToString(AllTopics, ";")) { SID = TheBaseAssets.MyScopeManager.GetScrambledScopeID(MyTargetNodeChannel.RealScopeID, true) };       //GRSI: rare
                 tTsm.SetNoDuplicates(true);
                 SendQueued(TheBaseAssets.MyScopeManager.AddScopeID(eEngineName.ContentService,true, MyTargetNodeChannel.RealScopeID), tTsm,false, Guid.Empty, eEngineName.ContentService, MyTargetNodeChannel.RealScopeID, null);     //RScope-OK: Engine Topic subscriptions on primary RScope only
             }

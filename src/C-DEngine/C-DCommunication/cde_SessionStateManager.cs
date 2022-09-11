@@ -10,6 +10,7 @@ using nsCDEngine.Engines.StorageService;
 using nsCDEngine.Engines;
 using nsCDEngine.Security;
 using System.Linq;
+using System.Text;
 
 namespace nsCDEngine.Communication
 {
@@ -83,7 +84,7 @@ namespace nsCDEngine.Communication
 
             if (strAcceptLanguage.Length > 10) strAcceptLanguage = strAcceptLanguage.Substring(0, 10);
 
-            TheSessionState pSession = new TheSessionState();
+            TheSessionState pSession = new ();
             if (pSessionID != Guid.Empty)
                 pSession.cdeMID = pSessionID;
             try
@@ -116,7 +117,6 @@ namespace nsCDEngine.Communication
                 }
                 pSession.EntryTime = DateTimeOffset.Now;
                 pSession.LastAccess = DateTimeOffset.Now;
-                //pSession.CMember = sstrLocalMachine;
                 pSession.PageHits = 1;
                 pSession.TRGTSRV = tTRGTSRV;
                 pSession.LCID = strLCID;
@@ -131,7 +131,7 @@ namespace nsCDEngine.Communication
         }
 
         // order is in trust/use order top to bottom
-        private static readonly List<string> s_HeaderItems = new List<string>() {
+        private static readonly List<string> s_HeaderItems = new () {
             "REMOTE_ADDR",
             "HTTP_CLIENT_IP",
             "HTTP_X_FORWARDED_FOR",
@@ -189,8 +189,7 @@ namespace nsCDEngine.Communication
         internal TheSessionState GetOrCreateSessionState(Guid pSessionID, TheRequestData pRequest)
         {
             TheSessionState tS = ValidateSEID(pSessionID);  //Measure Frequency!!
-            if (tS == null)
-                tS = CreateSession(pRequest, pSessionID);
+            tS ??= CreateSession(pRequest, pSessionID);
             return tS;
         }
 
@@ -200,31 +199,23 @@ namespace nsCDEngine.Communication
             bool IsNewState = false;
             try
             {
-                //lock (MySessionStates.MyRecordsLock) //CODE-REVIEW: Why? Validate get session back and has its own log. If Session is null, we can create a
+                if (Guid.Empty != pSessionID)
+                    pRequestData.SessionState = ValidateSEID(pSessionID);   //Measure Frequency
+                if (pRequestData.SessionState == null)
                 {
-                    //TheSystemMessageLog.ToCo("SESS: Validating");
-                    if (Guid.Empty!=pSessionID)
-                        pRequestData.SessionState = ValidateSEID(pSessionID);   //Measure Frequency
-                    if (pRequestData.SessionState == null)
+                    pRequestData.SessionState = GetSessionIDByDeviceID(pRequestData.DeviceID);
+                    if (pRequestData.SessionState == null && !NoCreate)
                     {
-                        pRequestData.SessionState = GetSessionIDByDeviceID(pRequestData.DeviceID);
-                        if (pRequestData.SessionState == null && NoCreate == false)
-                        {
-                            TheBaseAssets.MySYSLOG.WriteToLog(1234, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("SSM", $"SESS: Creating new Session for {pRequestData.cdeRealPage}"));
-                            pRequestData.SessionState = CreateSession(pRequestData, pSessionID);
-                            //if (pSessionID != Guid.Empty) pRequestData.SessionState.cdeMID = pSessionID; //Moved to CreateSession to prevent double sessions in StorageMirror
-                            if (pRequestData.SessionState.StateCookies == null) pRequestData.SessionState.StateCookies = new cdeConcurrentDictionary<string, string>();
-                            if (pRequestData.SessionState.StateCookies.ContainsKey(MySite.cdeMID.ToString() + "CDESEID"))
-                                pRequestData.SessionState.StateCookies[MySite.cdeMID.ToString() + "CDESEID"] = TheCommonUtils.cdeEscapeString(TheCommonUtils.cdeEncrypt(TheCommonUtils.CStr(pRequestData.SessionState.cdeMID), TheBaseAssets.MySecrets.GetAI()));   //3.083: Must use SecureID
-                            else
-                                pRequestData.SessionState.StateCookies.TryAdd(MySite.cdeMID.ToString() + "CDESEID", TheCommonUtils.cdeEscapeString(TheCommonUtils.cdeEncrypt(TheCommonUtils.CStr(pRequestData.SessionState.cdeMID), TheBaseAssets.MySecrets.GetAI()))); //3.083: Must use SecureID
-                            WriteSession(pRequestData.SessionState);
-                            IsNewState = true;
-                            //TheSystemMessageLog.ToCo(string.Format("SESS: Creating Done. New CNT:{0} ID:{1}", MySessionStates.Count, pRequestData.SessionState.cdeMID));
-                        }
+                        TheBaseAssets.MySYSLOG.WriteToLog(1234, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("SSM", $"SESS: Creating new Session for {pRequestData.cdeRealPage}"));
+                        pRequestData.SessionState = CreateSession(pRequestData, pSessionID);
+                        if (pRequestData.SessionState.StateCookies == null) pRequestData.SessionState.StateCookies = new cdeConcurrentDictionary<string, string>();
+                        if (pRequestData.SessionState.StateCookies.ContainsKey(MySite.cdeMID.ToString() + "CDESEID"))
+                            pRequestData.SessionState.StateCookies[MySite.cdeMID.ToString() + "CDESEID"] = TheCommonUtils.cdeEscapeString(TheCommonUtils.cdeEncrypt(TheCommonUtils.CStr(pRequestData.SessionState.cdeMID), TheBaseAssets.MySecrets.GetAI()));   //3.083: Must use SecureID
+                        else
+                            pRequestData.SessionState.StateCookies.TryAdd(MySite.cdeMID.ToString() + "CDESEID", TheCommonUtils.cdeEscapeString(TheCommonUtils.cdeEncrypt(TheCommonUtils.CStr(pRequestData.SessionState.cdeMID), TheBaseAssets.MySecrets.GetAI()))); //3.083: Must use SecureID
+                        WriteSession(pRequestData.SessionState);
+                        IsNewState = true;
                     }
-                    //if (!IsNewState)
-                    //  TheSystemMessageLog.ToCo(string.Format("SESS: Found {0}", pRequestData.SessionState));
                 }
             }
             catch (Exception e)
@@ -301,7 +292,6 @@ namespace nsCDEngine.Communication
                 {
                     lock (pSession.MySessionLock)
                     {
-                        //pSession.CMember = sstrLocalMachine;
                         pSession.MembUID = "";
                         pSession.MembPWD = "";
                         pSession.MembFullName = "";
@@ -316,7 +306,6 @@ namespace nsCDEngine.Communication
                         pSession.LCID = 0;
                         WriteSession(pSession);
                     }
-                    //TheSystemMessageLog.ToCo(string.Format("SESS: Reset Session {0}", pRequestData.SessionState));
                 }
                 else
                 {
@@ -343,9 +332,9 @@ namespace nsCDEngine.Communication
                                 try
                                 {
                                     //CM:4.105 No idea why this exists - must be legacy code
-                                    //if (pSession.StateCookies == null) pSession.StateCookies = new cdeConcurrentDictionary<string, string>();
-                                    //string tref = TheCommonUtils.cdeEncrypt(TheCommonUtils.CStr(gstrCurURL), TheBaseAssets.MySecrets.GetAI());  //3.083: Must use AI
-                                    //pSession.StateCookies.TryAdd(MySite.cdeMID.ToString() + "CDEREF", TheCommonUtils.cdeEscapeString(tref));
+                                    ////if (pSession.StateCookies == null) pSession.StateCookies = new cdeConcurrentDictionary<string, string>()
+                                    ////string tref = TheCommonUtils.cdeEncrypt(TheCommonUtils.CStr(gstrCurURL), TheBaseAssets.MySecrets.GetAI())  //3.083: Must use AI
+                                    ////pSession.StateCookies.TryAdd(MySite.cdeMID.ToString() + "CDEREF", TheCommonUtils.cdeEscapeString(tref))
                                     pSession.InitReferer = TheCommonUtils.CStr(gstrCurURL);
                                 }
                                 catch
@@ -354,7 +343,6 @@ namespace nsCDEngine.Communication
                                 }
                             }
                             WriteSession(pSession);
-                            // TheSystemMessageLog.ToCo(string.Format("SESS: Updating Session {0}", pRequestData.SessionState));
                         }
                     }
                 }
@@ -370,16 +358,16 @@ namespace nsCDEngine.Communication
             MySessionStates.UpdateID(pState.cdeMID, pNewID);
         }
 
-        private readonly object MySessionStateLock = new object();
+        private readonly object MySessionStateLock = new ();
         internal object GetLock()
         {
-            return MySessionStateLock; // MySessionStates.MyRecordsLock;    //LOCK-REVIEW: no longer in StorageMirror - SessionManager has its own lock now
+            return MySessionStateLock; //LOCK-REVIEW: no longer in StorageMirror - SessionManager has its own lock now
         }
 
         public void LogSession(Guid pSessionID, string pUrl, string pBrowser, string pBrowserDesc, string pRef, string pCustomData)
         {
             if (TheCDEngines.MyIStorageService == null) return;
-            TheSessionState pSess = new TheSessionState
+            TheSessionState pSess = new ()
             {
                 cdeMID = pSessionID,
                 CurrentURL = pUrl,
@@ -419,8 +407,8 @@ namespace nsCDEngine.Communication
 
         public string GetSessionLog()
         {
-            string retString = $"<div class=\"cdeInfoBlock\" style=\"clear:both; max-width:1570px; width:initial; \"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"sessionLog\">Session Log: ({MySessionStates.Count}) ";
-            retString += $"<a download =\"SessionLog_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'sessionLogTable');\">(Export as CSV)</a></div>";
+            StringBuilder retString =new($"<div class=\"cdeInfoBlock\" style=\"clear:both; max-width:1570px; width:initial; \"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"sessionLog\">Session Log: ({MySessionStates.Count}) ");
+            retString.Append($"<a download =\"SessionLog_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'sessionLogTable');\">(Export as CSV)</a></div>");
             List<string> tSessions = MySessionStates.TheKeys;
             string tFont;
             int count = 0;
@@ -428,18 +416,18 @@ namespace nsCDEngine.Communication
             {
                 if (count == 0)
                 {
-                    retString += $"<table class=\"cdeHilite\" style=\"width:95%; margin-left:1%;\" id=\"sessionLogTable\"><tr>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:175px; width:300px;\">SEID</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:80px;\">DID</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:150px;\">Last Access</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:150px;\">End</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:100px;\">Browser</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:200px;\">Current Url</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:300px\">Remote Address</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:80px;\">CID</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:80px;\">SID</th>";
-                    retString += $"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:400px;\">User Agent</th>";
-                    retString += "</tr>";
+                    retString.Append($"<table class=\"cdeHilite\" style=\"width:95%; margin-left:1%;\" id=\"sessionLogTable\"><tr>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:175px; width:300px;\">SEID</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:80px;\">DID</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:150px;\">Last Access</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:150px;\">End</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:100px;\">Browser</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:200px;\">Current Url</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:300px\">Remote Address</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:80px;\">CID</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;min-width:80px; width:80px;\">SID</th>");
+                    retString.Append($"<th style=\"background-color:rgba(90,90,90, 0.25);font-size:x-small;width:400px;\">User Agent</th>");
+                    retString.Append("</tr>");
                 }
                 count++;
                 TheSessionState tSession = MySessionStates.MyMirrorCache.MyRecords[tKey];
@@ -447,32 +435,32 @@ namespace nsCDEngine.Communication
                     tFont = " style='color:lightgray'";
                 else
                     tFont = "";
-                retString += $"<tr {tFont}>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{tSession.cdeMID}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{TheCommonUtils.GetDeviceIDML(tSession.MyDevice)}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:center;\">{TheCommonUtils.GetDateTimeString(tSession.LastAccess,-1)}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:center;\">{TheCommonUtils.GetDateTimeString(tSession.EndTime,-1)}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{tSession.Browser} {tSession.BrowserDesc}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"max-width:200px; width: 200px;\"><div class=\"cdeClip\" style=\"max-height:100px; overflow-y:auto;\">{tSession.CurrentURL}</div></td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{tSession.RemoteAddress}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{(tSession.CID==Guid.Empty?"Not Set":tSession.CID.ToString().Substring(0,4))}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{(string.IsNullOrEmpty(tSession.SScopeID) ? "Not Set" : cdeStatus.GetSScopeHashML(tSession.SScopeID))}</td>";
-                retString += $"<td class=\"cdeClip cdeLogEntry\" style=\"max-width:400px; width: 400px;\"><div class=\"cdeClip\" style=\"max-height:100px; overflow-y:auto;\">{tSession.UserAgent}</div></td>";
-                retString += "</tr>";
+                retString.Append($"<tr {tFont}>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{tSession.cdeMID}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{TheCommonUtils.GetDeviceIDML(tSession.MyDevice)}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:center;\">{TheCommonUtils.GetDateTimeString(tSession.LastAccess,-1)}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:center;\">{TheCommonUtils.GetDateTimeString(tSession.EndTime,-1)}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{tSession.Browser} {tSession.BrowserDesc}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"max-width:200px; width: 200px;\"><div class=\"cdeClip\" style=\"max-height:100px; overflow-y:auto;\">{tSession.CurrentURL}</div></td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{tSession.RemoteAddress}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{(tSession.CID==Guid.Empty?"Not Set":tSession.CID.ToString().Substring(0,4))}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"text-align:left;\">{(string.IsNullOrEmpty(tSession.SScopeID) ? "Not Set" : cdeStatus.GetSScopeHashML(tSession.SScopeID))}</td>");
+                retString.Append($"<td class=\"cdeClip cdeLogEntry\" style=\"max-width:400px; width: 400px;\"><div class=\"cdeClip\" style=\"max-height:100px; overflow-y:auto;\">{tSession.UserAgent}</div></td>");
+                retString.Append("</tr>");
             }
             if (count > 0)
             {
-                retString += "</table></div>";
-                return retString;
+                retString.Append("</table></div>");
+                return retString.ToString();
             }
             return "";
         }
 
         internal List<Guid> GetCurrentUsers()
         {
-            List<Guid> tUsers = new List<Guid>();
+            List<Guid> tUsers = new ();
             List<string> tSessions = MySessionStates?.TheKeys;
-            if (tSessions == null || tSessions.Count == 0) return null;
+            if (tSessions == null || tSessions.Count == 0) return new();
             foreach (string tKey in tSessions)
             {
                 TheSessionState tSession = MySessionStates.MyMirrorCache.MyRecords[tKey];
@@ -487,7 +475,7 @@ namespace nsCDEngine.Communication
         public List<string> GetSessionLogList()
         {
             List<TheSessionState> tSessions = MySessionStates.TheValues;
-            List<string> loglist = new List<string>();
+            List<string> loglist = new ();
             foreach (TheSessionState tSession in tSessions)
             {
                 loglist.Add(tSession.ToString());

@@ -27,7 +27,7 @@ namespace nsCDEngine.Communication
                 TheDiagnostics.SetThreadName($"QSender:{MyTargetNodeChannel} SenderThread", true);
                 MyREST = new TheREST();
                 IsSenderThreadRunning = true;
-                StringBuilder tSendBufferStr = new StringBuilder(TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
+                StringBuilder tSendBufferStr = new (TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
                 TargetUri = TheCommonUtils.CUri(MyTargetNodeChannel.TargetUrl, true);
                 TargetUriPath = TargetUri.AbsolutePath;
 
@@ -146,13 +146,10 @@ namespace nsCDEngine.Communication
 
                             if (tQueued.OrgMessage == null && !IsConnecting)
                             {
-                                if (MySubscriptions.Count == 0)
+                                if (MySubscriptions.Count == 0 && IsBatchOn == 0)
                                 {
-                                    if (IsBatchOn == 0) //Only jump out if no telegrams are in batch..
-                                    {
-                                        IsInPost = false;
-                                        continue;
-                                    }
+                                    IsInPost = false;
+                                    continue;
                                 }
                                 if (IsBatchOn == 0) //If telegrams are in the batch dont send short message
                                 {
@@ -164,9 +161,9 @@ namespace nsCDEngine.Communication
                             if (tQueued.OrgMessage != null && tQueued.OrgMessage.ToCloudOnly() && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE)
                                 tQueued.OrgMessage.SetToCloudOnly(false);
 
-                            TheDeviceMessage tDev = new TheDeviceMessage
+                            TheDeviceMessage tDev = new ()
                             {
-                                DID = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString() // MyTargetNodeChannel.cdeMID.ToString();
+                                DID = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString() 
                             };
 
                             if (MyTargetNodeChannel.MySessionState != null)
@@ -248,7 +245,7 @@ namespace nsCDEngine.Communication
                         break;
                     }
                     string ISBPath = new Uri(TargetUri, TheBaseAssets.MyScopeManager.GetISBPath(TargetUriPath, TheCommonUtils.GetOriginST(MyTargetNodeChannel), MyTargetNodeChannel.SenderType, MyTargetNodeChannel.MySessionState==null? 1: MyTargetNodeChannel.MySessionState.FID /*Interlocked.Increment(ref SendCounter)*/, (MyTargetNodeChannel.MySessionState == null || !IsConnected) ?Guid.Empty: MyTargetNodeChannel.MySessionState.cdeMID, MyTargetNodeChannel.IsWebSocket)).ToString(); //V3B4: changed from TheBaseAssets.MyServiceHostInfo.MyDeviceInfo
-                    TheRequestData pData = new TheRequestData
+                    TheRequestData pData = new ()
                     {
                         RemoteAddress = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false),
                         RequestUri = new Uri(ISBPath),

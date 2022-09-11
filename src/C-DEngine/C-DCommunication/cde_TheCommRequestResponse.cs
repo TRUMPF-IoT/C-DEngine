@@ -50,10 +50,7 @@ namespace nsCDEngine.Communication
         private IBaseEngine _baseEngine;
         public IBaseEngine GetBaseEngine()
         {
-            if (_baseEngine == null)
-            {
-                _baseEngine = TheThingRegistry.GetBaseEngine(EngineName);
-            }
+            _baseEngine ??= TheThingRegistry.GetBaseEngine(EngineName);
             return _baseEngine;
         }
 
@@ -178,6 +175,7 @@ namespace nsCDEngine.Communication
             });
         }
 
+        static readonly TimeSpan defaultRequestTimeout = new(0, 1, 0); // make this configurable?
         /// <summary>
         /// Sends a TSM message to the targetThing and return the matching response message. Uses a timeout of 60 seconds.
         /// </summary>
@@ -194,7 +192,6 @@ namespace nsCDEngine.Communication
         {
             return PublishRequestAsync(senderThing, targetThing, messageName, defaultRequestTimeout, txtParameters, PLS, PLB);
         }
-        static readonly TimeSpan defaultRequestTimeout = new TimeSpan(0, 1, 0); // TODO make this configurable?
 
         /// <summary>
         /// Sends a TSM message to the targetThing and return the matching response message
@@ -212,10 +209,7 @@ namespace nsCDEngine.Communication
         public static Task<TSM> PublishRequestAsync(TheMessageAddress originator, TheMessageAddress target, string messageName, TimeSpan timeout, string[] txtParameters = null, string PLS = null, byte[] PLB = null)
         {
             Guid correlationToken = Guid.NewGuid();
-            if (originator == null)
-            {
-                originator = TheThingRegistry.GetBaseEngineAsThing(eEngineName.ContentService);
-            }
+            originator ??= TheThingRegistry.GetBaseEngineAsThing(eEngineName.ContentService);
             var msg = PrepareRequestMessage(originator, target, messageName, correlationToken, txtParameters, PLS, PLB);
             if (msg == null)
             {
@@ -320,7 +314,7 @@ namespace nsCDEngine.Communication
         }
 
 
-        static TimeSpan MaxTimeOut = new TimeSpan(1, 0, 0); // TODO Add to TheBaseAssets and make configurable?
+        static TimeSpan MaxTimeOut = new (1, 0, 0); // TODO Add to TheBaseAssets and make configurable?
 
         private static TSM PrepareRequestMessage(TheMessageAddress originator, TheMessageAddress target, string messageName, Guid correlationToken, string[] txtParameters, string PLS, byte[] PLB)
         {
@@ -331,7 +325,7 @@ namespace nsCDEngine.Communication
                 return null;
             }
 
-            TSM msg = new TSM(target.EngineName, String.Format("{0}:{1}:{2}", messageName, TheCommonUtils.cdeGuidToString(correlationToken), parameterText), PLS);
+            TSM msg = new (target.EngineName, String.Format("{0}:{1}:{2}", messageName, TheCommonUtils.cdeGuidToString(correlationToken), parameterText), PLS);
             if (PLB != null)
             {
                 msg.PLB = PLB;
@@ -374,7 +368,7 @@ namespace nsCDEngine.Communication
 
         private static TSM CheckResponseMessage(string messageName, Guid correlationToken, object responseMsgObj)
         {
-            if (!(responseMsgObj is TheProcessMessage processMsg))
+            if (responseMsgObj is not TheProcessMessage processMsg)
             {
                 return null;
             }
@@ -426,10 +420,7 @@ namespace nsCDEngine.Communication
         public static void PublishRequestCallback(TheMessageAddress originator, TheMessageAddress target, string messageName, TimeSpan timeout, Action<TSM> responseCallback, string[] txtParameters = null, string PLS = null, byte[] PLB = null)
         {
             Guid correlationToken = Guid.NewGuid();
-            if (originator == null)
-            {
-                originator = TheThingRegistry.GetBaseEngineAsThing(eEngineName.ContentService);
-            }
+            originator ??= TheThingRegistry.GetBaseEngineAsThing(eEngineName.ContentService);
             var msg = PrepareRequestMessage(originator, target, messageName, correlationToken, txtParameters, PLS, PLB);
             if (msg == null)
             {

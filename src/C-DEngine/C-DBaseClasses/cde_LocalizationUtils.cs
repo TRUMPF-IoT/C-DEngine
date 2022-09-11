@@ -63,7 +63,7 @@ namespace nsCDEngine.BaseClasses
                         _createTextLog = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("CreateTextLog"));
                         _firstRun = false;
                     }
-                    if (_createTextLog && !string.IsNullOrEmpty(keyOrString))
+                    if (_createTextLog)
                     {
                         CreateFileWithAllStringsNotFormattedForLocalization(engine, keyOrString);
                     }
@@ -256,7 +256,7 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        private static readonly object FileLock = new object();
+        private static readonly object FileLock = new ();
         private static void WriteKeywordToFile(string fileName, string keyword)
         {
             lock (FileLock)
@@ -269,7 +269,7 @@ namespace nsCDEngine.BaseClasses
         }
 
 
-        private static readonly cdeConcurrentDictionary<string, ResourceManager> ResourceManagersPerEngine = new cdeConcurrentDictionary<string, ResourceManager>();
+        private static readonly cdeConcurrentDictionary<string, ResourceManager> ResourceManagersPerEngine = new ();
 
         /// <summary>
         ///

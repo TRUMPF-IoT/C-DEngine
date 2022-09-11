@@ -52,12 +52,10 @@ namespace nsCDEngine.Activation
 
     internal class TheDefaultActivationManager : ICDEActivation
     {
-        private ICDESecrets MySecrets = null;
-        private ICDESystemLog MySYSLOG = null;
+        private readonly ICDESecrets MySecrets = null;
         public TheDefaultActivationManager(ICDESecrets pSecrets, ICDESystemLog pSysLog = null)
         {
             MySecrets = pSecrets;
-            MySYSLOG = pSysLog;
         }
 
         static Guid GlobalThingEntitlementId = new Guid("0F86DFC7-4332-41E5-AD87-693A48F5B6F3");
@@ -113,7 +111,7 @@ namespace nsCDEngine.Activation
         public List<TheActivatedLicense> GetActivatedLicenses(Guid plugInId, bool includeExpired = false)
         {
             CheckLicenseExpiration(true);
-            if (MyActivatedLicenses == null) return null;
+            if (MyActivatedLicenses == null) return new();
             var activatedLicenses = new List<TheActivatedLicense>();
             foreach (var activatedLicense in MyActivatedLicenses.TheValues.Where((al) =>
              !al.IsExpiredAndRemoved
@@ -139,7 +137,6 @@ namespace nsCDEngine.Activation
         public TheActivatedLicense GetLicenseActivationStatus(Guid licenseId, out DateTimeOffset activationExpiration)
         {
             activationExpiration = DateTimeOffset.MinValue;
-            //bool bActive = false;
             TheActivatedLicense tAl = null;
             foreach (var activatedLicense in MyActivatedLicenses.TheValues.Where((al) => !al.IsExpiredAndRemoved && al.License.LicenseId == licenseId))
             {
@@ -148,7 +145,6 @@ namespace nsCDEngine.Activation
                     activationExpiration = activatedLicense.ActivationKeyExpiration;
                     tAl = activatedLicense;
                 }
-                //bActive = true;
             }
             return (tAl != null ? new TheActivatedLicense(tAl) : null);
         }
@@ -187,10 +183,7 @@ namespace nsCDEngine.Activation
                     DeviceTypeLicenseStatus deviceTypeStatus = null;
 
                     deviceTypeStatus = pluginStatus.DeviceTypeLicenseStatus.Find((ds) => ds.DeviceType == deviceType);
-                    if (deviceTypeStatus == null)
-                    {
-                        deviceTypeStatus = pluginStatus.DeviceTypeLicenseStatus.Find((ds) => String.IsNullOrEmpty(ds.DeviceType));
-                    }
+                    deviceTypeStatus ??= pluginStatus.DeviceTypeLicenseStatus.Find((ds) => String.IsNullOrEmpty(ds.DeviceType));
                     if (deviceTypeStatus != null)
                     {
                         if (deviceTypeStatus.ThingEntitlements == -1)
@@ -212,20 +205,14 @@ namespace nsCDEngine.Activation
                         }
                     }
 
-                    if (!result)
+                    if (!result && GetGlobalThingEntitlements() >= GetGlobalThingEntitlementsUsed() + requestedThingCount && deviceTypeStatus != null)
                     {
-                        if (GetGlobalThingEntitlements() >= GetGlobalThingEntitlementsUsed() + requestedThingCount)
+                        if (useThingEntitlement)
                         {
-                            if (deviceTypeStatus != null)
-                            {
-                                if (useThingEntitlement)
-                                {
-                                    deviceTypeStatus.GlobalThingEntitlementsUsed += requestedThingCount;
-                                    MyLicensesPerPlugin.UpdateItem(pluginStatus);
-                                }
-                                result = true;
-                            }
+                            deviceTypeStatus.GlobalThingEntitlementsUsed += requestedThingCount;
+                            MyLicensesPerPlugin.UpdateItem(pluginStatus);
                         }
+                        result = true;
                     }
                     if (result)
                     {
@@ -322,7 +309,7 @@ namespace nsCDEngine.Activation
         {
             public Guid PluginId;
             public List<DeviceTypeLicenseStatus> DeviceTypeLicenseStatus;
-            public List<Guid> LicensesPendingSignatureCheck = new List<Guid>();
+            public List<Guid> LicensesPendingSignatureCheck = new ();
 
             public int GetGlobalThingEntitlementsUsed()
             {
@@ -378,7 +365,7 @@ namespace nsCDEngine.Activation
                         }
                         if (bActivatedForPlugIn)
                         {
-                            if (pluginLicense.DeviceTypes != null && pluginLicense.DeviceTypes.Count() > 0)
+                            if (pluginLicense.DeviceTypes != null && pluginLicense.DeviceTypes.Any())
                             {
                                 foreach (var deviceTypeToRemove in pluginLicense.DeviceTypes)
                                 {
@@ -420,17 +407,14 @@ namespace nsCDEngine.Activation
                             bool licenseAuthorityMissing = false;
                             foreach (var plugin in pendingLicense.License.PluginLicenses)
                             {
-                                if (plugin.PlugInId == PluginId)
+                                if (plugin.PlugInId == PluginId && licenseAuthorities != null)
                                 {
-                                    if (licenseAuthorities != null)
+                                    foreach (var licenseAuthority in licenseAuthorities)
                                     {
-                                        foreach (var licenseAuthority in licenseAuthorities)
+                                        if (pendingLicense.License.Signatures.FirstOrDefault((s) => s == licenseAuthority) == null)
                                         {
-                                            if (pendingLicense.License.Signatures.FirstOrDefault((s) => s == licenseAuthority) == null)
-                                            {
-                                                licenseAuthorityMissing = true;
-                                                break;
-                                            }
+                                            licenseAuthorityMissing = true;
+                                            break;
                                         }
                                     }
                                 }
@@ -446,7 +430,7 @@ namespace nsCDEngine.Activation
                                 {
                                     if (pluginLicense.PlugInId == PluginId)
                                     {
-                                        if (pluginLicense.DeviceTypes != null && pluginLicense.DeviceTypes.Count() > 0)
+                                        if (pluginLicense.DeviceTypes != null && pluginLicense.DeviceTypes.Any())
                                         {
                                             foreach (var deviceTypeToAdd in pluginLicense.DeviceTypes)
                                             {
@@ -487,8 +471,7 @@ namespace nsCDEngine.Activation
                 }
                 else
                 {
-                    if (deviceStatus.ActivatedParameters == null)
-                        deviceStatus.ActivatedParameters = new List<TheLicenseParameter>();
+                    deviceStatus.ActivatedParameters ??= new List<TheLicenseParameter>();
                     deviceStatus.ActivatedParameters.AddRange(license.ActivatedParameters.Select(lp => lp.Clone()));
                 }
                 var thingEntitlementParameter = license.ActivatedParameters.FirstOrDefault((p) => String.Equals(p.Name, TheLicenseParameter.ThingEntitlements, StringComparison.OrdinalIgnoreCase));
@@ -498,7 +481,7 @@ namespace nsCDEngine.Activation
                     {
                         deviceStatus.ThingEntitlements = 0;
                     }
-                    deviceStatus.ThingEntitlements += thingEntitlementParameter.Value; // TODO Use naming convention here to map parameters to the global connection mechanism?
+                    deviceStatus.ThingEntitlements += thingEntitlementParameter.Value; // Use naming convention here to map parameters to the global connection mechanism?
                 }
                 if (pluginLicense.AllowGlobalThingEntitlements)
                 {
@@ -570,19 +553,16 @@ namespace nsCDEngine.Activation
             }
         }
 
-        // Global licenses have plugin Id == GlobalThingEntitlementId
+        // Global licenses have plugin Id = GlobalThingEntitlementId
         int GetGlobalThingEntitlements()
         {
             int globalThingEntitlements = 0;
 
             PluginLicenseStatus globalLicenseStatus = MyLicensesPerPlugin.GetEntryByID(GlobalThingEntitlementId);
 
-            if (globalLicenseStatus != null) //.TryGetValue(Guid.Empty, out globalLicenseStatus))
+            if (globalLicenseStatus != null && globalLicenseStatus.DeviceTypeLicenseStatus != null && globalLicenseStatus.DeviceTypeLicenseStatus.Count > 0) 
             {
-                if (globalLicenseStatus.DeviceTypeLicenseStatus != null && globalLicenseStatus.DeviceTypeLicenseStatus.Count > 0)
-                {
-                    globalThingEntitlements += globalLicenseStatus.DeviceTypeLicenseStatus[0].ThingEntitlements;
-                }
+                globalThingEntitlements += globalLicenseStatus.DeviceTypeLicenseStatus[0].ThingEntitlements;
             }
             return globalThingEntitlements;
         }
@@ -611,7 +591,7 @@ namespace nsCDEngine.Activation
             return allLicenses.Select((l) => new TheLicense(l)).ToList();
         }
 
-        readonly List<TheLicense> allLicenses = new List<TheLicense>(); // TODO Turn this into storage mirror/initialize it etc.
+        readonly List<TheLicense> allLicenses = new (); // Turn this into storage mirror/initialize it etc.
 
         /// <summary>
         ///
@@ -654,32 +634,28 @@ namespace nsCDEngine.Activation
 
                                     PluginLicenseStatus.ApplyActivatedLicense(this, supercededLicense);
 
-                                    //licenseCount++;
                                     TheBaseAssets.MySYSLOG.WriteToLog(10000, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "License activated", eMsgLevel.l4_Message, String.Format("Applied superceded license {0} with previously applied activation key hash {1}", supercededLicense.License.LicenseId, supercededLicense.ActivationKeyHash)));
                                 }
                             }
 
                             var evalPeriod = license.Properties?.FirstOrDefault((p) => p.Name == "Eval Period");
-                            if (evalPeriod != null && TheCommonUtils.CInt(evalPeriod.Value) > 0)
+                            if (evalPeriod != null && TheCommonUtils.CInt(evalPeriod.Value) > 0 && MyActivatedLicenses.MyMirrorCache.GetEntryByFunc((al) => al.License.LicenseId == license.LicenseId && al.ActivationKeyHash == "eval") == null)
                             {
-                                if (MyActivatedLicenses.MyMirrorCache.GetEntryByFunc((al) => al.License.LicenseId == license.LicenseId && al.ActivationKeyHash == "eval") == null)
+                                var expiration = DateTimeOffset.Now + new TimeSpan(TheCommonUtils.CInt(evalPeriod.Value), 0, 0, 0);
+                                if (expiration > license.Expiration)
                                 {
-                                    var expiration = DateTimeOffset.Now + new TimeSpan(TheCommonUtils.CInt(evalPeriod.Value), 0, 0, 0);
-                                    if (expiration > license.Expiration)
-                                    {
-                                        expiration = license.Expiration;
-                                    }
-                                    var activatedLicense = new TheActivatedLicense
-                                    {
-                                        ActivatedParameters = license.Parameters,
-                                        ActivationKeyExpiration = expiration,
-                                        ActivationKeyHash = "eval",
-                                        License = license,
-                                    };
-                                    MyActivatedLicenses.AddAnItem(activatedLicense);
-                                    PluginLicenseStatus.ApplyActivatedLicense(this, activatedLicense);
-                                    TheBaseAssets.MySYSLOG.WriteToLog(10000, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Auto License activated", eMsgLevel.l4_Message, String.Format("Activated license {0} with auto license for {1} days.", activatedLicense.License.LicenseId, TheCommonUtils.CInt(evalPeriod.Value))));
+                                    expiration = license.Expiration;
                                 }
+                                var activatedLicense = new TheActivatedLicense
+                                {
+                                    ActivatedParameters = license.Parameters,
+                                    ActivationKeyExpiration = expiration,
+                                    ActivationKeyHash = "eval",
+                                    License = license,
+                                };
+                                MyActivatedLicenses.AddAnItem(activatedLicense);
+                                PluginLicenseStatus.ApplyActivatedLicense(this, activatedLicense);
+                                TheBaseAssets.MySYSLOG.WriteToLog(10000, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Auto License activated", eMsgLevel.l4_Message, String.Format("Activated license {0} with auto license for {1} days.", activatedLicense.License.LicenseId, TheCommonUtils.CInt(evalPeriod.Value))));
                             }
                             return true;
                         }
@@ -699,7 +675,7 @@ namespace nsCDEngine.Activation
 
         bool LoadAvailableLicenses()
         {
-            // CODEREVIEW/TODO Revisit licensing deployment and discovery mechanism; for now just load all CDEL files; deploy using CDEX mechanism
+            // CODEREVIEW: Revisit licensing deployment and discovery mechanism; for now just load all CDEL files; deploy using CDEX mechanism
             //CODEREVIEW: Better Stubbing for Mobile Devices <= dont need Activation due to Store Logic
             try
             {
@@ -719,7 +695,9 @@ namespace nsCDEngine.Activation
                 {
                     CheckLicenseExpiration();
                 }
-                catch { }
+                catch { 
+                    //intent
+                }
             }
             return true;
         }
@@ -838,7 +816,7 @@ namespace nsCDEngine.Activation
                 {
                     return false;
                 }
-                List<TheActivatedLicense> activatedLicenses = new List<TheActivatedLicense>();
+                List<TheActivatedLicense> activatedLicenses = new ();
                 foreach (var licenseInfo in activatedLicenseInfos)
                 {
                     activatedLicenses.Add(new TheActivatedLicense
@@ -880,44 +858,40 @@ namespace nsCDEngine.Activation
 
         public bool InitializeLicenses()
         {
+            var activatedLicenses = new TheStorageMirror<TheActivatedLicense>(TheCDEngines.MyIStorageService)
             {
-                var activatedLicenses = new TheStorageMirror<TheActivatedLicense>(TheCDEngines.MyIStorageService)
-                {
-                    CacheTableName = "TheActivatedLicenses",
-                    IsRAMStore = true,
-                    CacheStoreInterval = TheBaseAssets.MyServiceHostInfo.ThingRegistryStoreInterval,
-                    IsStoreIntervalInSeconds = true,
-                    IsCachePersistent = !TheCommonUtils.IsHostADevice(), // TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay,
-                    UseSafeSave = true,
-                    AllowFireUpdates = false,
-                    IsCacheEncrypted = true,
-                    BlockWriteIfIsolated = true
-                };
-                // CODE REVIEW: Which nodes need licenseing?
-                TheStorageMirrorParameters tParams = new TheStorageMirrorParameters { CanBeFlushed = false, ResetContent = TheBaseAssets.MyServiceHostInfo.IsNewDevice, LoadSync = true, DontRegisterInMirrorRepository = false };
-                activatedLicenses.InitializeStore(tParams); // false, TheBaseAssets.MyServiceHostInfo.IsNewDevice, true, false);
+                CacheTableName = "TheActivatedLicenses",
+                IsRAMStore = true,
+                CacheStoreInterval = TheBaseAssets.MyServiceHostInfo.ThingRegistryStoreInterval,
+                IsStoreIntervalInSeconds = true,
+                IsCachePersistent = !TheCommonUtils.IsHostADevice(), // TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay,
+                UseSafeSave = true,
+                AllowFireUpdates = false,
+                IsCacheEncrypted = true,
+                BlockWriteIfIsolated = true
+            };
+            // CODE REVIEW: Which nodes need licenseing?
+            TheStorageMirrorParameters tParams = new() { CanBeFlushed = false, ResetContent = TheBaseAssets.MyServiceHostInfo.IsNewDevice, LoadSync = true, DontRegisterInMirrorRepository = false };
+            activatedLicenses.InitializeStore(tParams);
 
-                MyActivatedLicenses = activatedLicenses;
-            }
+            MyActivatedLicenses = activatedLicenses;
+            var licensesPerPlugin = new TheStorageMirror<PluginLicenseStatus>(TheCDEngines.MyIStorageService)
             {
-                var licensesPerPlugin = new TheStorageMirror<PluginLicenseStatus>(TheCDEngines.MyIStorageService)
-                {
-                    CacheTableName = "TheLicensesByPlugin",
-                    IsRAMStore = true,
-                    CacheStoreInterval = TheBaseAssets.MyServiceHostInfo.ThingRegistryStoreInterval,
-                    IsStoreIntervalInSeconds = true,
-                    IsCachePersistent = !TheCommonUtils.IsHostADevice(), // TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay,
-                    UseSafeSave = true,
-                    AllowFireUpdates = false,
-                    IsCacheEncrypted = true,
-                    BlockWriteIfIsolated = true
-                };
-                // CODE REVIEW: Which nodes need licenseing?
-                TheStorageMirrorParameters tParams = new TheStorageMirrorParameters { CanBeFlushed = false, ResetContent = TheBaseAssets.MyServiceHostInfo.IsNewDevice, LoadSync = true, DontRegisterInMirrorRepository = false };
-                licensesPerPlugin.InitializeStore(tParams); // false, TheBaseAssets.MyServiceHostInfo.IsNewDevice, true, false);
+                CacheTableName = "TheLicensesByPlugin",
+                IsRAMStore = true,
+                CacheStoreInterval = TheBaseAssets.MyServiceHostInfo.ThingRegistryStoreInterval,
+                IsStoreIntervalInSeconds = true,
+                IsCachePersistent = !TheCommonUtils.IsHostADevice(),
+                UseSafeSave = true,
+                AllowFireUpdates = false,
+                IsCacheEncrypted = true,
+                BlockWriteIfIsolated = true
+            };
+            // CODE REVIEW: Which nodes need licenseing?
+            TheStorageMirrorParameters tParams2 = new() { CanBeFlushed = false, ResetContent = TheBaseAssets.MyServiceHostInfo.IsNewDevice, LoadSync = true, DontRegisterInMirrorRepository = false };
+            licensesPerPlugin.InitializeStore(tParams2);
 
-                MyLicensesPerPlugin = licensesPerPlugin;
-            }
+            MyLicensesPerPlugin = licensesPerPlugin;
 
             if (MyLicensesPerPlugin.Count == 0 && MyActivatedLicenses.Count > 0)
             {
@@ -963,12 +937,12 @@ namespace nsCDEngine.Activation
             }
             return true;
         }
-        static readonly TimeSpan ExpirationWarningInterval = new TimeSpan(30, 0, 0, 0);
+        static readonly TimeSpan ExpirationWarningInterval = new (30, 0, 0, 0);
 
-        bool CheckLicenseExpiration(bool bSupressLog = false)
+        void CheckLicenseExpiration(bool bSupressLog = false)
         {
             if (MyActivatedLicenses == null)
-                return false;
+                return;
             foreach (var activeLicense in MyActivatedLicenses.TheValues)
             {
                 if (activeLicense.ActivationKeyExpiration < DateTimeOffset.Now)
@@ -1011,7 +985,6 @@ namespace nsCDEngine.Activation
                     TheBaseAssets.MySYSLOG.WriteToLog(10000, TSM.L(eDEBUG_LEVELS.OFF) || bSupressLog ? null : new TSM(eEngineName.ThingService, "Activated License found", eMsgLevel.l3_ImportantMessage, $"License '{activeLicense.License.Description}' ({activeLicense.License.LicenseId}): Expiration: {activeLicense.ActivationKeyExpiration} {activeLicense.ActivationKeyExpiration.Year}. Key Hash: {activeLicense.ActivationKeyHash}. [ Request Key: {GetActivationRequestKey(TheCommonUtils.CUInt(activeLicense.License.SkuId))} ]"));
                 }
             }
-            return false;
         }
 
         public bool CreateDefaultLicense(Guid pluginId)
@@ -1063,9 +1036,9 @@ namespace nsCDEngine.Activation
         {
             void localCallback(object sender, object licenseObj)
             {
-                if (licenseObj is TheActivatedLicense al && (licenseId == Guid.Empty || al.License.LicenseId == licenseId)) //REVIEW: Du hattest : (al != null && licenseId == Guid.Empty || al.License.LicenseId == licenseId) das macht keinen sinn...
+                if (licenseObj is TheActivatedLicense al && (licenseId == Guid.Empty || al.License.LicenseId == licenseId)) 
                 {
-                    callback(null, al); //REVIEW: Alle Callbacks brauchen AL
+                    callback(null, al); 
                     UnregisterEvent(eActivationEvents.LicenseActivated, localCallback);
                 }
             }
@@ -1075,7 +1048,7 @@ namespace nsCDEngine.Activation
             var al2 = GetLicenseActivationStatus(licenseId, out DateTimeOffset expiration);
             if (al2 != null)
             {
-                localCallback(null, al2); // new TheActivatedLicense { License = new TheLicense { LicenseId = licenseId } });    //TODO-MARKUS: Hier muss eine komplette AL zurueckkommen nicht nur eine leere AL mit LicenseID
+                localCallback(null, al2); 
             }
         }
 
@@ -1086,7 +1059,7 @@ namespace nsCDEngine.Activation
         /// <returns></returns>
         public Task<TheActivatedLicense> WaitForLicenseActivatedAsync(Guid licenseId)
         {
-            var tcs = new TaskCompletionSource<TheActivatedLicense>();  //REVIEW: Alle Callbacks brauchen AL
+            var tcs = new TaskCompletionSource<TheActivatedLicense>(); 
 
             WaitForLicenseActivated(licenseId, (sender, lid) =>
             {
@@ -1098,7 +1071,7 @@ namespace nsCDEngine.Activation
 
         #region Event Handling
 
-        private readonly TheCommonUtils.RegisteredEventHelper<object, object> MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<object, object>();
+        private readonly TheCommonUtils.RegisteredEventHelper<object, object> MyRegisteredEvents = new ();
 
         /// <summary>
         /// Removes all Events from TheThing

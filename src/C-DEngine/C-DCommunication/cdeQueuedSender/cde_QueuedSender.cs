@@ -113,7 +113,7 @@ namespace nsCDEngine.Communication
                         TheFormsGenerator.RegisterNewNMINode(MyTargetNodeChannel.cdeMID, Guid.Empty, Guid.Empty, null, null);
                         IsTrusted = true; //SECURITY-REVIEW: Do we want to default to True of False here? So far this only colors the node red in the cdeStatus page. In the future there might be auto-throtteling of messages
                     }
-                    TheDeviceRegistryData tDev = new TheDeviceRegistryData
+                    TheDeviceRegistryData tDev = new ()
                     {
                         DeviceID = MyTargetNodeChannel.cdeMID
                     };
@@ -131,7 +131,7 @@ namespace nsCDEngine.Communication
 #if CDE_USEWSS8
                         if (TheBaseAssets.MyServiceHostInfo.IsWebSocket8Active)
                         {
-                            TheWSProcessor8 tWS = new TheWSProcessor8(null);
+                            TheWSProcessor8 tWS = new (null);
                             tWS.eventConnected += sinkWSconnected;
                             tWS.SetRequest(null);
                             SetWebSocketProcessor(tWS);
@@ -144,7 +144,7 @@ namespace nsCDEngine.Communication
                         else
 #endif
                         {
-                            TheWSProcessor tWS = new TheWSProcessor(null);
+                            TheWSProcessor tWS = new (null);
                             tWS.eventConnected += sinkWSconnected;
                             tWS.SetRequest(new TheRequestData());
                             SetWebSocketProcessor(tWS);
@@ -159,7 +159,7 @@ namespace nsCDEngine.Communication
                     {
                         TheCommonUtils.cdeRunAsync($"QSender for ORG:{MyTargetNodeChannel}", false, o =>
                         {
-                            Uri tTargetUri = new Uri(MyTargetNodeChannel.TargetUrl);
+                            Uri tTargetUri = new (MyTargetNodeChannel.TargetUrl);
                             tTargetUri = tTargetUri.SetHTTPInfo(tTargetUri.Port, "");
                             MyTargetNodeChannel.TargetUrl = tTargetUri.ToString();
                             TheRESTSenderThread();
@@ -178,7 +178,7 @@ namespace nsCDEngine.Communication
                 {
                     if (TheBaseAssets.MyServiceHostInfo.IsCloudService && MyTargetNodeChannel?.SenderType == cdeSenderType.CDE_BACKCHANNEL)
                     {
-                        TSM tInfoGet = new TSM(eEngineName.ContentService, "CDE_GET_SERVICEINFO")
+                        TSM tInfoGet = new (eEngineName.ContentService, "CDE_GET_SERVICEINFO")
                         {
                             SID = TheBaseAssets.MyScopeManager.GetScrambledScopeID(MyTargetNodeChannel.RealScopeID, true)
                         };
@@ -226,7 +226,6 @@ namespace nsCDEngine.Communication
         }
 
         internal long QueueSerial;
-        internal static object StartSenderLock = new object();
         internal Action<TheQueuedSender, string> eventErrorDuringUpload;
         internal Action<TheQueuedSender, TheChannelInfo> eventConnected;
         internal Action<TheQueuedSender> eventSenderThreadRunning;
@@ -403,7 +402,7 @@ namespace nsCDEngine.Communication
         {
             if (MyTargetNodeChannel == null) return "No channel, yet";
             DateTimeOffset lastConnectTime = MyLastConnectTime;
-            string ret = $"{MyTargetNodeChannel} QL=<span style='color:green;font-weight:bold;'>{MyCoreQueue.Count}</span> Seen:{MyTSMHistoryCount} LastHB:{GetLastHeartBeat()} ConnectedSince:{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : $"{lastConnectTime}")} ConnectedFor: {(lastConnectTime == DateTimeOffset.MinValue ? 0 : (DateTimeOffset.Now - lastConnectTime).TotalSeconds)}s InPost:{IsInPost} UsesWS:<span style='color:green;font-weight:bold;'>{HasWebSockets()}</span> IsInWSPost:{IsInWSPost} IsConnecting:{IsConnecting} IsConnected:<span style='color:green;font-weight:bold;'>{IsConnected}</span> IsAlive:<span style='color:green;font-weight:bold;'>{IsAlive}</span> IsSenderThreadAlive:<span style='color:green;font-weight:bold;'>{IsSenderThreadRunning}</span> SEID:{(MyTargetNodeChannel.MySessionState == null ? "not set" : MyTargetNodeChannel.MySessionState.cdeMID.ToString())}<ul>";
+            StringBuilder ret = new($"{MyTargetNodeChannel} QL=<span style='color:green;font-weight:bold;'>{MyCoreQueue.Count}</span> Seen:{MyTSMHistoryCount} LastHB:{GetLastHeartBeat()} ConnectedSince:{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : $"{lastConnectTime}")} ConnectedFor: {(lastConnectTime == DateTimeOffset.MinValue ? 0 : (DateTimeOffset.Now - lastConnectTime).TotalSeconds)}s InPost:{IsInPost} UsesWS:<span style='color:green;font-weight:bold;'>{HasWebSockets()}</span> IsInWSPost:{IsInWSPost} IsConnecting:{IsConnecting} IsConnected:<span style='color:green;font-weight:bold;'>{IsConnected}</span> IsAlive:<span style='color:green;font-weight:bold;'>{IsAlive}</span> IsSenderThreadAlive:<span style='color:green;font-weight:bold;'>{IsSenderThreadRunning}</span> SEID:{(MyTargetNodeChannel.MySessionState == null ? "not set" : MyTargetNodeChannel.MySessionState.cdeMID.ToString())}<ul>");
             if (ShowQueue)
             {
                 foreach (TheCoreQueueContent t in MyCoreQueue.TheValues.OrderBy(s => s.QueueIdx).ThenBy(s => s.EntryTime))  //LOCK-REVIEW: TheValues is already a ToList
@@ -412,19 +411,19 @@ namespace nsCDEngine.Communication
                     if (t.QueueIdx < 3) tColr = "orange";
                     if (t.QueueIdx > 5) tColr = "purple";
                     if (t.OrgMessage == null)
-                        ret += $"<li style='color:{tColr}'>{t.QueueIdx} {TheCommonUtils.GetDateTimeString(t.cdeCTIM, -1)} cdePICKUP Message</li>";
+                        ret.Append($"<li style='color:{tColr}'>{t.QueueIdx} {TheCommonUtils.GetDateTimeString(t.cdeCTIM, -1)} cdePICKUP Message</li>");
                     else
-                        ret += $"<li style='color:{tColr}'>{t.QueueIdx} {TheCommonUtils.GetDateTimeString(t.OrgMessage.TIM, -1)} {t.OrgMessage.ENG} ORG:{TheCommonUtils.GetDeviceIDML(t.OrgMessage.ORG)}</br>TOPIC:{StripTopic(t.Topic)}</br><span  style='color:green'>{t.HashID} / {t.OrgMessage.TXT}</span></li>";
+                        ret.Append($"<li style='color:{tColr}'>{t.QueueIdx} {TheCommonUtils.GetDateTimeString(t.OrgMessage.TIM, -1)} {t.OrgMessage.ENG} ORG:{TheCommonUtils.GetDeviceIDML(t.OrgMessage.ORG)}</br>TOPIC:{StripTopic(t.Topic)}</br><span  style='color:green'>{t.HashID} / {t.OrgMessage.TXT}</span></li>");
                 }
             }
-            ret += "</ul>";
-            return ret;
+            ret.Append("</ul>");
+            return ret.ToString();
         }
         internal string GetQueDiagML(bool ShowQueue, bool IsOdd)
         {
             if (MyTargetNodeChannel == null) return "No channel, yet";
             DateTimeOffset lastConnectTime = MyLastConnectTime;
-            StringBuilder ret = new StringBuilder($"<tr><td class=\"cdeLogEntry\" style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);text-align:left \">{MyTargetNodeChannel.ToMLString(true)}</td>");
+            StringBuilder ret = new ($"<tr><td class=\"cdeLogEntry\" style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);text-align:left \">{MyTargetNodeChannel.ToMLString(true)}</td>");
             if (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(MyTargetNodeChannel.cdeMID))
                 ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\"><span style='color:blue; font-weight:bold'>Cloud2Cloud<br>{(TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly?"Diode Mode":"Bi-Directional")}</span></td>");
             else
@@ -546,15 +545,11 @@ namespace nsCDEngine.Communication
                 if (MyTargetNodeChannel != null && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE && TheBaseAssets.MasterSwitch) // && !TheCommonUtils.IsHostADevice()) NEW3.211: Even Devices should try reconnect
                 {
                     StopHeartBeat();
-                    //SendCounter = 0;
                     IsConnected = false;
                     IsConnecting = false;
                     MyTSMHistory?.Reset();
-                    if (MyWebSocketProcessor != null)
-                    {
-                        if (MyWebSocketProcessor.IsActive)
-                            MyWebSocketProcessor.IsActive = false; //3-1.0.1 This was not set to false on certain conditions like HB failure.
-                    }
+                    if (MyWebSocketProcessor != null && MyWebSocketProcessor.IsActive)
+                        MyWebSocketProcessor.IsActive = false; //3-1.0.1 This was not set to false on certain conditions like HB failure.
                     TheBaseAssets.MySession.RemoveSessionsByDeviceID(MyTargetNodeChannel.cdeMID, Guid.Empty);
                     if (!CloudInRetry)
                     {
@@ -606,7 +601,7 @@ namespace nsCDEngine.Communication
             }
         }
 
-        private readonly object MyReconnectCloudLock = new object();
+        private readonly object MyReconnectCloudLock = new ();
 
         internal void ReconnectCloud()
         {
@@ -696,6 +691,12 @@ namespace nsCDEngine.Communication
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             eventConnected = null;
             eventSenderThreadRunning = null;
             eventErrorDuringUpload = null;
@@ -709,12 +710,16 @@ namespace nsCDEngine.Communication
                     {
                         timer.Change(Timeout.Infinite, Timeout.Infinite);
                     }
-                    catch { }
+                    catch { 
+                        //Ignored
+                    }
                     try
                     {
                         timer.Dispose();
                     }
-                    catch { }
+                    catch { 
+                    //Ignored
+                    }
                 }
             }
             else
@@ -781,16 +786,12 @@ namespace nsCDEngine.Communication
         {
             return SendQueued(null, null, false, Guid.Empty, null, null, null);
         }
-        //public bool SendQueued(string pTopic, TSM pMessage, bool PublishToTopicsOnly, Action<TSM> pLocalCallback) //Retired in 4.212: Not in use anywhere. Public is misleading as the class is "internal" and cannot be called from outside the CDE
-        //{
-        //    return SendQueued(pTopic, pMessage, false, Guid.Empty, null, null, pLocalCallback);
-        //}
         internal bool SendQueued(string pTopic, TSM pMessage, bool PublishToTopicsOnly, Guid pDirectAddress, string pTopicOnly, string pTopicScopeID, Action<TSM> pLocalCallback)
         {
             if (string.IsNullOrEmpty(pTopic))
             {
-                if (MyCoreQueue.Count > 0) return false; // || (MyWebSocketProcessor!=null && !TheBaseAssets.MyServiceHostInfo.IsCloudService && MyTargetNodeChannel.SenderType!=cdeSenderType.CDE_BACKCHANNEL)) return false; //always send HB Back
-                TheCoreQueueContent tQue = new TheCoreQueueContent
+                if (MyCoreQueue.Count > 0) return false; 
+                TheCoreQueueContent tQue = new ()
                 {
                     Topic = "",
                     EntryTime = DateTimeOffset.Now,
@@ -849,8 +850,7 @@ namespace nsCDEngine.Communication
             }
             string tTopicNameOnly = pTopicOnly;
             string tTopicRealScope = pTopicScopeID;
-            if (tTopicRealScope == null)
-                tTopicRealScope = TheBaseAssets.MyScopeManager.GetRealScopeIDFromTopic(tTopic, out tTopicNameOnly);
+            tTopicRealScope ??= TheBaseAssets.MyScopeManager.GetRealScopeIDFromTopic(tTopic, out tTopicNameOnly);
 
             //New in 5.108: Support for Unscoped CloudRelay to CloudRelay : Skip all Telegram Filters and just forward everything to the other cloud-relay
             if (TheBaseAssets.MyServiceHostInfo.IsCloudService && !TheBaseAssets.MyScopeManager.IsScopingEnabled &&
@@ -938,11 +938,8 @@ namespace nsCDEngine.Communication
                     {
                         if (tHasDirectAddress)
                         {
-                            if (string.IsNullOrEmpty(tTopicRealScope))
-                            {
-                                if (TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.GetOriginator() == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
-                                    tTopicRealScope = myTargetNodeChannel.RealScopeID;  //RScope-OK: If Scope is not set on a topic but sent from the cloud to this target node, the target RScope has to be added
-                            }
+                            if (string.IsNullOrEmpty(tTopicRealScope) && TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.GetOriginator() == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)
+                                tTopicRealScope = myTargetNodeChannel.RealScopeID;  //RScope-OK: If Scope is not set on a topic but sent from the cloud to this target node, the target RScope has to be added
                             if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB && tDirectGuid == myTargetNodeChannel.cdeMID && MyISBlock?.OnThisNode == true)
                             {
                                 //CM: 5.123.0: This is required to handle PublishToOriginator, PublishToNode and any other publishes with direct GUID and ISBConnects
@@ -1206,11 +1203,8 @@ namespace nsCDEngine.Communication
                             if (!MyJSKnownThings.ContainsKey(town) && !TheFormsGenerator.IsOwnerKnown(town))
                                 return false;
                         }
-                        if (pMessage.TXT.StartsWith("SETNP"))
-                        {
-                            if (!MyJSKnownFields.ContainsID(TheCommonUtils.CGuid(pMessage.OWN)) && pMessage.TXT.Split(':').Length < 3)
-                                return false;
-                        }
+                        if (pMessage.TXT.StartsWith("SETNP") && !MyJSKnownFields.ContainsID(TheCommonUtils.CGuid(pMessage.OWN)) && pMessage.TXT.Split(':').Length < 3)
+                            return false;
                     }
 
                     if (MyCoreQueue.MyRecords.Any())
@@ -1251,7 +1245,6 @@ namespace nsCDEngine.Communication
                                     }
                                     tM.OrgMessage.PLS = TheCommonUtils.CListToString(tSP, ":;:");
                                     tM.IsLocked = false;
-                                    //TheSystemMessageLog.ToCo($"New:{tM.OrgMessage.PLS}  NewMsg:{pMessage.PLS}");
                                     bExit = true;
                                 }
                                 else
@@ -1317,13 +1310,10 @@ namespace nsCDEngine.Communication
                 if (pMessage.NotToSendAgain() || pMessage.NoDuplicates())
                 {
                     List<TheCoreQueueContent> tQ = MyCoreQueue.TheValues;
-                    if (pMessage.NotToSendAgain())
+                    if (pMessage.NotToSendAgain() && tQ.Any(s => s.HashID == tHash))
                     {
-                        if (tQ.Any(s => s.HashID == tHash))
-                        {
-                            TheBaseAssets.MySYSLOG.WriteToLog(23219, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message already Queued for sending to {myTargetNodeChannel.ToMLString()} Q-Length:{tQ.Count}", eMsgLevel.l5_HostMessage, $"TXT:{pMessage.TXT} will be ignored"), true);
-                            return false;
-                        }
+                        TheBaseAssets.MySYSLOG.WriteToLog(23219, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"Message already Queued for sending to {myTargetNodeChannel.ToMLString()} Q-Length:{tQ.Count}", eMsgLevel.l5_HostMessage, $"TXT:{pMessage.TXT} will be ignored"), true);
+                        return false;
                     }
                     if (pMessage.NoDuplicates())
                     {
@@ -1397,7 +1387,7 @@ namespace nsCDEngine.Communication
                 {
                     if (curPos + curLen > PayLen)
                         curLen = PayLen - curPos;
-                    TheCoreQueueContent tQue = new TheCoreQueueContent();
+                    TheCoreQueueContent tQue = new ();
                     if (tTeles > 1)
                     {
                         tQue.IsChunked = true;
@@ -1416,7 +1406,6 @@ namespace nsCDEngine.Communication
                     else
                         tQue.EntryTime = tOldStamp;
                     tQue.QueueIdx = MsgToQueue.QDX;
-                    //tQue.Method = pMethod;
                     tQue.HashID = tHash;
                     tQue.SubMsgCnt = PackCnt;
                     tQue.sn = Interlocked.Increment(ref QueueSerial);
@@ -1488,7 +1477,7 @@ namespace nsCDEngine.Communication
                         else
                         {
                             DateTimeOffset tNow = DateTimeOffset.Now; //Otherwise it will be called for every record in Linq again
-                            if (TheBaseAssets.MyServiceHostInfo.PrioInversionTime > 0 && tQKV.Where(s => tNow.Subtract(s.Value.EntryTime).TotalSeconds > TheBaseAssets.MyServiceHostInfo.PrioInversionTime).Any())
+                            if (TheBaseAssets.MyServiceHostInfo.PrioInversionTime > 0 && tQKV.Any(s => tNow.Subtract(s.Value.EntryTime).TotalSeconds > TheBaseAssets.MyServiceHostInfo.PrioInversionTime))
                                 tMsg = tQKV.Where(s => !s.Value.IsLocked && tNow.Subtract(s.Value.EntryTime).TotalSeconds > TheBaseAssets.MyServiceHostInfo.PrioInversionTime).OrderBy(s => s.Value.EntryTime).First().Value;
                             else
                             {
@@ -1568,7 +1557,7 @@ namespace nsCDEngine.Communication
         {
             int IsBatchOn = 0;
             var myTargetNodeChannel = MyTargetNodeChannel;
-            StringBuilder tSendBufferStr = new StringBuilder(TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)myTargetNodeChannel.SenderType] * 2);
+            StringBuilder tSendBufferStr = new (TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)myTargetNodeChannel.SenderType] * 2);
             tSendBufferStr.Append("[");
             do
             {
@@ -1579,8 +1568,7 @@ namespace nsCDEngine.Communication
                     TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
                     tMsg.OrgMessage.GetNextSerial(tMsg.SubMsgCnt);
                     TheBaseAssets.MySYSLOG.WriteToLog(23225, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"GetNextBackChannelBuffer to {myTargetNodeChannel.ToMLString()} relayed from ORG:{TheCommonUtils.GetDeviceIDML(tMsg.OrgMessage.ORG)} FID:{tMsg.OrgMessage.FID}", eMsgLevel.l7_HostDebugMessage, $"T={tMsg.Topic} P={tMsg.OrgMessage.TXT}"));//ORG-OK
-                    TheDeviceMessage tDev = new TheDeviceMessage();
-                    //tDev.CNT = MCQCount;
+                    TheDeviceMessage tDev = new ();
                     if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
                         tDev.DID = myTargetNodeChannel.cdeMID.ToString();
                     else
@@ -1659,7 +1647,6 @@ namespace nsCDEngine.Communication
             Guid tOrg = pTSM.GetOriginator();
             if (tOrg == Guid.Empty) return false;
 
-            //int count = TheQueuedSenderRegistry.CountSendersByRealScope(pRealSID);
             if (TheQueuedSenderRegistry.CountRelaySendersByRealScope(pRealSID) < 3) return false;
 
             TheQueuedSender tQ = TheQueuedSenderRegistry.GetSenderByGuid(tOrg);

@@ -75,7 +75,6 @@ namespace nsCDEngine.Engines.ContentService
 
         void CheckUpdatesTimer(long timer)
         {
-            //if ((timer%21600)!=0) return;
             if ((timer % UpdateFrequency) != 0) return;
             TheBaseAssets.MyApplication?.MyISMRoot?.RequestUpdates();
         }
@@ -146,13 +145,13 @@ namespace nsCDEngine.Engines.ContentService
                                         }
                                         if (astream != null)
                                         {
-                                            TSM tTsm = new TSM(eEngineName.ContentService, "CDE_ENGINEJS:" + teng) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
+                                            TSM tTsm = new (eEngineName.ContentService, "CDE_ENGINEJS:" + teng) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
                                             TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                                         }
                                     }
                                     if (!string.IsNullOrEmpty(tBase.GetEngineState().CSS))
                                     {
-                                        TSM tTsm = new TSM(eEngineName.ContentService, "CDE_CUSTOM_CSS", tBase.GetEngineState().CSS);
+                                        TSM tTsm = new (eEngineName.ContentService, "CDE_CUSTOM_CSS", tBase.GetEngineState().CSS);
                                         TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                                     }
                                 }
@@ -237,7 +236,7 @@ namespace nsCDEngine.Engines.ContentService
                             {
                                 LastServiceInfo = DateTimeOffset.Now;
                                 TheBaseAssets.MyServiceHostInfo.ConnToken = Guid.NewGuid();
-                                TheNodeInfo tState = new TheNodeInfo
+                                TheNodeInfo tState = new ()
                                 {
                                     MyNodeHeader = cdeStatus.GetInfoHeaderJSON(),
                                     MyServiceInfo = TheBaseAssets.MyServiceHostInfo,
@@ -247,22 +246,21 @@ namespace nsCDEngine.Engines.ContentService
 
                                 if (!string.IsNullOrEmpty(pMsg.Message.PLS))
                                 {
-                                    if (pMsg.Message.PLS.Contains("CHNL"))
+                                    if (pMsg.Message.PLS.Contains("CHNL") && cdeStatus.GetSubscriptionStatusWithPublicChannelInfo(out Dictionary<string, List<Guid>> channelsByTopic, out List<TheChannelInfo> channels))
                                     {
-                                        if (cdeStatus.GetSubscriptionStatusWithPublicChannelInfo(out Dictionary<string, List<Guid>> channelsByTopic, out List<TheChannelInfo> channels))
-                                        {
-                                            tState.ChannelsByTopic = channelsByTopic;
-                                            tState.Channels = channels;
-                                        }
+                                        tState.ChannelsByTopic = channelsByTopic;
+                                        tState.Channels = channels;
                                     }
-                                    cdeStatus.TheCdeStatusOptions statusOptions = new cdeStatus.TheCdeStatusOptions();
-                                    statusOptions.ShowSysLog = pMsg.Message.PLS.Contains("SYSLOG");
-                                    statusOptions.ShowQueueContent = pMsg.Message.PLS.Contains("QUEUE");
-                                    statusOptions.ShowDetails = pMsg.Message.PLS.Contains("SUBSUM");
-                                    statusOptions.ShowManyDetails = pMsg.Message.PLS.Contains("SUBDET");
-                                    statusOptions.ShowHSI = pMsg.Message.PLS.Contains("HSI");
-                                    statusOptions.ShowDiag = pMsg.Message.PLS.Contains("DIAG");
-                                    statusOptions.ShowSesLog = pMsg.Message.PLS.Contains("SESLOG");
+                                    cdeStatus.TheCdeStatusOptions statusOptions = new()
+                                    {
+                                        ShowSysLog = pMsg.Message.PLS.Contains("SYSLOG"),
+                                        ShowQueueContent = pMsg.Message.PLS.Contains("QUEUE"),
+                                        ShowDetails = pMsg.Message.PLS.Contains("SUBSUM"),
+                                        ShowManyDetails = pMsg.Message.PLS.Contains("SUBDET"),
+                                        ShowHSI = pMsg.Message.PLS.Contains("HSI"),
+                                        ShowDiag = pMsg.Message.PLS.Contains("DIAG"),
+                                        ShowSesLog = pMsg.Message.PLS.Contains("SESLOG")
+                                    };
 
                                     if (statusOptions.ShowSysLog)
                                         tState.LastHTMLLog = TheBaseAssets.MySYSLOG.GetNodeLog(null, "", false);
@@ -368,7 +366,7 @@ namespace nsCDEngine.Engines.ContentService
                     if (TheBaseAssets.MyServiceHostInfo.IsCloudService || !pMsg.Message.IsFirstNode() || Command.Length < 2 || !TheUserManager.DoesAdminRequirePWD(Command[1]))
                         return;
                     TheUserDetails tAdmin = TheUserManager.GetUserByRole(Command[1]);
-                    TSM aTSM = new TSM(eEngineName.NMIService, "NMI_RESET");
+                    TSM aTSM = new (eEngineName.NMIService, "NMI_RESET");
                     if (tAdmin != null && string.IsNullOrEmpty(tAdmin.Password))
                     {
                         string tCreds = pMsg.Message.PLS;
@@ -446,13 +444,13 @@ namespace nsCDEngine.Engines.ContentService
 
                         TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, "CDE_REQ_SCOPEID: Received", eMsgLevel.l3_ImportantMessage));
 
-                        TheRequestData tReqData = new TheRequestData();
+                        TheRequestData tReqData = new ();
                         TheBaseAssets.MySession.GetSessionState(TheCommonUtils.CGuid(pMsg.Message.SEID), tReqData, true);
                         tReqData.SessionState.SScopeID = TheBaseAssets.MyScopeManager.GetScrambledScopeID();     //GRSI: rare
                         TheQueuedSender tQ = TheQueuedSenderRegistry.GetSenderByGuid(pMsg.Message.GetOriginator());
                         if (tQ != null && tQ.MyTargetNodeChannel != null && tQ.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
                             tQ.UpdateSubscriptionScope(TheBaseAssets.MyScopeManager.ScopeID);
-                        TSM tTsm = new TSM(eEngineName.NMIService, "NMI_SCOPID", tScope);
+                        TSM tTsm = new (eEngineName.NMIService, "NMI_SCOPID", tScope);
                         TheCommCore.PublishToNode(pMsg.Message.GetOriginator(), tTsm);  //Cannot use publish to originator as the SID in the Source TSM is no longer valid
                         if (StartISOs)
                             TheCDEngines.StartIsolatedPlugins();
@@ -464,7 +462,7 @@ namespace nsCDEngine.Engines.ContentService
                         string tLogRes = "ERR:CDE_MESHSELECT_FAILURE";
                         if (TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper && pMsg.Message != null && !string.IsNullOrEmpty(pMsg.Message.SEID) && Command.Length>1)
                         {
-                            TheRequestData pRequestData = new TheRequestData { SessionState = TheBaseAssets.MySession.ValidateSEID(TheCommonUtils.CGuid(pMsg.Message.SEID)) };    //Low frequency
+                            TheRequestData pRequestData = new () { SessionState = TheBaseAssets.MySession.ValidateSEID(TheCommonUtils.CGuid(pMsg.Message.SEID)) };    //Low frequency
                             Guid MesID = TheCommonUtils.CGuid(Command[1]);
                             if (MesID != Guid.Empty && pRequestData?.SessionState?.Meshes?.Count > 0)
                             {
@@ -496,54 +494,51 @@ namespace nsCDEngine.Engines.ContentService
                     {
                         string tLogRes = "ERR:CDE_LOGIN_FAILURE";
                         byte[] tPLB = null;
-                        if (TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper && pMsg.Message != null && !string.IsNullOrEmpty(pMsg.Message.SEID))
+                        if (TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper && pMsg.Message != null && !string.IsNullOrEmpty(pMsg.Message.SEID) && pMsg.Message.PLB != null)
                         {
-                            if (pMsg.Message.PLB != null)
+                            TheRequestData pRequestData = new() { SessionState = TheBaseAssets.MySession.ValidateSEID(TheCommonUtils.CGuid(pMsg.Message.SEID)) };    //Low frequency
+                            if (pRequestData.SessionState != null)
                             {
-                                TheRequestData pRequestData = new TheRequestData { SessionState = TheBaseAssets.MySession.ValidateSEID(TheCommonUtils.CGuid(pMsg.Message.SEID)) };    //Low frequency
-                                if (pRequestData.SessionState != null)
+                                try
                                 {
-                                    try
+                                    string tscope = null;
+                                    int IsTLOGIN = Command[0].StartsWith("CDE_TLOGIN") ? 1 : 0;
+                                    if (Command[0].StartsWith("CDE_SLOGIN"))
+                                        tscope = TheCommonUtils.Decrypt(pMsg.Message.PLB, TheBaseAssets.MySecrets.GetAI());
+                                    else
                                     {
-                                        string tscope = null;
-                                        int IsTLOGIN = Command[0].StartsWith("CDE_TLOGIN") ? 1 : 0;
-                                        if (Command[0].StartsWith("CDE_SLOGIN"))
-                                            tscope = TheCommonUtils.Decrypt(pMsg.Message.PLB, TheBaseAssets.MySecrets.GetAI());
+                                        if (TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser || IsTLOGIN == 1)
+                                            tscope = TheCommonUtils.CArray2UTF8String(pMsg.Message.PLB);
                                         else
+                                            tscope = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, pMsg.Message.PLB);
+                                    }
+                                    string[] tCreds = TheCommonUtils.cdeSplit(tscope, ":;:", true, true);
+                                    if (tCreds.Length > (1 - IsTLOGIN))
+                                    {
+                                        List<TheUserDetails> tUsers = IsTLOGIN == 0 ?
+                                                                        TheUserManager.PerformLogin(pRequestData, tCreds[0], tCreds[1]) :
+                                                                        TheUserManager.PerformLoginByRefreshToken(pRequestData, tCreds[0]);
+                                        if (tUsers?.Count > 0)
                                         {
-                                            if (TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser || IsTLOGIN == 1)
-                                                tscope = TheCommonUtils.CArray2UTF8String(pMsg.Message.PLB);
-                                            else
-                                                tscope = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, pMsg.Message.PLB);
-                                        }
-                                        string[] tCreds = TheCommonUtils.cdeSplit(tscope, ":;:", true, true);
-                                        if (tCreds.Length > (1 - IsTLOGIN))
-                                        {
-                                            List<TheUserDetails> tUsers = IsTLOGIN == 0 ?
-                                                                            TheUserManager.PerformLogin(pRequestData, tCreds[0], tCreds[1]) :
-                                                                            TheUserManager.PerformLoginByRefreshToken(pRequestData, tCreds[0]);
-                                            if (tUsers?.Count > 0)
+                                            TheBaseAssets.MySession.WriteSession(pRequestData.SessionState);
+                                            if (tUsers.Count == 1)
                                             {
-                                                TheBaseAssets.MySession.WriteSession(pRequestData.SessionState);
-                                                if (tUsers.Count == 1)
-                                                {
-                                                    var tUser = tUsers[0];
-                                                    tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
-                                                    var rToken = TheUserManager.AddTokenToUser(tUser);
-                                                    tPLB = TheCommonUtils.CUTF8String2Array(rToken);
-                                                }
-                                                else
-                                                {
-                                                    //New in 4.209: mesh Selection
-                                                    tLogRes = $"SELECT_MESH:{TheCommonUtils.SerializeObjectToJSONString(pRequestData.SessionState.Meshes)}";
-                                                }
+                                                var tUser = tUsers[0];
+                                                tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+                                                var rToken = TheUserManager.AddTokenToUser(tUser);
+                                                tPLB = TheCommonUtils.CUTF8String2Array(rToken);
+                                            }
+                                            else
+                                            {
+                                                //New in 4.209: mesh Selection
+                                                tLogRes = $"SELECT_MESH:{TheCommonUtils.SerializeObjectToJSONString(pRequestData.SessionState.Meshes)}";
                                             }
                                         }
                                     }
-                                    catch (Exception)
-                                    {
-                                        TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, "Login tried by failed with error", eMsgLevel.l1_Error));
-                                    }
+                                }
+                                catch (Exception)
+                                {
+                                    TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, "Login tried by failed with error", eMsgLevel.l1_Error));
                                 }
                             }
                         }
@@ -559,36 +554,33 @@ namespace nsCDEngine.Engines.ContentService
                 case "CDE_SETESID":
                 case "CDE_SETSSID":
                     string tSidRes = "ERR:CDE_LOGIN_FAILURE";
-                    if (!TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper && pMsg.Message != null && !string.IsNullOrEmpty(pMsg.Message.SEID))
+                    if (!TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper && pMsg.Message != null && !string.IsNullOrEmpty(pMsg.Message.SEID) && pMsg.Message.PLB != null)
                     {
-                        if (pMsg.Message.PLB != null) //tUser.PrimaryRole.Equals("ADMIN") &&
+                        TheRequestData pRequestData = new() { SessionState = TheBaseAssets.MySession.ValidateSEID(TheCommonUtils.CGuid(pMsg.Message.SEID)) };    //Low Frequency
+                        if (pRequestData.SessionState != null)
                         {
-                            TheRequestData pRequestData = new TheRequestData { SessionState = TheBaseAssets.MySession.ValidateSEID(TheCommonUtils.CGuid(pMsg.Message.SEID)) };    //Low Frequency
-                            if (pRequestData.SessionState != null)
+                            try
                             {
-                                try
+                                string tscope = null;
+                                if (Command[0].StartsWith("CDE_SETSSID"))
+                                    tscope = TheCommonUtils.Decrypt(pMsg.Message.PLB, TheBaseAssets.MySecrets.GetAI());
+                                else
                                 {
-                                    string tscope = null;
-                                    if (Command[0].StartsWith("CDE_SETSSID"))
-                                        tscope = TheCommonUtils.Decrypt(pMsg.Message.PLB, TheBaseAssets.MySecrets.GetAI());
+                                    if (TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser)
+                                        tscope = TheCommonUtils.CArray2UTF8String(pMsg.Message.PLB);
                                     else
-                                    {
-                                        if (TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser)
-                                            tscope = TheCommonUtils.CArray2UTF8String(pMsg.Message.PLB);
-                                        else
-                                            tscope = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, pMsg.Message.PLB);
-                                    }
-                                    TheUserDetails tUser = TheUserManager.PerformLoginByScope(pRequestData, tscope.Trim('\0'));
-                                    if (tUser != null)
-                                    {
-                                        TheBaseAssets.MySession.WriteSession(pRequestData.SessionState);
-                                        tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
-                                    }
+                                        tscope = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, pMsg.Message.PLB);
                                 }
-                                catch (Exception)
+                                TheUserDetails tUser = TheUserManager.PerformLoginByScope(pRequestData, tscope.Trim('\0'));
+                                if (tUser != null)
                                 {
-                                    TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, "Login tried by failed with error", eMsgLevel.l1_Error));
+                                    TheBaseAssets.MySession.WriteSession(pRequestData.SessionState);
+                                    tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
                                 }
+                            }
+                            catch (Exception)
+                            {
+                                TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, "Login tried by failed with error", eMsgLevel.l1_Error));
                             }
                         }
                     }
@@ -605,7 +597,7 @@ namespace nsCDEngine.Engines.ContentService
                     TheUserManager.ResetUserScopes(true, true);
                     break;
                 case "CDE_SYNCUSER":
-                    TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, $"CDE_SYNC_USER: Received from {TheCommonUtils.GetDeviceIDML(pMsg.Message.GetOriginator())}", eMsgLevel.l3_ImportantMessage)); //, pMsg.Message.PLS));
+                    TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, $"CDE_SYNC_USER: Received from {TheCommonUtils.GetDeviceIDML(pMsg.Message.GetOriginator())}", eMsgLevel.l3_ImportantMessage)); 
                     List<TheUserDetails> tList = TheCommonUtils.DeserializeJSONStringToObject<List<TheUserDetails>>(pMsg.Message.PLS);
                     TheUserManager.MergeUsers(tList);
                     break;
@@ -645,7 +637,6 @@ namespace nsCDEngine.Engines.ContentService
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(7678, new TSM(eEngineName.ContentService, $"Disable Plugin received from {TheCommonUtils.GetDeviceIDML(pMsg.Message.GetOriginator())} but failed", eMsgLevel.l1_Error));
                     }
-                    //TODO: Remove a plugin
                     break;
                 case "CDE_REQ_WIPEALL":
                     if (TheBaseAssets.MyServiceHostInfo.IsCloudService
@@ -732,7 +723,7 @@ namespace nsCDEngine.Engines.ContentService
                         return;
                     var pendingUpdates = TheBaseAssets.MyApplication.MyISMRoot.GetAvailableUpdates();
 
-                    TSM tTsmUpdates = new TSM(eEngineName.ContentService, "CDE_ISM_AVAILABLEUPDATES", pendingUpdates);
+                    TSM tTsmUpdates = new (eEngineName.ContentService, "CDE_ISM_AVAILABLEUPDATES", pendingUpdates);
                     if (pMsg.LocalCallback != null)
                     {
                         pMsg.LocalCallback(tTsmUpdates);
@@ -753,12 +744,10 @@ namespace nsCDEngine.Engines.ContentService
                     MyBaseThing.FireEvent(eEngineEvents.CustomTSMMessage, this, pMsg, true);
                     break;
             }
-            //break;
-            //}
         }
 
         #region Blob Management
-        internal static cdeConcurrentDictionary<string, DateTimeOffset> BlobsNotHere = new cdeConcurrentDictionary<string, DateTimeOffset>();
+        internal readonly static cdeConcurrentDictionary<string, DateTimeOffset> BlobsNotHere = new ();
         TheBlobData ProcessBlobRequest(TSM pMessage, Action<TSM> pLocalCallback, bool IsLocalOnly)
         {
             TheBlobData tBlobBuffer = null;
@@ -770,7 +759,7 @@ namespace nsCDEngine.Engines.ContentService
             string AssFile = tBlobParts[0];
             if (tBlobParts[0].Contains("?"))
                 AssFile = tBlobParts[0].Substring(0, tBlobParts[0].IndexOf("?", StringComparison.Ordinal));
-            bool WasFound = true; // BlobsNotHere.TryGetValue(AssFile, out var tLastDate);
+            bool WasFound = true; 
             var tLastDate = BlobsNotHere.GetOrAdd(AssFile, (key) => { WasFound = false; return DateTimeOffset.Now; });
             if (WasFound)
             {
@@ -813,19 +802,16 @@ namespace nsCDEngine.Engines.ContentService
                     };
                 }
             }
-            if (tBlobBuffer == null)
+            if (tBlobBuffer == null && !IsLocalOnly)
             {
-                if (!IsLocalOnly)
+                Communication.HttpService.TheHttpService.GetAnyFile(tRequest, false); 
+                if (tRequest.ResponseBuffer != null)
                 {
-                    Communication.HttpService.TheHttpService.GetAnyFile(tRequest, false); //.ProcessAfterInterceptors(tRequest, false);
-                    if (tRequest.ResponseBuffer != null)
+                    tBlobBuffer = new TheBlobData
                     {
-                        tBlobBuffer = new TheBlobData
-                        {
-                            BlobData = tRequest.ResponseBuffer,
-                            MimeType = tRequest.ResponseMimeType
-                        };
-                    }
+                        BlobData = tRequest.ResponseBuffer,
+                        MimeType = tRequest.ResponseMimeType
+                    };
                 }
             }
             if (tBlobBuffer == null)
@@ -841,7 +827,7 @@ namespace nsCDEngine.Engines.ContentService
 
             try
             {
-                TSM BlobGetRequest = new TSM(MyBaseEngine.GetEngineName(), "CDE_BLOBREQUESTED:" + tBlobParts[0]);
+                TSM BlobGetRequest = new (MyBaseEngine.GetEngineName(), "CDE_BLOBREQUESTED:" + tBlobParts[0]);
                 tBlobBuffer.BlobName = tBlobParts[0];
                 BlobGetRequest.PLB = tBlobBuffer.BlobData;
                 BlobGetRequest.PLS = TheCommonUtils.SerializeObjectToJSONString(tBlobBuffer.CloneForSerial());
@@ -885,14 +871,14 @@ namespace nsCDEngine.Engines.ContentService
         }
         internal TheBlobData GetBlob(string pBlobName, string pScrambledScopeID, bool DoPublishRequest, long BlobTimeout, Guid pTargetNode, TheRequestData pReqData = null)
         {
-            if (string.IsNullOrEmpty(pBlobName) || pBlobName.StartsWith("cache",StringComparison.InvariantCultureIgnoreCase)) //Dont ever load cache files over the mesh!
+            if (string.IsNullOrEmpty(pBlobName) || pBlobName.StartsWith("cache", StringComparison.InvariantCultureIgnoreCase)) //Dont ever load cache files over the mesh!
                 return new TheBlobData { HasErrors = true, ErrorMsg = "Access to Cache folder denied" };
 
-            TSM tTSM = new TSM(eEngineName.ContentService, "CDE_GETBLOB:");
+            TSM tTSM = new(eEngineName.ContentService, "CDE_GETBLOB:");
             tTSM.SetToServiceOnly(true);
             tTSM.SetNotToSendAgain(true);
 
-            string tTopic = "CDE_SYSTEMWIDE"; // eEngineName.ContentService;
+            string tTopic = "CDE_SYSTEMWIDE";
             if (!string.IsNullOrEmpty(pScrambledScopeID))
             {
                 tTopic += "@" + pScrambledScopeID;
@@ -902,7 +888,7 @@ namespace nsCDEngine.Engines.ContentService
             {
                 if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyScopeManager.IsScopingEnabled && TheBaseAssets.MyServiceHostInfo.AllowDistributedResourceFetch)
                 {
-                    pScrambledScopeID= TheBaseAssets.MyScopeManager.GetScrambledScopeID();     //GRSI: rare
+                    pScrambledScopeID = TheBaseAssets.MyScopeManager.GetScrambledScopeID();     //GRSI: rare
                     tTopic += "@" + pScrambledScopeID;
                     tTSM.SID = pScrambledScopeID;
                 }
@@ -922,44 +908,41 @@ namespace nsCDEngine.Engines.ContentService
                 }
                 tTSM.PLS = TheCommonUtils.SerializeObjectToJSONStringM(pReqData);
             }
-            string tCacheBlobName = pBlobName+(string.IsNullOrEmpty(pScrambledScopeID) ? "" : TheBaseAssets.MyScopeManager.GetRealScopeID(pScrambledScopeID));  //GRSI: rare
-            //lock (TheBaseAssets.MyBlobCache.MyRecordsLock)    //LOCK-REVIEW: Is this required here? it was removed in last Perf-Push
+            string tCacheBlobName = pBlobName + (string.IsNullOrEmpty(pScrambledScopeID) ? "" : TheBaseAssets.MyScopeManager.GetRealScopeID(pScrambledScopeID));  //GRSI: rare
+            TheBlobData tData = TheBaseAssets.MyBlobCache.GetEntryByID(tCacheBlobName);
+
+            if (tData == null || tData.BlobData == null) //NEW Beta3: BlobData Test here
+                tData = ProcessBlobRequest(tTSM, sinkBlobReturn, true);
+
+            if (tData == null && DoPublishRequest)
             {
-                TheBlobData tData = TheBaseAssets.MyBlobCache.GetEntryByID(tCacheBlobName);
-
-                if (tData == null || tData.BlobData == null) //NEW Beta3: BlobData Test here
-                    tData = ProcessBlobRequest(tTSM, sinkBlobReturn, true);
-
-                if (tData == null && DoPublishRequest)
+                tData = new TheBlobData
                 {
-                    tData = new TheBlobData
-                    {
-                        BlobAction = sinkBlobReturn,
-                        cdeEXP = BlobTimeout
-                    };
-                    if (!TheBaseAssets.MyBlobCache.ContainsID(tCacheBlobName))
-                        TheBaseAssets.MyBlobCache.AddOrUpdateItemKey(tCacheBlobName, tData, null);
-                }
-                if (tData != null && tData.BlobData == null && DoPublishRequest)
-                {
-                    if (string.IsNullOrEmpty(pScrambledScopeID))
-                    {
-                        if (pReqData != null)
-                            pReqData.StatusCode = 404;
-                        TheBaseAssets.MyBlobCache.RemoveAnItemByKey(tCacheBlobName, null);
-                        return new TheBlobData { HasErrors = true, ErrorMsg = "Unscoped request denied" }; //If ther request is not scoped and is not allow to adopt the scope of this node, the resource cannot be fetched and should return 404 right away
-                    }
-                    if (tData.LastBlobUpdate != DateTimeOffset.MinValue)
-                    {
-                        tTSM.TXT += ";" + tData.LastBlobUpdate.DateTime.ToFileTimeUtc();
-                    }
-                    TheCommCore.PublishCentral(tTopic, tTSM);
-                    TheBaseAssets.MySYSLOG.WriteToLog(454, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, $"Requesting Blob for ({pBlobName}) was Sent to Channels with ScopeHash:({(TheBaseAssets.MyScopeManager.IsScopingEnabled ? TheBaseAssets.MyScopeManager.GetRealScopeID(tTSM.SID)?.Substring(0, 4) : "Scope not set, yet")})", eMsgLevel.l6_Debug, tTSM.SID), true); //TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null :
-                }
-                if (tData != null && tData.BlobData!=null && tData.cdeEXP < 0)
-                    TheBaseAssets.MyBlobCache.RemoveAnItemByKey(tCacheBlobName, null);
-                return tData;
+                    BlobAction = sinkBlobReturn,
+                    cdeEXP = BlobTimeout
+                };
+                if (!TheBaseAssets.MyBlobCache.ContainsID(tCacheBlobName))
+                    TheBaseAssets.MyBlobCache.AddOrUpdateItemKey(tCacheBlobName, tData, null);
             }
+            if (tData != null && tData.BlobData == null && DoPublishRequest)
+            {
+                if (string.IsNullOrEmpty(pScrambledScopeID))
+                {
+                    if (pReqData != null)
+                        pReqData.StatusCode = 404;
+                    TheBaseAssets.MyBlobCache.RemoveAnItemByKey(tCacheBlobName, null);
+                    return new TheBlobData { HasErrors = true, ErrorMsg = "Unscoped request denied" }; //If ther request is not scoped and is not allow to adopt the scope of this node, the resource cannot be fetched and should return 404 right away
+                }
+                if (tData.LastBlobUpdate != DateTimeOffset.MinValue)
+                {
+                    tTSM.TXT += ";" + tData.LastBlobUpdate.DateTime.ToFileTimeUtc();
+                }
+                TheCommCore.PublishCentral(tTopic, tTSM);
+                TheBaseAssets.MySYSLOG.WriteToLog(454, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, $"Requesting Blob for ({pBlobName}) was Sent to Channels with ScopeHash:({(TheBaseAssets.MyScopeManager.IsScopingEnabled ? TheBaseAssets.MyScopeManager.GetRealScopeID(tTSM.SID)?.Substring(0, 4) : "Scope not set, yet")})", eMsgLevel.l6_Debug, tTSM.SID), true); //TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null :
+            }
+            if (tData != null && tData.BlobData != null && tData.cdeEXP < 0)
+                TheBaseAssets.MyBlobCache.RemoveAnItemByKey(tCacheBlobName, null);
+            return tData;
         }
         private void sinkBlobReturn(TSM pResult)
         {
@@ -997,7 +980,7 @@ namespace nsCDEngine.Engines.ContentService
 
         internal void SendFile(TheBlobData tBlob, string target)
         {
-            TSM BlobGetRequest = new TSM(MyBaseEngine.GetEngineName(), "CDE_FILEPUSH:" + tBlob.BlobName)
+            TSM BlobGetRequest = new (MyBaseEngine.GetEngineName(), "CDE_FILEPUSH:" + tBlob.BlobName)
             {
                 PLB = tBlob.BlobData,
                 PLS = TheCommonUtils.SerializeObjectToJSONStringM(tBlob.CloneForSerial())

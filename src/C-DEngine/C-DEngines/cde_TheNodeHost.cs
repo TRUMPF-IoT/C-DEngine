@@ -130,7 +130,7 @@ namespace nsCDEngine.Engines
                     TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: NodeHost starting Task KPI thread");
                     do
                     {
-                        Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) // TheCommonUtils.SleepOneEye(1000, 1000);
+                        Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) // TheCommonUtils.SleepOneEye(1000, 1000)
                     var kpis = TheCommonUtils.GetTaskKpis(null);
                         TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: {TheCommonUtils.SerializeObjectToJSONString(kpis)}");
                     } while (TheBaseAssets.MasterSwitch && TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs);
@@ -157,7 +157,6 @@ namespace nsCDEngine.Engines
         public bool Delete()
         {
             mIsInitialized = false;
-            // TODO Properly implement delete
             return true;
         }
 

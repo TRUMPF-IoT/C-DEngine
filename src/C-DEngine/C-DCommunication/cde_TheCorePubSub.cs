@@ -39,20 +39,17 @@ namespace nsCDEngine.Communication
                     lock (TheBaseAssets.MySession.GetLock())    //CODE-REVIEW: VERY expensive lock! Really necessary?
                     {
                         var myTargetNodeChannel = MyQSender.MyTargetNodeChannel;
-                        if (MyQSender.IsConnected && myTargetNodeChannel.MySessionState != null) //!=null new in 3.2
+                        if (MyQSender.IsConnected && myTargetNodeChannel.MySessionState != null && !tSessionID.Equals(myTargetNodeChannel.MySessionState.cdeMID)) //!=null new in 3.2
                         {
-                            if (!tSessionID.Equals(myTargetNodeChannel.MySessionState.cdeMID))
+                            Guid tOldID = myTargetNodeChannel.MySessionState.cdeMID;
+                            myTargetNodeChannel.MySessionState = TheBaseAssets.MySession.ValidateSEID(tSessionID);    //Measure Frequency
+                            if (myTargetNodeChannel.MySessionState == null)
                             {
-                                Guid tOldID = myTargetNodeChannel.MySessionState.cdeMID;
-                                myTargetNodeChannel.MySessionState = TheBaseAssets.MySession.ValidateSEID(tSessionID);    //Measure Frequency
-                                if (myTargetNodeChannel.MySessionState == null)
-                                {
-                                    TheBaseAssets.MySYSLOG.WriteToLog(243, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("CoreComm", $"No exiting session for remote node found. Using new session (possible reason: fast cloud reconnect) ...new: {tSessionID} old: {tOldID}", eMsgLevel.l2_Warning), true);
-                                    myTargetNodeChannel.MySessionState = pRequestData.SessionState;
-                                }
-                                else
-                                    TheBaseAssets.MySession.RemoveSessionByID(tOldID);
+                                TheBaseAssets.MySYSLOG.WriteToLog(243, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("CoreComm", $"No exiting session for remote node found. Using new session (possible reason: fast cloud reconnect) ...new: {tSessionID} old: {tOldID}", eMsgLevel.l2_Warning), true);
+                                myTargetNodeChannel.MySessionState = pRequestData.SessionState;
                             }
+                            else
+                                TheBaseAssets.MySession.RemoveSessionByID(tOldID);
                         }
                         if (tDeviceID != Guid.Empty && tDeviceID != myTargetNodeChannel.cdeMID)
                         {
@@ -83,8 +80,7 @@ namespace nsCDEngine.Communication
                                 }
                             }
                         }
-                        if (myTargetNodeChannel.MySessionState == null)
-                            myTargetNodeChannel.MySessionState = TheBaseAssets.MySession.GetOrCreateSessionState(tSessionID, pRequestData);
+                        myTargetNodeChannel.MySessionState ??= TheBaseAssets.MySession.GetOrCreateSessionState(tSessionID, pRequestData);
                         myTargetNodeChannel.MySessionState.SiteVersion = tVersion;
                         myTargetNodeChannel.MySessionState.cdeMID = tSessionID;
                         myTargetNodeChannel.MySessionState.CurrentURL = myTargetNodeChannel.TargetUrl;
@@ -129,10 +125,7 @@ namespace nsCDEngine.Communication
                         }
                         if (tDevList.Count > 1)
                         {
-                            if (toRemove == null)
-                            {
-                                toRemove = new List<TheDeviceMessage>();
-                            }
+                            toRemove ??= new List<TheDeviceMessage>();
                             toRemove.Add(tDev);
                             continue;
                         }
@@ -146,10 +139,7 @@ namespace nsCDEngine.Communication
                         TheBaseAssets.MySYSLOG.WriteToLog(23056, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("CoreComm", $"Heartbeat received {MyQSender?.MyTargetNodeChannel?.ToMLString()}", eMsgLevel.l4_Message));
                         if (tDevList.Count > 1)
                         {
-                            if (toRemove == null)
-                            {
-                                toRemove = new List<TheDeviceMessage>();
-                            }
+                            toRemove ??= new List<TheDeviceMessage>();
                             toRemove.Add(tDev);
                             continue;
                         }
@@ -185,7 +175,7 @@ namespace nsCDEngine.Communication
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(285, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", "Enter Execute Command: OrgChannel is Null - not allowed ", eMsgLevel.l2_Warning));
                 pRequestData.ResponseBufferStr = "ERR: Illegal Request";
-                pRequestData.StatusCode = 400;// (int)nsCDEngine.Communication.HttpService.eHttpStatusCode.NotAcceptable;
+                pRequestData.StatusCode = 400;
                 return;
             }
             if (!TheBaseAssets.MasterSwitch) { pRequestData.ResponseBufferStr = "ERR: Service is shutting Down..."; return; }
@@ -193,7 +183,7 @@ namespace nsCDEngine.Communication
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(285, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", "Enter Execute Command: Session no longer alive - Topic:" + pInTopic, eMsgLevel.l2_Warning));
                 pRequestData.ResponseBufferStr = "ERR: Session no longer alive";
-                pRequestData.StatusCode = 401; //(int)nsCDEngine.Communication.HttpService.eHttpStatusCode.NotAcceptable;
+                pRequestData.StatusCode = 401;
                 return;
             }
             #endregion
@@ -305,27 +295,23 @@ namespace nsCDEngine.Communication
                             }
                             var tTopicSens = tTopic.Split('@')[0]; //only topic - no ScopeID
                             var tTopicParts = tTopic.Split(';');
-                            if (tTargetNodeChannel?.SenderType == cdeSenderType.CDE_JAVAJASON)
+                            if (tTargetNodeChannel?.SenderType == cdeSenderType.CDE_JAVAJASON && string.IsNullOrEmpty(recvMessage.SID) && !string.IsNullOrEmpty(pRequestData?.SessionState?.SScopeID))
                             {
-                                //4.209: JavaJason does no longer get the scope ID - hence telegrams coming from the browser have to be ammmended with SID here
-                                if (string.IsNullOrEmpty(recvMessage.SID) && !string.IsNullOrEmpty(pRequestData?.SessionState?.SScopeID))
+                                recvMessage.SID = pRequestData?.SessionState?.SScopeID; //Set the ScopeID in the SID of the message
+                                if (tTopic.StartsWith("CDE_SYSTEMWIDE"))
                                 {
-                                    recvMessage.SID = pRequestData?.SessionState?.SScopeID; //Set the ScopeID in the SID of the message
-                                    if (tTopic.StartsWith("CDE_SYSTEMWIDE"))
-                                    {
-                                        tTopic = $"{tTopicParts[0]}@{recvMessage.SID}";
-                                        if (tTopicParts.Length > 1)
-                                            tTopic += $";{tTopicParts[1]}"; //if a direct address is added use this too
-                                    }
-                                    else if (!tTopic.Contains('@'))
-                                    {
-                                        tTopic += $"@{recvMessage.SID}";
-                                    }
-                                    if (recvMessage.TXT == "CDE_SUBSCRIBE" || recvMessage.TXT == "CDE_INITIALIZE")
-                                    {
-                                        string MsgNoSID = null;
-                                        recvMessage.PLS = TheBaseAssets.MyScopeManager.AddScopeID(recvMessage.PLS, recvMessage.SID, ref MsgNoSID, false, false);
-                                    }
+                                    tTopic = $"{tTopicParts[0]}@{recvMessage.SID}";
+                                    if (tTopicParts.Length > 1)
+                                        tTopic += $";{tTopicParts[1]}"; //if a direct address is added use this too
+                                }
+                                else if (!tTopic.Contains('@'))
+                                {
+                                    tTopic += $"@{recvMessage.SID}";
+                                }
+                                if (recvMessage.TXT == "CDE_SUBSCRIBE" || recvMessage.TXT == "CDE_INITIALIZE")
+                                {
+                                    string MsgNoSID = null;
+                                    recvMessage.PLS = TheBaseAssets.MyScopeManager.AddScopeID(recvMessage.PLS, recvMessage.SID, ref MsgNoSID, false, false);
                                 }
                             }
                             if (tTopicParts.Length > 1)
@@ -404,7 +390,7 @@ namespace nsCDEngine.Communication
                                     else
                                     {
                                         // Message is part of a CDE_CONNECT: Republish it to enable single-post message sending (i.e. MSB/Service Gateway scenario)
-                                        TheCDEKPIs.IncrementKPI(eKPINames.CCTSMsRelayed); // TODO SHould we have a separate KPI for this
+                                        TheCDEKPIs.IncrementKPI(eKPINames.CCTSMsRelayed); 
                                         TheCommCore.PublishCentral(recvMessage, true, pQSender.MyTargetNodeChannel.IsTrustedSender);
                                     }
                                 }
@@ -477,8 +463,7 @@ namespace nsCDEngine.Communication
             if (string.IsNullOrEmpty(NopTopic) && pRequestData.WebSocket != null) return; //NEW:3.084  && !pSendPulse removed          NEW:V3B3:2014-7-22 removed && pRequestData.ResponseBuffer != null
             if (pRequestData.ResponseBuffer == null && pChannelInfo != null && (pSendPulse || (pChannelInfo.cdeMID != Guid.Empty || TheQueuedSenderRegistry.IsNodeIdInSenderList(pChannelInfo.cdeMID))))
             {
-                TheDeviceMessage tDev = new TheDeviceMessage {CNT = 0};
-                //tDev.MET = 0;
+                TheDeviceMessage tDev = new () {CNT = 0};
                 if (!string.IsNullOrEmpty(NopTopic))
                 {
                     tDev.MSG = new TSM();   //Can be set without ORG and SID
@@ -491,7 +476,7 @@ namespace nsCDEngine.Communication
                         NopTopic = TheCommCore.SetConnectingBufferStr(pChannelInfo, null);
                     }
                 }
-                if (pChannelInfo.SenderType != cdeSenderType.CDE_JAVAJASON) //4.209: No longer sending SID to Browser;
+                if (pChannelInfo.SenderType != cdeSenderType.CDE_JAVAJASON) //4.209: No longer sending SID to Browser
                 {
                     if (TheBaseAssets.MyServiceHostInfo.EnableFastSecurity)
                         tDev.SID = pRequestData.SessionState.SScopeID;  //SECURITY: All responses will have same Scrambled ScopeID - but ok because this is init telegram or HB
@@ -515,7 +500,7 @@ namespace nsCDEngine.Communication
                 tDev.DID = pChannelInfo.SenderType == cdeSenderType.CDE_JAVAJASON ? pChannelInfo.cdeMID.ToString() : TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString();
 
                 //There will be only one Message here - single poke or Mini Command or NOP Pickup
-                List<TheDeviceMessage> tDevList = new List<TheDeviceMessage> {tDev};
+                List<TheDeviceMessage> tDevList = new () {tDev};
                 if (pChannelInfo.SenderType == cdeSenderType.CDE_JAVAJASON || TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType == cdeSenderType.CDE_MINI || pChannelInfo.SenderType == cdeSenderType.CDE_MINI || pRequestData.WebSocket != null)
                 {
                     pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(TheCommonUtils.SerializeObjectToJSONString(tDevList));
@@ -551,12 +536,6 @@ namespace nsCDEngine.Communication
                     return false;
                 }
 
-                //SECURITY-REVIEW: This cannot be permitted without extra tokens and Encryption! otherwise it can be used to change a nodes scope on the fly!
-                //if ("CDE_UPDATESCOPE".Equals(pMessage.TXT))
-                //{
-                //    pQSender.UpdateSubscriptionScope(TheBaseAssets.MyScopeManager.GetRealScopeID(pMessage.SID));     //GRSI: rare
-                //    return true;
-                //}
                 if (pQSender != null && pMessage.ENG?.StartsWith(eEngineName.ContentService) == true && pMessage?.TXT == "CDE_SERVICE_INFO" && pQSender.MyTargetNodeChannel?.RealScopeID==TheBaseAssets.MyScopeManager.GetRealScopeID(pMessage.SID))
                 {
                     try

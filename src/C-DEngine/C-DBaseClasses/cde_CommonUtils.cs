@@ -44,9 +44,9 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, string> cdeNameValueToDirectory(System.Collections.Specialized.NameValueCollection pQ)
         {
-            if (pQ == null) return null;
+            if (pQ == null) return new();
 
-            cdeConcurrentDictionary<string, string> tList = new cdeConcurrentDictionary<string, string>();
+            cdeConcurrentDictionary<string, string> tList = new ();
             foreach (string s in pQ)
                 tList.TryAdd(s, pQ[s]);
             return tList;
@@ -65,7 +65,7 @@ namespace nsCDEngine.BaseClasses
         /// </remarks>
         public static List<string> cdeDistinctCookies(List<string> pCookies)
         {
-            List<string> resList = new List<string>();
+            List<string> resList = new ();
             foreach (string t in pCookies)
             {
                 string FoundOne = "";
@@ -121,7 +121,6 @@ namespace nsCDEngine.BaseClasses
         {
             if (!string.IsNullOrEmpty(pIn) && pIn.Length > pMax)
             {
-                // ToDo: Length will be pMax+3. Is that what we want?
                 return pIn.Substring(0, pMax) + "...";
             }
             return pIn;
@@ -214,7 +213,7 @@ namespace nsCDEngine.BaseClasses
             if (string.IsNullOrEmpty(pToSplit)) return new[] { pToSplit };
             if (RemoveDuplicates)
             {
-                List<string> tList = new List<string>();
+                List<string> tList = new ();
                 int oldPos = 0;
                 int tPos;
                 do
@@ -247,8 +246,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="len"></param>
         public static void cdeBlockCopy(byte[] src, int srcOffset, byte[] dest, int destOffset, int len)
         {
-            if (dest == null)
-                dest = new byte[len];
+            dest ??= new byte[len];
             Buffer.BlockCopy(src, srcOffset, dest, destOffset, len);
         }
 
@@ -340,7 +338,7 @@ namespace nsCDEngine.BaseClasses
         public static string cdeUnescapeString(string strInput)
         {
             if (string.IsNullOrEmpty(strInput)) return "";
-            return Uri.UnescapeDataString(strInput); // pToEscape.Replace("%3D", "=");
+            return Uri.UnescapeDataString(strInput); 
         }
 
         /// <summary>
@@ -355,7 +353,7 @@ namespace nsCDEngine.BaseClasses
         public static string cdeEscapeString(string strInput)
         {
             if (string.IsNullOrEmpty(strInput)) return "";
-            return Uri.EscapeDataString(strInput); // pToEscape.Replace("=", "%3D");
+            return Uri.EscapeDataString(strInput); 
         }
 
         /// <summary>
@@ -551,7 +549,7 @@ namespace nsCDEngine.BaseClasses
             {
                 try
                 {
-                    CultureInfo tCult = new CultureInfo(pLCID);
+                    CultureInfo tCult = new (pLCID);
                     if (!string.IsNullOrEmpty(pFormat))
                         return pDate.ToString(pFormat, tCult);
                     return pDate.ToString(tCult);
@@ -632,49 +630,37 @@ namespace nsCDEngine.BaseClasses
         {
             if (string.IsNullOrEmpty(extension))
                 return "";
-            switch (extension.ToLower())
+            return extension.ToLower() switch
             {
-                case ".avi": return "video/x-msvideo";
-                case ".css": return "text/css";
-                case ".doc": return "application/msword";
-                case ".gif": return "image/gif";
-                case ".htm":
-                case ".html": return "text/html";
-                case ".jpg":
-                case ".jpeg": return "image/jpeg";
-                case ".js": return "application/javascript";
-                case ".mp3": return "audio/mpeg";
-                case ".wav": return "audio/wav";
-                case ".png": return "image/png";
-                case ".pdf": return "application/pdf";
-                case ".ppt": return "application/vnd.ms-powerpoint";
-                case ".zip": return "application/x-gzip";
-                case ".gz": return "application/gzip";
-                case ".txt": return "text/plain";
-                case ".svg": return "image/svg+xml";
-                case ".xml": return "text/xml";
-                case "":
-                case ".json": return "application/json";
-                case ".eot": //Web Fonts
-                    return "application/vnd.ms-fontobject";
-                case ".ttf":
-                case ".otf":
-                case ".woff":
-                case ".woff2":
-                    return "application/octet-stream";
-                case ".stp": //3d modeling binary
-                case ".step": //3d modeling binary
-                    return "application/step";
-                case ".obj":
-                case ".mtl":
-                    return "text/plain";
-                case ".stl": //3D Modeling Binary
-                    return "application/sla";
-                case ".ico":
-                    return "image/vnd.Microsoft.icon";
-                default:
-                    return "application/octet-stream";
-            }
+                ".avi" => "video/x-msvideo",
+                ".css" => "text/css",
+                ".doc" => "application/msword",
+                ".gif" => "image/gif",
+                ".htm" or ".html" => "text/html",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".js" => "application/javascript",
+                ".mp3" => "audio/mpeg",
+                ".wav" => "audio/wav",
+                ".png" => "image/png",
+                ".pdf" => "application/pdf",
+                ".ppt" => "application/vnd.ms-powerpoint",
+                ".zip" => "application/x-gzip",
+                ".gz" => "application/gzip",
+                ".txt" => "text/plain",
+                ".svg" => "image/svg+xml",
+                ".xml" => "text/xml",
+                "" or ".json" => "application/json",
+                //Web Fonts
+                ".eot" => "application/vnd.ms-fontobject",
+                ".ttf" or ".otf" or ".woff" or ".woff2" => "application/octet-stream",
+                //3d modeling binary
+                ".stp" or ".step" => "application/step",
+                ".obj" or ".mtl" => "text/plain",
+                //3D Modeling Binary
+                ".stl" => "application/sla",
+                ".ico" => "image/vnd.Microsoft.icon",
+                _ => "application/octet-stream",
+            };
         }
 
         /// <summary>
@@ -929,7 +915,10 @@ namespace nsCDEngine.BaseClasses
                 else
                     dVersion = 1.0;
             }
-            catch (Exception) { }
+            catch (Exception) 
+            { 
+                //intent
+            }
             return dVersion;
         }
 
@@ -974,8 +963,7 @@ namespace nsCDEngine.BaseClasses
                         if (tBlobBuffer != null)
                             return tBlobBuffer;
                     }
-                    if (imgStream == null)
-                        tBlobBuffer = GetAssemblyResource(null, strResName);
+                    tBlobBuffer = GetAssemblyResource(null, strResName);
                 }
                 else
                 {
@@ -990,11 +978,9 @@ namespace nsCDEngine.BaseClasses
             if (imgStream != null)
             {
 #if !CDE_NET35
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    imgStream.CopyTo(ms);
-                    tBlobBuffer = ms.ToArray();
-                }
+                using MemoryStream ms = new();
+                imgStream.CopyTo(ms);
+                tBlobBuffer = ms.ToArray();
 #else
                     byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
                     using (MemoryStream ms = new MemoryStream())
@@ -1310,7 +1296,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A string representing the results of decompressing the input buffer.</returns>
         public static string cdeDecompressToString(byte[] sourceArray)
         {
-            return cdeDecompressToString(sourceArray, 0, sourceArray.Length); // new MemoryStream(sourceArray));
+            return cdeDecompressToString(sourceArray, 0, sourceArray.Length); 
         }
 
         /// <summary>
@@ -1393,25 +1379,14 @@ namespace nsCDEngine.BaseClasses
         /// <seealso>CreateDirectories(string)</seealso>
         public static void CreateDirectories(string strFilePath, bool bIsDirectoryPath)
         {
-            // ToDo: This ignores ClientBin. Should we care?
             if (String.IsNullOrEmpty(strFilePath)) return;
             if (File.Exists(strFilePath)) return;
             char sep = Path.DirectorySeparatorChar;
-            //if (IsMono())
-            //    sep = '/';
             string[] subdirs = strFilePath.Split(sep);
-#if false // Old Code
-            // Assumes more than one folder. Misses edge case of one folder with
-            // no file specified.
-            if (subdirs.Length > 1)
-            {
-                int pathSegmentsToCreate = bIsDirectoryPath ? subdirs.Length : subdirs.Length - 1;
-#else
             // Allows for creation of single folder
             int pathSegmentsToCreate = bIsDirectoryPath ? subdirs.Length : subdirs.Length - 1;
             if (pathSegmentsToCreate > 0)
             {
-#endif
                 for (int i = 0; i < pathSegmentsToCreate; i++)
                 {
                     string tDir = "";
@@ -1426,7 +1401,10 @@ namespace nsCDEngine.BaseClasses
                         {
                             Directory.CreateDirectory(tDir);
                         }
-                        catch { }
+                        catch 
+                        { 
+                            //intent
+                        }
                     }
                 }
             }
@@ -1468,21 +1446,6 @@ namespace nsCDEngine.BaseClasses
         }
 
         /// <summary>
-        /// Loads the content of a file into a string owned by a plugin
-        /// </summary>
-        /// <param name="pBase">Plugin that owns the file</param>
-        /// <param name="tTargetFileName">Filename to be loaded</param>
-        /// <returns></returns>
-        public static string LoadStringFromDisk(IBaseEngine pBase, string tTargetFileName)
-        {
-            if (pBase == null) return null;
-            string pA = null;
-            if (pBase.GetEngineID() != TheCDEngines.MyContentEngine.GetBaseEngine().GetEngineID())
-                pA = pBase.GetEngineID().ToString();
-            return LoadStringFromDisk(tTargetFileName, pA);
-        }
-
-        /// <summary>
         /// Loads the content of a file into a byte array owned by a plugin
         /// </summary>
         /// <param name="pBase">Plugins that owns the file</param>
@@ -1495,6 +1458,21 @@ namespace nsCDEngine.BaseClasses
             if (pBase.GetEngineID() != TheCDEngines.MyContentEngine.GetBaseEngine().GetEngineID())
                 pA = pBase.GetEngineID().ToString();
             return LoadBlobFromDisk(tTargetFileName, pA);
+        }
+
+        /// <summary>
+        /// Loads the content of a file into a string owned by a plugin
+        /// </summary>
+        /// <param name="pBase">Plugin that owns the file</param>
+        /// <param name="tTargetFileName">Filename to be loaded</param>
+        /// <returns></returns>
+        public static string LoadStringFromDisk(IBaseEngine pBase, string tTargetFileName)
+        {
+            if (pBase == null) return null;
+            string pA = null;
+            if (pBase.GetEngineID() != TheCDEngines.MyContentEngine.GetBaseEngine().GetEngineID())
+                pA = pBase.GetEngineID().ToString();
+            return LoadStringFromDisk(tTargetFileName, pA);
         }
 
         /// <summary>
@@ -1517,12 +1495,14 @@ namespace nsCDEngine.BaseClasses
             string resStr = null;
             try
             {
-                System.IO.StreamReader myFile = new System.IO.StreamReader(fileToReturn);
+                StreamReader myFile = new (fileToReturn);
                 resStr = myFile.ReadToEnd();
                 myFile.Close();
             }
             catch (Exception)
-            { }
+            { 
+                //intent
+            }
             return resStr;
         }
 
@@ -1613,7 +1593,6 @@ namespace nsCDEngine.BaseClasses
                     pendingTask.startTime = DateTime.UtcNow;
                 }
 
-                //TheDiagnostics.SetThreadName(pThreadName, true);
                 var t2 = callBack?.Invoke(pState);
                 taskInfo?.Add("firstTask", t2);
                 var t3 = t2?.ContinueWith((t) =>
@@ -1804,7 +1783,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>The converted string.</returns>
         public static string CArray2UTF8String(byte[] pIn, int start, int len, bool StripFileCodes)
         {
-            UTF8Encoding enc = new UTF8Encoding();
+            UTF8Encoding enc = new ();
             if (StripFileCodes && start==0 && pIn.Length>3 && pIn[0]==0xEF && pIn[1]==0xBB && pIn[2]==0xBF)
                 return enc.GetString(pIn, start+3, len-3);
             return enc.GetString(pIn, start, len);
@@ -1859,13 +1838,13 @@ namespace nsCDEngine.BaseClasses
             {
                 try
                 {
-                    if (inObj is string && string.IsNullOrEmpty((string)inObj)) return null;
-                    if (IgnoreGuids && inObj is string)
-                        inObj = ((string)inObj).Replace("{", "").Replace("}", "");
+                    if (inObj is string lerstr && string.IsNullOrEmpty(lerstr)) return null;
+                    if (IgnoreGuids && inObj is string IgnStr)
+                        inObj = IgnStr.Replace("{", "").Replace("}", "");
                     Uri uri;
-                    if (inObj is Uri)
+                    if (inObj is Uri uri1)
                     {
-                        uri = (Uri)inObj;
+                        uri = uri1;
                     }
                     else
                     {
@@ -1974,10 +1953,7 @@ namespace nsCDEngine.BaseClasses
                     key = query.Substring(startIndex, i - startIndex);
                 }
 
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (!values.ContainsKey(key.ToUpper()))
                     values.Add(key.ToUpper(), value);
@@ -1999,7 +1975,7 @@ namespace nsCDEngine.BaseClasses
         /// </remarks>
         public static void SleepOneEye(uint ms, uint minPeriod)
         {
-            ManualResetEvent mre = new ManualResetEvent(false);
+            ManualResetEvent mre = new (false);
             if (ms < minPeriod)
             {
                 mre.WaitOne((int)ms);
@@ -2042,7 +2018,7 @@ namespace nsCDEngine.BaseClasses
         /// </remarks>
         public static void SleepOneEyeWithCancel(uint ms, uint minPeriod, object cancelToken)
         {
-            if (!(cancelToken is ManualResetEvent mre))
+            if (cancelToken is not ManualResetEvent mre)
             {
                 return;
             }
@@ -2075,7 +2051,7 @@ namespace nsCDEngine.BaseClasses
         /// </remarks>
         public static void SleepOneEyeCancel(object cancelToken)
         {
-            if (!(cancelToken is ManualResetEvent mre))
+            if (cancelToken is not ManualResetEvent mre)
             {
                 return;
             }
@@ -2254,13 +2230,21 @@ namespace nsCDEngine.BaseClasses
             var combinedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancelToken ?? TheBaseAssets.MasterSwitchCancelationToken, timeoutCancelTokenSource.Token);
             var combinedTask = task.ContinueWith(t =>
                 {
-                    try { combinedTokenSource.Dispose(); } catch { }
-                    try { timeoutCancelTokenSource.Dispose(); } catch { }
+                    try { combinedTokenSource.Dispose(); } catch { 
+                        //intent
+                    }
+                    try { timeoutCancelTokenSource.Dispose(); } catch { 
+                        //intent
+                    }
                 }, combinedTokenSource.Token)
                 .ContinueWith(t =>
                 {
-                    try { combinedTokenSource.Dispose(); } catch { }
-                    try { timeoutCancelTokenSource.Dispose(); } catch { }
+                    try { combinedTokenSource.Dispose(); } catch { 
+                        //intent
+                    }
+                    try { timeoutCancelTokenSource.Dispose(); } catch { 
+                        //intent
+                    }
                 });
 #else
             var timeoutInMs = timeout.TotalMilliseconds;
@@ -2433,14 +2417,9 @@ namespace nsCDEngine.BaseClasses
         {
             if (string.IsNullOrEmpty(strIn)) return "";
             if (strIn.IndexOf("%") < 0) return strIn;
-            //cPage.Trace.Write("GenerateFinalStrIn",gfsinStr);
-#if JCDEBUG
-			ProfilerString=UpdateProfile(ProfilerString,"GenerateFinalStr (MAINMACROS) enter",ProfileTimer);
-#endif
             int tT = 1;
-            string gfsoutStr = "", tAppString = "", gfsoutStr1 = "";
+            string gfsoutStr, tAppString, gfsoutStr1;
             int tAppPos, tAppPosEnd;
-            StringBuilder RecursLog = new StringBuilder("", 255);
 
             gfsoutStr1 = strIn;
             while (tT == 1)
@@ -2503,7 +2482,7 @@ namespace nsCDEngine.BaseClasses
                         gfsoutStr = gfsoutStr.Replace("%GetLiveScreens%", TheCDEngines.MyNMIService.MyNMIModel.GetLiveScreens());
                 }
 
-                if (gfsoutStr != gfsoutStr1) { gfsoutStr1 = gfsoutStr; continue; };
+                if (gfsoutStr != gfsoutStr1) { gfsoutStr1 = gfsoutStr; continue; }
                 tAppPos = gfsoutStr.IndexOf("%APP:");
                 if (tAppPos >= 0)
                 {
@@ -2516,7 +2495,7 @@ namespace nsCDEngine.BaseClasses
                         gfsoutStr = gfsoutStr.Replace($"%APP:{tAppString}%", tPAR);
                     }
                 }
-                if (gfsoutStr != gfsoutStr1) { gfsoutStr1 = gfsoutStr; continue; };
+                if (gfsoutStr != gfsoutStr1) { gfsoutStr1 = gfsoutStr; continue; }
                 if (pThing != null)
                 {
                     List<cdeP> tProps = pThing.GetBaseThing().GetAllProperties();
@@ -2536,7 +2515,7 @@ namespace nsCDEngine.BaseClasses
                         gfsoutStr = gfsoutStr.Replace($"%INT:{tAppString}%", CLng(tAppString).ToString(cultureInfo));
                     }
                 }
-                if (gfsoutStr != gfsoutStr1) { gfsoutStr1 = gfsoutStr; continue; };
+                if (gfsoutStr != gfsoutStr1) { gfsoutStr1 = gfsoutStr; continue; }
 
                 tAppPos = gfsoutStr.IndexOf("%$:");
                 if (tAppPos >= 0)
@@ -2617,7 +2596,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (MyValue == null) return null;
             List<PropertyInfo> PropInfoArray = typeof(T).GetProperties().OrderBy(x => x.Name).ToList();
-            T tNewVal = new T();
+            T tNewVal = new ();
             foreach (PropertyInfo finfo in PropInfoArray)
             {
                 try
