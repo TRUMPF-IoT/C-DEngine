@@ -36,7 +36,7 @@ namespace cdeASPNetMiddleware
             {
                 if (context.WebSockets.IsWebSocketRequest)
                 {
-                    WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                    using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
                     await ProcessWSRequest(context, webSocket);
                     return;
                 }
