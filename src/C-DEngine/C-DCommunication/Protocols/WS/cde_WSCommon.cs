@@ -22,7 +22,7 @@ namespace nsCDEngine.Communication
         protected TheRequestData MySessionRequestData;
         protected bool CloseFired;
         protected bool IsClient = false;
-        protected CancellationTokenSource mCancelToken = new();
+        protected CancellationTokenSource mCancelToken;
 
         protected ManualResetEventSlim mre; //NEW:V3BETA2: Was AutoReset Event
         internal bool ProcessingAllowed
@@ -58,6 +58,24 @@ namespace nsCDEngine.Communication
                 MySessionRequestData = pRequest;
             MySessionRequestData.WebSocket = this;
             mre = new ManualResetEventSlim(true);
+            var oldCancelToken = mCancelToken;
+            mCancelToken = new();
+            try
+            {
+                oldCancelToken?.Cancel();
+            }
+            catch
+            {
+                //intent blank
+            }
+            try
+            {
+                oldCancelToken?.Dispose();
+            }
+            catch
+            {
+                //intent blank
+            }
             IsActive = true;
             CloseFired = false;
             try

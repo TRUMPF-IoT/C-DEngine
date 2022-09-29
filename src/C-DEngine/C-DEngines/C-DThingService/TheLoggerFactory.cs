@@ -44,7 +44,7 @@ namespace nsCDEngine.Engines.ThingService
                 TheEventLogData tSec = new TheEventLogData
                 {
                     EventTime = DateTimeOffset.Now,
-                    StationName = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false),
+                    StationName = TheCommonUtils.GetMyNodeName(),
                     EventName = pEventName,
                     EventString = pEventText,
                     EventTrigger = pEventTrigger,
@@ -73,7 +73,7 @@ namespace nsCDEngine.Engines.ThingService
                 TheEventLogData tSec = new TheEventLogData
                 {
                     EventTime = DateTimeOffset.Now,
-                    StationName = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false),
+                    StationName = TheCommonUtils.GetMyNodeName(),
                     EventName = pEventName,
                     EventString = pEventText,
                     UserID = pUserID.ToString(),

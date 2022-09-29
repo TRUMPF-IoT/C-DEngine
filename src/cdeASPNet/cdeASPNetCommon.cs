@@ -64,7 +64,7 @@ namespace cdeASPNetMiddleware
                         string val = co[0];
                         string pat = "/"; if (co.Length > 1) pat = co[1];
                         string dom = null; if (co.Length > 2) dom = co[2];
-                        var tcooki = new CookieOptions { Path = pat, Domain = dom, Expires = DateTime.MinValue, HttpOnly = true, Secure=true };
+                        var tcooki = new CookieOptions { Path = pat, Domain = dom, Expires = DateTimeOffset.MinValue, HttpOnly = true, Secure=true };
                         if (!tReq.RequestUri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase) && !tReq.RequestUri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase))
                             tcooki.Secure = false; //NOSONAR we do have to support local non-tls clients
                         Response.Cookies.Append(nam, val, tcooki);

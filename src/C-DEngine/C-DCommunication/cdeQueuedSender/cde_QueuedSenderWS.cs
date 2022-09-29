@@ -8,7 +8,7 @@ using System;
 using System.Threading;
 using nsCDEngine.ISM;
 using System.Text;
-using nsCDEngine.Security;
+
 // ReSharper disable All
 
 namespace nsCDEngine.Communication
@@ -85,7 +85,7 @@ namespace nsCDEngine.Communication
             mre = new ManualResetEvent(false);
 
             CloudCounter++;
-            StringBuilder tSendBufferStr = new (TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
+            StringBuilder tSendBufferStr = null;
             int QDelay = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetSetting("ThrottleWS"));
             if (QDelay < 2) QDelay = 2;
             if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON && TheBaseAssets.MyServiceHostInfo.WsJsThrottle > QDelay)
@@ -106,6 +106,8 @@ namespace nsCDEngine.Communication
                         }
                         if (MyTargetNodeChannel.MySessionState == null && !IsConnecting && MyCoreQueue.Count > 0)
                             break;
+
+                        tSendBufferStr = null;
                         mre.WaitOne(QDelay);
                     }
                     if (!TheBaseAssets.MasterSwitch || !IsAlive || !MyWebSocketProcessor.IsActive || MyTargetNodeChannel.MySessionState == null)
@@ -118,11 +120,8 @@ namespace nsCDEngine.Communication
                     int MCQCount = 0;
                     int IsBatchOn = 0;
                     int FinalCnt = 0;
-#if CDE_NET35
-                    tSendBufferStr = new StringBuilder(TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
-#else
-                    tSendBufferStr.Clear();
-#endif
+
+                    tSendBufferStr ??= new StringBuilder(TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
                     tSendBufferStr.Append("[");
                     do
                     {
@@ -242,11 +241,13 @@ namespace nsCDEngine.Communication
                     if (FinalCnt > 1)
                         TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("WSQueuedSender", $"Batched:{FinalCnt}", eMsgLevel.l3_ImportantMessage));
 
-                    if (!cdeSenderType.CDE_JAVAJASON.Equals(MyTargetNodeChannel.SenderType))
+                    if (cdeSenderType.CDE_JAVAJASON != MyTargetNodeChannel.SenderType)
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.cdeCompressString(tSendBufferStr.ToString()), true, false);
                     else
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString()), false, false);
                     IsInWSPost = false;
+
+                    tSendBufferStr.Clear();
                 }
                 TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSQSenderThread was closed for {MyTargetNodeChannel?.ToMLString()} IsAlive:{IsAlive} MyWSProccAlive:{(MyWebSocketProcessor == null ? "Is Null" : MyWebSocketProcessor?.IsActive.ToString())},SessionState:{(MyTargetNodeChannel?.MySessionState != null)} IsConnecting:{IsConnecting} IsConnected:{IsConnected}", eMsgLevel.l1_Error));
             }
