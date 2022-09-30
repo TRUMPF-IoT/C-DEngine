@@ -58,9 +58,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 get
                 {
-                    if (_knownProperties == null)
-                    {
-                        _knownProperties = new HashSet<string>
+                    _knownProperties ??= new HashSet<string>
                     {
                         nameof(TheThing.TheSensorSubscription.SensorId),
                         nameof(TheThing.TheSensorSubscription.SampleRate),
@@ -69,7 +67,6 @@ namespace nsCDEngine.Engines.ThingService
                         nameof(TheThing.TheSensorSubscription.SubscriptionId),
                         nameof(ProviderMid),
                     };
-                    }
                     return _knownProperties;
                 }
             }
@@ -227,7 +224,7 @@ namespace nsCDEngine.Engines.ThingService
             if (!bypassCapabilityCheck && !this.Capabilities.Contains(eThingCaps.SensorProvider))
             {
                 return TheCommonUtils.TaskFromResult(new MsgBrowseSensorsResponse { Error = "Thing is not a sensor provider" });
-            };
+            }
             var browseResponseTask = TheCommRequestResponse.PublishRequestJSonAsync<TheThing.MsgBrowseSensors, TheThing.MsgBrowseSensorsResponse>(this, browseRequest);
             return browseResponseTask;
         }
@@ -352,7 +349,7 @@ namespace nsCDEngine.Engines.ThingService
             if (!bypassCapabilityCheck && !this.Capabilities.Contains(eThingCaps.SensorProvider))
             {
                 return TheCommonUtils.TaskFromResult(new MsgSubscribeSensorsResponse { Error = "Thing is not a sensor provider" });
-            };
+            }
             var subscribeResponseTask = TheCommRequestResponse.PublishRequestJSonAsync<TheThing.MsgSubscribeSensors, TheThing.MsgSubscribeSensorsResponse>(this, subscribeRequest);
             return subscribeResponseTask;
         }
@@ -367,7 +364,7 @@ namespace nsCDEngine.Engines.ThingService
             if (!bypassCapabilityCheck && !this.Capabilities.Contains(eThingCaps.SensorProvider))
             {
                 return TheCommonUtils.TaskFromResult(new MsgSubscribeSensorsResponse<subscriptionT> { Error = "Thing is not a sensor provider" });
-            };
+            }
             var subscribeResponseTask = TheCommRequestResponse.PublishRequestJSonAsync<TheThing.MsgSubscribeSensors<subscriptionT>, TheThing.MsgSubscribeSensorsResponse<subscriptionT>>(this, subscribeRequest);
             return subscribeResponseTask;
         }
@@ -438,7 +435,7 @@ namespace nsCDEngine.Engines.ThingService
             if (!bypassCapabilityCheck && !this.Capabilities.Contains(eThingCaps.SensorProvider))
             {
                 return TheCommonUtils.TaskFromResult(new MsgUnsubscribeSensorsResponse { Error = "Thing is not a sensor provider" });
-            };
+            }
             var unsubscribeResponseTask = TheCommRequestResponse.PublishRequestJSonAsync<MsgUnsubscribeSensors, MsgUnsubscribeSensorsResponse>(this, unsubscribeRequest);
             return unsubscribeResponseTask;
         }
@@ -473,7 +470,7 @@ namespace nsCDEngine.Engines.ThingService
             if (!bypassCapabilityCheck && !this.Capabilities.Contains(eThingCaps.SensorProvider))
             {
                 return TheCommonUtils.TaskFromResult(new MsgGetSensorSubscriptionsResponse { Error = "Thing is not a sensor provider" });
-            };
+            }
             var getSubscriptionResponseTask = TheCommRequestResponse.PublishRequestJSonAsync<MsgGetSensorSubscriptions, MsgGetSensorSubscriptionsResponse>(this, getSubscriptionsRequest);
             return getSubscriptionResponseTask;
         }

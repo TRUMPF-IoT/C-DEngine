@@ -291,8 +291,7 @@ namespace nsCDEngine.Engines.ThingService
 
         public TheThingRule(TheThing pBaseThing)
         {
-            if (pBaseThing == null)
-                pBaseThing = new TheThing();
+            pBaseThing ??= new TheThing();
             MyBaseThing = pBaseThing;
 
             TriggerStartTime = DateTimeOffset.MinValue;
@@ -326,13 +325,12 @@ namespace nsCDEngine.Engines.ThingService
             TriggerStartTime = DateTimeOffset.MinValue;
             TriggerEndTime = DateTimeOffset.MaxValue;
 
-            //TriggerObjectType = "CDE_THING";
             TriggerObject = pTriggerThing.cdeMID.ToString();
             if (!TheCommonUtils.IsNullOrWhiteSpace(pTriggerProperty))
                 TriggerProperty = pTriggerProperty;
             else
-                pTriggerProperty = "Value";
-             TriggerCondition = pTriggerCondition;
+                TriggerProperty = "Value";
+            TriggerCondition = pTriggerCondition;
             TriggerValue = pTriggerValue;
 
 

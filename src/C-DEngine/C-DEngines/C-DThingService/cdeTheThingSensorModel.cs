@@ -61,9 +61,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 get
                 {
-                    if (_knownProperties == null)
-                    {
-                        _knownProperties = new HashSet<string>
+                    _knownProperties ??= new HashSet<string>
                         {
                             nameof(TheSensorMeta.RangeMin),
                             nameof(TheSensorMeta.RangeMax),
@@ -74,7 +72,6 @@ namespace nsCDEngine.Engines.ThingService
                             nameof(TheSensorMeta.SemanticTypes),
                             nameof(TheSensorMeta.FriendlyName),
                         };
-                    }
                     return _knownProperties;
                 }
             }
@@ -174,12 +171,9 @@ namespace nsCDEngine.Engines.ThingService
             }
 
             var ownerThing = this.OwnerThing.GetBaseThing();
-            if (ownerThing != null)
+            if (ownerThing != null && !ownerThing.Capabilities.Contains(eThingCaps.SensorContainer))
             {
-                if (!ownerThing.Capabilities.Contains(eThingCaps.SensorContainer))
-                {
-                    ownerThing.AddCapability(eThingCaps.SensorContainer);
-                }
+                ownerThing.AddCapability(eThingCaps.SensorContainer);
             }
         }
 
@@ -196,7 +190,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public List<cdeP> GetSensorProperties()
         {
-            return GetAllProperties(10)?.Where(p => p.IsSensor== true)?.ToList();
+            return GetAllProperties(10)?.Where(p => p.IsSensor)?.ToList();
         }
         /// <summary>
         /// Returns all properties that are marked as Sensors.
@@ -204,7 +198,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public List<cdeP> GetConfigProperties()
         {
-            return GetAllProperties(10)?.Where(p => p.IsConfig == true)?.ToList();
+            return GetAllProperties(10)?.Where(p => p.IsConfig)?.ToList();
         }
 
         /// <summary>
@@ -267,7 +261,6 @@ namespace nsCDEngine.Engines.ThingService
             public TheSensorInstancePropertyMeta(cdeP.TheSensorMeta sensorMeta) : base(sensorMeta) { }
 
             public cdeP.TheProviderInfo ProviderInfo;
-            // TODO Do we need/want other info like cdeAVA, cdeM here as well?
         }
 
         public List<TheSensorInstancePropertyMeta> GetSensorPropertyMetaData()
@@ -280,7 +273,6 @@ namespace nsCDEngine.Engines.ThingService
                     Name = sp.Name,
                     cdeT = (ePropertyTypes)sp.cdeT,
                     cdeA = sp.cdeA,
-                    // TODO Are there any other cdeP fields that are instance-independent meta data?
                     ProviderInfo = sp.GetSensorProviderInfo(),
                 };
                 return sensorPropertyMeta;

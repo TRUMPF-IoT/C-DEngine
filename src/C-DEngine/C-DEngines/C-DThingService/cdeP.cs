@@ -277,10 +277,9 @@ namespace nsCDEngine.Engines.ThingService
                 this.changedMask = 0;
             }
 
-            // TODO CODE REVIEW: Changing a race condition behavior for property notifications: before we would not fire if a concurrent/subsequent set had changed the value to the same value.
+            // CODE REVIEW: Changing a race condition behavior for property notifications: before we would not fire if a concurrent/subsequent set had changed the value to the same value.
             // However, the receiver will still see the HasChanged property as not having changed (inherent race condition of the design). But callers will get the right indication for the time of the call/change
             // Only consumer of the return value seems to be the JSON Deserializer of property change messages: unclear if it behaves better with either race condition behavior?
-            //if (NoFire) return hasChanged;
 
             if (hasChanged)
             {
@@ -313,7 +312,7 @@ namespace nsCDEngine.Engines.ThingService
                 }
                 if (TheBaseAssets.MyServiceHostInfo.IsIsolated && OwnerThing != null && OwnerThing.GetBaseThing() != null && TheBaseAssets.MyCDEPluginTypes.ContainsKey(OwnerThing.GetBaseThing().EngineName))
                 {
-                    TSM tFireTSM = new TSM(eEngineName.ContentService, $"CDE_SETP:{OwnerThing.GetBaseThing().cdeMID}", TheCommonUtils.SerializeObjectToJSONString(this));    //ThingProperties
+                    TSM tFireTSM = new (eEngineName.ContentService, $"CDE_SETP:{OwnerThing.GetBaseThing().cdeMID}", TheCommonUtils.SerializeObjectToJSONString(this));    //ThingProperties
                     TheQueuedSenderRegistry.PublishToMasterNode(tFireTSM, false);
                 }
             }
@@ -391,7 +390,7 @@ namespace nsCDEngine.Engines.ThingService
             return MyRegisteredEvents.GetKnownEvents();
         }
 
-        private TheCommonUtils.RegisteredEventHelper<cdeP> MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<cdeP>();
+        private TheCommonUtils.RegisteredEventHelper<cdeP> MyRegisteredEvents = new ();
 
         /// <summary>
         /// Removes all Events from cdeP
@@ -595,7 +594,7 @@ namespace nsCDEngine.Engines.ThingService
 
         #endregion
 
-        static readonly Dictionary<Type, ePropertyTypes> typeMapping = new Dictionary<Type, ePropertyTypes>
+        static readonly Dictionary<Type, ePropertyTypes> typeMapping = new ()
         {
             { typeof(double), ePropertyTypes.TNumber },
             { typeof(float), ePropertyTypes.TNumber },
@@ -616,9 +615,9 @@ namespace nsCDEngine.Engines.ThingService
         };
         internal static ePropertyTypes GetCDEType(Type type)
         {
-            if (typeMapping.TryGetValue(type, out var cdeT))
+            if (typeMapping.TryGetValue(type, out var cdet))
             {
-                return cdeT;
+                return cdet;
             }
             return ePropertyTypes.NOCHANGE;
         }
@@ -796,10 +795,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pOwner"></param>
         public void RegisterGlobally(ICDEThing pOwner)
         {
-            if (OwnerThing == null)
-                OwnerThing = pOwner;
+            OwnerThing ??= pOwner;
             if (OwnerThing == null) return;
-            TSM tTSM = new TSM(eEngineName.ContentService, "CDE_REGISTERPROPERTY:" + OwnerThing.ToString(), this.Name);
+            TSM tTSM = new (eEngineName.ContentService, "CDE_REGISTERPROPERTY:" + OwnerThing.ToString(), this.Name);
             tTSM.SetToServiceOnly(true);
             TheCommCore.PublishCentral(tTSM);
         }
@@ -1002,14 +1000,12 @@ namespace nsCDEngine.Engines.ThingService
             bool retVal = false;
             if (cdePB != null)
             {
-                List<string> Keys = new List<string>();
+                List<string> Keys = new ();
                 lock (cdePB.MyLock)
                 {
-                    foreach (string key in cdePB.Keys)
-                    {
-                        if (key.StartsWith(pName))
-                            Keys.Add(key);
-                    }
+                    Keys.AddRange(from string key in cdePB.Keys
+                                  where key.StartsWith(pName)
+                                  select key);
                     foreach (string key in Keys)
                     {
                         RemoveProperty(key);
@@ -1075,19 +1071,16 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>List of properties matching the condition</returns>
         public List<cdeP> GetPropertiesStartingWith(string pName)
         {
-            List<cdeP> Keys = new List<cdeP>();
+            List<cdeP> Keys = new ();
             if (cdePB != null)
             {
                 lock (cdePB.MyLock)
                 {
-                    foreach (string key in cdePB.Keys)
+                    foreach (var key in cdePB.Keys.Where(key => key.StartsWith(pName, StringComparison.OrdinalIgnoreCase)))
                     {
-                        if (key.StartsWith(pName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            bool bNoFire = false;
-                            var prop = GetPropertyInternal(key, true, ref bNoFire);
-                            Keys.Add(prop);
-                        }
+                        bool bNoFire = false;
+                        var prop = GetPropertyInternal(key, true, ref bNoFire);
+                        Keys.Add(prop);
                     }
                 }
             }
@@ -1102,7 +1095,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>List of properties matching the condition</returns>
         public List<cdeP> GetPropertiesMetaStartingWith(string pName)
         {
-            List<cdeP> Keys = new List<cdeP>();
+            List<cdeP> Keys = new ();
             if (cdePB != null)
             {
                 lock (cdePB.MyLock)
@@ -1322,8 +1315,7 @@ namespace nsCDEngine.Engines.ThingService
                 tPB = cdePB;
             else
             {
-                if (pProp.cdeOP.cdePB == null)
-                    pProp.cdeOP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
+                pProp.cdeOP.cdePB ??= new cdeConcurrentDictionary<string, cdeP>();
                 tPB = pProp.cdeOP.cdePB;
             }
             if (NoFireAdd)
@@ -1415,8 +1407,7 @@ namespace nsCDEngine.Engines.ThingService
                 if (!tProp.HasThing())
                     tProp.SetThing(OwnerThing);
                 tProp.cdeO = cdeMID;
-                if (tProp.cdeOP == null)
-                    tProp.cdeOP = this;
+                tProp.cdeOP ??= this;
             }
             return tProp;
         }
@@ -1425,8 +1416,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (string.IsNullOrEmpty(pName) || (cdePB == null && !DoCreate)) return null;
 
-            if (cdePB == null)
-                cdePB = new cdeConcurrentDictionary<string, cdeP>();
+            cdePB ??= new cdeConcurrentDictionary<string, cdeP>();
 
             if (!pName.StartsWith("["))
                 return GetPropertyRoot(pName, DoCreate, ref NoFireAdded);
@@ -1459,8 +1449,7 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     if (!tP.HasThing())
                         tP.SetThing(OwnerThing);
-                    if (tP.cdeOP == null)
-                        tP.cdeOP = parent;
+                    tP.cdeOP ??= parent;
                     if (i < tPath.Length - 1)
                     {
                         if (tP.cdePB == null && DoCreate)

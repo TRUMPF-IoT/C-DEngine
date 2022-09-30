@@ -71,7 +71,7 @@ namespace nsCDEngine.Engines.ThingService
                 Generalize = generalizeProp != null && generalizeProp.Value != null ? (bool?)TheCommonUtils.CBool(generalizeProp.GetValue()) : null,
                 IsThingReference = isThingReferenceProp != null && isThingReferenceProp.Value != null ? (bool?)TheCommonUtils.CBool(isThingReferenceProp.GetValue()) : null,
                 Required = requiredProp != null && requiredProp.Value != null ? (bool?)TheCommonUtils.CBool(requiredProp.GetValue()) : null,
-                Secure = secureProp != null && secureProp.Value != null ? (bool?)TheCommonUtils.CBool(secureProp.GetValue()) : null, // TODO Do we really want to decrypt here?
+                Secure = secureProp != null && secureProp.Value != null ? (bool?)TheCommonUtils.CBool(secureProp.GetValue()) : null, 
                 Description = TheCommonUtils.CStrNullable(configMetaProp?.GetProperty(nameof(TheThing.TheConfigurationProperty.Description))),
                 FriendlyName = TheCommonUtils.CStrNullable(configMetaProp?.GetProperty(nameof(TheThing.TheConfigurationProperty.FriendlyName))),
                 SemanticTypes = TheCommonUtils.CStrNullable(configMetaProp?.GetProperty(nameof(TheThing.TheConfigurationProperty.SemanticTypes))),
@@ -211,7 +211,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (prop == null)
             {
-                return null;
+                return new Dictionary<string, object>();
             }
             Dictionary<string, object> dict = null;
             var allProps = prop.GetAllProperties()?.Where(p => propsToExclude?.Contains(p.Name) != true);
@@ -270,9 +270,6 @@ namespace nsCDEngine.Engines.ThingService
         {
             public TheThingIdentity ThingIdentity;
 
-            // TODO Do we want to provide a single collection of all thing references? More efficient in terms of storage and potentially easier to consume. For now references are kept inline with sensor/thing subscriptions
-            //public Dictionary<string, TheThingReference> ThingReferences;
-
             public List<TheConfigurationProperty> ConfigurationValues;
             public Dictionary<string, object> CustomConfig; // Note: this can be arbitrary JSON as defined by the thing implementor: specifically the entries in this dictionary do not have to be thing properties.
 
@@ -292,9 +289,11 @@ namespace nsCDEngine.Engines.ThingService
             {
                 if (ThingSpecializationParameters != null && ThingSpecializationParameters.TryGetValue(nameof(ID), out var newIdObj))
                 {
-                    var newId = new TheThingIdentity(ThingIdentity);
-                    newId.ID = TheCommonUtils.CStr(newIdObj);
-                    newId.ThingMID = null;
+                    var newId = new TheThingIdentity(ThingIdentity)
+                    {
+                        ID = TheCommonUtils.CStr(newIdObj),
+                        ThingMID = null
+                    };
                     if (newId.ID != this.ThingIdentity.ID)
                     {
                         thingReferenceMap.Add(ThingIdentity.ID, newId.ID);
@@ -427,9 +426,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 get
                 {
-                    if (_knownProperties == null)
-                    {
-                        _knownProperties = new HashSet<string>
+                    _knownProperties ??= new HashSet<string>
                     {
                         nameof(TheThing.TheConfigurationProperty.DefaultValue),
                         nameof(TheThing.TheConfigurationProperty.Generalize),
@@ -443,7 +440,6 @@ namespace nsCDEngine.Engines.ThingService
                         nameof(TheThing.TheConfigurationProperty.RangeMin),
                         nameof(TheThing.TheConfigurationProperty.RangeMax),
                     };
-                    }
                     return _knownProperties;
                 }
             }
@@ -558,7 +554,7 @@ namespace nsCDEngine.Engines.ThingService
                 else
                 {
                     // No thing subscriptions returned!
-                    //return null; //TODO: we should state that something went wrong with the SensorProvider but not return here as the Config was already collected;
+                    //return null //TODO: we should state that something went wrong with the SensorProvider but not return here as the Config was already collected
                 }
             }
 
@@ -575,10 +571,7 @@ namespace nsCDEngine.Engines.ThingService
                     }
                     if (thingExport.ThingReferencesToExport != null)
                     {
-                        if (thingConfig.ThingReferences == null)
-                        {
-                            thingConfig.ThingReferences = new List<TheThingReference>();
-                        }
+                        thingConfig.ThingReferences ??= new List<TheThingReference>();
                         thingConfig.ThingReferences.AddRange(thingExport.ThingReferencesToExport);
                     }
                 }
@@ -588,7 +581,7 @@ namespace nsCDEngine.Engines.ThingService
                     {
                         // It's a legacy thing: no config properties and no custom config returned
                         // TODO Should we return all thing properties? For now just fail and leave it up to the caller
-                        //return null; //TODO: we should state that something went wrong with the SensorProvider but not return here as the Config was already collected;
+                        //return null //TODO: we should state that something went wrong with the SensorProvider but not return here as the Config was already collected
                     }
                 }
             }
@@ -722,12 +715,9 @@ namespace nsCDEngine.Engines.ThingService
                             var thingReference = TheCommonUtils.DeserializeJSONStringToObject<TheThingReference>(TheCommonUtils.CStr(configValue.Value));
                             if (thingReference != null)
                             {
-                                if (thingReferenceMap != null)
+                                if (thingReferenceMap != null && thingReferenceMap.TryGetValue(thingReference.ID, out var newID))
                                 {
-                                    if (thingReferenceMap.TryGetValue(thingReference.ID, out var newID))
-                                    {
-                                        thingReference.ID = newID;
-                                    }
+                                    thingReference.ID = newID;
                                 }
                                 var thingMID = thingReference.GetMatchingThingMID();
                                 if (thingMID != null)
@@ -736,7 +726,9 @@ namespace nsCDEngine.Engines.ThingService
                                 }
                             }
                         }
-                        catch { }
+                        catch { 
+                            //intended
+                        }
                     }
 
                     properties.Add(new cdeP { Name = configValue.Name, Value = configValue.Value, cdeT = (int) (configValue.cdeT ?? ePropertyTypes.NOCHANGE) });
@@ -775,7 +767,7 @@ namespace nsCDEngine.Engines.ThingService
                     else
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(7723, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, $"Error applying config properties: required specialization parameter not specified", eMsgLevel.l1_Error, $"{thingConfig}: {unspecifiedProp.Key}"));
-                        return null;
+                        return new List<cdeP>();
                     }
                 }
             }
@@ -825,9 +817,9 @@ namespace nsCDEngine.Engines.ThingService
                 }
 
                 var thingSubscribeResult = await this.SubscribeToThingsAsync(thingConfig.ThingSubscriptions);
-                //var msgSubscribeToThings = new MsgSubscribeToThings { SubscriptionRequests = new List<TheThingSubscription>() };
-                //msgSubscribeToThings.SubscriptionRequests.AddRange(thingConfig.ThingSubscriptions);
-                //var thingSubscribeResult = await TheCommRequestResponse.PublishRequestJSonAsync<MsgSubscribeToThings, MsgSubscribeToThingsResponse>(this, this, msgSubscribeToThings);
+                //var msgSubscribeToThings = new MsgSubscribeToThings { SubscriptionRequests = new List<TheThingSubscription>() }
+                //msgSubscribeToThings.SubscriptionRequests.AddRange(thingConfig.ThingSubscriptions)
+                //var thingSubscribeResult = await TheCommRequestResponse.PublishRequestJSonAsync<MsgSubscribeToThings, MsgSubscribeToThingsResponse>(this, this, msgSubscribeToThings)
                 if (thingSubscribeResult != null)
                 {
                     if (string.IsNullOrEmpty(thingSubscribeResult.Error))
@@ -1086,7 +1078,7 @@ namespace nsCDEngine.Engines.ThingService
         }
         public override bool Equals(object obj)
         {
-            return (obj is TheThingIdentity) ? base.GetHashCode() == obj.GetHashCode() : false;
+            return (obj is TheThingIdentity) && base.GetHashCode() == obj.GetHashCode();
         }
         protected static void AddHash(ref int hash, object obj)
         {
@@ -1130,15 +1122,17 @@ namespace nsCDEngine.Engines.ThingService
 
         public List<TheThing> GetMatchingThings()
         {
-            var things = new List<TheThing>();
-            things.Add(GetThing()); // TODO do ThingFinder lookup etc.
+            var things = new List<TheThing>
+            {
+                GetThing()
+            };
             return things;
         }
 
         public TheThing GetMatchingThing()
         {
             var targetThings = GetMatchingThings();
-            if (targetThings.Count() != 1)
+            if (targetThings.Count != 1)
             {
                 return null;
             }
@@ -1164,16 +1158,13 @@ namespace nsCDEngine.Engines.ThingService
             {
                 tThing = TheThingRegistry.GetThingByMID(ThingMID.Value);
             }
-            if (tThing == null)
-            {
-                tThing = TheThingRegistry.GetThingByID(EngineName, ID, true);
-            }
+            tThing ??= TheThingRegistry.GetThingByID(EngineName, ID, true);
             return tThing;
         }
 
         public override bool Equals(object obj)
         {
-            if (!(obj is TheThingReference))
+            if (obj is not TheThingReference)
             {
                 return base.Equals(obj);
             }

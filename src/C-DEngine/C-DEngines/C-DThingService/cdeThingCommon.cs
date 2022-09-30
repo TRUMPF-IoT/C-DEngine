@@ -51,25 +51,22 @@ namespace nsCDEngine.Engines.ThingService
             return true;
         }
 
-        private class thingSendStatus
+        private sealed class thingSendStatus
         {
             public DateTimeOffset lastSend;
             public bool Pending;
         }
 
-        private static readonly cdeConcurrentDictionary<Guid, thingSendStatus> lastGlobalThingSendPerNode = new cdeConcurrentDictionary<Guid, thingSendStatus>();
+        private static readonly cdeConcurrentDictionary<Guid, thingSendStatus> lastGlobalThingSendPerNode = new ();
         private static void SendGlobalThings(Guid targetNodeId)
         {
             // Do not send more often than every 60 seconds
-            if (lastGlobalThingSendPerNode.TryGetValue(targetNodeId, out thingSendStatus timeAndPending))
-            {
-                if (DateTimeOffset.Now.Subtract(timeAndPending.lastSend).TotalSeconds < 59) // && !timeAndPending.Pending)
-                    return;
-            }
+            if (lastGlobalThingSendPerNode.TryGetValue(targetNodeId, out thingSendStatus timeAndPending) && DateTimeOffset.Now.Subtract(timeAndPending.lastSend).TotalSeconds < 59)
+                return;
             var globalThings = TheThingRegistry.GetThingsByFunc("*", (t) => TheThing.GetSafePropertyBool(t, "IsRegisteredGlobally") && t.IsOnLocalNode());
             if (globalThings != null)
             {
-                TSM tTSM = new TSM(eEngineName.ContentService, "CDE_SYNC_THINGS", TheCommonUtils.SerializeObjectToJSONString(globalThings));
+                TSM tTSM = new (eEngineName.ContentService, "CDE_SYNC_THINGS", TheCommonUtils.SerializeObjectToJSONString(globalThings));
                 tTSM.SetToServiceOnly(true);
                 if (targetNodeId == Guid.Empty)
                     TheCommCore.PublishCentral(tTSM);
@@ -90,7 +87,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pIncoming"></param>
         public override void HandleMessage(ICDEThing sender, object pIncoming)
         {
-            if (!(pIncoming is TheProcessMessage pMsg) || pMsg.Message == null) return;
+            if (pIncoming is not TheProcessMessage pMsg || pMsg.Message == null) return;
             string[] tCmd = pMsg.Message.TXT.Split(':');
             switch (tCmd[0])   //string 2 cases
             {
@@ -119,7 +116,7 @@ namespace nsCDEngine.Engines.ThingService
                 case "CDE_REGISTERTHING":
                     if (MyThingRegistry != null)
                     {
-                        //if (TheScopeManager.IsNodeTrusted(pMsg.Message.GetOriginator())) // CODE-REVIEW: This security enhancement will not all Global Things to work anymore. WE need to bring this back when we have the meshmanager working
+                        //if (TheScopeManager.IsNodeTrusted(pMsg.Message.GetOriginator())) // CODE-REVIEW: This security enhancement will not allow Global Things to work anymore. WE need to bring this back when we have the meshmanager working
                         //{
                         //    TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ContentService, String.Format("Register Thing from untrusted node received {0} - disallowed", pMsg.Message.GetOriginator()), eMsgLevel.l3_ImportantMessage));
                         //    return;
@@ -156,7 +153,7 @@ namespace nsCDEngine.Engines.ThingService
                     if (pMsg.Message.PLS.Length > 2)
                     {
                         List<TheThing> tList = TheCommonUtils.DeserializeJSONStringToObject<List<TheThing>>(pMsg.Message.PLS);
-                        TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, String.Format("CDE_SYNC_THINGS: Received for node {0}", pMsg.Message.GetOriginator()), eMsgLevel.l3_ImportantMessage)); //, pMsg.Message.PLS));
+                        TheBaseAssets.MySYSLOG.WriteToLog(7678, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, String.Format("CDE_SYNC_THINGS: Received for node {0}", pMsg.Message.GetOriginator()), eMsgLevel.l3_ImportantMessage)); 
                         TheThingRegistry.SyncGlobalThings(pMsg.Message.GetOriginator(), tList);
                     }
                     break;

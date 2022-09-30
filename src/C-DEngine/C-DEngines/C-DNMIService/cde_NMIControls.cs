@@ -605,8 +605,7 @@ namespace nsCDEngine.Engines.NMIService
             if (pTargetControl != null)
             {
                 MyTarget = pTargetControl;
-                if (MyChildren == null)
-                    MyChildren = new List<TheNMIBaseControl>();
+                MyChildren ??= new List<TheNMIBaseControl>();
                 MyTarget.MyChildren.Add(this);    
             }
             if (pTRF != null)
@@ -629,8 +628,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="pValue">Value to be set</param>
         public virtual void SetProperty(string pName, object pValue)
         {
-            if (PropertyBag == null)
-                PropertyBag = new cdeConcurrentDictionary<string, object>();
+            PropertyBag ??= new cdeConcurrentDictionary<string, object>();
 
             PropertyBag[pName] = pValue;
         }

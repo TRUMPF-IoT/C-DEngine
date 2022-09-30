@@ -130,7 +130,7 @@ namespace nsCDEngine.Engines.ThingService
         [Obsolete("Retired in 5.142: Please use TheLoggerFactory")]
         public static void LogEvent(string pEventName, eMsgLevel pEventLevel, string pEventText = null, string pEventTrigger = null, string pEventAction = null)
         {
-            TheEventLogData tSec = new TheEventLogData
+            TheEventLogData tSec = new ()
             {
                 EventCategory=eLoggerCategory.RuleEvent,
                 EventTime = DateTimeOffset.Now,

@@ -1753,7 +1753,6 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (TheCDEngines.MyThingEngine.MyThingRegistry == null || TheCDEngines.MyThingEngine.MyThingRegistry.MyPropertyMaps == null)
                 return Guid.Empty;
-            //TODO: How do we unregister the event in case the Thing is deleted?
             TheThing tThing = GetThingByMID("*", pSourceThing, true);
             if (tThing != null)
             {

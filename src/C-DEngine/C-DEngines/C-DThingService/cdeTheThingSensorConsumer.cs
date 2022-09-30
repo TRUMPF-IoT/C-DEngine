@@ -231,68 +231,6 @@ namespace nsCDEngine.Engines.ThingService
             public TheSensorSubscription TargetSensor;
         }
 
-        //public class TheThingProcessor : TheThingSubscription
-        //{
-        //    public string ProcessorId;
-        //    public List<TheThingReference> Sources;
-        //    public TheThingReference Target;
-        //    public string TargetProperty;
-        //    [cdeNewtonsoft.Json.JsonExtensionData(ReadData = true, WriteData = true)]
-        //    public Dictionary<string, object> ExtensionData { get; set; }
-        //    public object GetValueFromExtensionData(string name)
-        //    {
-        //        object value = null;
-        //        ExtensionData?.TryGetValue(name, out value);
-        //        return value;
-        //    }
-        //}
-
-        //public class TheThingProcessorStatus
-        //{
-        //    public TheThingProcessor ThingProcessor;
-        //    public string Error;
-        //}
-
-        //public class MsgAddThingProcessors
-        //{
-        //    public List<TheThingProcessor> ThingProcessors;
-        //}
-
-        //public class MsgAddThingProcessors<T> where T : TheThingProcessor
-        //{
-        //    public List<T> ThingProcessors;
-        //}
-
-        //public class MsgAddThingProcessorsResponse
-        //{
-        //    public List<TheThingProcessorStatus> ThingProcessorStatus { get; set; }
-        //    public string Error { get; set; }
-        //    public MsgAddThingProcessorsResponse()
-        //    {
-        //        ThingProcessorStatus = new List<TheThingProcessorStatus>();
-        //    }
-
-        //    public string GetSubscriptionErrors()
-        //    {
-        //        return ThingProcessorStatus?.Where(status => !string.IsNullOrEmpty(status.Error)).Aggregate("", (s, status) => $"{s}{status.ThingProcessor.ProcessorId}:{status.Error},").TrimEnd(',');
-        //    }
-        //}
-
-        //public class MsgAddThingProcessorsResponse<TProcessorStatus> where TProcessorStatus : TheThingProcessorStatus
-        //{
-        //    public List<TProcessorStatus> ThingProcessorStatus { get; set; }
-        //    public string Error { get; set; }
-        //    public MsgAddThingProcessorsResponse()
-        //    {
-        //        ThingProcessorStatus = new List<TProcessorStatus>();
-        //    }
-
-        //    public string GetSubscriptionErrors()
-        //    {
-        //        return ThingProcessorStatus?.Where(status => !string.IsNullOrEmpty(status.Error)).Aggregate("", (s, status) => $"{s}{status.ThingProcessor.ProcessorId}:{status.Error},").TrimEnd(',');
-        //    }
-        //}
-
         public class MsgSubscribeToThings
         {
             public List<TheThingSubscription> SubscriptionRequests { get; set; }
@@ -492,10 +430,10 @@ namespace nsCDEngine.Engines.ThingService
             public delegate List<TheThingSubscriptionStatus> UnsubscribeHandler(List<Guid> subscriptionIds, bool unsubscribeAll);
 
 
-            SubscribeHandlerAsync _subscribeHandler;
-            RefreshSubscriptionStateHandler _refreshSubscriptionStateHandler;
-            GetSubscriptionsHandler _getSubscriptionsHandler;
-            UnsubscribeHandler _unsubscribeHandler;
+            readonly SubscribeHandlerAsync _subscribeHandler;
+            readonly RefreshSubscriptionStateHandler _refreshSubscriptionStateHandler;
+            readonly GetSubscriptionsHandler _getSubscriptionsHandler;
+            readonly UnsubscribeHandler _unsubscribeHandler;
 
             public TheSensorConsumerHandler(SubscribeHandlerAsync subscribeHandler, RefreshSubscriptionStateHandler refreshSubscriptionStateHandler, GetSubscriptionsHandler getSubscriptionsHandler, UnsubscribeHandler unsubscribeHandler)
             {
