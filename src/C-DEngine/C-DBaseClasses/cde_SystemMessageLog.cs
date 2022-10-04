@@ -417,11 +417,8 @@ namespace nsCDEngine.BaseClasses
         [Conditional("CDE_SYSLOG")]
         internal static void ToCo(string text, bool Force)
         {
-            if (TheBaseAssets.MyServiceHostInfo?.DisableConsole != true)
-            {
-                if (TheBaseAssets.MyServiceHostInfo == null || TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.OFF || Force)
-                    Console.WriteLine("{0}:{1}", Interlocked.Increment(ref LogSerial), text);
-            }
+            if (TheBaseAssets.MyServiceHostInfo?.DisableConsole != true && (TheBaseAssets.MyServiceHostInfo == null || TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.OFF || Force))
+                Console.WriteLine("{0}:{1}", Interlocked.Increment(ref LogSerial), text);
         }
 
         private static long LogSerial;

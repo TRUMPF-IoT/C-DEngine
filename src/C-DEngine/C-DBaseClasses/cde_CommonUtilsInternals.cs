@@ -809,12 +809,9 @@ namespace nsCDEngine.BaseClasses
             /// <param name="doFire">Action that will invoke the actual action for the event. This allows for the caller to provide arguments to the invokation.</param>
             protected void FireEvent(string pEventName, Action<T> doFire)
             {
-                if (!string.IsNullOrEmpty(pEventName))
+                if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.TryGetValue(pEventName, out var action))
                 {
-                    if (MyRegisteredEvents.TryGetValue(pEventName, out var action))
-                    {
-                        doFire(action);
-                    }
+                    doFire(action);
                 }
             }
         }
@@ -1347,11 +1344,8 @@ namespace nsCDEngine.BaseClasses
             if (string.IsNullOrEmpty(baseDirectory))
                 baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-            if (!string.IsNullOrEmpty(baseDirectory))
-            {
-                if (!baseDirectory.EndsWith(System.IO.Path.DirectorySeparatorChar.ToString()))
-                    baseDirectory += System.IO.Path.DirectorySeparatorChar.ToString();
-            }
+            if (!string.IsNullOrEmpty(baseDirectory) && !baseDirectory.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                baseDirectory += Path.DirectorySeparatorChar.ToString();
             return baseDirectory;
         }
 
@@ -1452,11 +1446,8 @@ namespace nsCDEngine.BaseClasses
             {
                 fileToReturn = fileToReturn.Replace('/', '\\');
             }
-            if (!AllowCacheAccess)
-            {
-                if (fileToReturn.ToLower().Contains("\\cache") || fileToReturn.ToLower().Contains("/cache"))   //do not allow access to cache folder!
-                    return "";
-            }
+            if (!AllowCacheAccess && (fileToReturn.ToLower().Contains("\\cache") || fileToReturn.ToLower().Contains("/cache")))
+                return "";
             return fileToReturn;
         }
 

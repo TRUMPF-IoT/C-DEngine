@@ -79,17 +79,19 @@ namespace nsCDEngine.Communication
                     }
                     if (string.IsNullOrEmpty(tSubTopicRealScope) && !TheBaseAssets.MyServiceHostInfo.AllowUnscopedMesh)
                     {
+#pragma warning disable S1066 // Collapsible "if" statements should be merged
                         if (TheBaseAssets.MyScopeManager.IsScopingEnabled && !string.IsNullOrEmpty(MyTargetNodeChannel.RealScopeID) && !TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //RScope-OK //IDST-??: check of unscoped telegrams - might need to go to unscoped devices?
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(296, string.IsNullOrEmpty(tTopicName) || TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"New Subscription to UNSCOPED Topic={pTopics[i]} not allowed as current node is Scoped!", eMsgLevel.l2_Warning));
                             continue;
                         }
-                        //Coming later for more security: No more Unscoped subscriptions except the plugin service has "IsAllowedUnscopedProcessing" enabled
-                        ////if (!TheBaseAssets.MyScopeManager.IsScopingEnabled && string.IsNullOrEmpty(tChannelRealScope) && pTopics[i] != eEngineName.ContentService && pTopics[i] != eEngineName.NMIService)
-                        ////{
-                        ////    TheBaseAssets.MySYSLOG.WriteToLog(296, string.IsNullOrEmpty(tTopicName) || TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"New Subscription to UNSCOPED Topic={pTopics[i]} not allowed on unscoped Node!", eMsgLevel.l2_Warning));
-                        ////    continue;
-                        ////}
+#pragma warning restore S1066 // Collapsible "if" statements should be merged
+                             //Coming later for more security: No more Unscoped subscriptions except the plugin service has "IsAllowedUnscopedProcessing" enabled
+                             ////if (!TheBaseAssets.MyScopeManager.IsScopingEnabled && string.IsNullOrEmpty(tChannelRealScope) && pTopics[i] != eEngineName.ContentService && pTopics[i] != eEngineName.NMIService)
+                             ////{
+                             ////    TheBaseAssets.MySYSLOG.WriteToLog(296, string.IsNullOrEmpty(tTopicName) || TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"New Subscription to UNSCOPED Topic={pTopics[i]} not allowed on unscoped Node!", eMsgLevel.l2_Warning));
+                             ////    continue;
+                             ////}
                     }
                     bool WasFound = false;
                     foreach (string t in MySubscriptions.TheKeys)

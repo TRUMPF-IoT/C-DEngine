@@ -144,6 +144,7 @@ namespace nsCDEngine.Communication
                         else
 #endif
                         {
+#if CDE_USECSWS
                             TheWSProcessor tWS = new (null);
                             tWS.eventConnected += sinkWSconnected;
                             tWS.SetRequest(new TheRequestData());
@@ -153,6 +154,9 @@ namespace nsCDEngine.Communication
                                 TheBaseAssets.MySYSLOG.WriteToLog(2302, new TSM("QueuedSender", $"Could not create WSCS QS:{myTargetNodeChannel.ToMLString()}", eMsgLevel.l1_Error), true);
                                 return false;
                             }
+#else
+                            TheBaseAssets.MySYSLOG.WriteToLog(2302, new TSM("QueuedSender", $"No WebSocket Stack available therefore could not create WSCS QS:{myTargetNodeChannel.ToMLString()}", eMsgLevel.l1_Error), true);
+#endif
                         }
                     }
                     else
@@ -519,7 +523,7 @@ namespace nsCDEngine.Communication
         private readonly TheMirrorCache<TheMetaDataBase> MyJSKnownFields;
         private readonly cdeConcurrentDictionary<Guid, byte> MyJSKnownThings;
 
-        #region Cleanup and Excption Handling
+#region Cleanup and Excption Handling
 
 
         /// <summary>
@@ -777,7 +781,7 @@ namespace nsCDEngine.Communication
                 MyTargetNodeChannel = null;
             }
         }
-        #endregion
+#endregion
 
         /// <summary>
         /// Only used for "pickup messages" (no Topic, no TSM)
@@ -824,13 +828,10 @@ namespace nsCDEngine.Communication
 
             TheCDEKPIs.IncrementKPI(eKPINames.QSInserted);
 
-            if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
+            if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON && string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID) && TheBaseAssets.MyScopeManager.IsScopingEnabled)
             {
-                if (string.IsNullOrEmpty(myTargetNodeChannel.RealScopeID) && TheBaseAssets.MyScopeManager.IsScopingEnabled) //RScope-OK: JavaScript browser on primary scope only
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(2320, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} reject - JavaScript Node not logged on, yet", eMsgLevel.l6_Debug), true);
-                    return false;
-                }
+                TheBaseAssets.MySYSLOG.WriteToLog(2320, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Message to {myTargetNodeChannel.ToMLString()} reject - JavaScript Node not logged on, yet", eMsgLevel.l6_Debug), true);
+                return false;
             }
 
             if (!(TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay || TheBaseAssets.MyServiceHostInfo.IsIsolated || TheCommonUtils.IsLocalhost(myTargetNodeChannel.cdeMID) ||
@@ -1044,11 +1045,13 @@ namespace nsCDEngine.Communication
 
                 if (tHasDirectAddress && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))     //IDST-OK: Quick check if the TSM with a direct address is for this QS since it will not relay
                 {
+#pragma warning disable S1066 // Collapsible "if" statements should be merged
                     if (!tDirectGuid.Equals(myTargetNodeChannel.cdeMID) && !tDirectGuid.Equals(myTargetNodeChannel.TruDID))
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(23213, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("QueuedSender", $"Topic({tTopicNameOnly} from ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)} will not be relayed to {myTargetNodeChannel.ToMLString()} due to designated Target in Topic", eMsgLevel.l2_Warning), true);//ORG-OK
                         return false;
                     }
+#pragma warning restore S1066 // Collapsible "if" statements should be merged
                 }
 
                 if (WasTSMSeenBefore(pMessage, tTopicRealScope, true))
@@ -1601,7 +1604,7 @@ namespace nsCDEngine.Communication
                         tMsg.OrgMessage.SID = null;//SECURITY: Browser does not get nor need the SID
                     }
 
-                    #region Batch Serialization
+#region Batch Serialization
                     IsBatchOn++;
                     if (MCQCount == 0 || IsBatchOn > TheBaseAssets.MyServiceHostInfo.MaxBatchedTelegrams || tMsg.IsChunked)
                     {
@@ -1619,7 +1622,7 @@ namespace nsCDEngine.Communication
                     }
                     if (tSendBufferStr.Length > 1) tSendBufferStr.Append(",");
                     tSendBufferStr.Append(TheCommonUtils.SerializeObjectToJSONString(tDev));
-                    #endregion
+#endregion
                 }
                 else
                     IsBatchOn = 0;
@@ -1636,7 +1639,7 @@ namespace nsCDEngine.Communication
         }
 
 
-        #region TSM History Management
+#region TSM History Management
         internal TheMirrorCache<TheSentRegistryItem> MyTSMHistory = null;
         internal int MyTSMHistoryCount = 0;
 
@@ -1681,7 +1684,7 @@ namespace nsCDEngine.Communication
             return false;
         }
 
-        #endregion
+#endregion
 
     }
 }

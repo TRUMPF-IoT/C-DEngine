@@ -187,11 +187,13 @@ namespace nsCDEngine.Communication
                             TheBaseAssets.MyServiceHostInfo.MyStationWSPort++;
                             TheBaseAssets.MySettings.UpdateLocalSettings();
                         }
+#if CDE_USECSWS
                         MyWebSockets = new TheWSServer();
                         MyWebSockets.Startup();
                         if (MyWebSockets.IsActive)
                             TheBaseAssets.MySYSLOG.WriteToLog(5051, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSocketCS Server Started (License see http://sta.github.io/websocket-sharp/)", eMsgLevel.l3_ImportantMessage));
                         else
+#endif
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(5052, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSocketCS Server failed to Start - WebSockets will be disabled and fallback to http is on", eMsgLevel.l1_Error));
                             TheBaseAssets.MyServiceHostInfo.DisableWebSockets = true;
@@ -1153,7 +1155,7 @@ namespace nsCDEngine.Communication
             return true;
         }
 
-        #region Publish Error handling
+#region Publish Error handling
         internal static void sinkConnected(TheQueuedSender pSend, TheChannelInfo pChannel)
         {
             //JavaScript Connection
@@ -1167,7 +1169,7 @@ namespace nsCDEngine.Communication
                 pSend.eventConnected -= sinkConnected;
             }
         }
-        #endregion
+#endregion
 
 
     }

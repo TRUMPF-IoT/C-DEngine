@@ -24,7 +24,7 @@
     <ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
     <!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
-    <DefineConstants>TRACE;CDE_SYSLOG;CDE_USECSWS;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TRACE;CDE_SYSLOG;$(DefineConstants)</DefineConstants>
 	  <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
@@ -61,7 +61,7 @@
   </Choose>
 
   <ItemGroup>
-    <None Include="toplogo-128.png" Pack="true" PackagePath=""/>
+    <None Include="toplogo-128.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
@@ -137,7 +137,7 @@
 
   <Import Project="..\Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems" Label="Shared" Condition="$(DefineConstants.Contains('CDE_INTNEWTON'))" />
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.JSON" Version="13.0.1" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))"/>
+    <PackageReference Include="Newtonsoft.JSON" Version="13.0.1" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))" />
   </ItemGroup>
 
   <Target Name="CopyUpdaterEXEBeforeBuild" BeforeTargets="BeforeBuild">

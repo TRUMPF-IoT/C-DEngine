@@ -912,10 +912,7 @@ namespace nsCDEngine
                                 {
                                     cancelRegistration = cancelToken.Value.Register(() => { taskCS.TrySetCanceled(); });
                                 }
-                                if (!thingStream.HasRegisteredEvents(eStoreEvents.HasUpdates))
-                                {
-
-                                }
+                                //if (!thingStream.HasRegisteredEvents(eStoreEvents.HasUpdates))
                                 thingStream.RegisterEvent(eStoreEvents.HasUpdates, storeUpdated);
                                 await TheCommonUtils.TaskWaitTimeout(taskCS.Task, waitForNext, cancelToken).ConfigureAwait(false);
                             }

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 #pragma warning disable 1591
 
 namespace nsCDEngine.ViewModels
@@ -635,7 +636,6 @@ namespace nsCDEngine.ViewModels
             return IsDirty;
         }
 
-        private int mStatusLevel;
         /// <summary>
         /// The current StatusLevel of the Relay - aggregates all Engine Status Levels to the highest level
         /// 0=Idle
@@ -652,11 +652,9 @@ namespace nsCDEngine.ViewModels
             // ReSharper disable once ValueParameterNotUsed
             internal set
             {
-                mStatusLevel = value;
                 int tNewLevel = StatusLevel;
-                if (mStatusLevel != tNewLevel)
+                if (value != tNewLevel)
                 {
-                    mStatusLevel = tNewLevel;
                     TheNMIEngine.SetUXProperty(Guid.Empty, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, // Engines.NMIService.TheNMIEngine.eOverallStatusButtonGuid,
                         $"Background={TheNMIEngine.GetStatusColor(tNewLevel)}");
                 }
@@ -2273,61 +2271,7 @@ namespace nsCDEngine.ViewModels
             }
         }
 
-        internal void SetRealScopeID(string pRealScopeID)
-        {
-            RealScopeID = pRealScopeID; //RScope-OK: Update Primary RScope
-            if (string.IsNullOrEmpty(RealScopeID))
-            {
-                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "Illegal Connect by Unscoped Node Detected!", eMsgLevel.l1_Error, $"{this}");
-                //throw new Exception("Illegal Connect by Unscoped Node Detected!"); This would prevent connection of unscoped nodes
-            }
-            else
-                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "QSender Scope Changed", eMsgLevel.l4_Message, $"{this} ({this?.RealScopeID?.Substring(0, 4).ToUpper()})");
-        }
-
-        internal bool AddAltScopes(List<string> pAlternateScopes)
-        {
-            if (pAlternateScopes?.Count > 0)
-            {
-                bool FoundAtLeastOne = false;
-                foreach (var ts in pAlternateScopes)
-                {
-                    if (RealScopeID != ts && !AltScopes.Contains(ts))
-                    {
-                        AltScopes.Add(ts);
-                        FoundAtLeastOne = true;
-                    }
-                }
-                return FoundAtLeastOne;
-            }
-            return false;
-        }
-
-        internal bool ContainsAltScope(string pInScope)
-        {
-            return AltScopes?.Contains(pInScope) == true;
-        }
-
-        internal bool HasRScope(string pInScope)
-        {
-            if ((string.IsNullOrEmpty(RealScopeID) && string.IsNullOrEmpty(pInScope)) || RealScopeID?.Equals(pInScope) == true || (AltScopes.Count > 0 && AltScopes.Contains(pInScope)))    //RScope-OK: New way of verifying Correct RScope
-                return true;
-            return false;
-        }
-
-        internal string GetScopes()
-        {
-            string ret = "";
-            if (!string.IsNullOrEmpty(RealScopeID)) //RScope-OK
-                ret += RealScopeID.Substring(0, 4).ToUpper();   //RScope-OK
-            foreach (var s in AltScopes)
-            {
-                ret += $" {s.Substring(0, 4).ToUpper()}";
-            }
-            return ret;
-        }
-
-        /// <summary>
+         /// <summary>
         /// Creates a new Channel Info from cdeSenderType and Target URL
         /// </summary>
         /// <param name="pSenderType">Requested Sender Type of the Channel</param>
@@ -2386,6 +2330,60 @@ namespace nsCDEngine.ViewModels
             };
         }
 
+        internal void SetRealScopeID(string pRealScopeID)
+        {
+            RealScopeID = pRealScopeID; //RScope-OK: Update Primary RScope
+            if (string.IsNullOrEmpty(RealScopeID))
+            {
+                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "Illegal Connect by Unscoped Node Detected!", eMsgLevel.l1_Error, $"{this}");
+                //throw new Exception("Illegal Connect by Unscoped Node Detected!"); This would prevent connection of unscoped nodes
+            }
+            else
+                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "QSender Scope Changed", eMsgLevel.l4_Message, $"{this} ({this?.RealScopeID?.Substring(0, 4).ToUpper()})");
+        }
+
+        internal bool AddAltScopes(List<string> pAlternateScopes)
+        {
+            if (pAlternateScopes?.Count > 0)
+            {
+                bool FoundAtLeastOne = false;
+                foreach (var ts in pAlternateScopes)
+                {
+                    if (RealScopeID != ts && !AltScopes.Contains(ts))
+                    {
+                        AltScopes.Add(ts);
+                        FoundAtLeastOne = true;
+                    }
+                }
+                return FoundAtLeastOne;
+            }
+            return false;
+        }
+
+        internal bool ContainsAltScope(string pInScope)
+        {
+            return AltScopes?.Contains(pInScope) == true;
+        }
+
+        internal bool HasRScope(string pInScope)
+        {
+            if ((string.IsNullOrEmpty(RealScopeID) && string.IsNullOrEmpty(pInScope)) || RealScopeID?.Equals(pInScope) == true || (AltScopes.Count > 0 && AltScopes.Contains(pInScope)))    //RScope-OK: New way of verifying Correct RScope
+                return true;
+            return false;
+        }
+
+        internal string GetScopes()
+        {
+            StringBuilder ret = new ();
+            if (!string.IsNullOrEmpty(RealScopeID)) //RScope-OK
+                ret.Append(RealScopeID.Substring(0, 4).ToUpper());   //RScope-OK
+            foreach (var s in AltScopes)
+            {
+                ret.Append($" {s.Substring(0, 4).ToUpper()}");
+            }
+            return ret.ToString();
+        }
+
         /// <summary>
         /// Compares two TheChannelInfos or this TheChannelInfo to a given TargetUrl
         /// </summary>
@@ -2400,11 +2398,8 @@ namespace nsCDEngine.ViewModels
             }
             else
             {
-                if (obj is TheChannelInfo tO)
-                {
-                    if (tO.cdeMID != Guid.Empty && cdeMID != Guid.Empty && tO.cdeMID == cdeMID)
-                        return true;
-                }
+                if (obj is TheChannelInfo tO && tO.cdeMID != Guid.Empty && cdeMID != Guid.Empty && tO.cdeMID == cdeMID)
+                    return true;
             }
             return false;
         }

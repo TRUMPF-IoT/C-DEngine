@@ -456,11 +456,8 @@ namespace nsCDEngine.BaseClasses
                             Array.Copy(KPIs, newKPIs, entries);
                             KPIs = newKPIs;
                         }
-                        if (KPIs.Length > entries)
-                        {
-                            if (KPIIndexes.TryAdd(name, entries))
-                                Interlocked.Exchange(ref KPIs[entries], value);
-                        }
+                        if (KPIs.Length > entries && KPIIndexes.TryAdd(name, entries))
+                            Interlocked.Exchange(ref KPIs[entries], value);
                         if (dontReset)
                         {
                             doNotReset.Add(name);

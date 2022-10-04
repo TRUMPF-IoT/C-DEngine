@@ -194,6 +194,7 @@ namespace nsCDEngine.Communication
                 {
                     #region Received BINARY Data in Post Data - Parsing
                     //REVIEW: This should no longer be used in the future...all telegrams should come in as HTTP Bodies
+#pragma warning disable S1066 // Collapsible "if" statements should be merged
                     if (pRequestData.PostData != null && pRequestData.PostData.Length > 0 && pRequestData.PostDataIdx >= 0)
                     {
                         int tPostDataLength = pRequestData.PostData.Length;
@@ -238,6 +239,7 @@ namespace nsCDEngine.Communication
                             }
                         }
                     }
+#pragma warning restore S1066 // Collapsible "if" statements should be merged
                     #endregion
                 }
                 DoExecuteCommand(pInTopic, pQSender, DoSendBackBuffer, pRequestData, pDevMessageList);
@@ -276,13 +278,10 @@ namespace nsCDEngine.Communication
                             tTopic = CommandParts[0];
                         }
                         TheCDEKPIs.IncrementKPI(eKPINames.CCTSMsReceived);
-                        if (CommandParts != null && CommandParts.Length == 4 && !CommandParts[2].Equals("1"))
+                        if (CommandParts != null && CommandParts.Length == 4 && !CommandParts[2].Equals("1") && !TheCommonUtils.ProcessChunkedMessage(CommandParts, recvMessage))
                         {
-                            if (!TheCommonUtils.ProcessChunkedMessage(CommandParts, recvMessage))
-                            {
-                                SendPulse = true;
-                                continue;
-                            }
+                            SendPulse = true;
+                            continue;
                         }
                         #endregion
 

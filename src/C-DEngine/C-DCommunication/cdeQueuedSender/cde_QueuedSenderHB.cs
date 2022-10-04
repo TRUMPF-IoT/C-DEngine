@@ -170,11 +170,8 @@ namespace nsCDEngine.Communication
                 return; //New in 4.205: HB is not checked if QSender is in post (for example during a large telegram going to a browser)
             }
 
-            if (MyTargetNodeChannel.IsWebSocket && !IsConnecting)
-            {
-                if (!TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType)) //IDST-OK: Only update session state for none-devices
-                    TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel.MySessionState);
-            }
+            if (MyTargetNodeChannel.IsWebSocket && !IsConnecting && !TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))
+                TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel.MySessionState);
             mInHeartBeatTimer = true;
 
             try
