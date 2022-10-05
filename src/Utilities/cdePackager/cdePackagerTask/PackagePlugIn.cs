@@ -2,15 +2,10 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+using cdePackager;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using cdePackager;
+using System;
 
 namespace cdePackagerTask
 {
@@ -38,7 +33,7 @@ namespace cdePackagerTask
 
         public void WriteLine(string text)
         {
-            //Log.LogMessage(text);
+            //intended
         }
     }
 }

@@ -11,61 +11,9 @@ using nsCDEngine.Security;
 
 namespace nsCDEngine.Engines
 {
-    internal class TheMiniRelayEngine : ICDEPlugin, ICDEThing
+    internal class TheMiniRelayEngine : ThePluginBase
     {
-        #region ICDEThing Methods
-        public void SetBaseThing(TheThing pThing)
-        {
-            MyBaseThing = pThing;
-        }
-        public TheThing GetBaseThing()
-        {
-            return MyBaseThing;
-        }
-        public cdeP GetProperty(string pName, bool DoCreate)
-        {
-            if (MyBaseThing != null)
-                return MyBaseThing.GetProperty(pName, DoCreate);
-            return null;
-        }
-        public cdeP SetProperty(string pName, object pValue)
-        {
-            if (MyBaseThing != null)
-                return MyBaseThing.SetProperty(pName, pValue);
-            return null;
-        }
-        public void RegisterEvent(string pName, Action<ICDEThing, object> pCallBack)
-        {
-            if (MyBaseThing != null)
-                MyBaseThing.RegisterEvent(pName, pCallBack);
-        }
-        public void UnregisterEvent(string pName, Action<ICDEThing, object> pCallBack)
-        {
-            if (MyBaseThing != null)
-                MyBaseThing.UnregisterEvent(pName, pCallBack);
-        }
-        public void FireEvent(string pEventName, ICDEThing sender, object pPara, bool FireAsync)
-        {
-            if (MyBaseThing != null)
-                MyBaseThing.FireEvent(pEventName, sender, pPara, FireAsync);
-        }
-        public bool HasRegisteredEvents(string pEventName)
-        {
-            if (MyBaseThing != null)
-                return MyBaseThing.HasRegisteredEvents(pEventName);
-            return false;
-        }
-        protected TheThing MyBaseThing;
-
-        protected bool mIsUXInitialized;
-        protected bool mIsInitCalled;
-        protected bool mIsInitialized;
-        public bool IsUXInit()
-        { return mIsUXInitialized; }
-        public bool IsInit()
-        { return mIsInitialized; }
-
-        public bool Init()
+        public override bool Init()
         {
             if (mIsInitCalled) return false;
             mIsInitCalled = true;
@@ -74,29 +22,7 @@ namespace nsCDEngine.Engines
             return true;
         }
 
-        public bool Delete()
-        {
-            mIsInitialized = false;
-            return true;
-        }
-
-
-        public bool CreateUX()
-        {
-            mIsUXInitialized = true;
-            return true;
-        }
-
-        #endregion
-
-        #region ICDEPlugin Interfaces
-        public IBaseEngine GetBaseEngine()
-        {
-            return MyBaseEngine;
-        }
-        private IBaseEngine MyBaseEngine;
-
-        public void InitEngineAssets(IBaseEngine pBase)
+        public override void InitEngineAssets(IBaseEngine pBase)
         {
             MyBaseEngine = pBase;
             MyBaseEngine.SetEngineName(GetType().FullName);
@@ -104,12 +30,11 @@ namespace nsCDEngine.Engines
             MyBaseEngine.SetIsMiniRelay(true);
             MyBaseEngine.SetVersion(TheBaseAssets.BuildVersion);
         }
-        #endregion
 
         /// <summary>
         /// Handles Messages sent from a host sub-engine to its clients
         /// </summary>
-        public void HandleMessage(ICDEThing sender, object pIncoming)
+        public override void HandleMessage(ICDEThing sender, object pIncoming)
         {
             if (pIncoming is not TheProcessMessage pMsg) return;
 

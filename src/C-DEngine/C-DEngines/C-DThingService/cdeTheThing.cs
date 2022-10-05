@@ -1732,6 +1732,8 @@ namespace nsCDEngine.Engines.ThingService
             cdeP tP = null;
             TheDataBase tParent = this;
             var tPath = TheCommonUtils.cdeSplit(pName, "].[", false, false);
+            if (MyPropertyBag == null)
+                MyPropertyBag = new();
             var tResBag = MyPropertyBag;
             for (int i = 0; i < tPath.Length; i++)
             {
@@ -1745,7 +1747,7 @@ namespace nsCDEngine.Engines.ThingService
                         tP = new cdeP(this) { Name = tName, cdeO = tParent.cdeMID };
                         if (tResBag.TryAdd(tName, tP) && !NoFireAdded)
                             FireEvent(eThingEvents.PropertyAdded, this, tP, true);
-                        if (i < tPath.Length - 1)
+                        if (i < tPath.Length - 1)  
                             tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
                         tResBag = tP.cdePB;
                     }
@@ -1762,12 +1764,11 @@ namespace nsCDEngine.Engines.ThingService
                         if (tP.cdePB == null && DoCreate)
                         {
                             tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
-                            //tP.SetProperty(tName, true); // CODE REVIEW: This adds the property to it's own cdePB, right?
                         }
                         tResBag = tP.cdePB;
                     }
                 }
-                if (tResBag == null && i < tPath.Length - 1)
+                if (tResBag == null) // && i < tPath.Length - 1) //If we keep this, there will be a "bug" recorded with SonarCloud that tResBag could be null in the last iteration of the for() loop
                 {
                     // If we still have to go further down but the next cdePB has not been created: give up.
                     return null;

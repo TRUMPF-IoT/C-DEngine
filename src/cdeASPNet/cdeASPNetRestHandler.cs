@@ -23,8 +23,6 @@ namespace cdeASPNetMiddleware
 
     public class cdeASPNetRestHandler
     {
-        public static string ExpiredText;
-
         private readonly RequestDelegate _next;
 
         public cdeASPNetRestHandler(RequestDelegate next)
@@ -41,11 +39,6 @@ namespace cdeASPNetMiddleware
         {
             var Response = pContext.Response;
             var Request = pContext.Request;
-            if (ExpiredText != null)
-            {
-                await Response.WriteAsync(ExpiredText);
-                return;
-            }
 
             if (TheBaseAssets.CryptoLoadMessage != null)
             {
@@ -61,7 +54,7 @@ namespace cdeASPNetMiddleware
 
             if (Request.Path.ToString().EndsWith("cdeRestart.aspx") && cdeASPNetCommon.IsTokenValid(Request))
             {
-                //HttpRuntime.UnloadAppDomain(); TODO: Restart ASP.NET Core
+                TheBaseAssets.MyApplication?.Shutdown(true);
                 return;
             }
             if (Request.Path.ToString().EndsWith("ashx", StringComparison.CurrentCultureIgnoreCase))

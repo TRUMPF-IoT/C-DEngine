@@ -532,7 +532,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (KPIIndexes == null)
                 CreateKPIIndexes();
-            KPIs ??= new long[KPIIndexes.Count];
+            KPIs ??= new long[KPIIndexes == null ? 1 : KPIIndexes.Count];
         }
 
         /// <summary>
@@ -561,7 +561,7 @@ namespace nsCDEngine.BaseClasses
                 if (pThing == null) return;
                 if (KPIIndexes == null)
                     CreateKPIIndexes();
-                KPIs ??= new long[KPIIndexes.Count];
+                KPIs ??= new long[KPIIndexes == null ? 1 : KPIIndexes.Count];
 
                 if (KPIs != null && KPIIndexes != null)
                 {

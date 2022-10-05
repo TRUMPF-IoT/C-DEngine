@@ -731,14 +731,14 @@ namespace nsCDEngine.BaseClasses
                 return pORG;
 
             var tOrgs = pORG.Split(';');
-            string res = "";
+            StringBuilder res = new();
             foreach (var t in tOrgs)
             {
                 if (res.Length > 0)
-                    res += " via ";
-                res += GetDeviceIDML(CGuid(t), AddToSpanStyle);
+                    res.Append(" via ");
+                res.Append(GetDeviceIDML(CGuid(t), AddToSpanStyle));
             }
-            return res;
+            return res.ToString();
         }
 
         /// <summary>
@@ -755,7 +755,7 @@ namespace nsCDEngine.BaseClasses
                     tNodeName = TheBaseAssets.MyServiceHostInfo.MyStationName;
             }
             else
-                tNodeName = $"{TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID}";
+                tNodeName = "HSI is not set, yet";
             return tNodeName;
         }
 

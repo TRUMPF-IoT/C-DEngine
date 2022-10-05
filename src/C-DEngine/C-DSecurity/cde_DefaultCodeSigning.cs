@@ -210,10 +210,8 @@ namespace nsCDEngine.Security
 
     internal class TheDefaultCodeSigning : ICDECodeSigning
     {
-        private static ICDESecrets MySecrets = null;
-        public TheDefaultCodeSigning(ICDESecrets pSecrets, ICDESystemLog pSysLog = null)
+        public TheDefaultCodeSigning(ICDESecrets _, ICDESystemLog pSysLog = null)
         {
-            MySecrets = pSecrets;
             MySYSLOG = pSysLog;
         }
 

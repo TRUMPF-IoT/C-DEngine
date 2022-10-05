@@ -160,7 +160,7 @@ namespace cdeUpdater
                         return;
                 }
                 string[] NewFiles = cdeSplit(target, ";:;", true, true);
-                List<string> MyNewFiles = new List<string>();
+                List<string> MyNewFiles = new ();
                 foreach (string tFile in NewFiles)
                 {
                     if (!File.Exists(tFile))
@@ -253,7 +253,7 @@ namespace cdeUpdater
             if (string.IsNullOrEmpty(pToSplit)) return new string[] { pToSplit };
             if (RemoveDuplicates)
             {
-                List<string> tList = new List<string>();
+                List<string> tList = new ();
                 int tPos;
                 int oldPos = 0;
                 do
@@ -278,7 +278,7 @@ namespace cdeUpdater
 
         private static void StartProcess(string pName, string pDire)
         {
-            using (Process mainProcess = new Process())
+            using (Process mainProcess = new ())
             {
                 mainProcess.StartInfo.FileName = pName + ".exe";
                 mainProcess.StartInfo.WorkingDirectory = pDire;
@@ -324,9 +324,9 @@ namespace cdeUpdater
         {
             try
             {
-                System.Management.ManagementScope scope = new System.Management.ManagementScope("root\\MicrosoftIISv2");
+                System.Management.ManagementScope scope = new ("root\\MicrosoftIISv2");
                 scope.Connect();
-                System.Management.ManagementObject appPool = new System.Management.ManagementObject(scope, new System.Management.ManagementPath("IIsApplicationPool.Name='W3SVC/AppPools/" + pPoolName + "'"), null);
+                System.Management.ManagementObject appPool = new (scope, new System.Management.ManagementPath("IIsApplicationPool.Name='W3SVC/AppPools/" + pPoolName + "'"), null);
                 if (DoRestart)
                     appPool?.InvokeMethod("Recycle", null, null);
                 else
@@ -340,7 +340,7 @@ namespace cdeUpdater
 
         private static void StartStopService(bool StartService, string processName, string processDirectory, int processPid)
         {
-            ServiceController service = new ServiceController(processName);
+            ServiceController service = new (processName);
             try
             {
                 if (StartService)
@@ -427,7 +427,7 @@ namespace cdeUpdater
 
         public static void SetSystemTime(DateTime pDate)
         {
-            SystemTime updatedTime = new SystemTime
+            SystemTime updatedTime = new ()
             {
                 Year = (ushort)pDate.Year,
                 Month = (ushort)pDate.Month,

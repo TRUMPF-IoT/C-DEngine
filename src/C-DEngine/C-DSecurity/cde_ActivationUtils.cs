@@ -19,6 +19,7 @@ namespace nsCDEngine.Activation
     /// <summary>
     /// Activation Flags
     /// </summary>
+    [Flags]
     public enum ActivationFlags : byte
     {
         /// <summary>
@@ -128,19 +129,19 @@ namespace nsCDEngine.Activation
             var bytesTemp = new byte[bytes.Length + 1];
             bytes.CopyTo(bytesTemp, 0);
             var x = new BigInteger(bytesTemp);
-            string output = "";
+            StringBuilder output = new ();
             var base32CodeArray = TheBaseAssets.MySecrets.GetCodeArray();
             do
             {
                 if ((output.Length + 1) % 7 == 0)
                 {
-                    output += "-";
+                    output.Append("-");
                 }
                 int digit = (int)(x % 32);
-                output += base32CodeArray[digit];
+                output.Append(base32CodeArray[digit]);
                 x /= 32;
             } while (x != 0);
-            return output.Reverse().Aggregate("", (s, c) => s + c);
+            return output.ToString().Reverse().Aggregate("", (s, c) => s + c);
         }
 
         /// <summary>

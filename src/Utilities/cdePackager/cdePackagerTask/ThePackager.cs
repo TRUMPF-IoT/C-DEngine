@@ -21,19 +21,17 @@ namespace cdePackager
         void WriteLine(string text);
     }
 
-    //public class
-
-    public class ThePackager
+    public static class ThePackager
     {
-        public static Dictionary<string, Type> MyCDEPluginTypes = new Dictionary<string, Type>();       //DIC-Allowed   STRING
+        static Dictionary<string, Type> MyCDEPluginTypes = new Dictionary<string, Type>();       //DIC-Allowed   STRING
 
         public static int PackagePlugIn(string pluginFilePath, string binDirectoryPath, string storeDirectoryPath,string pPlatform, ILogger logger, bool bDiagnostics, bool bCheckForFileOverwrite, out string error)
         {
-            if (!binDirectoryPath.EndsWith(Path.DirectorySeparatorChar.ToString()))// && !binDirectoryPath.EndsWith("."))
+            if (!binDirectoryPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
             {
                 binDirectoryPath += Path.DirectorySeparatorChar;
             }
-            if (storeDirectoryPath != null &&  !storeDirectoryPath.EndsWith(Path.DirectorySeparatorChar.ToString()))// && !storeDirectoryPath.EndsWith("."))
+            if (storeDirectoryPath != null &&  !storeDirectoryPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
             {
                 storeDirectoryPath += Path.DirectorySeparatorChar;
             }
@@ -73,18 +71,6 @@ namespace cdePackager
             }
 
             logger.WriteLine(packageStr);
-
-            //try
-            //{
-            //    var workingDirectory = Path.GetDirectoryName(pluginFilePath);
-            //    logger.WriteLine($"Setring working directory to {workingDirectory}");
-
-            //    Directory.SetCurrentDirectory(workingDirectory);
-            //}
-            //catch (Exception e)
-            //{
-            //    logger.WriteLine($"$Warning: unable to set working directory: {e.ToString()}");
-            //}
 
             if (File.Exists(Path.ChangeExtension(pluginFilePath, ".cdes")))
                 pluginFilePath = Path.ChangeExtension(pluginFilePath, ".cdes");
@@ -155,7 +141,7 @@ namespace cdePackager
                     Assembly tAss;
                     try
                     {
-                        // TODO load for reflection only first (to support cross-platform tooling). But needs to be in separate app domain like in the engine host. For now only do reflection when LoadFrom fails (i.e. native x86 assembly in x64 packager process).
+                        // load for reflection only first (to support cross-platform tooling). But needs to be in separate app domain like in the engine host. For now only do reflection when LoadFrom fails (i.e. native x86 assembly in x64 packager process).
                         tAss = Assembly.LoadFrom(pluginFilePath);
                     }
                     catch
@@ -168,13 +154,9 @@ namespace cdePackager
                         logger.WriteLine(diagInfo);
                     }
 
-                    var CDEPlugins = from t in tAss.GetTypes() //.GetTypes()
+                    var CDEPlugins = from t in tAss.GetTypes() 
                                      let ifs = t.GetInterfaces()
-                                     where ifs != null && ifs.Length > 0 && ((ifs.FirstOrDefault(i => i.AssemblyQualifiedName == typeof(ICDEPlugin).AssemblyQualifiedName) != null)
-#if CDE_METRO
- || ifs.Contains(typeof(ICDEUX))
-#endif
-)
+                                     where ifs != null && ifs.Length > 0 && (ifs.FirstOrDefault(i => i.AssemblyQualifiedName == typeof(ICDEPlugin).AssemblyQualifiedName) != null)
                                      select new { Type = t, t.Namespace, t.Name, t.FullName };
                     // ReSharper disable once PossibleMultipleEnumeration
                     if (CDEPlugins == null || !CDEPlugins.Any())
@@ -194,14 +176,10 @@ namespace cdePackager
                         // ReSharper disable once PossibleMultipleEnumeration
                         foreach (var Plugin in CDEPlugins)
                         {
-                            //TheSystemMessageLog.ToCo("Processing Plugin :" + Plugin.FullName);
-                            if (Plugin.Type.GetInterfaces().FirstOrDefault(itf => itf.FullName == typeof(ICDEPlugin).FullName) != null)
+                            if (Plugin.Type.GetInterfaces().FirstOrDefault(itf => itf.FullName == typeof(ICDEPlugin).FullName) != null && !MyCDEPluginTypes.ContainsKey(Plugin.FullName))
                             {
-                                if (!MyCDEPluginTypes.ContainsKey(Plugin.FullName))
-                                {
-                                    MyCDEPluginTypes.Add(Plugin.FullName, Plugin.Type);
-                                    logger.WriteLine(string.Format("Plugin {1} in file {0} - found and added", pluginFilePath, Plugin.FullName));
-                                }
+                                MyCDEPluginTypes.Add(Plugin.FullName, Plugin.Type);
+                                logger.WriteLine(string.Format("Plugin {1} in file {0} - found and added", pluginFilePath, Plugin.FullName));
                             }
                         }
                     }
@@ -248,9 +226,8 @@ namespace cdePackager
                         var tBase = new ThePackagerBaseEngine();
                         if (!EngineAssetInfoAttribute.ApplyEngineAssetAttributes(tType, tBase))
                         {
-                            Assembly tAssRunning = Assembly.LoadFrom(pluginFilePath);
-                            var tIPlugin = Activator.CreateInstance(tType) as ICDEPlugin;
-                            if (tIPlugin == null)
+                            //Assembly tAssRunning = Assembly.LoadFrom(pluginFilePath)
+                            if (!(Activator.CreateInstance(tType) is ICDEPlugin tIPlugin))
                             {
                                 error = "Could not activate Plugin-Service:" + tType;
                                 logger.WriteLine(error);
@@ -271,28 +248,7 @@ namespace cdePackager
                         if (tPluginPlatform != cdePlatform.NOTSET)
                             tInfo.Platform = tPluginPlatform;
 
-                        // Multi-platform mapping is now/will be done by the mesh manager, rather than in the packager
-                        //if (tInfo.AllPlatforms?.Count > 0)
-                        //{
-                        //    foreach (var platform in tInfo.AllPlatforms)
-                        //    {
-                        //        var tInfoClone = tInfo.Clone();
-                        //        tInfoClone.Platform = platform;
-                        //        var error2 = CreateCDEX(storeDirectoryPath, tInfoClone, out cdexPath);
-                        //        if (!string.IsNullOrEmpty(error2))
-                        //        {
-                        //            if (!string.IsNullOrEmpty(error))
-                        //            {
-                        //                error += "\r\n";
-                        //            }
-                        //            error += error2;
-                        //        }
-                        //    }
-                        //}
-                        //else
-                        {
-                            error = CreateCDEX(storeDirectoryPath, tInfo, logger, bCheckForFileOverwrite, out cdexPath);
-                        }
+                        error = CreateCDEX(storeDirectoryPath, tInfo, logger, bCheckForFileOverwrite, out cdexPath);
                     }
                     catch (Exception e)
                     {
@@ -317,12 +273,12 @@ namespace cdePackager
         {
             var pluginTempDirectory = Path.Combine(storeDirectoryPath, $"newCDEX_{Guid.NewGuid()}"); // ensure each plug-in/packging operation gets it's own directory if packaging overlaps for different platforms/flavors of the same plug-in
             var error = ThePluginPackager.CreatePluginPackage(tInfo, null, pluginTempDirectory, false, out cdexPath);
+            byte[] oldContent = null;
             if (string.IsNullOrEmpty(error))
             {
                 // Package it into a .CDEP for use with mesh manager
                 string cdepFileName = $"{tInfo.ServiceName.Replace('.', '-')}{(tInfo.Platform > 0 ? $" {tInfo.Platform}" : "")} V{tInfo.CurrentVersion:0.0000}.CDEP";
                 string cdepFilePath = Path.Combine(storeDirectoryPath, cdepFileName);
-                byte[] oldContent = null;
                 if (File.Exists(cdepFilePath))
                 {
                     if (bCheckForFileOverwrite)
@@ -347,7 +303,6 @@ namespace cdePackager
                     else
                     {
                         logger.WriteLine($"WARNING: Overwritten file was different: {cdepFilePath}.");
-                        //File.WriteAllBytes($"{cdepFilePath}.conflict", oldContent);
                     }
                 }
             }
@@ -359,39 +314,39 @@ namespace cdePackager
 
             var finalPluginPath = Path.Combine(storeDirectoryPath, Path.GetFileName(cdexPath));
 
+            oldContent = null;
+            try
             {
-                byte[] oldContent = null;
-                try
+                if (File.Exists(finalPluginPath))
                 {
-                    if (File.Exists(finalPluginPath))
+                    if (bCheckForFileOverwrite)
                     {
-                        if (bCheckForFileOverwrite)
-                        {
-                            logger.WriteLine($"WARNING: File conflict: {finalPluginPath} already existed.");
-                            oldContent = File.ReadAllBytes(finalPluginPath);
-                        }
-                        File.Delete(finalPluginPath);
+                        logger.WriteLine($"WARNING: File conflict: {finalPluginPath} already existed.");
+                        oldContent = File.ReadAllBytes(finalPluginPath);
                     }
-                    else
-                    {
-                        logger.WriteLine($"Creating file: {finalPluginPath}.");
-                    }
+                    File.Delete(finalPluginPath);
                 }
-                catch { }
-                File.Move(cdexPath, finalPluginPath);
-
-                if (oldContent != null)
+                else
                 {
-                    var newContent = File.ReadAllBytes(finalPluginPath);
-                    if (oldContent.SequenceEqual(newContent))
-                    {
-                        logger.WriteLine($"WARNING: Overwritten file was identical: {finalPluginPath}.");
-                    }
-                    else
-                    {
-                        logger.WriteLine($"WARNING: Overwritten file was different: {finalPluginPath}.");
-                        //File.WriteAllBytes($"{cdepFilePath}.conflict", oldContent);
-                    }
+                    logger.WriteLine($"Creating file: {finalPluginPath}.");
+                }
+            }
+            catch
+            {
+                //not needed
+            }
+            File.Move(cdexPath, finalPluginPath);
+
+            if (oldContent != null)
+            {
+                var newContent = File.ReadAllBytes(finalPluginPath);
+                if (oldContent.SequenceEqual(newContent))
+                {
+                    logger.WriteLine($"WARNING: Overwritten file was identical: {finalPluginPath}.");
+                }
+                else
+                {
+                    logger.WriteLine($"WARNING: Overwritten file was different: {finalPluginPath}.");
                 }
             }
             Directory.Delete(pluginTempDirectory, true);
@@ -402,17 +357,15 @@ namespace cdePackager
 
     class ThePackagerBaseEngine : IBaseEngine
     {
-        ThePluginInfo mPluginInfo = new ThePluginInfo { Platform = cdePlatform.X64_V3 }; // TODO Determine the platform from the plug-in/assembly?
-        TheEngineState EngineState = new TheEngineState();
+        readonly ThePluginInfo mPluginInfo = new ThePluginInfo { Platform = cdePlatform.X64_V3 }; 
+        readonly TheEngineState EngineState = new TheEngineState();
 
 
         public void SetEngineService(bool pIsService)
         {
             EngineState.IsService = pIsService;
-            //if (pIsService && !TheBaseAssets.MyServiceHostInfo.StationRoles.Contains(GetEngineName()))
-            //    TheBaseAssets.MyServiceHostInfo.StationRoles.Add(GetEngineName());
         }
-        public void SetMultiChannel(bool mIsMulti) 
+        public void SetMultiChannel(bool pIsMultiChannel) 
         {  
             // Not needed
         }
@@ -420,7 +373,7 @@ namespace cdePackager
 
         public void SetStatusLevel(int pLevel)
         {
-            //EngineState.StatusLevel = pLevel;
+            // Not needed
         }
 
         public TheBaseEngine GetBaseEngine()
@@ -435,7 +388,6 @@ namespace cdePackager
         public void SetIsolationFlags(bool AllowIsolation, bool AllowNodeHopp = false)
         {
             // Not needed
-
         }
 
         public void SetIsInitializing()
@@ -461,16 +413,12 @@ namespace cdePackager
                 EngineState.ServiceNode = pMessage?.GetOriginator() ?? TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID;
             }
             ResetInitialization();
-            //if (MyBaseThing != null)
-            //    MyBaseThing.GetBaseThing().FireEvent(eEngineEvents.EngineInitialized, MyBaseThing, null, false);
-            //EngineState.IsInitialized = true;
             SetEngineReadiness(true, null);
         }
 
         public bool HasChannels()
         {
             return false;
-            //return EngineState.MyEndpointURLs != null && EngineState.MyEndpointURLs.Count > 0;
         }
 
         public string GetVersion()
@@ -505,17 +453,9 @@ namespace cdePackager
         /// </summary>
         /// <param name="createDefaultLicense"></param>
         /// <param name="licenseAuthorities">Indicates which additional signatures are required on a license file.</param>
-        public void SetIsLicensed(bool createDefaultLicense = true, string[] licenseAuthorities = null)
+        public void SetIsLicensed(bool generateDefaultLicense = true, string[] LicenseAuthorities = null)
         {
-            if (!EngineState.IsInitialized)
-            {
-                //EngineState.IsLicensed = true;
-                //LicenseAuthorities = licenseAuthorities;
-                //if (createDefaultLicense)
-                //{
-                //    TheActivationManager.CreateDefaultLicense(GetEngineID());
-                //}
-            }
+            //not needed
         }
 
         public int GetLowestCapability()
@@ -562,20 +502,20 @@ namespace cdePackager
             EngineState.FriendlyName = pName;
             mPluginInfo.ServiceDescription = pName;
         }
-        public void SetEngineID(Guid pGuid)
+        public void SetEngineID(Guid pID)
         {
-            EngineState.EngineID = pGuid;
-            mPluginInfo.cdeMID = pGuid;
-            EngineState.Dashboard = pGuid.ToString();
+            EngineState.EngineID = pID;
+            mPluginInfo.cdeMID = pID;
+            EngineState.Dashboard = pID.ToString();
         }
-        public void SetPluginInfo(string pLongDescription, double pPrice, string pHomeUrl, string pIconUrl, string pDeveloper, string pDeveloperUrl, List<string> pCategories, string Copyrights = null)
+        public void SetPluginInfo(string LongDescription, double pPrice, string pHomeUrl, string pIconUrl, string pDeveloper, string pDeveloperUrl, List<string> pCategories, string CopyRights = null)
         {
-            mPluginInfo.LongDescription = pLongDescription;
+            mPluginInfo.LongDescription = LongDescription;
             mPluginInfo.Price = pPrice;
             mPluginInfo.HomeUrl = pHomeUrl;
             mPluginInfo.IconUrl = pIconUrl;
             mPluginInfo.Developer = pDeveloper;
-            if (string.IsNullOrEmpty(Copyrights))
+            if (string.IsNullOrEmpty(CopyRights))
                 mPluginInfo.Copyrights = DateTimeOffset.Now.Year + " " + pDeveloper;
             mPluginInfo.DeveloperUrl = pDeveloperUrl;
             mPluginInfo.Categories = pCategories;
@@ -615,8 +555,7 @@ namespace cdePackager
                 if (mPluginInfo.AllPlatforms == null)
                     mPluginInfo.AllPlatforms = new List<cdePlatform>();
                 if (GetEngineState() == null || GetEngineState().IsMiniRelay || GetEngineState().EngineType == null) return;
-                if (pPlatformList != null)
-                    mPluginInfo.AllPlatforms.AddRange(pPlatformList);
+                mPluginInfo.AllPlatforms.AddRange(pPlatformList);
             }
         }
 
