@@ -24,7 +24,7 @@ namespace cdeASPNetMiddleware
     public class cdeASPNetRestHandler
     {
         private readonly RequestDelegate _next;
-
+        public static string ExpiredText;
         public cdeASPNetRestHandler(RequestDelegate next)
         {
             _next = next;
@@ -39,6 +39,11 @@ namespace cdeASPNetMiddleware
         {
             var Response = pContext.Response;
             var Request = pContext.Request;
+            if (ExpiredText != null)
+            {
+                await Response.WriteAsync(ExpiredText);
+                return;
+            }
 
             if (TheBaseAssets.CryptoLoadMessage != null)
             {

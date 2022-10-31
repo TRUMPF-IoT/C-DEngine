@@ -1205,7 +1205,10 @@ namespace nsCDEngine.Communication
                         {
                             var town = TheCommonUtils.CGuid(pMessage.TXT.Split(':')[1]);
                             if (!MyJSKnownThings.ContainsKey(town) && !TheFormsGenerator.IsOwnerKnown(town))
-                                return false;
+                            {
+                                if (!pMessage.PLS.Contains("].["))
+                                    return false;
+                            }
                         }
                         if (pMessage.TXT.StartsWith("SETNP") && !MyJSKnownFields.ContainsID(TheCommonUtils.CGuid(pMessage.OWN)) && pMessage.TXT.Split(':').Length < 3)
                             return false;

@@ -1860,75 +1860,90 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pBaseProperty">If not null, all new properties will be sub-properties of this given property</param>
         public static void ClassPropertiesToThingProperties(TheThing pBaseThing, object MyValue, string pNamePrefix = "", cdeP pBaseProperty = null)
         {
+            ClassPropertiesToThingProperties(pBaseThing, MyValue,false, pNamePrefix, pBaseProperty);
+        }
+        /// <summary>
+        /// Converts fields and properties of a class into Thing Properties
+        /// </summary>
+        /// <param name="pBaseThing">Target Thing to create the properties for</param>
+        /// <param name="MyValue">Class containing the fields and properties</param>
+        /// <param name="pNamePrefix">Allows to add a prefix to all Thing Properties</param>
+        /// <param name="pBaseProperty">If not null, all new properties will be sub-properties of this given property</param>
+        /// <param name="NoCollectionRecursive">If true, no recursive collection processing</param>
+        public static void ClassPropertiesToThingProperties(TheThing pBaseThing, object MyValue, bool NoCollectionRecursive, string pNamePrefix = "", cdeP pBaseProperty = null)
+        {
             if (pBaseThing == null || MyValue == null) return;
-            object orgValue = null;
-            Type fType;
             List<PropertyInfo> PropInfoArray = MyValue.GetType().GetProperties().OrderBy(x => x.Name).ToList();
             foreach (PropertyInfo finfo in PropInfoArray)
             {
                 if (finfo.Name.StartsWith("cde")) //our internal variables must not be put into the propertybag
                     continue;
-                fType = finfo.PropertyType;
                 try
                 {
                     var nest = string.IsNullOrEmpty(pNamePrefix) ? "" : $"{pNamePrefix}";
-                    orgValue = finfo.GetValue(MyValue, null);
-                    if (fType == Type.GetType("System.DateTime") || fType == Type.GetType("System.DateTimeOffset"))
-                    {
-                        if (pBaseProperty != null)
-                            cdeP.SetSafePropertyDate(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CDate(orgValue));
-                        else
-                            TheThing.SetSafePropertyDate(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CDate(orgValue));
-                    }
-                    else if (fType == Type.GetType("System.Boolean"))
-                    {
-                        if (pBaseProperty != null)
-                            cdeP.SetSafePropertyBool(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CBool(orgValue));
-                        else
-                            TheThing.SetSafePropertyBool(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CBool(orgValue));
-                    }
-                    else if (IsNumeric(fType))
-                    {
-                        if (pBaseProperty != null)
-                            cdeP.SetSafePropertyNumber(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CDbl(orgValue));
-                        else
-                            TheThing.SetSafePropertyNumber(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CDbl(orgValue));
-                    }
-                    else if (fType == Type.GetType("System.String"))
-                    {
-                        if (pBaseProperty != null)
-                            cdeP.SetSafePropertyString(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CStr(orgValue));
-                        else
-                            TheThing.SetSafePropertyString(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CStr(orgValue));
-                    }
-                    else if (fType == Type.GetType("System.Byte[]") && orgValue != null)
-                    {
-                        if (pBaseProperty != null)
-                            pBaseProperty.SetProperty(finfo.Name, pNamePrefix + orgValue, ePropertyTypes.TBinary);
-                        else
-                            pBaseThing.SetProperty(finfo.Name, pNamePrefix + orgValue, ePropertyTypes.TBinary);
-                    }
-                    else if (fType.Namespace == "System.Collections.Generic")
-                    {
-                        if (orgValue is IEnumerable collection)
-                        {
-                            int no = 0;
-                            foreach (var item in collection)
-                            {
-                                ClassPropertiesToThingProperties(pBaseThing, item, pBaseProperty == null ? $"{nest}{finfo.Name}[{no}]_" : "", pBaseProperty);
-                                no++;
-                            }
-                        }
-                    }
-                    else if (fType.Namespace != "System")
-                    {
-                        ClassPropertiesToThingProperties(pBaseThing, orgValue, pBaseProperty == null ? $"{nest}{finfo.Name}_" : "", pBaseProperty);
-                    }
+                    SetThingProperty(pBaseThing, pNamePrefix, pBaseProperty, NoCollectionRecursive, MyValue, finfo, nest);
                 }
                 catch (Exception e)
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(466, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingRegistry", "ClassPropertiesToThingProperties", eMsgLevel.l1_Error, e.ToString()));
                 }
+            }
+        }
+
+        private static void SetThingProperty(TheThing pBaseThing, string pNamePrefix, cdeP pBaseProperty, bool NoCollectionRecursive, object MyValue, PropertyInfo finfo, string nest)
+        {
+            object orgValue = finfo.GetValue(MyValue, null);
+            Type fType = finfo.PropertyType;
+            if (fType == Type.GetType("System.DateTime") || fType == Type.GetType("System.DateTimeOffset"))
+            {
+                if (pBaseProperty != null)
+                    cdeP.SetSafePropertyDate(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CDate(orgValue));
+                else
+                    TheThing.SetSafePropertyDate(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CDate(orgValue));
+            }
+            else if (fType == Type.GetType("System.Boolean"))
+            {
+                if (pBaseProperty != null)
+                    cdeP.SetSafePropertyBool(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CBool(orgValue));
+                else
+                    TheThing.SetSafePropertyBool(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CBool(orgValue));
+            }
+            else if (IsNumeric(fType))
+            {
+                if (pBaseProperty != null)
+                    cdeP.SetSafePropertyNumber(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CDbl(orgValue));
+                else
+                    TheThing.SetSafePropertyNumber(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CDbl(orgValue));
+            }
+            else if (fType == Type.GetType("System.String"))
+            {
+                if (pBaseProperty != null)
+                    cdeP.SetSafePropertyString(pBaseProperty, pNamePrefix + finfo.Name, TheCommonUtils.CStr(orgValue));
+                else
+                    TheThing.SetSafePropertyString(pBaseThing, pNamePrefix + finfo.Name, TheCommonUtils.CStr(orgValue));
+            }
+            else if (fType == Type.GetType("System.Byte[]") && orgValue != null)
+            {
+                if (pBaseProperty != null)
+                    pBaseProperty.SetProperty(finfo.Name, pNamePrefix + orgValue, ePropertyTypes.TBinary);
+                else
+                    pBaseThing.SetProperty(finfo.Name, pNamePrefix + orgValue, ePropertyTypes.TBinary);
+            }
+            else if (fType.Namespace == "System.Collections.Generic" && !NoCollectionRecursive)
+            {
+                if (orgValue is IEnumerable collection)
+                {
+                    int no = 0;
+                    foreach (object o in collection)
+                    {
+                        ClassPropertiesToThingProperties(pBaseThing, o, pBaseProperty == null ? $"{nest}{finfo.Name}[{no}]_" : "", pBaseProperty);
+                        no++;
+                    }
+                }
+            }
+            else if (fType.Namespace != "System")
+            {
+                ClassPropertiesToThingProperties(pBaseThing, orgValue, pBaseProperty == null ? $"{nest}{finfo.Name}_" : "", pBaseProperty);
             }
         }
 
