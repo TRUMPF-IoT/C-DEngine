@@ -9,6 +9,7 @@ using nsCDEngine.ViewModels;
 using nsCDEngine.Engines;
 using nsCDEngine.Engines.ThingService;
 using nsCDEngine.Security;
+using System.Linq;
 // ReSharper disable DelegateSubtraction
 // ReSharper disable ConditionIsAlwaysTrueOrFalse
 
@@ -918,8 +919,22 @@ namespace nsCDEngine.Communication
                     TheUserDetails tUser = TheUserManager.PerformLoginByScope(pRequestData, tscope);
                     if (tUser != null)
                     {
-                        TheBaseAssets.MySession.WriteSession(pRequestData?.SessionState);
-                        tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+                        bool LogOk = true;
+                        if (TheBaseAssets.MyServiceHostInfo.AllowAdhocScopes)
+                        {
+                            var realp = TheCommonUtils.CUri(pRequestData?.SessionState?.InitReferer, false)?.AbsolutePath;
+                            if (!string.IsNullOrEmpty(realp))
+                            {
+                                var page = Engines.NMIService.TheNMIEngine.GetPages().FirstOrDefault(s => s.PageName.Equals(realp, StringComparison.InvariantCultureIgnoreCase));
+                                if (page?.AllowScopeQuery == true)
+                                    LogOk = TheQueuedSenderRegistry.IsScopeKnown(tscope, false);
+                            }
+                        }
+                        if (LogOk)
+                        {
+                            TheBaseAssets.MySession.WriteSession(pRequestData?.SessionState);
+                            tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+                        }
                     }
                 }
                 if (tSidRes.StartsWith("ERR"))

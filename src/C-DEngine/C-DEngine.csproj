@@ -11,7 +11,7 @@
     <PackageId>C-DEngine</PackageId>
     <PackageIcon>toplogo-128.png</PackageIcon>
     <Version>5.147.0$(cdeNugetSuffix)</Version>
-    <Authors>Chris Muench</Authors>
+    <Authors>Chris Muench</Authors> 
     <Company>C-Labs</Company>
     <Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
