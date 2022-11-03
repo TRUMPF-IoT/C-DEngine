@@ -23,8 +23,8 @@ namespace nsCDEngine.Communication
         {
             if (TheBaseAssets.MyServiceHostInfo.MyStationWSPort == 0 || TheBaseAssets.MyServiceHostInfo.MyStationWSPort == TheBaseAssets.MyServiceHostInfo.MyStationPort) return false;
             mHttpListener = new HttpListener();
-            Uri tUri = new Uri(TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false));
-            MyHttpUrl = tUri.Scheme + "://*"; // +tUri.Host;
+            Uri tUri = new (TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false));
+            MyHttpUrl = tUri.Scheme + "://*";
             MyHttpUrl += ":" + TheBaseAssets.MyServiceHostInfo.MyStationWSPort;
             MyHttpUrl += "/";
             try
@@ -74,7 +74,7 @@ namespace nsCDEngine.Communication
             }
             catch (Exception e)
             {
-                TheBaseAssets.MySYSLOG.WriteToLog(4373, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheWSServer", "Error During Startup", eMsgLevel.l1_Error, $"Port: {TheBaseAssets.MyServiceHostInfo?.MyStationWSPort} {e.ToString()}"));
+                TheBaseAssets.MySYSLOG.WriteToLog(4373, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheWSServer", "Error During Startup", eMsgLevel.l1_Error, $"Port: {TheBaseAssets.MyServiceHostInfo?.MyStationWSPort} {e}"));
                 IsActive = false;
             }
             return IsActive;
@@ -86,7 +86,7 @@ namespace nsCDEngine.Communication
             var wsc = await pContext.AcceptWebSocketAsync(null);
             if (wsc != null)
             {
-                TheRequestData tRequestData = new TheRequestData
+                TheRequestData tRequestData = new ()
                 {
                     RequestUri = pContext.Request.Url,
                     UserAgent = pContext.Request.UserAgent,
@@ -106,7 +106,7 @@ namespace nsCDEngine.Communication
                         return;
                     }
                 }
-                TheWSProcessor8 tProcessor = new TheWSProcessor8(wsc.WebSocket);
+                TheWSProcessor8 tProcessor = new (wsc.WebSocket);
                 tProcessor.SetRequest(tRequestData);
                 await tProcessor.ProcessWS();
             }

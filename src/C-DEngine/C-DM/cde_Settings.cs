@@ -308,7 +308,7 @@ namespace nsCDEngine.ISM
                     if (!NoDelete)
                         TheBaseAssets.MySettings.DeleteAppSetting(s);
                 }
-                //tSettings["Coufs"] = $"[{{\"Name\":\"Administrator\",\"UID\":\"Admin\",\"Role\":\"NMIADMIN\",\"HS\":\"\",\"EMail\":\"z@z.zz\",\"PWD\":\"zzzzzzzz\",\"ACL\":\"255\"}}]";
+                //sample "Coufs" [{{\"Name\":\"Administrator\",\"UID\":\"Admin\",\"Role\":\"NMIADMIN\",\"HS\":\"\",\"EMail\":\"z@z.zz\",\"PWD\":\"zzzzzzzz\",\"ACL\":\"255\"}}]
                 //step 6: Encrypt and store in cache folder
                 byte[] pBuffer = TheBaseAssets.MyCrypto.EncryptKV(tSettings);
                 CU.CreateDirectories(tpiFile);
@@ -377,12 +377,12 @@ namespace nsCDEngine.ISM
          **********************************************/
 
         //Settings that are consider security relavant and should not be logged or visible in the NMI
-        private static readonly List<string> HiddenSettings = new List<string> { "PrometheusUrl", "StatusToken", "ProxyUID", "ProxyPWD", "TrustedNodes", "NodeToken", "ProvToken", "EasyScope", "ScrambledScope", "ActivationKeys", "SQLUserName", "SQLPassword", "ProvScope", "ProxyToken", "TrustedNodesToken" };
+        private static readonly List<string> HiddenSettings = new () { "PrometheusUrl", "StatusToken", "ProxyUID", "ProxyPWD", "TrustedNodes", "NodeToken", "ProvToken", "EasyScope", "ScrambledScope", "ActivationKeys", "SQLUserName", "SQLPassword", "ProvScope", "ProxyToken", "TrustedNodesToken" };
         //Settings that must not be stored and therefore will be removed from cdeTPI and App.Config (if write permission is given to app.config)
-        private static readonly List<string> RemovedSettings = new List<string> { "EasyScope", "Coufs", "ProxyUrl", "ProxyPWD", "ProxyUID", "TrustedNodes", "RemoveTrustedNodes" };
+        private static readonly List<string> RemovedSettings = new () { "EasyScope", "Coufs", "ProxyUrl", "ProxyPWD", "ProxyUID", "TrustedNodes", "RemoveTrustedNodes" };
 
         //new store for settings hidden from direct access by plugin (in comparison to the public MyCmdArgs dictionary
-        private static readonly Dictionary<string, aCDESetting> MyPrivateSettings = new Dictionary<string, aCDESetting>();
+        private static readonly Dictionary<string, aCDESetting> MyPrivateSettings = new ();
 
         internal static string GetArgOrEnv(IDictionary<string, string> CmdArgs, string name, Guid? pOwner = null)
         {
@@ -390,12 +390,9 @@ namespace nsCDEngine.ISM
 
             if (CmdArgs != null)
             {
-                if (CmdArgs.TryGetValue(name, out temp))
+                if (CmdArgs.TryGetValue(name, out temp) && !string.IsNullOrEmpty(temp) && TheBaseAssets.MyServiceHostInfo?.AllowEnvironmentVarsToOverrideConfig != true)
                 {
-                    if (!string.IsNullOrEmpty(temp) && TheBaseAssets.MyServiceHostInfo?.AllowEnvironmentVarsToOverrideConfig != true)
-                    {
-                        return temp;
-                    }
+                    return temp;
                 }
             }
             else
@@ -407,7 +404,7 @@ namespace nsCDEngine.ISM
             {
                 try
                 {
-                    var temp2 = Environment.GetEnvironmentVariable($"CDE_{name.ToUpperInvariant()}");
+                    var temp2 = Environment.GetEnvironmentVariable($"{TheBaseAssets.MyServiceHostInfo.EnvVarPrefix}{name.ToUpperInvariant()}");
                     if (!string.IsNullOrEmpty(temp2))
                     {
                         temp = temp2;
@@ -415,7 +412,9 @@ namespace nsCDEngine.ISM
                             CmdArgs[name] = temp2;
                     }
                 }
-                catch { }
+                catch { 
+                    //intent
+                }
             }
             if (MyPrivateSettings?.Count > 0)
             {
@@ -444,7 +443,9 @@ namespace nsCDEngine.ISM
                 {
                     configManagerAssembly = Assembly.Load("System.Configuration.ConfigurationManager, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
                 }
-                catch { }
+                catch { 
+                    //intent
+                }
                 if (configManagerAssembly != null)
                 {
                     var configManagerType = configManagerAssembly.GetType("System.Configuration.ConfigurationManager", false);
@@ -454,7 +455,9 @@ namespace nsCDEngine.ISM
                         {
                             appSettings = configManagerType.GetProperty("AppSettings")?.GetValue(null);
                         }
-                        catch { }
+                        catch { 
+                            //intent
+                        }
                     }
                 }
                 if (appSettings == null && Assembly.GetEntryAssembly()?.Location != null) //android or ios dont have this
@@ -487,7 +490,9 @@ namespace nsCDEngine.ISM
                     appSettings = appSettingsCollection;
                 }
             }
-            catch { }
+            catch { 
+                //intent
+            }
             return appSettings;
         }
 #endif
@@ -506,7 +511,7 @@ namespace nsCDEngine.ISM
                 TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID = pinnedDeviceId;
             }
             TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceType = TheBaseAssets.MyServiceHostInfo.cdeHostingType.ToString() + ":" + TheBaseAssets.CurrentVersionInfo;
-            TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceName = TheBaseAssets.MyServiceHostInfo.cdeHostingType.ToString(); //TODO: Get more infor about the host Machine
+            TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceName = TheBaseAssets.MyServiceHostInfo.cdeHostingType.ToString(); 
 
             TheBaseAssets.MySecrets.SetNodeKey(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID);
         }
@@ -531,15 +536,10 @@ namespace nsCDEngine.ISM
 
             if (tStationURI == null)  //MSY-OK
             {
-                //tStationURI = CUri(TheBaseAssets.MyServiceHostInfo.MyStationMoniker + TheNetworkInfo.cdeGetHostEntry("").HostName, false); //Fails on Docker
-                //if (tStationURI == null)
                 tStationURI = CU.CUri(TheBaseAssets.MyServiceHostInfo.MyStationMoniker + TheNetworkInfo.cdeGetHostName(), false);
             }
-            if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.RootDir))
-            {
-                if (tStationURI.AbsolutePath.Length > 1)
-                    TheBaseAssets.MyServiceHostInfo.RootDir = tStationURI.AbsolutePath;
-            }
+            if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.RootDir) && tStationURI.AbsolutePath.Length > 1)
+                TheBaseAssets.MyServiceHostInfo.RootDir = tStationURI.AbsolutePath;
 
             if (TheBaseAssets.MyServiceHostInfo.MyStationPort == 0)
             {
@@ -556,7 +556,7 @@ namespace nsCDEngine.ISM
                     TheBaseAssets.MyServiceHostInfo.MyStationWSPort = CU.CUShort(tWSP);  //Overrides the Station Port with a value coming from the app.config
             }
             if (TheBaseAssets.MyServiceHostInfo.MyStationPort == 0)
-                TheBaseAssets.MyServiceHostInfo.MyStationPort = CU.CUShort(tStationURI.Port); //TODO: If we want to not start the web server in case MyStationPort==0 then we need to not set the MyStationURL and switch to TheBaseAssets.MyServiceHostInfo.cdeNodeType = cdeNodeType.Active which disables the Web Server
+                TheBaseAssets.MyServiceHostInfo.MyStationPort = CU.CUShort(tStationURI.Port); //If we want to not start the web server in case MyStationPort==0 then we need to not set the MyStationURL and switch to TheBaseAssets.MyServiceHostInfo.cdeNodeType = cdeNodeType.Active which disables the Web Server
 
             if (TheBaseAssets.MyServiceHostInfo.MyStationPort != 80 && tStationURI.Port != TheBaseAssets.MyServiceHostInfo.MyStationPort)
             {
@@ -593,11 +593,8 @@ namespace nsCDEngine.ISM
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.NodeToken = CU.GenerateFinalStr(temp);
                 temp = GetArgOrEnv(CmdArgs, "CustomerToken");
-                if (!string.IsNullOrEmpty(temp))
-                {
-                    if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.NodeToken))
-                        TheBaseAssets.MyServiceHostInfo.NodeToken += $";{CU.GenerateFinalStr(temp)}";
-                }
+                if (!string.IsNullOrEmpty(temp) && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.NodeToken))
+                    TheBaseAssets.MyServiceHostInfo.NodeToken += $";{CU.GenerateFinalStr(temp)}";
                 TheBaseAssets.MyServiceHostInfo.RequiresConfiguration = !TheBaseAssets.MyServiceHostInfo.IsCloudService;
                 temp = GetArgOrEnv(CmdArgs, "UseUserMapper");
                 if (!string.IsNullOrEmpty(temp))
@@ -636,11 +633,8 @@ namespace nsCDEngine.ISM
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.RequireCDEActivation = CU.CBool(temp);
                 temp = GetArgOrEnv(CmdArgs, "PresetDeviceID");
-                if (!string.IsNullOrEmpty(temp))
-                {
-                    if (Guid.Empty != CU.CGuid(temp))    //V4.1041 - must not set Guid.Empty to the PresetDeviceID
-                        TheBaseAssets.MyServiceHostInfo.PresetDeviceID = CU.CGuid(temp);
-                }
+                if (!string.IsNullOrEmpty(temp) && Guid.Empty != CU.CGuid(temp))
+                    TheBaseAssets.MyServiceHostInfo.PresetDeviceID = CU.CGuid(temp);
                 //step 3: Load the local settings if they exist - set by MSI or previous starts of the node
                 if (File.Exists(CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true)))
                 {
@@ -677,7 +671,7 @@ namespace nsCDEngine.ISM
                             Success = false;
                             error = "Timeout";
                         }
-                        //TODO: Decide what to do by default - my suggestion: (0 being the default
+                        //Decide what to do by default - my suggestion: (0 being the default
                         //Option 2: just fail through...leaves the Node in a none-configured state as the node will start normally
                         //Option 1: Wait here for a certain amount of time then repeat
                         //Option 0: Shutdown the relay here before it writes anything to cache. Than an external "watchdog" can decide what to do next (restart or nothing)
@@ -744,21 +738,14 @@ namespace nsCDEngine.ISM
                     if (!string.IsNullOrEmpty(temp))
                     {
                         TheBaseAssets.MyScopeManager.SetScopeIDFromEasyID(temp);
-                        //if (IsCalledAtStartup && !CU.CBool(GetArgOrEnv(CmdArgs, "DontDeleteEasyScope")))
-                        //{
-                        //    TheBaseAssets.MySettings.DeleteAppSetting("EasyScope");    //Moved to UpdateLocalSettings
-                        //}
                     }
                     temp = GetArgOrEnv(CmdArgs, "ScrambledScope");
                     if (!string.IsNullOrEmpty(temp))
                         TheBaseAssets.MyScopeManager.SetScopeIDFromScrambledID(temp);
                 }
                 temp = GetArgOrEnv(CmdArgs, "FederationID");
-                if (!string.IsNullOrEmpty(temp))
-                {
-                    if (TheBaseAssets.MySecrets.IsInApplicationScope(temp))
-                        TheBaseAssets.MyScopeManager.FederationID = temp;
-                }
+                if (!string.IsNullOrEmpty(temp) && TheBaseAssets.MySecrets.IsInApplicationScope(temp))
+                    TheBaseAssets.MyScopeManager.FederationID = temp;
             }
             temp = GetArgOrEnv(CmdArgs, "SKUID");
             if (!string.IsNullOrEmpty(temp))
@@ -772,10 +759,7 @@ namespace nsCDEngine.ISM
             temp = GetArgOrEnv(CmdArgs, "ActivationKeys");
             if (!string.IsNullOrEmpty(temp))
             {
-                if (TheBaseAssets.MyServiceHostInfo.ActivationKeysToAdd == null)
-                {
-                    TheBaseAssets.MyServiceHostInfo.ActivationKeysToAdd = new List<string>();
-                }
+                TheBaseAssets.MyServiceHostInfo.ActivationKeysToAdd ??= new List<string>();
                 TheBaseAssets.MyServiceHostInfo.ActivationKeysToAdd.AddRange(temp.Split(';'));
             }
             temp = GetArgOrEnv(CmdArgs, "AllowRemoteAdministration");
@@ -956,8 +940,6 @@ namespace nsCDEngine.ISM
                 temp = GetArgOrEnv(CmdArgs, "IsCloudDisabled");
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.IsCloudDisabled = CU.CBool(temp);
-                //TheBaseAssets.UpdateAppParameter();
-
 
                 CU.cdeRunAsync("PingForInternet", true, (o) =>
                 {
@@ -1178,12 +1160,9 @@ namespace nsCDEngine.ISM
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.FallbackToSimulation = CU.CBool(temp);
             temp = GetArgOrEnv(CmdArgs, "UseSysLogQueue");
-            if (!string.IsNullOrEmpty(temp))
+            if (!string.IsNullOrEmpty(temp) && CU.CBool(temp))
             {
-                if (CU.CBool(temp) == true)
-                {
-                    TheBaseAssets.MySYSLOG.SwitchToQueue();
-                }
+                TheBaseAssets.MySYSLOG.SwitchToQueue();
             }
             temp = GetArgOrEnv(CmdArgs, "ShowMarkupInLog");
             if (!string.IsNullOrEmpty(temp))
@@ -1266,7 +1245,7 @@ namespace nsCDEngine.ISM
 
             if (TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.OFF)
             {
-                TSM tMsg = new TSM("BaseAssets", "CommandLine Parsed", eMsgLevel.l3_ImportantMessage);
+                TSM tMsg = new ("BaseAssets", "CommandLine Parsed", eMsgLevel.l3_ImportantMessage);
                 var logArgs = new Dictionary<string, string>();
                 if (CmdArgs != null)
                 {
@@ -1319,7 +1298,6 @@ namespace nsCDEngine.ISM
             {
                 return CU.TaskOrResult("");
             }
-            var tCDEConnectUrl = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false);
             var tDevInfo = new TheUPnPDeviceInfo()
             {
                 UUID = pDeviceToken,
@@ -1331,7 +1309,7 @@ namespace nsCDEngine.ISM
                 TheBaseAssets.MyServiceHostInfo.MyStationName : TheBaseAssets.MyServiceHostInfo.MyStationURL
             };
 
-            TheRequestData tRequest = new TheRequestData()
+            TheRequestData tRequest = new ()
             {
                 RequestUri = CU.CUri($"{pProvService}/register-node", true),
                 PostData = TheBaseAssets.MyCrypto.Encrypt(CU.CUnicodeString2Array(CU.SerializeObjectToJSONString(tDevInfo)), TheBaseAssets.MySecrets.GetAK(), TheBaseAssets.MySecrets.GetAI()),
@@ -1415,16 +1393,15 @@ namespace nsCDEngine.ISM
                 }
 
                 //step 3: Set Device Info (Required for UserManager and Coufs)
-                if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo == null)
+                if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo == null && tSettings.ContainsKey("MyDeviceInfo"))
                 {
-                    if (tSettings.ContainsKey("MyDeviceInfo"))
+                    try
                     {
-                        try
-                        {
-                            TheBaseAssets.MyServiceHostInfo.MyDeviceInfo = CU.DeserializeJSONStringToObject<TheDeviceRegistryData>(tSettings["MyDeviceInfo"]);
-                        }
-                        catch (Exception)
-                        { }
+                        TheBaseAssets.MyServiceHostInfo.MyDeviceInfo = CU.DeserializeJSONStringToObject<TheDeviceRegistryData>(tSettings["MyDeviceInfo"]);
+                    }
+                    catch (Exception)
+                    {
+                        //intent
                     }
                 }
                 if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo == null)
@@ -1467,7 +1444,7 @@ namespace nsCDEngine.ISM
                         });
 
                 // step 7: copy settings in parseable dictionary and parse the persisted settings
-                Dictionary<string, string> tSetArgs = new Dictionary<string, string>();
+                Dictionary<string, string> tSetArgs = new ();
                 tSettings.ToList().ForEach(x => tSetArgs[x.Key] = x.Value); //was cmdargs but must be isolated from public settings
                 ParseSettings(tSetArgs, false, SaveSettings);
             }
@@ -1587,7 +1564,7 @@ namespace nsCDEngine.ISM
             if (TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID) return false;
             if (!File.Exists(CU.cdeFixupFileName("cache\\266n948691115001005155", true)))
                 return false;
-            Engines.StorageService.TheMirrorCache<TheAppParameter> MyAppParameterBase = new Engines.StorageService.TheMirrorCache<TheAppParameter>
+            Engines.StorageService.TheMirrorCache<TheAppParameter> MyAppParameterBase = new ()
             {
                 MyStoreID = "266n948691115001005155",
                 IsCachePersistent = true,
@@ -1625,11 +1602,8 @@ namespace nsCDEngine.ISM
                 TheBaseAssets.MyServiceHostInfo.IsCloudDisabled = MyAppParameter.IsCloudDisabled;
                 TheBaseAssets.MyServiceHostInfo.RequiresConfiguration = MyAppParameter.RequiresConfiguration;
                 TheBaseAssets.MyServiceHostInfo.MyStationName = MyAppParameter.MyStationName;
-                if (TheBaseAssets.MyServiceHostInfo.EnableAutoLogin) //Only relevant for CDE in client Applications like Phone or Tablet apps
-                {
-                    if (MyAppParameter.MyUserInfo != null)
-                        TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser = MyAppParameter.MyUserInfo;
-                }
+                if (TheBaseAssets.MyServiceHostInfo.EnableAutoLogin && MyAppParameter.MyUserInfo != null) //Only relevant for CDE in client Applications like Phone or Tablet apps
+                    TheBaseAssets.MyApplication.MyUserManager.LoggedOnUser = MyAppParameter.MyUserInfo;
                 List<aCDESetting> tSettings = null;
                 if (MyAppParameter.CustomParameter?.Count > 0)
                 {

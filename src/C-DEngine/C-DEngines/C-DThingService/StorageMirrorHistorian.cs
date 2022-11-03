@@ -20,7 +20,6 @@ namespace nsCDEngine
 {
     internal class TheStorageMirrorHistorian : IHistorian
     {
-        //TheStorageMirror<TheThingStore> _storageMirror;
         IThingStream _thingStream;
         private static TheStorageMirror<ConsumerRegistration> _permanentConsumers; // Shared across all historians
 
@@ -66,9 +65,7 @@ namespace nsCDEngine
                             }
                         }
                         var mirrorThingStore = new TheStorageMirror<T>(TheCDEngines.MyIStorageService);
-                        // Not needed here: mirrorThingStore.MyMirrorCache.TrackInsertionOrder();
                         mirrorThingStore.CreateStore(storeParams, null);
-                        //mirrorThingStore.InitializeStore(storeParams);
                         MyHistoryStore = mirrorThingStore;
                     }
                     else
@@ -103,8 +100,8 @@ namespace nsCDEngine
                 MyHistoryStore = null;
             }
 
-            readonly object updateLock = new object();
-            TimeSpan updateWaitTimeout = new TimeSpan(0, 0, 30);
+            readonly object updateLock = new ();
+            TimeSpan updateWaitTimeout = new (0, 0, 30);
             volatile bool bSkippedLock = false;
             override internal void HandleUpdates(TheStorageMirrorHistorian globalHistorian)
             {
@@ -157,9 +154,9 @@ namespace nsCDEngine
             }
         }
 
-        readonly cdeConcurrentDictionary<Guid, ConsumerRegistration> _consumerRegistrations = new cdeConcurrentDictionary<Guid, ConsumerRegistration>();
+        readonly cdeConcurrentDictionary<Guid, ConsumerRegistration> _consumerRegistrations = new ();
 
-        TheHistoryParameters _combinedRegistration = new TheHistoryParameters();
+        TheHistoryParameters _combinedRegistration = new ();
 
         // Using factory pattern so we can use a historian instance across multiple things in the future
         public static TheStorageMirrorHistorian Create(TheThing tThing)
@@ -225,33 +222,30 @@ namespace nsCDEngine
             }
         }
 
-        internal static cdeConcurrentDictionary<Guid, TheThing> thingsWithHistorian = new cdeConcurrentDictionary<Guid, TheThing>();
+        internal readonly static cdeConcurrentDictionary<Guid, TheThing> thingsWithHistorian = new ();
 
         internal static void RegisterThingWithHistorian(TheThing tThing, bool CreateHistorianIfNoConsumers)
         {
             InitializeHistorians();
 
             var consumers = _permanentConsumers.MyMirrorCache.GetEntriesByFunc((c) => tThing.cdeMID == c.ThingMid);
-            if ((consumers != null && consumers.Count > 0) || CreateHistorianIfNoConsumers)
+            if (((consumers != null && consumers.Count > 0) || CreateHistorianIfNoConsumers) && tThing.Historian == null)
             {
-                if (tThing.Historian == null)
+                lock (thingsWithHistorian)
                 {
-                    lock (thingsWithHistorian)
+                    if (tThing.Historian == null)
                     {
-                        if (tThing.Historian == null)
-                        {
-                            var historian = Create(tThing);
+                        var historian = Create(tThing);
 
-                            if (consumers != null)
+                        if (consumers != null)
+                        {
+                            foreach (var consumer in consumers)
                             {
-                                foreach (var consumer in consumers)
-                                {
-                                    var createdConsumer = ConsumerRegistration.Create<TheThingStore>(consumer, null);
-                                    historian.AddOrUpdateRegistration(createdConsumer);
-                                }
+                                var createdConsumer = ConsumerRegistration.Create<TheThingStore>(consumer, null);
+                                historian.AddOrUpdateRegistration(createdConsumer);
                             }
-                            tThing.Historian = historian;
                         }
+                        tThing.Historian = historian;
                     }
                 }
             }
@@ -283,7 +277,7 @@ namespace nsCDEngine
             return token;
         }
 
-        private object AddOrUpdateLock = new object();
+        private readonly object AddOrUpdateLock = new ();
         private void AddOrUpdateRegistration(ConsumerRegistration registration)
         {
             lock (AddOrUpdateLock)
@@ -298,10 +292,10 @@ namespace nsCDEngine
                             _combinedRegistration = registration;
                             _pendingSnapShots.UpdateIntervals(_combinedRegistration.SamplingWindow, _combinedRegistration.SamplingWindow + _combinedRegistration.CooldownPeriod, _combinedRegistration.CooldownPeriod);
                             _thingStream = new StorageMirrorThingUpdateStream(registration.Persistent, registration.ThingMid, registration.MaxCount, registration.MaxAge);
-                                //registration.HistoryStoreParameters?.IsRAMStore == null ? true : registration.HistoryStoreParameters.IsRAMStore.Value,
-                                //registration.HistoryStoreParameters?.IsCached == null ? true: registration.HistoryStoreParameters.IsCached.Value,
-                                //registration.HistoryStoreParameters?.FriendlyName, registration.HistoryStoreParameters?.Description);
-                            //_thingStream = new MultiFileThingStream(registration.Persistent, registration.ThingMid, registration.MaxCount, registration.MaxAge);
+                            //registration.HistoryStoreParameters?.IsRAMStore == null ? true : registration.HistoryStoreParameters.IsRAMStore.Value,
+                            //registration.HistoryStoreParameters?.IsCached == null ? true: registration.HistoryStoreParameters.IsCached.Value,
+                            //registration.HistoryStoreParameters?.FriendlyName, registration.HistoryStoreParameters?.Description)
+                            //_thingStream = new MultiFileThingStream(registration.Persistent, registration.ThingMid, registration.MaxCount, registration.MaxAge)
                         }
                     }
                 }
@@ -316,19 +310,13 @@ namespace nsCDEngine
                     }
 
                     // Update storage mirror
+                    if (newCombinedRegistration.Persistent)
                     {
-                        if (newCombinedRegistration.Persistent)
-                        {
-                            _thingStream.IsPersistent = true;
-                        }
-
-                        _thingStream.MaxCount = newCombinedRegistration.MaxCount;
-                        _thingStream.MaxAge = newCombinedRegistration.MaxAge;
-
-                        // TODO:
-                        // Update StorageMirror configuration (if necessary)
-                        // Update StorageMirror data (if necessary)
+                        _thingStream.IsPersistent = true;
                     }
+
+                    _thingStream.MaxCount = newCombinedRegistration.MaxCount;
+                    _thingStream.MaxAge = newCombinedRegistration.MaxAge;
                     _combinedRegistration = newCombinedRegistration;
                     _pendingSnapShots.UpdateIntervals(_combinedRegistration.SamplingWindow, _combinedRegistration.SamplingWindow + _combinedRegistration.CooldownPeriod, _combinedRegistration.CooldownPeriod);
                     foreach (var r in registrations)
@@ -428,7 +416,9 @@ namespace nsCDEngine
                 }
                 success = true;
             }
-            catch { }
+            catch { 
+                //intended
+            }
             return TheCommonUtils.TaskFromResult(success);
         }
 
@@ -447,7 +437,9 @@ namespace nsCDEngine
                 _thingStream?.RemoveStore(false);
                 success = true;
             }
-            catch { }
+            catch { 
+                //intended
+            }
             return TheCommonUtils.TaskFromResult(success);
         }
 
@@ -458,20 +450,16 @@ namespace nsCDEngine
                 return false;
             }
 
-            if (historyParameters != null)
+            if (historyParameters != null && !consumer.IsCompatible(historyParameters))
             {
-                if (!consumer.IsCompatible(historyParameters))
-                {
-                    UnregisterConsumer(token);
-                    return false;
-                }
-                // Future: Update existing registration once we allow changes. Assumption for now IsCompatible() checks for equality
+                UnregisterConsumer(token);
+                return false;
             }
 
             // Go back to the last truncated item so it will be re-offerd on the next GetHistory call
             consumer.LastSequenceNumberRead = consumer.SequenceNumberTruncated;
             consumer.LastAccess = DateTimeOffset.Now;
-            if (consumer.MaintainHistoryStore && !(consumer is ConsumerRegistrationWithStore<T>))
+            if (consumer.MaintainHistoryStore && consumer is not ConsumerRegistrationWithStore<T>)
             {
                 var consumerWithStore = new ConsumerRegistrationWithStore<T>(consumer, store);
                 _permanentConsumers.UpdateItem(consumerWithStore);
@@ -516,7 +504,7 @@ namespace nsCDEngine
                 ClearUnusedHistory();
             }
         }
-        static TimeSpan _defaultTokenExpiration = new TimeSpan(7, 0, 0, 0);
+        static TimeSpan _defaultTokenExpiration = new (7, 0, 0, 0);
         DateTimeOffset _lastHistoryClear;
         private void ClearUnusedHistory()
         {
@@ -609,7 +597,6 @@ namespace nsCDEngine
                     thingStream.DeleteItemsUpTo(lowestSequenceNumberTruncated);
                 });
             }
-            //_permanentConsumers.MyMirrorCache.SaveCacheToDisk(false, false);
         }
 
         private string GetCombinedConsumerInfoForLog()
@@ -618,7 +605,9 @@ namespace nsCDEngine
             {
                 return _consumerRegistrations?.FirstOrDefault().Value?.ToString();
             }
-            catch { }
+            catch { 
+                //intended
+            }
             return "error";
         }
 
@@ -642,7 +631,6 @@ namespace nsCDEngine
             {
                 _permanentConsumers.UpdateItem(consumer);
             }
-            //_permanentConsumers.MyMirrorCache.SaveCacheToDisk(false, false);
             return true;
         }
 
@@ -770,12 +758,9 @@ namespace nsCDEngine
                                     && (!bIsInitialValue || (consumer.ReportInitialValues == true && consumer.InitialValuesReported != true)) // Ignore initial values unless this consumer wants them
                                     )
                                 {
-                                    if (bIsInitialValue && consumer.ReportInitialValues == true && consumer.InitialValuesReported != true)
+                                    if (bIsInitialValue && consumer.ReportInitialValues == true && consumer.InitialValuesReported != true && sequenceNumberToProcess > consumer._highestInitialValueSequenceNumber)
                                     {
-                                        if (sequenceNumberToProcess > consumer._highestInitialValueSequenceNumber)
-                                        {
-                                            consumer._highestInitialValueSequenceNumber = sequenceNumberToProcess;
-                                        }
+                                        consumer._highestInitialValueSequenceNumber = sequenceNumberToProcess;
                                     }
                                     var itemToReturn = item.CloneForThingSnapshot(consumer.GetThing(), consumer.ReportUnchangedProperties ? baseItem : null, false, consumer, true, out var bUpdated);
                                     // Ignore items while we are establishing the snapshot baseline
@@ -799,7 +784,7 @@ namespace nsCDEngine
                                                     }
                                                     else
                                                     {
-                                                        TheBaseAssets.MySYSLOG.WriteToLog(7682, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian Bucket: skipping item because it was already processed ", eMsgLevel.l6_Debug, $"{consumer}: Seq {sequenceNumberToProcess} MaxSeq {pendingSnapshot.MaxSequenceNumber} {itemToReturn.cdeCTIM.ToString("o")} {itemToReturn.PB.Count()}"));
+                                                        TheBaseAssets.MySYSLOG.WriteToLog(7682, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian Bucket: skipping item because it was already processed ", eMsgLevel.l6_Debug, $"{consumer}: Seq {sequenceNumberToProcess} MaxSeq {pendingSnapshot.MaxSequenceNumber} {itemToReturn.cdeCTIM:o} {itemToReturn.PB.Count}"));
                                                     }
                                                     if (samplingItem.cdeCTIM < itemToReturn.cdeCTIM)
                                                     {
@@ -810,7 +795,7 @@ namespace nsCDEngine
                                                 {
                                                     if (samplingItem != null)
                                                     {
-                                                        TheBaseAssets.MySYSLOG.WriteToLog(7682, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian GetHistory Bucket Overflow: more than one property with same timestamp", eMsgLevel.l6_Debug, $"{consumer}: {samplingItem.cdeCTIM.ToString("o")} {samplingItem.PB.Keys.Intersect(itemToReturn.PB.Keys).Aggregate("", (s, v) => $"{s} {v}")}"));
+                                                        TheBaseAssets.MySYSLOG.WriteToLog(7682, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian GetHistory Bucket Overflow: more than one property with same timestamp", eMsgLevel.l6_Debug, $"{consumer}: {samplingItem.cdeCTIM:o} {samplingItem.PB.Keys.Intersect(itemToReturn.PB.Keys).Aggregate("", (s, v) => $"{s} {v}")}"));
                                                     }
                                                     // Outside of an existing Sampling Window or rejected for other reasons: start a new one, even if new item time is before current sampling window (i.e. out of order times or clock adjusting backwards on time sync or mix of historical and current data)
                                                     count++;
@@ -843,11 +828,11 @@ namespace nsCDEngine
                                 }
                                 else
                                 {
-                                    // TODO Log this...
                                     // Someone tampered with the Historian's Storage Mirror (or there's a bug somewhere)
                                     if (item == null)
                                     {
                                         response.DatalossDetected = true;
+                                        TheBaseAssets.MySYSLOG.WriteToLog(7682, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian GetHistory Data Loss Detected", eMsgLevel.l6_Debug));
                                     }
                                 }
                                 lastSequenceNumberRead = sequenceNumberToProcess; // Update local high-water mark. The consumer's LastSequenceNumberRead will be updated in ProcessFinalSnapshots below
@@ -858,13 +843,13 @@ namespace nsCDEngine
                             {
                                 response.HistoryItems.Add(t);
                                 response.PendingItemCount--;
-                                if (sequenceNumber > consumer.LastSequenceNumberRead) // TODO handle sequence number roll over!
+                                if (sequenceNumber > consumer.LastSequenceNumberRead) 
                                 {
                                     consumer.LastSequenceNumberRead = sequenceNumber;
                                 }
                                 else
                                 {
-
+                                    // handle sequence number roll over!
                                 }
                                 consumer.LastAccess = DateTimeOffset.Now;
                                 if (consumer.Persistent)
@@ -927,15 +912,16 @@ namespace nsCDEngine
                                 {
                                     cancelRegistration = cancelToken.Value.Register(() => { taskCS.TrySetCanceled(); });
                                 }
-                                if (!thingStream.HasRegisteredEvents(eStoreEvents.HasUpdates))
-                                {
-
-                                }
+                                //if (!thingStream.HasRegisteredEvents(eStoreEvents.HasUpdates))
                                 thingStream.RegisterEvent(eStoreEvents.HasUpdates, storeUpdated);
                                 await TheCommonUtils.TaskWaitTimeout(taskCS.Task, waitForNext, cancelToken).ConfigureAwait(false);
                             }
-                            catch (TimeoutException) { } // Expected on timeout
-                            catch (TaskCanceledException) { } // Expected on shutdown
+                            catch (TimeoutException) {
+                                // Expected on timeout
+                            }
+                            catch (TaskCanceledException) {
+                                // Expected on shutdown
+                            }
                             finally
                             {
                                 if (cancelRegistration.HasValue)
@@ -951,17 +937,13 @@ namespace nsCDEngine
                             catch (TimeoutException) { } // Expected on timeout
                             catch (TaskCanceledException) { } // Expected on shutdown
 #endif
-                            //if (taskCS.Task.Status != TaskStatus.RanToCompletion || taskCS.Task.Result != true)
-                            //{
-                            //    bRetry = false;
-                            //}
                         }
                     }
                 } while (bRetry && TheBaseAssets.MasterSwitch);
             }
             catch (Exception e)
             {
-                TheBaseAssets.MySYSLOG.WriteToLog(7682, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Internal error while getting thing history", eMsgLevel.l1_Error, $"{consumer}:{e.ToString()}"));
+                TheBaseAssets.MySYSLOG.WriteToLog(7682, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Internal error while getting thing history", eMsgLevel.l1_Error, $"{consumer}:{e}"));
                 response = null;
             }
             finally
@@ -991,21 +973,20 @@ namespace nsCDEngine
             _thingStream?.ForceSave();
         }
 
-        readonly object _timerLock = new object();
+        readonly object _timerLock = new ();
         private void OnSnapshotTimer(object notUsed)
         {
             try
             {
                 lock (_timerLock)
                 {
-                    long nextBucketDueUtcTicks = DateTimeOffset.MaxValue.UtcTicks;
+                    long nextBucketDueUtcTicks;
                     lock (_pendingSnapShots)
                     {
                         _pendingSnapShots.ProcessFinalSnapshots((t, seqIgnored) =>
                             {
                                 _thingStream?.AddAnItem(t);
-                                //LogQueueInput(this._consumerRegistrations?.FirstOrDefault().Value?.ThingMid ?? Guid.Empty, t);
-                                TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian: first level queue out", eMsgLevel.l6_Debug, $"OUT: {t.cdeCTIM.ToString("o")} {t.PB.Aggregate("", (s, kv) => $"{s}{kv.Key},")}"));
+                                TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian: first level queue out", eMsgLevel.l6_Debug, $"OUT: {t.cdeCTIM:o} {t.PB.Aggregate("", (s, kv) => $"{s}{kv.Key},")}"));
                             },
                             out nextBucketDueUtcTicks);
                         if (_lastHistoryClear.AddSeconds(120) < DateTimeOffset.Now)
@@ -1040,10 +1021,7 @@ namespace nsCDEngine
                                 _snapshotTimer = null;
                             }
                         }
-                        if (_snapshotTimer == null)
-                        {
-                            _snapshotTimer = new System.Threading.Timer(OnSnapshotTimer, null, timetoNextCheck, TimeSpan.Zero);
-                        }
+                        _snapshotTimer ??= new System.Threading.Timer(OnSnapshotTimer, null, timetoNextCheck, TimeSpan.Zero);
                     }
                     else
                     {
@@ -1060,14 +1038,16 @@ namespace nsCDEngine
                 {
                     var temp = _snapshotTimer;
                     _snapshotTimer = null;
-                    TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ThingService, "Historian: Internal error in OnSnapshotTimer", eMsgLevel.l1_Error, $"Thing: {this.GetCombinedConsumerInfoForLog()}. Error: {e.ToString()}"));
+                    TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ThingService, "Historian: Internal error in OnSnapshotTimer", eMsgLevel.l1_Error, $"Thing: {GetCombinedConsumerInfoForLog()}. Error: {e}"));
                     temp.Dispose();
                 }
-                catch { }
+                catch { 
+                    //intended
+                }
             }
         }
 
-        readonly SnapshotManager _pendingSnapShots = new SnapshotManager(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero);
+        readonly SnapshotManager _pendingSnapShots = new (TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero);
 
         internal int TestHookGetPendingSnapShotCount()
         {
@@ -1086,7 +1066,7 @@ namespace nsCDEngine
 
         private System.Threading.Timer _snapshotTimer;
 
-        private readonly TimeSpan minTimerWait = new TimeSpan(0, 0, 0, 0, 15);
+        private readonly TimeSpan minTimerWait = new (0, 0, 0, 0, 15);
 
         TimeSpan GetTotalSnapshotCooldownPeriod()
         {
@@ -1138,7 +1118,7 @@ namespace nsCDEngine
                     }
 
                     Aggregate(_combinedRegistration, snapshot, propertyNamePath, propValue, propSEQ, tThing);
-                    TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian: first level queue in", eMsgLevel.l6_Debug, $"IN :{propTime.ToString("o")} {propertyNamePath},{propValue}"));
+                    TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian: first level queue in", eMsgLevel.l6_Debug, $"IN :{propTime:o} {propertyNamePath},{propValue}"));
 
                     if (snapshot.cdeCTIM < now)
                     {
@@ -1155,7 +1135,6 @@ namespace nsCDEngine
                         snapshot.IsInitialValue = true;
                     }
                     Aggregate(_combinedRegistration, snapshot, propertyNamePath, propValue, propSEQ, tThing);
-                    //thingSnapshot.PB[property.Name] = property.Value;
 
                     if (snapshot.cdeCTIM != now && snapshot.PB.Count > 1)
                     {
@@ -1164,7 +1143,7 @@ namespace nsCDEngine
                     snapshot.cdeCTIM = now; // All other properties are just baseline, so use the changed property's time for the snapshot
 
                     bucket = _pendingSnapShots.AddSnapshot(snapshot, 0);
-                    TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian: first level queue in", eMsgLevel.l6_Debug, $"NEW:{propTime.ToString("o")} {propertyNamePath},{propValue}"));
+                    TheBaseAssets.MySYSLOG.WriteToLog(7683, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM(eEngineName.ThingService, "Historian: first level queue in", eMsgLevel.l6_Debug, $"NEW:{propTime:o} {propertyNamePath},{propValue}"));
 
                     // Ensure a timer is running to flushed the snapshot after 10 seconds
                     if (_snapshotTimer == null)
@@ -1205,7 +1184,7 @@ namespace nsCDEngine
                 {
                     logEntry.Add("BucketOverflow", bucket.OverflowSnapshots.Count);
                 }
-                TheCommonUtils.LogDataToFile($"historian_input{tThing.cdeMID.ToString()}.log", logEntry, "Historian", tThing.cdeMID.ToString());
+                TheCommonUtils.LogDataToFile($"historian_input{tThing.cdeMID}.log", logEntry, "Historian", tThing.cdeMID.ToString());
             }
         }
         private static void LogHistorianOutput(ConsumerRegistration consumer, TheHistoryResponse response)
@@ -1251,26 +1230,10 @@ namespace nsCDEngine
                 }
                 if (logEntry != null)
                 {
-                    TheCommonUtils.LogDataToFile($"historian_output{consumer.ThingMid.ToString()}_{consumer.Token.ToString()}.log", logEntry, "Historian", consumer.ToString());
+                    TheCommonUtils.LogDataToFile($"historian_output{consumer.ThingMid}_{consumer.Token}.log", logEntry, "Historian", consumer.ToString());
                 }
             }
         }
-
-        private static void LogQueueInput(Guid thingMID, TheThingStore item)
-        {
-            if (TheBaseAssets.MyServiceHostInfo.EnableHistorianDataLog)
-            {
-                Dictionary<string, object> logEntry = new Dictionary<string, object>
-                {
-                    { "LogTime", DateTimeOffset.Now },
-                    { "ItemTime", item.cdeCTIM },
-                    { "ThingMID", thingMID },
-                    { "Item", item},
-                };
-                TheCommonUtils.LogDataToFile($"historian_queue_input{thingMID.ToString()}.log", logEntry, "Historian", thingMID.ToString());
-            }
-        }
-
 
         void EnsureBaseline(TheThing tThing, TheThingStore thingSnapshot)
         {
@@ -1419,28 +1382,19 @@ namespace nsCDEngine
                         stats.n = TheCommonUtils.CLng(value);
                     }
 
-                    if (registration.ComputeAvg)
+                    if (registration.ComputeAvg && thingSnapshot.PB.TryGetValue($"{escapedPropname}.[Avg]", out value))
                     {
-                        if (thingSnapshot.PB.TryGetValue($"{escapedPropname}.[Avg]", out value))
-                        {
-                            stats.avg = TheCommonUtils.CDbl(value);
-                        }
+                        stats.avg = TheCommonUtils.CDbl(value);
                     }
                 }
 
-                if (registration.ComputeMin)
+                if (registration.ComputeMin && thingSnapshot.PB.TryGetValue($"{escapedPropname}.[Min]", out object value1))
                 {
-                    if (thingSnapshot.PB.TryGetValue($"{escapedPropname}.[Min]", out object value))
-                    {
-                        stats.min = TheCommonUtils.CDbl(value);
-                    }
+                    stats.min = TheCommonUtils.CDbl(value1);
                 }
-                if (registration.ComputeMax)
+                if (registration.ComputeMax && thingSnapshot.PB.TryGetValue($"{escapedPropname}.[Max]", out object value2))
                 {
-                    if (thingSnapshot.PB.TryGetValue($"{escapedPropname}.[Max]", out object value))
-                    {
-                        stats.max = TheCommonUtils.CDbl(value);
-                    }
+                    stats.max = TheCommonUtils.CDbl(value2);
                 }
                 return stats;
             }
@@ -1540,7 +1494,7 @@ namespace nsCDEngine
             public List<TheThingStore> OverflowSnapshots; // Enables capturing multiple values for the same property and same timestamp (required for complete history, i.e. OPC Alarms)
         }
 
-        readonly Dictionary<long, PendingSnapshot> _pendingSnapShots = new Dictionary<long, PendingSnapshot>();
+        readonly Dictionary<long, PendingSnapshot> _pendingSnapShots = new ();
 
         public SnapshotManager(TimeSpan sampleInterval, TimeSpan remainingCooldownPeriod, TimeSpan cooldownWindow)
         {
@@ -1560,14 +1514,14 @@ namespace nsCDEngine
                     _remainingCooldownPeriod = remainingCooldownPeriod;
                     _cooldownWindow = cooldownWindow;
                     _pendingSnapShots.Clear();
-                    foreach (var snapshotKV in oldPendingSnapshots)
+                    foreach (var snapshotKV in oldPendingSnapshots.Select(x=>x.Value))
                     {
-                        AddSnapshot(snapshotKV.Value.ThingSnapshot, snapshotKV.Value.MaxSequenceNumber);
-                        if (snapshotKV.Value.OverflowSnapshots != null)
+                        AddSnapshot(snapshotKV.ThingSnapshot, snapshotKV.MaxSequenceNumber);
+                        if (snapshotKV.OverflowSnapshots != null)
                         {
-                            foreach (var snapshot in snapshotKV.Value.OverflowSnapshots)
+                            foreach (var snapshot in snapshotKV.OverflowSnapshots)
                             {
-                                AddSnapshot(snapshot, snapshotKV.Value.MaxSequenceNumber);
+                                AddSnapshot(snapshot, snapshotKV.MaxSequenceNumber);
                             }
                         }
                     }
@@ -1603,44 +1557,32 @@ namespace nsCDEngine
         public PendingSnapshot AddSnapshot(TheThingStore snapshot, long sequenceNumber)
         {
             PendingSnapshot pendingSnapshotToReturn;
+            var windowStart = GetSamplingWindowStart(snapshot.cdeCTIM);
+            lock (_pendingSnapShots)
             {
-                var windowStart = GetSamplingWindowStart(snapshot.cdeCTIM);
-                //if (timeRedirects.TryGetValue(windowStart, out var newValue))
-                //{
-                //    if (newValue > windowStart)
-                //    {
-                //        windowStart =
-                //    }
-                //}
-                lock (_pendingSnapShots)
+                if (!_pendingSnapShots.TryGetValue(windowStart, out var previousSnapshot))
                 {
-                    if (!_pendingSnapShots.TryGetValue(windowStart, out var previousSnapshot))
+                    var pendingSnapshot = new PendingSnapshot
                     {
-                        var pendingSnapshot = new PendingSnapshot
-                        {
-                            ThingSnapshot = snapshot,
-                            SnapshotExpirationTimeUtcTicks = GetExpirationTimeFromNow(),
-                            MaxSequenceNumber = sequenceNumber,
-                        };
-                        _pendingSnapShots.Add(windowStart, pendingSnapshot);
-                        pendingSnapshotToReturn = pendingSnapshot;
-                    }
-                    else
+                        ThingSnapshot = snapshot,
+                        SnapshotExpirationTimeUtcTicks = GetExpirationTimeFromNow(),
+                        MaxSequenceNumber = sequenceNumber,
+                    };
+                    _pendingSnapShots.Add(windowStart, pendingSnapshot);
+                    pendingSnapshotToReturn = pendingSnapshot;
+                }
+                else
+                {
+                    if (previousSnapshot.ThingSnapshot.cdeMID != snapshot.cdeMID && previousSnapshot.OverflowSnapshots?.FirstOrDefault(s => s.cdeMID == snapshot.cdeMID) == null)
                     {
-                        if (previousSnapshot.ThingSnapshot.cdeMID != snapshot.cdeMID && previousSnapshot.OverflowSnapshots?.FirstOrDefault(s => s.cdeMID == snapshot.cdeMID) == null)
+                        if (previousSnapshot.MaxSequenceNumber < sequenceNumber)
                         {
-                            if (previousSnapshot.MaxSequenceNumber < sequenceNumber)
-                            {
-                                previousSnapshot.MaxSequenceNumber = sequenceNumber;
-                            }
-                            if (previousSnapshot.OverflowSnapshots == null)
-                            {
-                                previousSnapshot.OverflowSnapshots = new List<TheThingStore>();
-                            }
-                            previousSnapshot.OverflowSnapshots.Add(snapshot);
+                            previousSnapshot.MaxSequenceNumber = sequenceNumber;
                         }
-                        pendingSnapshotToReturn = previousSnapshot;
+                        previousSnapshot.OverflowSnapshots ??= new List<TheThingStore>();
+                        previousSnapshot.OverflowSnapshots.Add(snapshot);
                     }
+                    pendingSnapshotToReturn = previousSnapshot;
                 }
             }
             return pendingSnapshotToReturn;
@@ -1740,8 +1682,6 @@ namespace nsCDEngine
         void DeleteItemsUpTo(long sequenceNumberToTruncate);
         bool IsEmpty();
         long CountTestHook { get; }
-        //void UpdateItem(TheThingStore baseLine);
-
         void SetBaseLine(TheThingStore baseLine);
         void PinBaseLine(TheThingStore baseLine);
         IReaderWriterLock MyRecordsRWLock { get; }
@@ -1770,13 +1710,11 @@ namespace nsCDEngine
     internal class StorageMirrorThingUpdateStream : IThingStream
     {
         private readonly TheStorageMirror<TheThingStore> _storageMirror;
-        private Guid thingMid;
         private long maxCount;
         private TimeSpan maxAge;
 
         public StorageMirrorThingUpdateStream(bool persistent, Guid thingMid, long maxCount, TimeSpan maxAge) //, bool pIsRAMStore=true, bool pIsCached=true, string pFriendlyName="", string pDescription="") required if store should go to SQL Server some day
         {
-            this.thingMid = thingMid;
             this.maxCount = maxCount;
             this.maxAge = maxAge;
 
@@ -1802,19 +1740,6 @@ namespace nsCDEngine
             mirrorThingStore.SetRecordExpiration(maxAge.TotalSeconds > int.MaxValue ? int.MaxValue : (int)maxAge.TotalSeconds, null);
             mirrorThingStore.MyMirrorCache.TrackInsertionOrder();
             mirrorThingStore.MyMirrorCache.FastSaveLock = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("StorageMirrorFastSave"));
-
-            //mirrorThingStore.CreateStore(new TheStorageMirrorParameters
-            //{
-            //    IsRAMStore = pIsRAMStore,
-            //    IsCached = pIsCached,
-            //    IsCachePersistent = !pIsRAMStore ? false : persistent,
-            //    CanBeFlushed = false,
-            //    ResetContent = false,
-            //    LoadSync = true,
-            //    DontRegisterInMirrorRepository = false,
-            //    FriendlyName = pFriendlyName,
-            //    Description = pDescription
-            //}, null);
             mirrorThingStore.InitializeStore(false, false, true, true);
 
             _storageMirror = mirrorThingStore;
@@ -1892,7 +1817,9 @@ namespace nsCDEngine
                     string[] files = Directory.GetFiles(TheCommonUtils.cdeFixupFileName("cache\\", true), $"{_storageMirror.MyMirrorCache.MyStoreID.Replace('&', 'n')}*");
                     return files.Length == 0;
                 }
-                catch(Exception) { }
+                catch(Exception) { 
+                    //intended
+                }
             }
             return _storageMirror.Count == 0;
         }
@@ -1945,139 +1872,4 @@ namespace nsCDEngine
             return _storageMirror.MyMirrorCache.GetLastSequenceNumber();
         }
     }
-
-    //internal class MultiFileThingStream : IThingStream
-    //{
-    //    private List<TheThingStore> _items;
-    //    private long sequenceNumberOffset;
-
-    //    class ThingFile
-    //    {
-    //        public long firstOffset;
-    //        public string fileName;
-    //    }
-
-    //    private Guid thingMid;
-    //    private long maxCount;
-    //    private TimeSpan maxAge;
-    //    private bool persistent;
-
-    //    public MultiFileThingStream(bool persistent, Guid thingMid, long maxCount, TimeSpan maxAge)
-    //    {
-    //        this.thingMid = thingMid;
-    //        this.maxCount = maxCount;
-    //        this.maxAge = maxAge;
-    //        this.persistent = persistent;
-
-    //        _items = new List<TheThingStore>();
-    //        if (persistent)
-    //        {
-    //            // Find all files and read them into the list
-    //        }
-    //    }
-
-    //    public long CountTestHook => return _items.Count;
-
-    //    public IReaderWriterLock MyRecordsRWLock => _storageMirror.MyRecordsRWLock;
-
-    //    public long MaxCount
-    //    {
-    //        get => maxCount;
-    //        set { maxCount = value; _storageMirror.SetMaxStoreSize((int)maxCount); }
-    //    }
-    //    public TimeSpan MaxAge
-    //    {
-    //        get => maxAge;
-    //        set
-    //        {
-    //            maxAge = value;
-    //            _storageMirror.SetRecordExpiration(value.TotalSeconds > int.MaxValue ? int.MaxValue : (int)value.TotalSeconds, null);
-    //        }
-    //    }
-    //    public bool IsPersistent
-    //    {
-    //        get => _storageMirror.IsCachePersistent;
-    //        set
-    //        {
-    //            _storageMirror.IsCachePersistent = value;
-    //            _storageMirror.MyMirrorCache.IsCachePersistent = value;
-    //        }
-    //    }
-
-    //    public void AddAnItem(TheThingStore thingSnapshot)
-    //    {
-    //        _storageMirror.AddAnItem(thingSnapshot);
-    //    }
-
-    //    public TheThingStore FindLastItemAtOrBeforeSequenceNumber(long lowestSequenceNumberTruncated, Func<TheThingStore, bool> p, out long baselineSequenceNumber)
-    //    {
-    //        return _storageMirror.MyMirrorCache.FindLastItemAtOrBeforeSequenceNumber(lowestSequenceNumberTruncated, p, out baselineSequenceNumber);
-    //    }
-
-    //    public void ForceSave()
-    //    {
-    //        _storageMirror.ForceSave();
-    //    }
-
-    //    public IEnumerable<TheThingStore> GetItems(long lowestSequenceNumberTruncated)
-    //    {
-    //        return _storageMirror.MyMirrorCache.GetItemsByInsertionOrderInternal(lowestSequenceNumberTruncated);
-    //    }
-
-    //    public long GetNextSequenceNumber(long baselineSequenceNumber)
-    //    {
-    //        return _storageMirror.MyMirrorCache.GetNextSequenceNumber(baselineSequenceNumber);
-    //    }
-
-    //    public long GetOffsetByTimestamp(DateTimeOffset start)
-    //    {
-    //        return _storageMirror.MyMirrorCache.GetOffsetByTimestamp(start);
-    //    }
-
-    //    public long GetPreviousSequenceNumber(long baselineSequenceNumber)
-    //    {
-    //        return _storageMirror.MyMirrorCache.GetPreviousSequenceNumber(baselineSequenceNumber);
-    //    }
-
-    //    public bool IsEmpty()
-    //    {
-    //        return _storageMirror.Count == 0;
-    //    }
-
-    //    public Action<StoreEventArgs> RegisterEvent(string pEventName, Action<StoreEventArgs> pCallback)
-    //    {
-    //        return _storageMirror.RegisterEvent(pEventName, pCallback);
-    //    }
-    //    public bool HasRegisteredEvents(string pEventName)
-    //    {
-    //        return _storageMirror.HasRegisteredEvents(pEventName);
-    //    }
-
-    //    public void UnregisterEvent(string pEventName, Action<StoreEventArgs> pCallback)
-    //    {
-    //        _storageMirror.UnregisterEvent(pEventName, pCallback);
-    //    }
-
-
-    //    public void RemoveAllItems()
-    //    {
-    //        _storageMirror.RemoveAllItems();
-    //    }
-
-    //    public void RemoveStore(bool backupFirst)
-    //    {
-    //        _storageMirror.RemoveStore(backupFirst);
-    //    }
-
-    //    public void DeleteItemsUpTo(long lowestSequenceNumberTruncated)
-    //    {
-    //        _storageMirror.MyMirrorCache.RemoveUpToSequenceNumberInternal(lowestSequenceNumberTruncated);
-    //    }
-
-    //    public void UpdateItem(TheThingStore baseLine)
-    //    {
-    //        _storageMirror.UpdateItem(baseLine, null);
-    //    }
-    //}
-
 }

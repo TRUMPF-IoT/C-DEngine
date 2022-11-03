@@ -32,23 +32,21 @@ namespace nsCDEngine.Activation
             byte[] activationRequestKey = new byte[3 + tGu.Length + 2 + 1 + 1];
 
             int j = 0;
-            //activationRequestKey[0] = (byte) (DateTime.UtcNow.Ticks & 0xff);
-            //j++;
 
-            byte checksum = 0;// activationRequestKey[0];
+            byte checksum = 0;
             for (int i = 0; i < tGu.Length; i++)
             {
                 if (i < 3)
                 {
                     activationRequestKey[j] = (byte)((tenMinuteIntervalsSinceUnixEpoch & 0xff) ^ checksum);
-                    tenMinuteIntervalsSinceUnixEpoch = tenMinuteIntervalsSinceUnixEpoch >>= 8;
+                    tenMinuteIntervalsSinceUnixEpoch >>= 8;
                     checksum += activationRequestKey[j];
                     j++;
                 }
                 else if (i < 5)
                 {
                     activationRequestKey[j] = (byte)((SkuId & 0xff) ^ checksum);
-                    SkuId = SkuId >>= 8;
+                    SkuId >>= 8;
                     checksum += activationRequestKey[j];
                     j++;
                 }
@@ -58,8 +56,6 @@ namespace nsCDEngine.Activation
             }
             activationRequestKey[j] = (byte)(checksum & 0xff);
             j++;
-            //activationRequestKey[j + 1] = (byte) ((checksum >> 8) + activationRequestKey[0]);
-            //activationRequestKey[j + 2] =  (byte) (((activationRequestKey[0]) | 0x02) & 0x03); // ensure positive big int and 36 chars in output
 
             activationRequestKey[j] = 15; // padding
             return TheActivationUtils.Base32Encode(activationRequestKey);

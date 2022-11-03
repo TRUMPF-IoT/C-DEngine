@@ -13,7 +13,7 @@ namespace nsCDEngine.Communication
 {
     internal partial class TheQueuedSender
     {
-        private readonly object lockStartLock = new object();
+        private readonly object lockStartLock = new ();
         internal void StartHeartBeat()
         {
             if (IsQSenderReadyForHB || !TheBaseAssets.MasterSwitch)
@@ -21,10 +21,7 @@ namespace nsCDEngine.Communication
             IsQSenderReadyForHB = true;
             try
             {
-                if (MyTSMHistory == null)
-                {
-                    MyTSMHistory = new TheMirrorCache<TheSentRegistryItem>(TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime);
-                }
+                MyTSMHistory ??= new TheMirrorCache<TheSentRegistryItem>(TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime);
 
                 if (!TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
                 {
@@ -34,8 +31,7 @@ namespace nsCDEngine.Communication
                 {
                     lock (lockStartLock)
                     {
-                        if (mMyHeartBeatTimer == null)
-                            mMyHeartBeatTimer = new Timer(sinkHeartBeatTimerLocal, null, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
+                        mMyHeartBeatTimer ??= new Timer(sinkHeartBeatTimerLocal, null, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
                     }
                 }
                 InitHeartbeatTimer();
@@ -88,8 +84,7 @@ namespace nsCDEngine.Communication
         {
             if (TheCommonUtils.IsLocalhost(MyTargetNodeChannel.cdeMID))
                 return true;
-            if (MyTargetNodeChannel.MySessionState == null)
-                MyTargetNodeChannel.MySessionState = pState;
+            MyTargetNodeChannel.MySessionState ??= pState;
             ResetHeartbeatTimer(false, MyTargetNodeChannel.MySessionState);
             return true;
         }
@@ -175,11 +170,8 @@ namespace nsCDEngine.Communication
                 return; //New in 4.205: HB is not checked if QSender is in post (for example during a large telegram going to a browser)
             }
 
-            if (MyTargetNodeChannel.IsWebSocket && !IsConnecting)
-            {
-                if (!TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType)) //IDST-OK: Only update session state for none-devices
-                    TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel.MySessionState);
-            }
+            if (MyTargetNodeChannel.IsWebSocket && !IsConnecting && !TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))
+                TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel.MySessionState);
             mInHeartBeatTimer = true;
 
             try
@@ -195,9 +187,8 @@ namespace nsCDEngine.Communication
                     ConnectRetries++;
                     if (ConnectRetries > TheBaseAssets.MyServiceHostInfo.TO.HeartBeatMissed)
                     {
-                        TSM tMsg = new TSM("QueuedSender", $"Initial Connection failed. {MyTargetNodeChannel?.ToMLString()} might be down!", eMsgLevel.l2_Warning);
+                        TSM tMsg = new ("QueuedSender", $"Initial Connection failed. {MyTargetNodeChannel?.ToMLString()} might be down!", eMsgLevel.l2_Warning);
                         HeartBeatCnt = 0;
-                        //FlushQueue();
                         if (MyTargetNodeChannel != null)
                             tMsg.ORG = MyTargetNodeChannel.cdeMID.ToString();
                         else
@@ -219,7 +210,7 @@ namespace nsCDEngine.Communication
                     int Misses = TheBaseAssets.MyServiceHostInfo.TO.OnAdrenalin ? 2 : 1;
                     if (HeartBeatCnt > TheBaseAssets.MyServiceHostInfo.TO.HeartBeatMissed * Misses)
                     {
-                        TSM tMsg = new TSM("QueuedSender", $"Too Many Heartbeats ({HeartBeatCnt}) missed - {MyTargetNodeChannel?.ToMLString()} might be down!", eMsgLevel.l2_Warning);
+                        TSM tMsg = new ("QueuedSender", $"Too Many Heartbeats ({HeartBeatCnt}) missed - {MyTargetNodeChannel?.ToMLString()} might be down!", eMsgLevel.l2_Warning);
                         HeartBeatCnt = 0;
                         tMsg.ORG = MyTargetNodeChannel.cdeMID.ToString();
                         TheBaseAssets.MySYSLOG.WriteToLog(248, tMsg, true);
@@ -229,7 +220,7 @@ namespace nsCDEngine.Communication
                     {
                         if (HeartBeatCnt > TheBaseAssets.MyServiceHostInfo.TO.HeartBeatWarning)
                         {
-                            TSM tMsg = new TSM("QueuedSender", $"More than {TheBaseAssets.MyServiceHostInfo.TO.HeartBeatWarning} ({HeartBeatCnt}) Heartbeats from {MyTargetNodeChannel?.ToMLString()} missed", eMsgLevel.l2_Warning) {ORG = MyTargetNodeChannel.cdeMID.ToString()};
+                            TSM tMsg = new ("QueuedSender", $"More than {TheBaseAssets.MyServiceHostInfo.TO.HeartBeatWarning} ({HeartBeatCnt}) Heartbeats from {MyTargetNodeChannel?.ToMLString()} missed", eMsgLevel.l2_Warning) {ORG = MyTargetNodeChannel.cdeMID.ToString()};
                             TheBaseAssets.MySYSLOG.WriteToLog(248, tMsg, true);
                         }
                         if (MyTargetNodeChannel != null) // && MyTargetNodeChannel.References > 0)  legacy

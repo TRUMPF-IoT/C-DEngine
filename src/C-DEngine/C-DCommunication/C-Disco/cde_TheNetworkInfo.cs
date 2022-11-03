@@ -68,7 +68,7 @@ namespace nsCDEngine.Discovery
     /// </summary>
     public sealed class TheNetworkInfo
     {
-        private class ExIP
+        private sealed class ExIP
         {
             public Action<IPAddress, object> Callback;
             public object Cookie;
@@ -82,7 +82,7 @@ namespace nsCDEngine.Discovery
         public delegate void InterfaceHandler(object sender, TheIPDef e); //TheNetworkInfo
 
         internal static string MyHostName;
-        internal static cdeConcurrentDictionary<IPAddress, TheIPDef> AddressTable = new cdeConcurrentDictionary<IPAddress, TheIPDef>();
+        internal static cdeConcurrentDictionary<IPAddress, TheIPDef> AddressTable = new ();
         /// <summary>
         /// Returns all iP addresses of this host hardware
         /// </summary>
@@ -129,7 +129,7 @@ namespace nsCDEngine.Discovery
             if ((pTimerCnt % 30) != 0) return;
             try
             {
-                ArrayList list = new ArrayList(cdeGetHostEntry(MyHostName)?.AddressList);
+                ArrayList list = new (cdeGetHostEntry(MyHostName)?.AddressList);
                 if (list?.Count > 0)
                 {
                     foreach (IPAddress address in list)
@@ -160,11 +160,11 @@ namespace nsCDEngine.Discovery
         public static uint GetFreePort(uint LowRange, uint UpperRange, IPAddress OnThisIP)
         {
             uint num;
-            Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Socket socket = new (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             while (true)
             {
                 num = TheCommonUtils.GetRandomUInt(LowRange, UpperRange);
-                IPEndPoint localEP = new IPEndPoint(OnThisIP, (int)num);
+                IPEndPoint localEP = new (OnThisIP, (int)num);
                 try
                 {
                     socket.Bind(localEP);
@@ -228,14 +228,14 @@ namespace nsCDEngine.Discovery
                     IPHostEntry hostByName = cdeGetHostEntry(MyHostName);
                 if (hostByName == null) return false;
                     TheSystemMessageLog.ToCo(string.Format("NetworkInfo - HostName : {0}", hostByName.HostName));
-                    ArrayList tAddressTable = new ArrayList(hostByName.AddressList);
+                    ArrayList tAddressTable = new (hostByName.AddressList);
                     foreach (IPAddress address in tAddressTable)
                     {
                         if (address.AddressFamily != AddressFamily.InterNetworkV6)
                         {
                             NewAddition = true;
                             byte[] ipAdressBytes = address.GetAddressBytes();
-                            TheIPDef tI = new TheIPDef() { ipAdressBytes = ipAdressBytes, SubnetBytes = new byte[] { 255, 0, 0, 0 }, IPAddr = address, IsDnsEnabled = true, IsPrivateIP = IsPrivateIPBytes(ipAdressBytes) };
+                            TheIPDef tI = new () { ipAdressBytes = ipAdressBytes, SubnetBytes = new byte[] { 255, 0, 0, 0 }, IPAddr = address, IsDnsEnabled = true, IsPrivateIP = IsPrivateIPBytes(ipAdressBytes) };
                             if (address.ToString().Equals(IPAddress.Loopback.ToString()))
                             {
                                 HasLoop = true;
@@ -244,12 +244,10 @@ namespace nsCDEngine.Discovery
                             AddressTable.TryAdd(address, tI);
                         }
                     }
-                    //TheSystemMessageLog.ToCo($"NetworkInfo - AddressTable : {AddressTable.Aggregate("", (s, a) => $"{s} {a}")}");
                 }
                 catch (Exception e)
                 {
-                    TheSystemMessageLog.ToCo($"NetworkInfo - Exception: {e.ToString()}");
-                   // throw;
+                    TheSystemMessageLog.ToCo($"NetworkInfo - Exception: {e}");
                 }
             }
             else
@@ -284,14 +282,14 @@ namespace nsCDEngine.Discovery
                                     {
                                         //ignored
                                     }
-                                    if (ipv4_properties == null) continue;  //TODO: IPv6 Support later
+                                    if (ipv4_properties == null) continue;  
                                     byte[] tSubnetBytes = unicastAddress.IPv4Mask.GetAddressBytes();
                                     if (tSubnetBytes[0] == 0) continue;
                                     byte[] ipAdressBytes = unicastAddress.Address.GetAddressBytes();
-                                    IPAddress tIP = new IPAddress(ipAdressBytes);
+                                    IPAddress tIP = new (ipAdressBytes);
                                     if (!AddressTable.ContainsKey(tIP))
                                     {
-                                        TheIPDef tI = new TheIPDef()
+                                        TheIPDef tI = new ()
                                         {
                                             ipAdressBytes = ipAdressBytes,
                                             SubnetBytes = tSubnetBytes,
@@ -334,6 +332,7 @@ namespace nsCDEngine.Discovery
                             }
                             catch
                             {
+                                //ignored
                             }
                         }
                     }
@@ -381,7 +380,7 @@ namespace nsCDEngine.Discovery
         public static void GetExternalIp(Action<IPAddress, object> pCallback, object pCookie)
         {
             string whatIsMyIp = "https://ifconfig.me/ip";
-            ExIP tExIP = new ExIP
+            ExIP tExIP = new ()
             {
                 Callback = pCallback,
                 Cookie = pCookie
@@ -440,24 +439,6 @@ namespace nsCDEngine.Discovery
             }
             return null;
         }
-        /// <summary>
-        /// Gets the mac address of the primary network adapter.
-        /// </summary>
-        /// <param name="MustBeExternal">if set to <c>true</c> the adapter must be external (not loopback or private ip).</param>
-        /// <returns>System.String.</returns>
-        public static string GetMACAddress(bool MustBeExternal)
-        {
-            if (AddressTable.Count == 0)
-                GetLocalIPs(true);
-            foreach (TheIPDef tIp in AddressTable.Values)
-            {
-                if (tIp.IsDnsEnabled && (!MustBeExternal || !IsPrivateIPBytes(tIp.ipAdressBytes)))
-                {
-                    return tIp.MACAddress;
-                }
-            }
-            return null;
-        }
 
         /// <summary>
         /// Returns an IP Address starting with a given scheme
@@ -473,6 +454,25 @@ namespace nsCDEngine.Discovery
                 if (tIp.IPAddr.ToString().StartsWith(firsts))
                 {
                     return new IPAddress(tIp.ipAdressBytes);
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the mac address of the primary network adapter.
+        /// </summary>
+        /// <param name="MustBeExternal">if set to <c>true</c> the adapter must be external (not loopback or private ip).</param>
+        /// <returns>System.String.</returns>
+        public static string GetMACAddress(bool MustBeExternal)
+        {
+            if (AddressTable.Count == 0)
+                GetLocalIPs(true);
+            foreach (TheIPDef tIp in AddressTable.Values)
+            {
+                if (tIp.IsDnsEnabled && (!MustBeExternal || !IsPrivateIPBytes(tIp.ipAdressBytes)))
+                {
+                    return tIp.MACAddress;
                 }
             }
             return null;

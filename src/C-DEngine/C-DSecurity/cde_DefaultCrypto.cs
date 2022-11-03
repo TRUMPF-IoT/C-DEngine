@@ -20,8 +20,8 @@ namespace nsCDEngine.Security
     /// <seealso cref="nsCDEngine.Interfaces.ICDECrypto" />
     internal class TheDefaultCrypto : ICDECrypto
     {
-        private ICDESecrets MySecrets = null;
-        private ICDESystemLog MySYSLOG = null;
+        private readonly ICDESecrets MySecrets = null;
+        private readonly ICDESystemLog MySYSLOG = null;
         public TheDefaultCrypto(ICDESecrets pSecrets=null, ICDESystemLog pSysLog=null)
         {
             if (pSecrets != null)
@@ -46,10 +46,10 @@ namespace nsCDEngine.Security
         {
             if (toEncrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new AesManaged();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
+            AesManaged myRijndael = new ();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform encryptor = myRijndael.CreateEncryptor(AK, AI);
-            MemoryStream msEncrypt = new MemoryStream();
-            CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write);
+            MemoryStream msEncrypt = new ();
+            CryptoStream csEncrypt = new (msEncrypt, encryptor, CryptoStreamMode.Write);
             csEncrypt.Write(toEncrypt, 0, toEncrypt.Length);
             csEncrypt.FlushFinalBlock();
             return msEncrypt.ToArray();
@@ -70,7 +70,7 @@ namespace nsCDEngine.Security
         {
             if (toDecrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new AesManaged(); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
+            AesManaged myRijndael = new (); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform decryptor = myRijndael.CreateDecryptor(AK, AI);
             byte[] resultArray = decryptor.TransformFinalBlock(toDecrypt, 0, toDecrypt.Length);
             myRijndael.Clear();
@@ -90,12 +90,11 @@ namespace nsCDEngine.Security
 
         public bool HasBufferCorrectLength(string OrgBuffer, string pBufferType)
         {
-            switch (pBufferType)
+            return pBufferType switch
             {
-                case "GUID":
-                    return (OrgBuffer.Length == 46 || OrgBuffer.Length == 44);
-            }
-            return false;
+                "GUID" => (OrgBuffer.Length == 46 || OrgBuffer.Length == 44),
+                _ => false,
+            };
         }
 
         /// <summary>
@@ -107,7 +106,7 @@ namespace nsCDEngine.Security
         public string RSADecryptWithPrivateKey(byte[] val, string pPrivateKey)
         {
             if (string.IsNullOrEmpty(pPrivateKey)) return "";
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
+            RSACryptoServiceProvider rsa = new (2048);
             try
             {
                 rsa.FromXmlString(pPrivateKey);
@@ -167,9 +166,9 @@ namespace nsCDEngine.Security
         public byte[] RSAEncrypt(string val, string pRSAPublic)
         {
             if (string.IsNullOrEmpty(pRSAPublic) || string.IsNullOrEmpty(val)) return null;
-            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider(2048);
+            RSACryptoServiceProvider rsa = new (2048);
             string[] rsaP = pRSAPublic.Split(',');
-            RSAParameters tP = new RSAParameters()
+            RSAParameters tP = new ()
             {
                 Modulus = ToHexByte(rsaP[1]),
                 Exponent = ToHexByte(rsaP[0])
@@ -351,13 +350,13 @@ namespace nsCDEngine.Security
 
         private static byte[] CUTF8String2Array(string strIn)
         {
-            UTF8Encoding enc = new UTF8Encoding();
+            UTF8Encoding enc = new ();
             return enc.GetBytes(strIn);
         }
 
         private static string cdeCreateXMLElement(string strInput, byte[] pTag)
         {
-            // ToDo: Need parameter checking for strInput. But -- should we return null or ""??
+            // Need parameter checking for strInput. But -- should we return null or ""??
             if (string.IsNullOrEmpty(strInput)) return null;
 
             return pTag == null ? string.Format("<{0} />\n", strInput) : string.Format("<{0}>{1}</{0}>", strInput, Convert.ToBase64String(pTag));

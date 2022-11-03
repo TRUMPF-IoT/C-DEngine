@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Text;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
@@ -19,9 +20,9 @@ namespace nsCDEngine.Engines.NMIService
 {
     public partial class TheNMIEngine
     {
-        internal static readonly Guid eNMIPortalDashboard = new Guid("{E7DA71A1-496F-4B15-A8AB-969526341C7B}");
-        internal static readonly Guid eNMIDashboard = new Guid("{FAFA22FF-96AC-42CF-B1DB-7C073053FC39}");
-        internal static readonly Guid eActivationAndStatusDashGuid = new Guid("{1CF9A525-0126-4189-AF41-18C3609E5743}");
+        internal static readonly Guid eNMIPortalDashboard = new("{E7DA71A1-496F-4B15-A8AB-969526341C7B}");
+        internal static readonly Guid eNMIDashboard = new("{FAFA22FF-96AC-42CF-B1DB-7C073053FC39}");
+        internal static readonly Guid eActivationAndStatusDashGuid = new("{1CF9A525-0126-4189-AF41-18C3609E5743}");
 
         #region SmartControl / TheFieldInfo related methods (HTML free)
 
@@ -68,7 +69,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (!IsInitialized() || pSelector == null ||
                 TheCDEngines.MyNMIService.MyNMIModel.MyFields == null || TheCDEngines.MyNMIService.MyNMIModel.MyFields.MyMirrorCache == null)
-                return null;
+                return new List<TheFieldInfo>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyFields.MyMirrorCache.GetEntriesByFunc(pSelector);
         }
 
@@ -118,7 +119,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns>List of TheFieldInfo: Group, InnerGroup, BackIcon and FrontIcon</returns>
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddSmartIcon(TheThing pBaseThing, TheFormInfo pMyForm, int pFldOrder, int pParentFld, int pTileHeight, string pBackIcon, string pFrontIcon, string pDefaultColor = "transparent")
         {
-            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
+            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new ();
 
             if (string.IsNullOrEmpty(pDefaultColor))
                 pDefaultColor = "gray";
@@ -236,7 +237,7 @@ namespace nsCDEngine.Engines.NMIService
                 tDefaultValue = "";
             if (pACL < 0 && MyBaseThing != null)
                 pACL = MyBaseThing.cdeA;
-            TheFieldInfo tFldInfo = new TheFieldInfo()
+            TheFieldInfo tFldInfo = new ()
             {
                 cdeO = MyBaseThing != null ? MyBaseThing.cdeMID : pMyForm.cdeMID,
                 cdeA = pACL,
@@ -258,7 +259,7 @@ namespace nsCDEngine.Engines.NMIService
             if ((flags & 16) != 0)
                 tFldInfo.AddOrUpdatePlatformBag(eWebPlatform.Any, new nmiPlatBag { HideInForm = true });
             if (!string.IsNullOrEmpty(tDefaultValue))
-                ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, "DefaultValue", "=", tDefaultValue); //TODO: Must Load Chart From Chart Plugin
+                ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, "DefaultValue", "=", tDefaultValue); 
 
             if (tType == eFieldType.UserControl && MyBaseThing != null)
             {
@@ -269,9 +270,6 @@ namespace nsCDEngine.Engines.NMIService
             }
             if (tType == eFieldType.SmartLabel)
                 ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, "ClassName", "=", "ctrlSmartLabel");
-            if (RedOnFalse)
-            {
-            }
             if (!string.IsNullOrEmpty(OnUpdateName))
             {
                 if (tType == eFieldType.Table)
@@ -289,9 +287,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (pMyForm.DefaultView == eDefaultView.Form && MyBaseThing!=null)
                         {
                             ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, "OnThingEvent", "=", string.Format("{0};{1}", MyBaseThing.cdeMID, OnUpdateName));
-                            if (tProp == null)
-                                tProp = MyBaseThing.GetProperty(OnUpdateName, true);
-                            //tProp.SetPublication(true, Guid.Empty); //4.1: Moved to Late Binding in TheFormGenerator.GetPermittedFields
+                            tProp ??= MyBaseThing.GetProperty(OnUpdateName, true);
                             if ((tProp.cdeE & 0x40) != 0)
                                 tProp.RegisterEvent(eThingEvents.PropertyChanged, tFldInfo.sinkUpdate);
                             if ((flags & 1) != 0 || tType == eFieldType.Password)   //Automatically encrypt all UX Elements that are flaged with FieldType Passwword or have the Flag=1 on.
@@ -316,27 +312,24 @@ namespace nsCDEngine.Engines.NMIService
                 foreach (var t in tFldInfo.PropertyBag.ToList())
                 {
                     var ts = t.Split('=');
-                    if (ts.Length > 1)
+                    if (ts.Length > 1 && ts[1].StartsWith("$"))
                     {
-                        if (ts[1].StartsWith("$"))
+                        if (ts[1].Length == 2 && ts[1].EndsWith("$"))
                         {
-                            if (ts[1].Length == 2 && ts[1].EndsWith("$"))
-                            {
-                                ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, ts[0], "=", "$");
-                                continue;
-                            }
-                            var tPN = ts[1].Substring(1);
-                            MyBaseThing.GetProperty(tPN, true).RegisterEvent(eThingEvents.PropertyChanged, (p) =>
-                            {
-                                if (p != null)
-                                {
-                                    var pSafe = p?.ToString();
-                                    if ((flags & 256) == 0)
-                                        pSafe = TheCommonUtils.cdeStripHTML(pSafe);
-                                    tFldInfo.SetUXProperty(Guid.Empty, $"{ts[0]}={pSafe}");
-                                }
-                            });
+                            ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, ts[0], "=", "$");
+                            continue;
                         }
+                        var tPN = ts[1].Substring(1);
+                        MyBaseThing.GetProperty(tPN, true).RegisterEvent(eThingEvents.PropertyChanged, (p) =>
+                        {
+                            if (p != null)
+                            {
+                                var pSafe = p?.ToString();
+                                if ((flags & 256) == 0)
+                                    pSafe = TheCommonUtils.cdeStripHTML(pSafe);
+                                tFldInfo.SetUXProperty(Guid.Empty, $"{ts[0]}={pSafe}");
+                            }
+                        });
                     }
                 }
             }
@@ -396,7 +389,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (!IsInitialized() || pFieldGuid == Guid.Empty ||
                 TheCDEngines.MyNMIService.MyNMIModel.MyFields == null || TheCDEngines.MyNMIService.MyNMIModel.MyFields.MyMirrorCache == null)
-                return null;
+                return new List<TheFieldInfo>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyFields.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pFieldGuid);
         }
 
@@ -449,7 +442,7 @@ namespace nsCDEngine.Engines.NMIService
             IBaseEngine tBase = pBaseThing.GetBaseEngine();
             if (tBase != null)
             {
-                TheRequestData tData = new TheRequestData { cdeRealPage = pFaceplateURL };
+                TheRequestData tData = new () { cdeRealPage = pFaceplateURL };
                 if (!pUrlIsHTML)
                 {
                     if (tBase.GetPluginResource(tData))
@@ -478,7 +471,7 @@ namespace nsCDEngine.Engines.NMIService
             IBaseEngine tBase = pBaseThing.GetBaseEngine();
             if (tBase != null)
             {
-                TheRequestData tData = new TheRequestData { cdeRealPage = pFaceplateURL };
+                TheRequestData tData = new () { cdeRealPage = pFaceplateURL };
                 if (!pUrlIsHTML)
                 {
                     if (tBase.GetPluginResource(tData))
@@ -533,7 +526,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 TheFormsGenerator.RegisterNewNMINode(pRequestingNode, Guid.Empty, tThing.cdeMID, pDataItem, true);
                 var OnUpdateName = pDataItem;
-                if (OnUpdateName.StartsWith("MyPropertyBag."))  //TODO: Test this with Prop of Prop
+                if (OnUpdateName.StartsWith("MyPropertyBag."))  
                     OnUpdateName = OnUpdateName.Split('.')[1];
                 tThing.GetProperty(OnUpdateName, true).SetPublication(true, pRequestingNode); //Guid.Empty uses PublishCentral - a specific node would use SYSTEMWIDE
             }
@@ -612,6 +605,54 @@ namespace nsCDEngine.Engines.NMIService
                 TheCDEngines.MyNMIService.MyNMIModel.MyFields.RemoveAnItem(tInfo, null);
         }
 
+        /// <summary>
+        /// This method creates an NMI Form and adds it to the Dashboard specified in the first parameter
+        /// </summary>
+        /// <param name="pOwnerThing">The Onwer Thing of this Form</param>
+        /// <param name="pForm">All the Form Parameter</param>
+        /// <param name="pClassName">Style ClassName</param>
+        /// <param name="pFormTitle">Caption of the Dashboard Icon</param>
+        /// <param name="pFlags">
+        /// 1=Show On Local Relay
+        /// 2=Show on Cloud Relay
+        /// 4=Hide on Mobile
+        /// 8=Do not include with ShowAll
+        /// </param>
+        /// <param name="pOrder">If the Dashpanel has multiple forms, this order sorts the forms</param>
+        /// <param name="pACL">Access Level for this Form</param>
+        /// <param name="pCategory">Category in the Dashboard this Form will be in</param>
+        /// <param name="OnChangeName">Name of a Thing-Property this form is monitoring</param>
+        /// <param name="pPropertyBag">Propertybag with custom properties of the form</param>
+        /// <returns>Returns a GUID of the new Form. Guid.Empty is returned if this function failed</returns>
+        public static TheDashPanelInfo AddFormToDashboard(TheThing pOwnerThing, TheFormInfo pForm, int pOrder, string pClassName = "CMyForm", string pFormTitle = null, int pFlags = 0, int pACL = 0, string pCategory = null, string OnChangeName = null, ThePropertyBag pPropertyBag = null)
+        {
+            return AddFormToThingUX(pOwnerThing, pForm, pClassName, pFormTitle, pOrder, pFlags, pACL, pCategory, OnChangeName, pPropertyBag);
+        }
+
+        /// <summary>
+        /// This method creates an NMI Form and adds it to the Dashboard specified in the first parameter
+        /// </summary>
+        /// <param name="tDash">DashPanel this Form will be added to</param>
+        /// <param name="pOwnerThing">The Onwer Thing of this Form</param>
+        /// <param name="pForm">All the Form Parameter</param>
+        /// <param name="pClassName">Style ClassName</param>
+        /// <param name="pFormTitle">Caption of the Dashboard Icon</param>
+        /// <param name="pFlags">
+        /// 1=Show On Local Relay
+        /// 2=Show on Cloud Relay
+        /// 4=Hide on Mobile
+        /// 8=Do not include with ShowAll
+        /// </param>
+        /// <param name="pOrder">If the Dashpanel has multiple forms, this order sorts the forms</param>
+        /// <param name="pACL">Access Level for this Form</param>
+        /// <param name="pCategory">Category in the Dashboard this Form will be in</param>
+        /// <param name="OnChangeName">Name of a Thing-Property this form is monitoring</param>
+        /// <param name="pPropertyBag">Propertybag with custom properties of the form</param>
+        /// <returns>Returns a GUID of the new Form. Guid.Empty is returned if this function failed</returns>
+        public static TheDashPanelInfo AddFormToDashboard(TheDashboardInfo tDash, TheThing pOwnerThing, TheFormInfo pForm, int pOrder, string pClassName = "CMyForm", string pFormTitle = null, int pFlags = 0, int pACL = 0, string pCategory = null, string OnChangeName = null, ThePropertyBag pPropertyBag = null)
+        {
+            return AddFormToThingUX(tDash, pOwnerThing, pForm, pClassName, pFormTitle, pOrder, pFlags, pACL, pCategory, OnChangeName, pPropertyBag);
+        }
 
         /// <summary>
         /// This method creates an NMI Form and adds it to the Dashboard specified in the first parameter
@@ -661,54 +702,6 @@ namespace nsCDEngine.Engines.NMIService
         /// <summary>
         /// This method creates an NMI Form and adds it to the Dashboard specified in the first parameter
         /// </summary>
-        /// <param name="pOwnerThing">The Onwer Thing of this Form</param>
-        /// <param name="pForm">All the Form Parameter</param>
-        /// <param name="pClassName">Style ClassName</param>
-        /// <param name="pFormTitle">Caption of the Dashboard Icon</param>
-        /// <param name="pFlags">
-        /// 1=Show On Local Relay
-        /// 2=Show on Cloud Relay
-        /// 4=Hide on Mobile
-        /// 8=Do not include with ShowAll
-        /// </param>
-        /// <param name="pOrder">If the Dashpanel has multiple forms, this order sorts the forms</param>
-        /// <param name="pACL">Access Level for this Form</param>
-        /// <param name="pCategory">Category in the Dashboard this Form will be in</param>
-        /// <param name="OnChangeName">Name of a Thing-Property this form is monitoring</param>
-        /// <param name="pPropertyBag">Propertybag with custom properties of the form</param>
-        /// <returns>Returns a GUID of the new Form. Guid.Empty is returned if this function failed</returns>
-        public static TheDashPanelInfo AddFormToDashboard(TheThing pOwnerThing, TheFormInfo pForm, int pOrder, string pClassName = "CMyForm", string pFormTitle = null, int pFlags = 0, int pACL = 0, string pCategory = null, string OnChangeName = null, ThePropertyBag pPropertyBag = null)
-        {
-            return AddFormToThingUX(pOwnerThing, pForm, pClassName, pFormTitle, pOrder, pFlags, pACL, pCategory, OnChangeName, pPropertyBag);
-        }
-
-        /// <summary>
-        /// This method creates an NMI Form and adds it to the Dashboard specified in the first parameter
-        /// </summary>
-        /// <param name="tDash">DashPanel this Form will be added to</param>
-        /// <param name="pOwnerThing">The Onwer Thing of this Form</param>
-        /// <param name="pForm">All the Form Parameter</param>
-        /// <param name="pClassName">Style ClassName</param>
-        /// <param name="pFormTitle">Caption of the Dashboard Icon</param>
-        /// <param name="pFlags">
-        /// 1=Show On Local Relay
-        /// 2=Show on Cloud Relay
-        /// 4=Hide on Mobile
-        /// 8=Do not include with ShowAll
-        /// </param>
-        /// <param name="pOrder">If the Dashpanel has multiple forms, this order sorts the forms</param>
-        /// <param name="pACL">Access Level for this Form</param>
-        /// <param name="pCategory">Category in the Dashboard this Form will be in</param>
-        /// <param name="OnChangeName">Name of a Thing-Property this form is monitoring</param>
-        /// <param name="pPropertyBag">Propertybag with custom properties of the form</param>
-        /// <returns>Returns a GUID of the new Form. Guid.Empty is returned if this function failed</returns>
-        public static TheDashPanelInfo AddFormToDashboard(TheDashboardInfo tDash, TheThing pOwnerThing, TheFormInfo pForm, int pOrder, string pClassName = "CMyForm", string pFormTitle = null, int pFlags = 0, int pACL = 0, string pCategory = null, string OnChangeName = null, ThePropertyBag pPropertyBag = null)
-        {
-            return AddFormToThingUX(tDash, pOwnerThing, pForm, pClassName, pFormTitle, pOrder, pFlags, pACL, pCategory, OnChangeName, pPropertyBag);
-        }
-        /// <summary>
-        /// This method creates an NMI Form and adds it to the Dashboard specified in the first parameter
-        /// </summary>
         /// <param name="tDash">DashPanel this Form will be added to</param>
         /// <param name="pOwnerThing">The Onwer Thing of this Form</param>
         /// <param name="pForm">All the Form Parameter</param>
@@ -741,9 +734,9 @@ namespace nsCDEngine.Engines.NMIService
             pForm.cdeO = pOwnerThing.cdeMID;
             AddForm(pForm);
             string tThumb = ThePropertyBag.PropBagGetValue(pPropertyBag, "TileThumbnail", "=");
-            TheDashPanelInfo MyDashPanelInfo = new TheDashPanelInfo(pOwnerThing)
+            TheDashPanelInfo MyDashPanelInfo = new (pOwnerThing)
             {
-                cdeMID = pForm.cdeMID,  //TODO: Needs different guid as Form but than cannot be addressed with same GUID as Form...breaks one or the other
+                cdeMID = pForm.cdeMID,  
                 cdeA = pForm.cdeA,
                 Flags = pFlags,
                 PanelTitle = pFormTitle,
@@ -763,13 +756,11 @@ namespace nsCDEngine.Engines.NMIService
                 cdeP tProp = pOwnerThing.GetProperty(OnChangeName, true);
                 if (tProp != null)
                 {
-                    //tProp.SetPublication(true, Guid.Empty);  //4.1: Moved to Late Binding in TheFormGenerator.GenerateScreen
                     tProp.RegisterEvent(eThingEvents.PropertyChanged, MyDashPanelInfo.sinkUpdate);
                 }
                 else
-                    tProp = pOwnerThing.SetProperty(OnChangeName, null, 0x11, MyDashPanelInfo.sinkUpdate);
-                ThePropertyBag.PropBagUpdateValue(MyDashPanelInfo.PropertyBag, eUXEvents.OnPropertyChanged, "=", $"SEV:{OnChangeName}");  //Coming with 4.11
-                //ThePropertyBag.PropBagUpdateValue(MyDashPanelInfo.PropertyBag, eUXEvents.OnPropertyChanged, "=", string.Format("if (PropertyName=='{0}') {{ TargetControl.SetProperty('{1}Value',Parameter); }}", OnChangeName, (OnChangeName.Equals("Value", StringComparison.OrdinalIgnoreCase) ? "i" : "")));
+                    pOwnerThing.SetProperty(OnChangeName, null, 0x11, MyDashPanelInfo.sinkUpdate);
+                ThePropertyBag.PropBagUpdateValue(MyDashPanelInfo.PropertyBag, eUXEvents.OnPropertyChanged, "=", $"SEV:{OnChangeName}");
             }
             ThePropertyBag.PropBagUpdateValue(MyDashPanelInfo.PropertyBag, "UXID", "=", MyDashPanelInfo.cdeMID.ToString());
             AddDashPanel(tDash, MyDashPanelInfo);
@@ -836,7 +827,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (!IsInitialized() || pFormGuid == Guid.Empty ||
                 TheCDEngines.MyNMIService.MyNMIModel.MyForms == null || TheCDEngines.MyNMIService.MyNMIModel.MyForms.MyMirrorCache == null)
-                return null;
+                return new List<TheFormInfo>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyForms.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pFormGuid);
         }
 
@@ -875,7 +866,7 @@ namespace nsCDEngine.Engines.NMIService
         public static List<TheDashboardInfo> GetAllDashboards()
         {
             if (!IsInitialized() || TheCDEngines.MyNMIService.MyNMIModel.MyDashboards == null || TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.MyMirrorCache == null)
-                return null;
+                return new List<TheDashboardInfo>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.MyMirrorCache.TheValues.ToList();
         }
 
@@ -906,7 +897,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (!IsInitialized() || pDashGuid == Guid.Empty ||
                 TheCDEngines.MyNMIService.MyNMIModel.MyDashboards == null || TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.MyMirrorCache == null)
-                return null;
+                return new List<TheDashboardInfo>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pDashGuid);
         }
 
@@ -1012,8 +1003,7 @@ namespace nsCDEngine.Engines.NMIService
                 TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.AddAnItem(pDashInfo);
             if (pDash.colPanels != null && pDash.colPanels.Contains(pDashInfo.cdeMID.ToString()))
                 return pDashInfo.cdeMID;
-            if (pDash.colPanels == null)
-                pDash.colPanels = new List<string>();
+            pDash.colPanels ??= new List<string>();
             pDash.colPanels.Add(pDashInfo.cdeMID.ToString());
             return pDashInfo.cdeMID;
         }
@@ -1036,7 +1026,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (!IsInitialized() || pDashGuid == Guid.Empty ||
                 TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents == null || TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.MyMirrorCache == null)
-                return null;
+                return new List<TheDashPanelInfo>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pDashGuid);
         }
 
@@ -1139,7 +1129,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static List<ThePageContent> GetPageContentByID(Guid pID)
         {
-            if (!IsPageStoreReady()) return null;
+            if (!IsPageStoreReady()) return new List<ThePageContent>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyPageContentStore.MyMirrorCache.TheValues.OrderBy(s => s.SortOrder).Where(s => s.ContentID == pID).ToList();
         }
 
@@ -1185,14 +1175,14 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         internal static List<ThePageBlocks> GetBlocksByType(Guid pID, Guid pUserID, Guid pNodeID)
         {
-            if (!IsPageStoreReady()) return null;
+            if (!IsPageStoreReady()) return new List<ThePageBlocks>();
             return TheCDEngines.MyNMIService.MyNMIModel.MyPageBlocksStore.MyMirrorCache.GetEntriesByFunc(s=>s.BlockType==pID && s.cdeN== pNodeID && ((s.cdeO!=Guid.Empty && s.cdeO==pUserID) || Security.TheUserManager.HasUserAccess(pUserID,(int)s.AccessLevel)));
         }
 
         internal static List<ThePageBlocks> GetBlocksToSync()
         {
-            if (!IsPageStoreReady()) return null;
-            return TheCDEngines.MyNMIService.MyNMIModel.MyPageBlocksStore.MyMirrorCache.GetEntriesByFunc(s => s.IsMeshSynced==true);
+            if (!IsPageStoreReady()) return new List<ThePageBlocks>();
+            return TheCDEngines.MyNMIService.MyNMIModel.MyPageBlocksStore.MyMirrorCache.GetEntriesByFunc(s => s.IsMeshSynced);
         }
 
         /// <summary>
@@ -1238,7 +1228,7 @@ namespace nsCDEngine.Engines.NMIService
         public static ThePageDefinition AddSmartPage(TheThing pBaseThing, IBaseEngine pBaseEngine, string pPath, string pTitle, bool pIncludeCDE, bool pRequireLogin, bool pIsPublic, string pNMIPortalTemplate = "nmiportal.html", bool DoNotIncludeHeaderButtons = false)
         {
             if (pBaseEngine == null || pBaseThing == null || string.IsNullOrEmpty(pPath)) return null;
-            ThePageDefinition tPage = new ThePageDefinition(pBaseThing.cdeMID, pPath, pTitle, "", Guid.Empty)
+            ThePageDefinition tPage = new (pBaseThing.cdeMID, pPath, pTitle, "", Guid.Empty)
             {
                 StartScreen = pBaseEngine.GetDashboardGuid(), //pBaseThing.cdeMID
                 IncludeCDE = pIncludeCDE,
@@ -1268,7 +1258,7 @@ namespace nsCDEngine.Engines.NMIService
         public static ThePageDefinition AddSmartPage(TheFormInfo pFormInfo, IBaseEngine pBaseEngine, string pPath, string pTitle, bool pIncludeCDE, bool pRequireLogin, bool pIsPublic)
         {
             if (pBaseEngine == null || pFormInfo == null || string.IsNullOrEmpty(pPath)) return null;
-            ThePageDefinition tPage = new ThePageDefinition(pFormInfo.cdeMID, pPath, pTitle, "", Guid.Empty)
+            ThePageDefinition tPage = new (pFormInfo.cdeMID, pPath, pTitle, "", Guid.Empty)
             {
                 StartScreen = pFormInfo.cdeMID,
                 IncludeCDE = pIncludeCDE,
@@ -1404,7 +1394,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static TheControlType GetControlTypeByPType(ePropertyTypes pType)
         {
-            TheControlType tType = new TheControlType
+            TheControlType tType = new ()
             {
                 BaseEngineName = eEngineName.NMIService,
                 ControlType = ((int)eFieldType.SingleEnded).ToString()
@@ -1548,12 +1538,18 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddChartScreen(TheThing pMyBaseThing, TheChartDefinition pChart, int pOrder, string DashIconHeader = null, int pFlags = 0, int pACL = 0, string pCategory = "", bool UseCustomData = false, ThePropertyBag pPropertyBag = null)
         {
-            if (!IsInitialized() || pChart == null) return null;
+            if (!IsInitialized() || pChart == null) return new cdeConcurrentDictionary<string, TheMetaDataBase>();
             AddChartDefinition(pChart);
 
             var tFlds = new cdeConcurrentDictionary<string, TheMetaDataBase>();
-            TheFormInfo tMyConfForm = new TheFormInfo(pMyBaseThing) { cdeMID = pChart.cdeMID, FormTitle = null, DefaultView = eDefaultView.Form, PropertyBag = new ThePropertyBag { "MaxTileWidth=18", "Background=rgba(255, 255, 255, 0.04)", "HideCaption=true" } };
-            tMyConfForm.ModelID = "ChartScreen";
+            TheFormInfo tMyConfForm = new(pMyBaseThing)
+            {
+                cdeMID = pChart.cdeMID,
+                FormTitle = null,
+                DefaultView = eDefaultView.Form,
+                PropertyBag = new ThePropertyBag { "MaxTileWidth=18", "Background=rgba(255, 255, 255, 0.04)", "HideCaption=true" },
+                ModelID = "ChartScreen"
+            };
             tMyConfForm.AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiPlatBag { MaxTileWidth = 6 });
             tMyConfForm.AddOrUpdatePlatformBag(eWebPlatform.HoloLens, new nmiPlatBag { MaxTileWidth = 12 });
             tFlds["Form"] = tMyConfForm;
@@ -1588,11 +1584,10 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddChartControl<T>(TheThing pMyBaseThing, TheStorageMirror<T> sensorHistory, TheFormInfo pForm, int pFldOrder, string pGroupTitle, string pChartTitle, string pLabels, string pPropertyNames, ThePropertyBag pChartBag = null) where T : TheDataBase, INotifyPropertyChanged, new()
         {
             if (pMyBaseThing == null || sensorHistory == null)
-                return null;
+                return new cdeConcurrentDictionary<string, TheMetaDataBase>();
             var tList = new cdeConcurrentDictionary<string, TheMetaDataBase>();
 
             bool OnlyShowValue = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pChartBag, "OnlyShowValue", "="));
-            string tDefSource = "TheSensorHistory";
 
             var tListCharts = new List<TheChartValueDefinition>();
             var tProps = pPropertyNames.Split(';');
@@ -1609,13 +1604,15 @@ namespace nsCDEngine.Engines.NMIService
                 tListCharts.Add(new TheChartValueDefinition(Guid.NewGuid(), tProps[0]) { Label = pLabels });
             }
 
-            if (sensorHistory != null)
-                tDefSource = $"{sensorHistory.StoreMID};:;0;:;{TheThing.GetSafePropertyString(pMyBaseThing, "ScaleFactor")}";
+            string tDefSource = $"{sensorHistory.StoreMID};:;0;:;{TheThing.GetSafePropertyString(pMyBaseThing, "ScaleFactor")}";
             int blocksize = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pChartBag, "BlockSize", "="));
             if (blocksize == 0)
                 blocksize = 2000;
-            var MyChart = new TheChartDefinition(TheThing.GetSafeThingGuid(pMyBaseThing, $"SHIS{sensorHistory.StoreMID}"), pChartTitle, blocksize, tDefSource, true, "", "", "", tListCharts) { SubTitleText = "" };
-            MyChart.PropertyBag = new ThePropertyBag { "LatestRight=true" };
+            var MyChart = new TheChartDefinition(TheThing.GetSafeThingGuid(pMyBaseThing, $"SHIS{sensorHistory.StoreMID}"), pChartTitle, blocksize, tDefSource, true, "", "", "", tListCharts)
+            {
+                SubTitleText = "",
+                PropertyBag = new ThePropertyBag { "LatestRight=true" }
+            };
             AddChartDefinition(MyChart);
             var tL = AddChartControl(pMyBaseThing, MyChart, pForm, pFldOrder, pGroupTitle, pChartTitle,false, pChartBag);
             if (tL != null && tL.Count>0)
@@ -1629,7 +1626,7 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddChartControl(TheThing pMyBaseThing, TheChartDefinition MyChart, TheFormInfo pForm, int pFldOrder, string pGroupTitle, string pChartTitle, bool UseCustomData = false, ThePropertyBag pChartBag = null)
         {
             if (pMyBaseThing == null || MyChart==null)
-                return null;
+                return new cdeConcurrentDictionary<string, TheMetaDataBase>();
             AddChartDefinition(MyChart);
             var tList = new cdeConcurrentDictionary<string, TheMetaDataBase>();
 
@@ -1647,15 +1644,15 @@ namespace nsCDEngine.Engines.NMIService
             if (tGroup == null)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2345, new TSM(eEngineName.NMIService, $"Chart Group could not be created - FldOrder conflict? ({pFldOrder})", eMsgLevel.l1_Error));
-                return null;
+                return new cdeConcurrentDictionary<string, TheMetaDataBase>();
             }
             tGroup.AddOrUpdatePlatformBag(eWebPlatform.Any, new nmiPlatBag { Hide = true });
             tGroup.AddOrUpdatePlatformBag(eWebPlatform.Desktop, new nmiPlatBag { Show = true });
             tGroup.AddOrUpdatePlatformBag(eWebPlatform.TeslaXS, new nmiPlatBag { Show = true });
             tList["Group"] = tGroup;
 
-            ThePropertyBag tPropertyBag = new ThePropertyBag() { "NoTE=true", $"ParentFld={pFldOrder}", "HideRefresh=true", "Colors=['#52CFEA', '#AAAAAA', '#CCCCCC', '#CCCCCC', '#1aadce','#492970', '#f28f43', '#77a1e5', '#c42525', '#a6c96a']",
-                    $"TileWidth={(ForceTileWidth<18?ForceTileWidth:18)}", "TileHeight=4", "ControlType=Line Chart",// "HideSeries=QValue_Min,QValue_Max",
+            ThePropertyBag tPropertyBag = new () { "NoTE=true", $"ParentFld={pFldOrder}", "HideRefresh=true", "Colors=['#52CFEA', '#AAAAAA', '#CCCCCC', '#CCCCCC', '#1aadce','#492970', '#f28f43', '#77a1e5', '#c42525', '#a6c96a']",
+                    $"TileWidth={(ForceTileWidth<18?ForceTileWidth:18)}", "TileHeight=4", "ControlType=Line Chart", OnlyShowValue?"HideSeries=QValue_Min,QValue_Max":"",
                     $"DataSource={MyChart.cdeMID}" };
             if (pChartBag != null)
             {
@@ -1748,8 +1745,9 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddNewTemplate<T>(Guid pTemplateGuid, Guid pTableReference, Guid pDashboardID, string pTitle, ThePropertyBag pPropertyBag = null,Action<T, TheClientInfo> pB4ShowCallback=null, Action<T, TheClientInfo> pB4InsertCallback = null, Action<T, TheClientInfo> pAfterInsertCallback = null) where T : TheDataBase, INotifyPropertyChanged, new()
         {
             TheDashboardInfo tDash = GetDashboardById(pDashboardID);
+            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new();
             if (tDash == null)
-                return null;
+                return flds;
 
             TheFormInfo tForm = null;
             TheStorageMirror<T> SM = null;
@@ -1783,12 +1781,10 @@ namespace nsCDEngine.Engines.NMIService
                 }
             });
 
-            if (pPropertyBag == null)
-                pPropertyBag = new ThePropertyBag();
+            pPropertyBag ??= new ThePropertyBag();
             bool pIsAlwaysEmpty = !TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pPropertyBag, "AllowReuse", "="));
             ThePropertyBag.PropBagUpdateValue(pPropertyBag, "IsTemplate", "=", "true");
 
-            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new cdeConcurrentDictionary<string, TheMetaDataBase>();
             ThePropertyBag.PropBagUpdateValue(pPropertyBag, "HideFromSideBar", "=", "true");
             tForm = new TheFormInfo(pTemplateGuid, eEngineName.NMIService, pTitle, $"{typeof(T).Name};:;") { DefaultView = eDefaultView.Form, IsPostingOnSubmit = true, IsAlwaysEmpty = pIsAlwaysEmpty, TileWidth = 12, TableReference = pTableReference == Guid.Empty ? pTemplateGuid.ToString() : pTableReference.ToString(), PropertyBag = pPropertyBag };
             flds["Form"] = tForm;
@@ -1810,9 +1806,9 @@ namespace nsCDEngine.Engines.NMIService
             var Cate = "Wizards";
             if (!string.IsNullOrEmpty(ThePropertyBag.PropBagGetValue(pPropertyBag, "Category", "=")))
                 Cate = ThePropertyBag.PropBagGetValue(pPropertyBag, "Category", "=");
-            TheDashPanelInfo MyDashPanelInfo = new TheDashPanelInfo(pTemplateGuid)
+            TheDashPanelInfo MyDashPanelInfo = new (pTemplateGuid)
             {
-                cdeMID = tForm.cdeMID,  //TODO: Needs different guid as Form but than cannot be addressed with same GUID as Form...breaks one or the other
+                cdeMID = tForm.cdeMID, 
                 cdeA = tACL,
                 Flags = tFlags,
                 PanelTitle = tTitle,
@@ -1834,7 +1830,7 @@ namespace nsCDEngine.Engines.NMIService
 
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddNewTemplate(TheThing pBaseThing, Guid pTableReference,string pDataSource, string pTitle, bool pIsAlwaysEmpty = true, ThePropertyBag pPropertyBag=null)
         {
-            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new cdeConcurrentDictionary<string, TheMetaDataBase>();
+            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new ();
             int pTileWidth = 12;
             if (!string.IsNullOrEmpty(ThePropertyBag.PropBagGetValue(pPropertyBag, "TileWidth", "=")))
                 pTileWidth = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pPropertyBag, "TileWidth", "="));
@@ -1856,7 +1852,7 @@ namespace nsCDEngine.Engines.NMIService
         }
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddNewTemplate(Guid pTemplateGuid, Guid pDashBoardID, TheThing pOwnerThing, Guid pTableReference, string pTitle, bool pIsAlwaysEmpty = true, int pTileWidth = 12)
         {
-            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new cdeConcurrentDictionary<string, TheMetaDataBase>();
+            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new ();
             var tForm = new TheFormInfo(pTemplateGuid, eEngineName.NMIService, pTitle, null) { FormTitle = pTitle, DefaultView = eDefaultView.Form, IsPostingOnSubmit = true, IsAlwaysEmpty = pIsAlwaysEmpty, TileWidth = pTileWidth, TableReference = TheCommonUtils.CStr(pTableReference) };
             flds["Form"] = tForm;
             if (pDashBoardID != Guid.Empty)
@@ -1878,8 +1874,8 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddTemplateButtons(TheThing pBaseThing, TheFormInfo pForm, int pPrevPage, int pPageNumber, int pNextPage, string pDisplayCondition = null)
         {
             if (pForm == null || pPageNumber == 0)
-                return null;
-            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
+                return new cdeConcurrentDictionary<string, TheFieldInfo>();
+            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new ();
 
             int pFldWidth= TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pForm.PropertyBag, "TileWidth", "="));
             if (pFldWidth == 0)
@@ -1902,7 +1898,7 @@ namespace nsCDEngine.Engines.NMIService
             tFlds["Spacer"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 94, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld + 90, TileWidth = (pPrevPage >= 0 ? (pFldWidth-6) : (pFldWidth-4)), TileHeight = 1 });
             if (pPrevPage >= 0)
                 tFlds["BackButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 96, pPrevPage > 0 ? 2 : 0, 0, "Back", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, OnClick = (pPageNumber > 1 ? $"GRP:WizarePage:{pPrevPage}" : ""), TileWidth = 2, TileHeight = 1, NoTE = true });
-            tFlds["NextButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 98, 2, 0, pNextPage > 0 ? "Next" : (pNextPage<0? "Save" : "Finish"), null, new nmiCtrlTileButton { ParentFld = grpFld + 90, IsSubmit = (pNextPage > 0 ? false : true), OnClick = (pNextPage > 0 ? $"GRP:WizarePage:{pNextPage}:{pDisplayCondition}" : ""), TileWidth = 2, TileHeight = 1, NoTE = true });
+            tFlds["NextButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 98, 2, 0, pNextPage > 0 ? "Next" : (pNextPage<0? "Save" : "Finish"), null, new nmiCtrlTileButton { ParentFld = grpFld + 90, IsSubmit = (pNextPage <= 0), OnClick = (pNextPage > 0 ? $"GRP:WizarePage:{pNextPage}:{pDisplayCondition}" : ""), TileWidth = 2, TileHeight = 1, NoTE = true });
 
             return tFlds;
         }
@@ -1920,10 +1916,10 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddNewWizard(TheThing pBaseThing, Guid pTableReference, string pTitle, ThePropertyBag pPropertyBag = null, Action<TheThing, TheClientInfo> pB4InsertCallback=null, Action<TheThing, TheClientInfo> pAfterInsertCallback = null)
         {
             if (pBaseThing == null || pTableReference == Guid.Empty)
-                return null;
+                return new cdeConcurrentDictionary<string, TheMetaDataBase>();
             TheDashboardInfo tDash = GetEngineDashBoardByThing(pBaseThing);
             if (tDash == null)
-                return null;
+                return new cdeConcurrentDictionary<string, TheMetaDataBase>();
             return AddNewWizard<TheThing>(TheThing.GetSafeThingGuid(pBaseThing, $"WIZ:{pTableReference}"),pTableReference,tDash.cdeMID, pTitle, pPropertyBag, pB4InsertCallback, pAfterInsertCallback);
         }
 
@@ -1942,8 +1938,9 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddNewWizard<T>(Guid pWizGuid, Guid pTableReference, Guid pDashboardID, string pTitle, ThePropertyBag pPropertyBag = null, Action<T, TheClientInfo> pB4InsertCallback = null, Action<T, TheClientInfo> pAfterInsertCallback = null) where T : TheDataBase, INotifyPropertyChanged, new()
         {
             TheDashboardInfo tDash = GetDashboardById(pDashboardID);
+            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new ();
             if (tDash == null)
-                return null;
+                return flds;
 
             TheFormInfo tForm = null;
             TheStorageMirror<T> SM = null;
@@ -1985,8 +1982,7 @@ namespace nsCDEngine.Engines.NMIService
                 }
             });
 
-            if (pPropertyBag == null)
-                pPropertyBag = new ThePropertyBag();
+            pPropertyBag ??= new ThePropertyBag();
             bool pIsAlwaysEmpty = !TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pPropertyBag, "AllowReuse", "="));
             ThePropertyBag.PropBagUpdateValue(pPropertyBag, "IsTemplate", "=", "true");
             ThePropertyBag.PropBagUpdateValue(pPropertyBag, "InDashboard", "=", tDash.cdeMID.ToString());
@@ -2004,7 +2000,6 @@ namespace nsCDEngine.Engines.NMIService
                     ThePropertyBag.PropBagUpdateValue(pPropertyBag, "CancelScreenID", "=", tDash.cdeMID.ToString());
             }
 
-            cdeConcurrentDictionary<string, TheMetaDataBase> flds = new cdeConcurrentDictionary<string, TheMetaDataBase>();
             ThePropertyBag.PropBagUpdateValue(pPropertyBag, "SideBarIconFA", "=", "&#xf0d0;");
             tForm = new TheFormInfo(pWizGuid, eEngineName.NMIService, pTitle, $"{typeof(T).Name};:;") { DefaultView = eDefaultView.Form, IsPostingOnSubmit = true, IsAlwaysEmpty = pIsAlwaysEmpty, TileWidth = 12, TableReference = pTableReference == Guid.Empty ? pWizGuid.ToString() : pTableReference.ToString(), PropertyBag = pPropertyBag };
             flds["Form"] = tForm;
@@ -2028,9 +2023,9 @@ namespace nsCDEngine.Engines.NMIService
                 Cate = ThePropertyBag.PropBagGetValue(pPropertyBag, "Category", "=");
             if (string.IsNullOrEmpty(ThePropertyBag.PropBagGetValue(pPropertyBag, "RenderTarget", "=")))
                 ThePropertyBag.PropBagUpdateValue(pPropertyBag, "RenderTarget", "=", "HomeCenterStage");
-            TheDashPanelInfo MyDashPanelInfo = new TheDashPanelInfo(pWizGuid)
+            TheDashPanelInfo MyDashPanelInfo = new (pWizGuid)
             {
-                cdeMID = tForm.cdeMID,  //TODO: Needs different guid as Form but than cannot be addressed with same GUID as Form...breaks one or the other
+                cdeMID = tForm.cdeMID, 
                 cdeA = tACL,
                 Flags = tFlags,
                 PanelTitle = tTitle,
@@ -2060,7 +2055,7 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddWizardFinishPage(TheThing pBaseThing, TheFormInfo pForm, int pPageNumber, string pPageTitle=null)
         {
             if (pForm == null || pPageNumber == 0)
-                return null;
+                return new cdeConcurrentDictionary<string, TheFieldInfo>();
             cdeConcurrentDictionary<string, TheFieldInfo> tFlds = AddNewWizardPage(pBaseThing, pForm, -1, pPageNumber, -1, pPageTitle);
             pForm.PropertyBag = new ThePropertyBag { $"FinishPage={pPageNumber}" };
             return tFlds;
@@ -2077,7 +2072,7 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddWizardProcessPage(TheThing pBaseThing, TheFormInfo pForm, int pPageNumber, string pPageTitle=null)
         {
             if (pForm == null || pPageNumber == 0)
-                return null;
+                return new cdeConcurrentDictionary<string, TheFieldInfo>();
             cdeConcurrentDictionary<string, TheFieldInfo> tFlds = AddNewWizardPage(pBaseThing, pForm, -1, pPageNumber, -1, pPageTitle);
             pForm.PropertyBag = new ThePropertyBag { $"ProcessingPage={pPageNumber}" };
             return tFlds;
@@ -2097,12 +2092,12 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddNewWizardPage(TheThing pBaseThing, TheFormInfo pForm, int pPrevPage, int pPageNumber, int pNextPage, string pPageTitle, string pDisplayCondition = null)
         {
+            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new();
             if (pForm == null || pPageNumber == 0)
-                return null;
-            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
+                return tFlds;
 
             int grpFld = 100 * pPageNumber;
-            tFlds["Group"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld, 0, 0, null, null, new nmiCtrlTileGroup { TileWidth = 12, Visibility = (pPageNumber == 1 ? true : false), Group = $"WizarePage:{pPageNumber}" });
+            tFlds["Group"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld, 0, 0, null, null, new nmiCtrlTileGroup { TileWidth = 12, Visibility = (pPageNumber == 1), Group = $"WizarePage:{pPageNumber}" });
             if (pPageTitle != null)
                 tFlds["Caption"] = AddSmartControl(pBaseThing, pForm, eFieldType.SmartLabel, grpFld + 1, 0, 0, null, null, new nmiCtrlSmartLabel { ParentFld = grpFld, NoTE = true, Text = pPageTitle, TileWidth = 12, TileHeight = 1, ContainerClassName = "cdeWizardCaption" });
 
@@ -2123,7 +2118,6 @@ namespace nsCDEngine.Engines.NMIService
             if (pPrevPage < 0 && pNextPage < 0)
             {
                 tFlds["Spacer"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 94, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld + 90, TileWidth = 8, TileHeight = 1 });
-                //tFlds["NextButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.SmartLabel, grpFld + 95, 0, 0, null, null, new nmiCtrlSmartLabel { ParentFld = grpFld + 90, TileWidth = 4, TileHeight = 1, NoTE=true, Text="Processing..." });
             }
             else
             {
@@ -2139,7 +2133,7 @@ namespace nsCDEngine.Engines.NMIService
                 var tFinish = ThePropertyBag.PropBagGetValue(pForm.PropertyBag, "FinishScreenID", "=");
                 if (!string.IsNullOrEmpty(tFinish))
                     tFinish = $"TTS:{tFinish}";
-                tFlds["NextButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 98, 2, 0, pNextPage > 0 ? "Next" : "Finish", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, IsSubmit = (pNextPage > 0 ? false : true), OnClick = (pNextPage > 0 ? $"GRP:WizarePage:{pNextPage}:{pDisplayCondition}" : tFinish), TileWidth = 2, TileHeight = 1, NoTE = true });
+                tFlds["NextButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 98, 2, 0, pNextPage > 0 ? "Next" : "Finish", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, IsSubmit = (pNextPage <= 0), OnClick = (pNextPage > 0 ? $"GRP:WizarePage:{pNextPage}:{pDisplayCondition}" : tFinish), TileWidth = 2, TileHeight = 1, NoTE = true });
             }
             return tFlds;
         }
@@ -2247,7 +2241,7 @@ namespace nsCDEngine.Engines.NMIService
             else
                 pDeviceType = pMyBaseThing.EngineName;
 
-            TheFormInfo tLiveTagForm = new TheFormInfo(TheThing.GetSafeThingGuid(pMyBaseThing, pDeviceType + "_ID"), eEngineName.NMIService, pTitle, tSource) { IsNotAutoLoading = true, TileWidth = 12 };
+            TheFormInfo tLiveTagForm = new (TheThing.GetSafeThingGuid(pMyBaseThing, pDeviceType + "_ID"), eEngineName.NMIService, pTitle, tSource) { IsNotAutoLoading = true, TileWidth = 12 };
             tFlds["Form"] = tLiveTagForm;
             tFlds["DashIcon"] = AddFormToThingUX(pMyBaseThing, tLiveTagForm, "CMyTable", pTitle, 1, 3, pACL, pCategory, null, new ThePropertyBag { "TileThumbnail=FA5:f0ce" });
             var tCols = new List<TheFieldInfo> {
@@ -2267,8 +2261,6 @@ namespace nsCDEngine.Engines.NMIService
             tCols = AddTableButtons(tLiveTagForm, true, 1000, 0xA2);
             foreach (var t in tCols)
                 tFlds[$"COL:{t.FldOrder}"] = t;
-
-            //TODO:4.1 add LiveTageForm Template
 
             return tFlds;
         }
@@ -2350,9 +2342,13 @@ namespace nsCDEngine.Engines.NMIService
                 pMaxFormSize = 6;
             else if (pMaxFormSize < 0)
                 pMaxFormSize = 0;
-            cdeConcurrentDictionary<string, TheMetaDataBase> block = new cdeConcurrentDictionary<string, TheMetaDataBase>();
-            TheFormInfo tMyLiveForm = new TheFormInfo(TheCommonUtils.CGuid(pUniqueStringID), eEngineName.NMIService, null, string.Format("TheThing;:;0;:;True;:;cdeMID={0}", pMyBaseThing.cdeMID)) { DefaultView = eDefaultView.Form, PropertyBag = new nmiCtrlFormView {/* MaxTileWidth = pMaxFormSize, */Background = "rgba(255, 255, 255, 0.04)", HideCaption = true, UseMargin = bUseMargin } };
-            tMyLiveForm.ModelID = "StandardForm";
+            cdeConcurrentDictionary<string, TheMetaDataBase> block = new ();
+            TheFormInfo tMyLiveForm = new(TheCommonUtils.CGuid(pUniqueStringID), eEngineName.NMIService, null, string.Format("TheThing;:;0;:;True;:;cdeMID={0}", pMyBaseThing.cdeMID))
+            {
+                DefaultView = eDefaultView.Form,
+                PropertyBag = new nmiCtrlFormView {/* MaxTileWidth = pMaxFormSize, */Background = "rgba(255, 255, 255, 0.04)", HideCaption = true, UseMargin = bUseMargin },
+                ModelID = "StandardForm"
+            };
             if (pMaxFormSize > 6)
             {
                 tMyLiveForm.AddOrUpdatePlatformBag(eWebPlatform.Mobile, new nmiPlatBag { MaxTileWidth = 6 });
@@ -2370,8 +2366,7 @@ namespace nsCDEngine.Engines.NMIService
             }
             if (IsFacePlate)
             {
-                //TheNMIEngine.ParseFacePlateUrl(pMyBaseThing, pSensorFace, false, Guid.Empty);
-                (block["DashIcon"] as TheDashPanelInfo).PropertyBag = new nmiDashboardTile { TileWidth = 4, TileHeight = 3, HTMLUrl = pSensorFace };    //TODO: MoveParseTo GenerateScreen
+                (block["DashIcon"] as TheDashPanelInfo).PropertyBag = new nmiDashboardTile { TileWidth = 4, TileHeight = 3, HTMLUrl = pSensorFace };   
                 block["StatusLevel"] = TheNMIEngine.AddSmartControl(pMyBaseThing, tMyLiveForm, eFieldType.StatusLight, 99999, 0, 0, null, "StatusLevel", new TheNMIBaseControl { NoTE = true, TileWidth = 1, TileHeight = 1, TileFactorX = 2, TileFactorY = 2, RenderTarget = "VSSTATLGHT%cdeMID%" });
             }
             return block;
@@ -2419,7 +2414,7 @@ namespace nsCDEngine.Engines.NMIService
                 AddAddress = AddAddress,
                 DeviceTypeOptions = pDeviceTypeOptions,
                 DeviceTypeDefault = pDeviceTypeDefault,
-            }); ;
+            }); 
         }
 
         /// <summary>
@@ -2451,7 +2446,7 @@ namespace nsCDEngine.Engines.NMIService
             if (pACL < 0)
                 pACL = pBaseThing.cdeA;
             tRes["DashInfo"] = tDash;
-            TheFormInfo tAllDevices = new TheFormInfo() { cdeMID = pID, FormTitle = pTitle, defDataSource = "TheThing;:;0;:;True;:;" + pFilter, DefaultView = 0, cdeO = pBaseThing.cdeMID, cdeA = pACL };
+            TheFormInfo tAllDevices = new () { cdeMID = pID, FormTitle = pTitle, defDataSource = "TheThing;:;0;:;True;:;" + pFilter, DefaultView = 0, cdeO = pBaseThing.cdeMID, cdeA = pACL };
             tRes["Form"] = tAllDevices;
             tRes["DashIcon"] = AddFormToThingUX(pBaseThing, tAllDevices, "CMyTable",pTitle, pFldOrder, pFlag, pACL, category, null, pTitle.StartsWith("<i")?null:new ThePropertyBag { "TileThumbnail=FA5:f0ce" });
             var tCols=AddCommonTableColumns(pBaseThing, tAllDevices, tableParams);
@@ -2461,34 +2456,6 @@ namespace nsCDEngine.Engines.NMIService
             return tRes;
         }
 
-
-        /// <summary>
-        /// Adds the common table columns to a table: "Details (if not disabled), FriendlyName, StatusLevel,DeviceType (if set), Address (if not disabled), Delete Button"
-        /// Only tables based on TheThings are supported
-        /// </summary>
-        /// <param name="MyBaseThing">>TheThing that owns this Dashboard</param>
-        /// <param name="pTargetForm">The form that holds the table.</param>
-        /// <param name="pDeviceTypeOptions">List of device types for the table of things. Semicolon separated.</param>
-        /// <param name="pDeviceTypeDefault">Default Device Type for new entries in the table of things</param>
-        /// <param name="AddAddress">If False, Address column will not be included</param>
-        /// <param name="AddDetailsButton">If False, a Details button will not be included</param>
-        /// <param name="pFldOrder">A ordering idex for the items in the plugin</param>
-        /// <param name="pFlags">Flags of the Dashboard (see TheFormInfo Flags)</param>
-        /// <param name="pACL">Access Level for the Dashboard</param>
-        /// <returns>A dictionary with the fields that have been added.</returns>
-        public static cdeConcurrentDictionary<string,TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, string pDeviceTypeOptions=null,string pDeviceTypeDefault=null,bool AddAddress=true, bool AddDetailsButton = true, int pFldOrder = 1000, int pFlags = 0xA2, int pACL = 0x80)
-        {
-            return AddCommonTableColumns(MyBaseThing, pTargetForm, new TheTableParameters 
-            { 
-                DeviceTypeOptions = pDeviceTypeOptions,
-                DeviceTypeDefault = pDeviceTypeDefault,
-                AddAddress = AddAddress,
-                AddDetailsButton = AddDetailsButton,
-                FldOrder = pFldOrder,
-                Flags = pFlags,
-                ACL = pACL,
-            });
-        }
 
         /// <summary>
         /// Specifies optional parameters to AddCommonTableColumns.
@@ -2529,6 +2496,33 @@ namespace nsCDEngine.Engines.NMIService
             public int Flags { get; set; } = 0xA2;
         }
 
+        /// <summary>
+        /// Adds the common table columns to a table: "Details (if not disabled), FriendlyName, StatusLevel,DeviceType (if set), Address (if not disabled), Delete Button"
+        /// Only tables based on TheThings are supported
+        /// </summary>
+        /// <param name="MyBaseThing">>TheThing that owns this Dashboard</param>
+        /// <param name="pTargetForm">The form that holds the table.</param>
+        /// <param name="pDeviceTypeOptions">List of device types for the table of things. Semicolon separated.</param>
+        /// <param name="pDeviceTypeDefault">Default Device Type for new entries in the table of things</param>
+        /// <param name="AddAddress">If False, Address column will not be included</param>
+        /// <param name="AddDetailsButton">If False, a Details button will not be included</param>
+        /// <param name="pFldOrder">A ordering idex for the items in the plugin</param>
+        /// <param name="pFlags">Flags of the Dashboard (see TheFormInfo Flags)</param>
+        /// <param name="pACL">Access Level for the Dashboard</param>
+        /// <returns>A dictionary with the fields that have been added.</returns>
+        public static cdeConcurrentDictionary<string, TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, string pDeviceTypeOptions = null, string pDeviceTypeDefault = null, bool AddAddress = true, bool AddDetailsButton = true, int pFldOrder = 1000, int pFlags = 0xA2, int pACL = 0x80)
+        {
+            return AddCommonTableColumns(MyBaseThing, pTargetForm, new TheTableParameters
+            {
+                DeviceTypeOptions = pDeviceTypeOptions,
+                DeviceTypeDefault = pDeviceTypeDefault,
+                AddAddress = AddAddress,
+                AddDetailsButton = AddDetailsButton,
+                FldOrder = pFldOrder,
+                Flags = pFlags,
+                ACL = pACL,
+            });
+        }
 
         /// <summary>
         /// Adds the common table columns to a table: "Details (if not disabled), FriendlyName, StatusLevel,DeviceType (if set), Address (if not disabled), Delete Button"
@@ -2541,30 +2535,24 @@ namespace nsCDEngine.Engines.NMIService
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddCommonTableColumns(TheThing MyBaseThing, TheFormInfo pTargetForm, TheTableParameters tableParams)
         {
             var tList = new cdeConcurrentDictionary<string, TheFieldInfo>();
-            if (pTargetForm == null || MyBaseThing==null) return tList;
-            if (tableParams == null)
-            {
-                tableParams = new TheTableParameters(); // sets default values
-            }
-            if (MyBaseThing != null)
-            {
-                tList["Status"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.StatusLight, 20, 0x40, 0x0, "Status", "StatusLevel", new TheNMIBaseControl() { FldWidth = 1 });
+            if (pTargetForm == null || MyBaseThing == null) return tList;
+            tableParams ??= new TheTableParameters();
+            tList["Status"] = AddSmartControl(MyBaseThing, pTargetForm, eFieldType.StatusLight, 20, 0x40, 0x0, "Status", "StatusLevel", new TheNMIBaseControl() { FldWidth = 1 });
 
-                tList["Name"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 10, 2, 0, "###Friendly Name###", "FriendlyName", new nmiCtrlSingleEnded { FldWidth = 3 });
-                if (!string.IsNullOrEmpty(tableParams.DeviceTypeOptions) || !string.IsNullOrEmpty(tableParams.DeviceTypeDefault))
-                    tList["DeviceType"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ComboBox, 30, !string.IsNullOrEmpty(tableParams.DeviceTypeOptions)?2:0, tableParams.ACL, "###Device Type###", "DeviceType", new nmiCtrlComboBox { WriteOnce=true, Options = tableParams.DeviceTypeOptions, DefaultValue = tableParams.DeviceTypeDefault, FldWidth = 2 });
-                if (tableParams.AddAddress)
-                    tList["Address"]=TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 40, 2, tableParams.ACL, "###Address###", "Address", new nmiCtrlSingleEnded { FldWidth = 2 });
-                if (tableParams.AddNodeName)
-                {
-                    tList["NodeName"] = TheNMIEngine.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 41, 0, 0xFE, "###Managed on Node###", null, new nmiCtrlSingleEnded { DataItem = "cdeN", FldWidth = 2 });
-                }
+            tList["Name"] = AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 10, 2, 0, "###Friendly Name###", "FriendlyName", new nmiCtrlSingleEnded { FldWidth = 3 });
+            if (!string.IsNullOrEmpty(tableParams.DeviceTypeOptions) || !string.IsNullOrEmpty(tableParams.DeviceTypeDefault))
+                tList["DeviceType"] = AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ComboBox, 30, !string.IsNullOrEmpty(tableParams.DeviceTypeOptions) ? 2 : 0, tableParams.ACL, "###Device Type###", "DeviceType", new nmiCtrlComboBox { WriteOnce = true, Options = tableParams.DeviceTypeOptions, DefaultValue = tableParams.DeviceTypeDefault, FldWidth = 2 });
+            if (tableParams.AddAddress)
+                tList["Address"] = AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 40, 2, tableParams.ACL, "###Address###", "Address", new nmiCtrlSingleEnded { FldWidth = 2 });
+            if (tableParams.AddNodeName)
+            {
+                tList["NodeName"] = AddSmartControl(MyBaseThing, pTargetForm, eFieldType.SingleEnded, 41, 0, 0xFE, "###Managed on Node###", null, new nmiCtrlSingleEnded { DataItem = "cdeN", FldWidth = 2 });
             }
-            var tFlds=TheNMIEngine.AddTableButtons(pTargetForm, tableParams.AddDetailsButton, tableParams.FldOrder, tableParams.Flags, tableParams.ACL);
+            var tFlds = AddTableButtons(pTargetForm, tableParams.AddDetailsButton, tableParams.FldOrder, tableParams.Flags, tableParams.ACL);
             if (tFlds != null)
             {
                 foreach (TheFieldInfo tf in tFlds)
-                    tList[$"COL:{tf.FldOrder}"]=tf;
+                    tList[$"COL:{tf.FldOrder}"] = tf;
             }
             return tList;
         }
@@ -2581,7 +2569,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns>TheFieldInfo if the button was successfully added</returns>
         public static List<TheFieldInfo> AddTableButtons(TheFormInfo pTargetForm, bool AddDetailsButton = false, int pFldOrder = 100, int pFlags = 0x82, int pACL = 0x80)
         {
-            List<TheFieldInfo> tList = new List<TheFieldInfo>();
+            List<TheFieldInfo> tList = new ();
             if (AddDetailsButton)
             {
                 tList.Add((pFlags & 0x20) != 0 ?
@@ -2593,7 +2581,7 @@ namespace nsCDEngine.Engines.NMIService
             tList.Add(t);
             if (AddFields(pTargetForm, tList))
                 return tList;
-            return null;
+            return new List<TheFieldInfo>();
         }
 
         /// <summary>
@@ -2606,8 +2594,7 @@ namespace nsCDEngine.Engines.NMIService
         public static TheDashPanelInfo AddTileBreak(TheThing pBaseThing, TheDashboardInfo pDashboard=null, string pCategoryOveride = ".A")
         {
             if (pBaseThing == null) return null;
-            if (pDashboard == null)
-                pDashboard = GetDashboardByOwner(pBaseThing.cdeMID);
+            pDashboard ??= GetDashboardByOwner(pBaseThing.cdeMID);
             var t = new TheDashPanelInfo(pBaseThing)
             {
                 PanelTitle = "-HIDE",
@@ -2655,12 +2642,13 @@ namespace nsCDEngine.Engines.NMIService
         }
         public static cdeConcurrentDictionary<string, TheMetaDataBase> AddAboutButton4(TheThing pBaseThing, TheDashboardInfo pDash, string pCate = null, bool bIncludeRefreshDash = false, bool bHideRefreshButton = false, string pCustomCommand = "", int pACL = 0, string pRefreshText = "###Refresh Dashboard###")
         {
-            if (pBaseThing == null) return null;
-            cdeConcurrentDictionary<string, TheMetaDataBase> tFld = new cdeConcurrentDictionary<string, TheMetaDataBase>();
+            cdeConcurrentDictionary<string, TheMetaDataBase> tFld = new();
+            if (pBaseThing == null) 
+                return tFld;
             try
             {
                 IBaseEngine tBase = pBaseThing.GetBaseEngine();
-                if (tBase == null) return null;
+                if (tBase == null) return new cdeConcurrentDictionary<string, TheMetaDataBase>();
                 ThePluginInfo tInfo = tBase.GetPluginInfo();
 
                 string homeUrl = TheBaseAssets.MyServiceHostInfo.SiteName + "/" + tInfo.ServiceName;
@@ -2668,7 +2656,7 @@ namespace nsCDEngine.Engines.NMIService
                     homeUrl = tInfo.HomeUrl;
 
                 string tTitle = string.IsNullOrEmpty(tInfo.ServiceDescription) ? tInfo.ServiceName : tInfo.ServiceDescription;
-                nmiCtrlAboutButton tAba = new nmiCtrlAboutButton()
+                nmiCtrlAboutButton tAba = new ()
                 {
                     Description = tInfo.LongDescription,
                     Version = TheCommonUtils.CStr(tInfo.CurrentVersion),
@@ -2715,8 +2703,7 @@ namespace nsCDEngine.Engines.NMIService
                 });
                 SetStatusInfoButtons(pBaseThing, tABut, tAboutDPInfo, tInfoButInStatus);
 
-                if (pDash == null)
-                    pDash = GetEngineDashBoardByThing(pBaseThing);
+                pDash ??= GetEngineDashBoardByThing(pBaseThing);
                 if (pDash!=null)
                 {
                     tFld["TileBreak"] = AddTileBreak(pBaseThing, pDash);
@@ -2724,7 +2711,7 @@ namespace nsCDEngine.Engines.NMIService
                 if (bIncludeRefreshDash && pDash!=null)
                 {
                     tGu[tGu.Length - 1] = (byte)((tGu[tGu.Length - 1] + 6) % 255);
-                    TheDashPanelInfo tDashInfo = new TheDashPanelInfo(pBaseThing)
+                    TheDashPanelInfo tDashInfo = new (pBaseThing)
                     {
                         cdeMID = TheCommonUtils.CGuid(tGu),
                         cdeA = pACL,
@@ -2817,7 +2804,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddConnectivityBlock(TheThing pBaseThing, TheFormInfo pTargetForm, int pBaseFldNumber, int pAcl, Action<TheProcessMessage, bool> eventConnect = null, bool IncludeUIDPWD = false, ThePropertyBag pProperties = null)
         {
-            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
+            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new ();
             if (pBaseThing == null || pTargetForm == null) return tFlds;
             TheFieldInfo tGroup = AddSmartControl(pBaseThing, pTargetForm, eFieldType.CollapsibleGroup, pBaseFldNumber, 2, pAcl, "###Connectivity###", true, null, null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
             if (tGroup == null) return tFlds;
@@ -2854,7 +2841,7 @@ namespace nsCDEngine.Engines.NMIService
                 tFlds["ConnectButton"] = tBut1;
                 tBut1.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "CONNECT", (pThing, pObj) =>
                 {
-                    if (!(pObj is TheProcessMessage pMsg) || pMsg.Message == null || pThing == null) return;
+                    if (pObj is not TheProcessMessage pMsg || pMsg.Message == null || pThing == null) return;
                     bool IsConnected = TheThing.GetSafePropertyBool(pThing, pConnectedProp);
                     if (IsConnected)
                         TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Service already connected###")));
@@ -2868,7 +2855,7 @@ namespace nsCDEngine.Engines.NMIService
                 tFlds["DisconnectButton"] = tBut2;
                 tBut2.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "DISCONNECT", (pThing, pObj) =>
                 {
-                    if (!(pObj is TheProcessMessage pMsg) || pMsg.Message == null || pThing == null) return;
+                    if (pObj is not TheProcessMessage pMsg || pMsg.Message == null || pThing == null) return;
                     bool IsConnected = TheThing.GetSafePropertyBool(pThing, pConnectedProp);
                     if (!IsConnected)
                     {
@@ -2911,7 +2898,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddStartingBlock(TheThing pBaseThing, TheFormInfo pTargetForm, int pBaseFldNumber, int pAcl, Action<TheProcessMessage, bool> eventStartStop = null, ThePropertyBag pProperties = null)
         {
-            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
+            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new ();
             if (pBaseThing == null || pTargetForm == null) return tFlds;
             TheFieldInfo tGroup = AddSmartControl(pBaseThing, pTargetForm, eFieldType.CollapsibleGroup, pBaseFldNumber, 2, pAcl, "###Start/Stop###", true, null, null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
             if (tGroup == null) return tFlds;
@@ -2942,7 +2929,7 @@ namespace nsCDEngine.Engines.NMIService
                 tFlds["StartButton"] = tBut1;
                 tBut1.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "START", (pThing, pObj) =>
                 {
-                    if (!(pObj is TheProcessMessage pMsg) || pMsg.Message == null || pThing == null) return;
+                    if (pObj is not TheProcessMessage pMsg || pMsg.Message == null || pThing == null) return;
                     bool IsConnected = TheThing.GetSafePropertyBool(pThing, pConnectedProp);
                     if (IsConnected)
                         TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(pMsg, new TSM(eEngineName.NMIService, "NMI_TOAST", "###Service already started###")));
@@ -2956,7 +2943,7 @@ namespace nsCDEngine.Engines.NMIService
                 tFlds["StopButton"] = tBut2;
                 tBut2.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "STOP", (pThing, pObj) =>
                 {
-                    if (!(pObj is TheProcessMessage pMsg) || pMsg.Message == null || pThing == null) return;
+                    if (pObj is not TheProcessMessage pMsg || pMsg.Message == null || pThing == null) return;
                     bool IsConnected = TheThing.GetSafePropertyBool(pThing, pConnectedProp);
                     if (!IsConnected)
                     {
@@ -3001,7 +2988,7 @@ namespace nsCDEngine.Engines.NMIService
             int tTFY = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "TileFactorY", "="));
             if (tTFY < 1)
                 tTFY = 1;
-            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
+            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new ();
             if (pParentFld == 0)
             {
                 tFlds["Group"] = TheNMIEngine.AddSmartControl(pBaseThing, tMyForm, eFieldType.CollapsibleGroup, StartFldOrder, 2, 0, "###Device Status###", null, new nmiCtrlCollapsibleGroup { TileWidth = 6, IsSmall = true });
@@ -3029,10 +3016,10 @@ namespace nsCDEngine.Engines.NMIService
         #region Dynamic Properties (HTML free)
         public static cdeConcurrentDictionary<string, TheFieldInfo> AddDynamicPropertySection(TheThing MyBaseThing, TheFormInfo MyStatusForm, string pPropPrefix, int StartFldOrder, int pParentFld = 0, int pACL = 0, bool IsLocked=false, ThePropertyBag pProperties = null)
         {
-            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new cdeConcurrentDictionary<string, TheFieldInfo>();
+            cdeConcurrentDictionary<string, TheFieldInfo> tFlds = new ();
 
             var bNoPropAddDelete = TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(pProperties, nameof(nmiDynamicProperty.NoPropertyAddDelete)));
-            if (bNoPropAddDelete != true)
+            if (!bNoPropAddDelete)
             {
                 var tTitle = ThePropertyBag.PropBagGetValue(pProperties, "ToAddName", "=");
                 if (string.IsNullOrEmpty(tTitle))
@@ -3050,7 +3037,6 @@ namespace nsCDEngine.Engines.NMIService
                             {
                                 TheProcessMessage pMsg = pObj as TheProcessMessage;
                                 if (pMsg?.Message == null) return;
-                                string[] parts = pMsg.Message.PLS.Split(':');
                                 TheThing tOrg = pThing.GetBaseThing();
                                 string tNewPropName = TheThing.GetSafePropertyString(tOrg, $"ScratchName_{pPropPrefix}");
                                 if (string.IsNullOrEmpty(tNewPropName))
@@ -3097,22 +3083,14 @@ namespace nsCDEngine.Engines.NMIService
                     }
                 }
 
-                List<cdeP> props;
-                switch (pPropPrefix)
+                List<cdeP> props = pPropPrefix switch
                 {
-                    case "[cdeSensor]":
-                        props = MyBaseThing.GetSensorProperties();
-                        break;
-                    case "[cdeConfig]":
-                        props = MyBaseThing.GetConfigProperties();
-                        break;
-                    default:
-                        props = MyBaseThing.GetPropertiesMetaStartingWith(pPropPrefix).OrderBy(s => s.Name).ToList();
-                        break;
-                }
-                
+                    "[cdeSensor]" => MyBaseThing.GetSensorProperties(),
+                    "[cdeConfig]" => MyBaseThing.GetConfigProperties(),
+                    _ => MyBaseThing.GetPropertiesMetaStartingWith(pPropPrefix).OrderBy(s => s.Name).ToList(),
+                };
                 int fldCnt = StartFldOrder;
-                List<string> tProtectedEntries = new List<string>();
+                List<string> tProtectedEntries = new ();
                 tProtectedEntries.AddRange(TheCommonUtils.cdeSplit(ThePropertyBag.PropBagGetValue(pProperties, "SecureOptions", "="), ";", true, true));
                 foreach (var p in props)
                 {
@@ -3120,7 +3098,7 @@ namespace nsCDEngine.Engines.NMIService
                     if (tProtectedEntries.Contains(p.Name))
                         flags |= 1;
                     AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, fldCnt++, flags, 0, p.Name, p.Name, new nmiCtrlSingleEnded() { TileWidth = 5, ParentFld = pParentFld, TileFactorY = 2 });
-                    if (bNoPropAddDelete != true)
+                    if (!bNoPropAddDelete)
                     {
                         var tDelBut = AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, fldCnt++, IsLocked ? 0 : 2, 0, "", null, new nmiCtrlTileButton() { Thumbnail = "FA5:f2ed", Cookie = p.Name, TileWidth = 1, TileFactorX = 1, TileFactorY = 1, ClassName = "cdeBadActionButton", TileHeight = 1, ParentFld = pParentFld });
                         tDelBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, p.Name, (sender, pObj) =>
@@ -3164,7 +3142,7 @@ namespace nsCDEngine.Engines.NMIService
             if (tScene == null || string.IsNullOrEmpty(tScene.ID) || TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID || (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyScopeManager.IsScopingEnabled))
                 return false;
             string tTargetDir = $"FormORs\\{TheCommonUtils.CGuid(tScene.ID)}.cdeFOR";
-            TSM tTSM = new TSM(eEngineName.NMIService, "", TheCommonUtils.SerializeObjectToJSONString<TheFOR>(tScene));
+            TSM tTSM = new (eEngineName.NMIService, "", TheCommonUtils.SerializeObjectToJSONString<TheFOR>(tScene));
             TheCommonUtils.SaveBlobToDisk(tTSM, new[] { "", tTargetDir }, null);
             return true;
         }
@@ -3211,44 +3189,29 @@ namespace nsCDEngine.Engines.NMIService
         internal static bool UpdateUXItemACLFromThing(TheThing pThing)
         {
             if (!IsInitialized() || pThing == null || pThing.cdeA == 0) return false;
-            //lock (TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.MyMirrorCache.MyRecordsLock)  //LOCK-REVIEW: this is none-critical update
+            List<TheDashboardInfo> tDashs = TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
+            foreach (TheDashboardInfo tDash in tDashs)
             {
-                List<TheDashboardInfo> tDashs = TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
-                foreach (TheDashboardInfo tDash in tDashs)
-                {
-                    tDash.cdeA = pThing.cdeA;
-                    TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.UpdateItem(tDash);
-                }
+                tDash.cdeA = pThing.cdeA;
+                TheCDEngines.MyNMIService.MyNMIModel.MyDashboards.UpdateItem(tDash);
             }
-
-            //lock (TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.MyMirrorCache.MyRecordsLock)  //LOCK-REVIEW: this is none-critical update
+            List<TheDashPanelInfo> tDashPs = TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
+            foreach (TheDashPanelInfo tDash in tDashPs)
             {
-                List<TheDashPanelInfo> tDashPs = TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
-                foreach (TheDashPanelInfo tDash in tDashPs)
-                {
-                    tDash.cdeA = pThing.cdeA;
-                    TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.UpdateItem(tDash);
-                }
+                tDash.cdeA = pThing.cdeA;
+                TheCDEngines.MyNMIService.MyNMIModel.MyDashComponents.UpdateItem(tDash);
             }
-
-            //lock (TheCDEngines.MyNMIService.MyNMIModel.MyForms.MyMirrorCache.MyRecordsLock)   //LOCK-REVIEW: this is none-critical update
+            List<TheFormInfo> tForms = TheCDEngines.MyNMIService.MyNMIModel.MyForms.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
+            foreach (TheFormInfo tForm in tForms)
             {
-                List<TheFormInfo> tForms = TheCDEngines.MyNMIService.MyNMIModel.MyForms.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
-                foreach (TheFormInfo tForm in tForms)
-                {
-                    tForm.cdeA = pThing.cdeA;
-                    TheCDEngines.MyNMIService.MyNMIModel.MyForms.UpdateItem(tForm);
-                }
+                tForm.cdeA = pThing.cdeA;
+                TheCDEngines.MyNMIService.MyNMIModel.MyForms.UpdateItem(tForm);
             }
-
-            //lock (TheCDEngines.MyNMIService.MyNMIModel.MyFields.MyMirrorCache.MyRecordsLock)  //LOCK-REVIEW: this is none-critical update
+            List<TheFieldInfo> tFields = TheCDEngines.MyNMIService.MyNMIModel.MyFields.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
+            foreach (TheFieldInfo tField in tFields)
             {
-                List<TheFieldInfo> tFields = TheCDEngines.MyNMIService.MyNMIModel.MyFields.MyMirrorCache.GetEntriesByFunc(s => s.cdeO == pThing.cdeMID);
-                foreach (TheFieldInfo tField in tFields)
-                {
-                    tField.cdeA = pThing.cdeA;
-                    TheCDEngines.MyNMIService.MyNMIModel.MyFields.UpdateItem(tField);
-                }
+                tField.cdeA = pThing.cdeA;
+                TheCDEngines.MyNMIService.MyNMIModel.MyFields.UpdateItem(tField);
             }
             return true;
         }
@@ -3347,7 +3310,7 @@ namespace nsCDEngine.Engines.NMIService
         public static void SetUXProperty(Guid pOrg, Guid pUXElement, string pProps, string pThingMID, string pSubControl)
         {
             if (!TheBaseAssets.MasterSwitch || string.IsNullOrEmpty(pProps)) return;    //Prevent sending anthing after or during Shutdown
-            TSM tTSM = new TSM(eEngineName.NMIService, $"SET{(!string.IsNullOrEmpty(pThingMID) ? "F" : "")}NP", pProps) { OWN = pUXElement.ToString() };    //UX Properties
+            TSM tTSM = new (eEngineName.NMIService, $"SET{(!string.IsNullOrEmpty(pThingMID) ? "F" : "")}NP", pProps) { OWN = pUXElement.ToString() };    //UX Properties
 
 
             if (!string.IsNullOrEmpty(pThingMID))
@@ -3432,7 +3395,7 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static bool RegisterSyncedTransform(string pResourceFileName, Guid pUserID)
         {
-            ThePageBlocks tBlock = new ThePageBlocks()
+            ThePageBlocks tBlock = new ()
             {
                 BlockType= new Guid("{8C8E1291-3C50-4855-A8C9-27EC203C1F0E}"),
                 Template =pResourceFileName,
@@ -3447,16 +3410,16 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (pUser == null)
                 return null;
-            string res = "";
-            foreach (var tPageBlock in TheNMIEngine.GetBlocksByType(new Guid("{8C8E1291-3C50-4855-A8C9-27EC203C1F0E}"), pUser.cdeMID, pUser.HomeNode))  //cdeNMITransform block Type Guid: {8C8E1291-3C50-4855-A8C9-27EC203C1F0E}
+            StringBuilder res = new ();
+            foreach (var tPageBlock in GetBlocksByType(new Guid("{8C8E1291-3C50-4855-A8C9-27EC203C1F0E}"), pUser.cdeMID, pUser.HomeNode))  //cdeNMITransform block Type Guid: {8C8E1291-3C50-4855-A8C9-27EC203C1F0E}
             {
                 string tTemplate = tPageBlock.RawData;
                 if (string.IsNullOrEmpty(tTemplate))
                     tTemplate=TheCommonUtils.CArray2UTF8String(TheCommonUtils.GetSystemResource(null, tPageBlock.Template));
                 if (!string.IsNullOrEmpty(tTemplate))
-                    res += tTemplate;
+                    res.Append(tTemplate);
             }
-            return res;
+            return res.ToString();
         }
 
         /// <summary>

@@ -19,6 +19,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
@@ -1030,8 +1031,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 PublishThrottle = pThrottleInMs;
                 PublishThrottleKind = pKind;
-                if (PubList == null)
-                    PubList = new cdeConcurrentDictionary<string, cdeP>();
+                PubList ??= new cdeConcurrentDictionary<string, cdeP>();
             }
             else
             {
@@ -1092,8 +1092,7 @@ namespace nsCDEngine.Engines.ThingService
             }
             else
             {
-                if (ThrottleTimer == null)
-                    ThrottleTimer = new Timer(DoThrottlePub, null, PublishThrottle, Timeout.Infinite);
+                ThrottleTimer ??= new Timer(DoThrottlePub, null, PublishThrottle, Timeout.Infinite);
             }
         }
 
@@ -1109,16 +1108,18 @@ namespace nsCDEngine.Engines.ThingService
 
             lock (PubList.MyLock)
             {
+                var tpls = new StringBuilder();
                 foreach (cdeP tP in PubList.Values)
                 {
                     tFireTSM.TXT = $"SETP:{cdeO}";   //ThingProperties
                     if (!string.IsNullOrEmpty(tFireTSM.PLS))
-                        tFireTSM.PLS += ":;:";
+                        tpls.Append(":;:");
                     var tName = tP.Name;
                     if (tP.cdeOP != null)
                         tName = cdeP.GetPropertyPath(tP);
-                    tFireTSM.PLS += $"{tName}={tP}";
+                    tpls.Append($"{tName}={tP}");
                 }
+                tFireTSM.PLS = tpls.ToString();
                 PubList.Clear();
             }
             if ((cdeF & 1) != 0)
@@ -1211,32 +1212,26 @@ namespace nsCDEngine.Engines.ThingService
                 propertiesToInclude = propertyFilter.Properties;
                 IEnumerable<string> allProps = null;
                 List<string> propsToAdd = null;
-                foreach (var prop in propertiesToInclude)
+                foreach (var prop in propertiesToInclude.Where(prop => prop.StartsWith("!")))
                 {
-                    if (prop.StartsWith("!"))
+                    allProps ??= GetAllProperties(10).Select(p => cdeP.GetPropertyPath(p));
+                    var regex = new System.Text.RegularExpressions.Regex(prop.Substring(1));
+                    foreach (var newProp in allProps)
                     {
-                        if (allProps == null)
+                        if (regex.IsMatch(newProp) && !propertiesToInclude.Contains(newProp))
                         {
-                            allProps = GetAllProperties(10).Select(p => cdeP.GetPropertyPath(p));
-                        }
-                        var regex = new System.Text.RegularExpressions.Regex(prop.Substring(1));
-
-                        foreach (var newProp in allProps)
-                        {
-                            if (regex.IsMatch(newProp) && !propertiesToInclude.Contains(newProp))
+                            if (propsToAdd == null)
                             {
-                                if (propsToAdd == null)
-                                {
-                                    propsToAdd = new List<string> { newProp };
-                                }
-                                else
-                                {
-                                    propsToAdd.Add(newProp);
-                                }
+                                propsToAdd = new List<string> { newProp };
+                            }
+                            else
+                            {
+                                propsToAdd.Add(newProp);
                             }
                         }
                     }
                 }
+
                 if (propsToAdd != null)
                 {
                     propertiesToInclude = propertiesToInclude.Where(p => !p.StartsWith("!")).Union(propsToAdd);
@@ -1603,8 +1598,7 @@ namespace nsCDEngine.Engines.ThingService
                 tPB = MyPropertyBag;
             else
             {
-                if (pProp.cdeOP.cdePB == null)
-                    pProp.cdeOP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
+                pProp.cdeOP.cdePB ??= new cdeConcurrentDictionary<string, cdeP>();
                 tPB = pProp.cdeOP.cdePB;
             }
             if (MustUpdate && tPB.ContainsKey(pProp.Name) && tPB[pProp.Name].cdeMID != pProp.cdeMID)
@@ -1738,6 +1732,8 @@ namespace nsCDEngine.Engines.ThingService
             cdeP tP = null;
             TheDataBase tParent = this;
             var tPath = TheCommonUtils.cdeSplit(pName, "].[", false, false);
+            if (MyPropertyBag == null)
+                MyPropertyBag = new();
             var tResBag = MyPropertyBag;
             for (int i = 0; i < tPath.Length; i++)
             {
@@ -1751,7 +1747,7 @@ namespace nsCDEngine.Engines.ThingService
                         tP = new cdeP(this) { Name = tName, cdeO = tParent.cdeMID };
                         if (tResBag.TryAdd(tName, tP) && !NoFireAdded)
                             FireEvent(eThingEvents.PropertyAdded, this, tP, true);
-                        if (i < tPath.Length - 1)
+                        if (i < tPath.Length - 1)  
                             tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
                         tResBag = tP.cdePB;
                     }
@@ -1768,12 +1764,11 @@ namespace nsCDEngine.Engines.ThingService
                         if (tP.cdePB == null && DoCreate)
                         {
                             tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
-                            //tP.SetProperty(tName, true); // CODE REVIEW: This adds the property to it's own cdePB, right?
                         }
                         tResBag = tP.cdePB;
                     }
                 }
-                if (tResBag == null && i < tPath.Length - 1)
+                if (tResBag == null) // && i < tPath.Length - 1) //If we keep this, there will be a "bug" recorded with SonarCloud that tResBag could be null in the last iteration of the for() loop
                 {
                     // If we still have to go further down but the next cdePB has not been created: give up.
                     return null;
@@ -1879,17 +1874,9 @@ namespace nsCDEngine.Engines.ThingService
                 var prop = MyPropertyBag[key];
 
                 var targetProp = OutThing.GetProperty(key);
-                if (targetProp == null)
-                {
-                    targetProp = OutThing.SetPropertyTypeOnly(key, (ePropertyTypes)prop.cdeT);
-                }
+                targetProp ??= OutThing.SetPropertyTypeOnly(key, (ePropertyTypes)prop.cdeT);
                 prop.ClonePropertyMetaData(targetProp);
             }
-            // TODO Figure out if this is needed and how to implement securely (leave props added on node etc.)
-            //foreach (var propName in OutThing.MyPropertyBag.Keys.Except(this.MyPropertyBag.Keys).ToList())
-            //{
-            //    OutThing.RemoveProperty(propName);
-            //}
         }
 
         /// <summary>
@@ -2782,7 +2769,7 @@ namespace nsCDEngine.Engines.ThingService
             cdeP tProp;
             if (pThing == null || (tProp = pThing.GetProperty(pName, false)) == null || tProp.Value == null) return null;
             var value = tProp.GetValue();
-            //TODO: CODE REVIEW Markus: Should we force cloning here by converting to string? Otherwise the caller can modify the property directly, or future changes to the property will be seen by the caller
+            //CODE REVIEW Markus: Should we force cloning here by converting to string? Otherwise the caller can modify the property directly, or future changes to the property will be seen by the caller
             //Should we move this into cdeP.GetValue() in the next bigger release?
             //    value = TheCommonUtils.CStr(value);
             //if (!value.GetType().IsValueType)
@@ -2996,7 +2983,7 @@ namespace nsCDEngine.Engines.ThingService
                             uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
                             if (uaAttribute != null)
                             {
-                                var tProp = pThing.GetProperty(prop.Name);
+                                var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
                                 if (tProp != null)
                                 {
                                     if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
@@ -3053,5 +3040,6 @@ namespace nsCDEngine.Engines.ThingService
         public string UANodeId;
         public int UAWriteMask;
         public int UAUserWriteMask;
+        public bool UAMandatory;
     }
 }

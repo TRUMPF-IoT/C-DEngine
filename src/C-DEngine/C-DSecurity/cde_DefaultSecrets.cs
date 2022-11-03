@@ -35,9 +35,8 @@ namespace nsCDEngine.Security
             return cdeCodeArray;
         }
 
-        // TODO Update this with official key
         private static readonly byte[] clabsLicensePublicRSAKeyCSPBlob = new byte[] { 7, 2, 0, 0, 0, 36, 0, 0, 82, 83, 65, 50, 0, 4, 0, 0, 1, 0, 1, 0, 21, 17, 123, 167, 63, 93, 243, 184, 12, 109, 232, 229, 15, 154, 130, 63, 171, 242, 129, 156, 33, 47, 93, 236, 161, 94, 27, 145, 129, 214, 104, 73, 192, 224, 213, 189, 96, 209, 38, 39, 218, 167, 198, 34, 110, 90, 247, 14, 152, 46, 48, 67, 89, 20, 198, 220, 136, 149, 7, 5, 223, 53, 239, 113, 192, 76, 157, 90, 114, 71, 54, 2, 171, 128, 254, 96, 9, 109, 124, 197, 161, 158, 242, 92, 127, 135, 141, 149, 123, 127, 4, 84, 189, 22, 10, 191, 110, 108, 178, 190, 73, 162, 75, 36, 160, 23, 73, 184, 170, 195, 180, 80, 86, 79, 74, 97, 185, 223, 233, 221, 116, 40, 177, 128, 54, 73, 17, 173, 249, 31, 64, 15, 125, 18, 197, 136, 150, 66, 98, 91, 38, 118, 192, 167, 246, 239, 49, 193, 161, 168, 183, 228, 180, 27, 33, 8, 132, 28, 69, 2, 4, 134, 82, 135, 234, 40, 216, 175, 139, 227, 58, 55, 227, 118, 158, 44, 173, 113, 33, 177, 212, 171, 92, 122, 129, 142, 129, 100, 216, 155, 58, 215, 253, 56, 69, 112, 108, 253, 69, 171, 231, 131, 99, 133, 97, 93, 166, 59, 12, 241, 207, 5, 238, 77, 7, 5, 188, 236, 190, 240, 15, 86, 124, 219, 98, 152, 45, 209, 93, 169, 66, 89, 116, 113, 131, 104, 129, 187, 37, 68, 216, 82, 225, 139, 82, 120, 229, 67, 199, 10, 94, 240, 2, 22, 218, 205, 161, 112, 155, 226, 165, 71, 105, 53, 254, 148, 44, 84, 247, 136, 176, 235, 81, 23, 166, 114, 95, 220, 172, 169, 145, 50, 134, 144, 61, 190, 37, 66, 215, 205, 130, 149, 35, 94, 104, 154, 8, 44, 150, 85, 255, 141, 105, 1, 252, 28, 128, 125, 104, 85, 44, 106, 246, 165, 215, 180, 153, 219, 132, 28, 21, 225, 202, 83, 122, 53, 138, 211, 208, 87, 112, 241, 200, 223, 130, 195, 165, 178, 234, 14, 20, 38, 35, 213, 87, 108, 89, 147, 198, 188, 192, 109, 236, 146, 57, 109, 150, 149, 75, 247, 100, 67, 171, 26, 212, 221, 125, 117, 2, 131, 7, 134, 14, 225, 101, 41, 199, 142, 36, 181, 127, 180, 10, 129, 234, 142, 66, 16, 18, 220, 77, 53, 32, 188, 124, 1, 73, 227, 142, 2, 186, 42, 85, 173, 35, 252, 247, 143, 196, 246, 209, 120, 245, 223, 108, 188, 24, 16, 138, 27, 39, 83, 105, 155, 158, 6, 29, 203, 165, 89, 240, 154, 199, 199, 151, 250, 65, 63, 249, 36, 127, 42, 66, 199, 57, 126, 138, 152, 249, 173, 203, 108, 129, 220, 242, 15, 69, 119, 248, 26, 147, 234, 231, 116, 223, 60, 93, 30, 197, 97, 201, 153, 161, 131, 236, 36, 191, 222, 237, 51, 23, 53, 176, 10, 13, 238, 231, 52, 44, 6, 241, 130, 119, 7, 255, 86, 184, 179, 201, 157, 32, 34, 50, 169, 204, 16, 8, 102, 178, 153, 106, 198, 191, 3, 162, 153, 101, 235, 198, 245, 193, 87, 180, 34, 70, 117, 162, 201, 109, 106, 149, 167, 227, 128, 203, 225, 36, 103, 197, 235, 212, 94, 242, 106, 209, 80, 4, 175, 229, 182, 71, 95, 18, 8, 141, 210, 171, 135, 111, 40, 199, 97, 102, 185, 234, 91, 60, 232, 215, 218, 66, 169, 37, 200, 255, 5 };
-        internal static List<byte[]> TrustedLicenseSignerPublicKeys = new List<byte[]> { clabsLicensePublicRSAKeyCSPBlob }; // TODO add trusted keys and make them configurable?
+        internal static List<byte[]> TrustedLicenseSignerPublicKeys = new () { clabsLicensePublicRSAKeyCSPBlob }; 
         internal static string CryptoVersionString = "Core-Crypto OSS";
         private static string ApID5 = null;
         public string GetApID5() { return ApID5; }
@@ -75,7 +74,6 @@ namespace nsCDEngine.Security
 
         /// <summary>
         /// This function allows to override the cdeAK with a custom "key"
-        /// TODO: Create your own cdeAK Keyset from the incoming cleartext Key
         /// </summary>
         /// <param name="pMySecretKey"></param>
         public bool SatKays(string pMySecretKey)
@@ -128,7 +126,7 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         public bool IsValidPassword(string pRealPW)
         {
-            //TODO: you can use regex for more sophisticated checks i.e. var RegExp = new RegExp("((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,25})");
+            //you can use regex for more sophisticated checks i.e. var RegExp = new RegExp("((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,25})")
             if (string.IsNullOrEmpty(pRealPW) || pRealPW.Length < 1) //Min 1 digit
                 return false;
             return true;
@@ -158,8 +156,6 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         public Guid GetPinnedDeviceId(Guid currentDeviceId, string secretKey)
         {
-            //TODO: you can Find more stable ways of pinning a deviceid for a machine (i.e. store in regkey or credential store): for now pin to MAC address
-            //var macAddress = Discovery.TheNetworkInfo.GetMACAddress(false);
             if (!string.IsNullOrEmpty(secretKey))
             {
                 return GetGuidForName(secretKey, currentDeviceId, 5);
@@ -190,7 +186,6 @@ namespace nsCDEngine.Security
             byte[] canonicalName = new byte[nsBytes.Length + nameAsBytes.Length];
             nsBytes.CopyTo(canonicalName, 0);
             nameAsBytes.CopyTo(canonicalName, nsBytes.Length);
-            //var hashAlg = version == 5 ? (HashAlgorithm)SHA1.Create() : MD5.Create();// HMACSHA1(Encoding.UTF8.GetBytes(sha1key));
             var hashAlg = new SHA512Managed(); //TODO-MarkusH: can you verify that we can switch to this?
             var machineNumberHash = hashAlg.ComputeHash(canonicalName);
 
@@ -208,7 +203,7 @@ namespace nsCDEngine.Security
 
         private static string F(byte[] v)
         {
-            return v.Select(b => (char)(b ^ 0xFF)).ToArray().Aggregate("", (s, c) => s + c);
+            return v.Select(b => (char)(b ^ 0xFF)).AsEnumerable().Aggregate("", (s, c) => s + c);
         }
 
         private static byte[] HashWithSHA256(byte[] toBeHashed)

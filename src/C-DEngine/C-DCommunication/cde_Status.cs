@@ -28,53 +28,49 @@ namespace nsCDEngine.Communication
 
         private static string AddHTMLHeader()
         {
-            string outText = "<html><head>";
-            outText += TheBaseAssets.MyServiceHostInfo.GetMeta("");
+            StringBuilder outText = new("<html><head>");
+            outText.Append(TheBaseAssets.MyServiceHostInfo.GetMeta(""));
             if (TheThingRegistry.IsEngineStarted("NMIService.TheNMIHtml5RT", false))
             {
-                outText += "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/cdeStyles.min.css\" />";
-                outText += "<link rel=\"stylesheet\" type=\"text/css\" href=\"css/MyStyles.min.css\" />";
-                outText += "<script src=\"cdeSorttable.js\"></script>";
-                outText += "<script src=\"excellentexport.js\"></script>";
-                outText += "<script>window.jdenticon_config = { replaceMode: \"observe\" }; </script>";
-                outText += "<script src=\"jdenticon-2.2.0.min.js\"></script>";
+                outText.Append("<link rel=\"stylesheet\" type=\"text/css\" href=\"css/cdeStyles.min.css\" />");
+                outText.Append("<link rel=\"stylesheet\" type=\"text/css\" href=\"css/MyStyles.min.css\" />");
+                outText.Append("<script src=\"cdeSorttable.js\"></script>");
+                outText.Append("<script src=\"excellentexport.js\"></script>");
+                outText.Append("<script>window.jdenticon_config = { replaceMode: \"observe\" }; </script>");
+                outText.Append("<script src=\"jdenticon-2.2.0.min.js\"></script>");
             }
             else
             {
-                outText += "<style>";
-                outText += "table.cdeHilite {font-family: 'robotothin','Segoe UI',Arial,sans-serif;margin: 1em;border-collapse: collapse;font-weight: normal;text-decoration: none;}";
-                outText += ".cdeLogEntry {padding: .1em;border-bottom-style: solid;border-bottom-width: 1px;}";
-                outText += ".cdeClip {overflow: hidden;text-overflow: ellipsis;}";
-                outText += ".cdeClip:hover { overflow: visible;text-overflow: initial;}";
-                outText += "</style>";
+                outText.Append("<style>");
+                outText.Append("table.cdeHilite {font-family: 'robotothin','Segoe UI',Arial,sans-serif;margin: 1em;border-collapse: collapse;font-weight: normal;text-decoration: none;}");
+                outText.Append(".cdeLogEntry {padding: .1em;border-bottom-style: solid;border-bottom-width: 1px;}");
+                outText.Append(".cdeClip {overflow: hidden;text-overflow: ellipsis;}");
+                outText.Append(".cdeClip:hover { overflow: visible;text-overflow: initial;}");
+                outText.Append("</style>");
             }
-            outText += "<title>" + TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false) + " - System Log</title>";
-            outText += "</head><body class=\"cdeLogBody\">\r";
-            return outText;
+            outText.Append("<title>" + TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false) + " - System Log</title>");
+            outText.Append("</head><body class=\"cdeLogBody\">\r");
+            return outText.ToString();
         }
-        internal static string AddHTMLFooter()
-        {
-            return "</body></html>";
-        }
+        internal readonly static string AddHTMLFooter="</body></html>";
 
         internal static string GetScopeHashML(List<string> pScopes)
         {
-            string ret = "";
+            StringBuilder ret = new();
             if (pScopes?.Count > 0)
             {
                 foreach (var hash in pScopes)
                 {
-                    ret += $"{GetScopeHashML(hash, null)} ";
+                    ret.Append($"{GetScopeHashML(hash, null)} ");
                 }
             }
-            return ret;
+            return ret.ToString();
         }
 
         internal static string GetScopeHashML(string hash, string AddToSpan = null)
         {
             if (!TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog)
                 return hash;
-            //return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(AddToSpan) ? "" : AddToSpan)}'>{hash}</span>";
             return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(AddToSpan) ? "" : AddToSpan)}'>{hash}<svg width=\"20\" height=\"20\" data-jdenticon-value=\"{hash}\"></svg></span>";
         }
         internal static string GetSScopeHashML(string sScope, string AddToSpan = null)
@@ -82,7 +78,6 @@ namespace nsCDEngine.Communication
             var hash = TheBaseAssets.MyScopeManager.GetRealScopeID(sScope).Substring(0, 4).ToUpper();
             if (!TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog)
                 return hash;
-            //return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(AddToSpan) ? "" : AddToSpan)}'>{hash}</span>";
             return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(AddToSpan) ? "" : AddToSpan)}'>{hash}<svg width=\"20\" height=\"20\" data-jdenticon-value=\"{hash}\"></svg></span>";
         }
 
@@ -122,49 +117,48 @@ namespace nsCDEngine.Communication
         }
         internal static string InfoHeader(bool IsSmall)
         {
-            //string ret = $"<h3>{TheBaseAssets.MyServiceHostInfo.MyAppPresenter}</h3><h1>{TheBaseAssets.MyServiceHostInfo.ApplicationTitle} V{TheBaseAssets.MyServiceHostInfo.CurrentVersion}</h1><h3>Hosted at: {TheBaseAssets.LocalHostQSender.MyTargetNodeChannel}<br/>NodeName: {TheBaseAssets.MyServiceHostInfo.NodeName}</br>AppName:{TheBaseAssets.MyServiceHostInfo.ApplicationName}<br/>lcd: {TheBaseAssets.MyServiceHostInfo.BaseDirectory}</br>CDE:V{TheBaseAssets.CurrentVersionInfo} Drop: {TheBaseAssets.BuildVersion}</br>Started:{TheCommonUtils.GetDateTimeString(TheBaseAssets.MyServiceHostInfo.cdeCTIM, -1)}";
-            string ret2 = $"<h3>{TheBaseAssets.MyServiceHostInfo.MyAppPresenter}</h3>"; //<div id=\"mainBox\" style=\"width-fixed:90%;display:flex; flex-flow: column wrap\">
-            ret2 += $"<h1 id=\"title\">{TheBaseAssets.MyServiceHostInfo.ApplicationTitle} V{TheBaseAssets.MyServiceHostInfo.CurrentVersion}</h1>";
+            StringBuilder ret2 = new($"<h3>{TheBaseAssets.MyServiceHostInfo.MyAppPresenter}</h3>"); //<div id=\"mainBox\" style=\"width-fixed:90%;display:flex; flex-flow: column wrap\">
+            ret2.Append($"<h1 id=\"title\">{TheBaseAssets.MyServiceHostInfo.ApplicationTitle} V{TheBaseAssets.MyServiceHostInfo.CurrentVersion}</h1>");
             if (TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog)
-                ret2 += $"<script>var cdeCSOn; function cdeColorSpan(pContent, pColor) {{ var x = document.getElementsByClassName(\"cdeRSHash\");var i;for (i = 0; i < x.length; i++){{ if (!pContent) {{ if (!cdeCSOn) x[i].style.backgroundColor = \"transparent\"; }} else {{ if (pContent.innerText==x[i].innerText && !cdeCSOn) x[i].style.backgroundColor = pColor; }}}}}}</script>";
-            ret2 += $"<div class=\"cdeInfoBlock\" style=\"width:750px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"nodeInfo\">Node Info</div><table style=\"margin-left:2%\">";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right; min-width:200px;\">Hosted at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.LocalHostQSender.MyTargetNodeChannel.ToMLString(true)}</td></tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node ID:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDeviceIDML(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.NodeName}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Station Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.MyStationName}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Application Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.ApplicationName}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">OS Info:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left;word-wrap: break-word;max-width:540px \">{TheBaseAssets.MyServiceHostInfo.OSInfo}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Local Dir:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.BaseDirectory}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">CDE Info:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.CurrentVersionInfo}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">CDE Drop:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">V{TheBaseAssets.BuildVersion}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">CDE Crypto:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MySecrets.CryptoVersion()}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Unique Meshes Connected:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheQueuedSenderRegistry.GetUniqueMeshCount()}</td><tr>";
+                ret2.Append($"<script>var cdeCSOn; function cdeColorSpan(pContent, pColor) {{ var x = document.getElementsByClassName(\"cdeRSHash\");var i;for (i = 0; i < x.length; i++){{ if (!pContent) {{ if (!cdeCSOn) x[i].style.backgroundColor = \"transparent\"; }} else {{ if (pContent.innerText==x[i].innerText && !cdeCSOn) x[i].style.backgroundColor = pColor; }}}}}}</script>");
+            ret2.Append($"<div class=\"cdeInfoBlock\" style=\"width:750px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"nodeInfo\">Node Info</div><table style=\"margin-left:2%\">");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right; min-width:200px;\">Hosted at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.LocalHostQSender.MyTargetNodeChannel.ToMLString(true)}</td></tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node ID:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDeviceIDML(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.NodeName}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Station Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.MyStationName}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Application Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.ApplicationName}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">OS Info:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left;word-wrap: break-word;max-width:540px \">{TheBaseAssets.MyServiceHostInfo.OSInfo}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Local Dir:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.BaseDirectory}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">CDE Info:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.CurrentVersionInfo}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">CDE Drop:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">V{TheBaseAssets.BuildVersion}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">CDE Crypto:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MySecrets.CryptoVersion()}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Unique Meshes Connected:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheQueuedSenderRegistry.GetUniqueMeshCount()}</td><tr>");
             string tScope = "";
             if (TheBaseAssets.MyScopeManager.IsScopingEnabled)
             {
                 tScope = GetScopeHashML(TheBaseAssets.MyScopeManager.GetScopeHash(null));
             }
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Local Node-Scope:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{(TheBaseAssets.MyScopeManager.IsScopingEnabled ? $"A local Scope is set. Hash: {tScope}" : "Scoping is disabled")}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Client Cert Thumbprint:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{(TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb?.Length > 3 ? $"{TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb.Substring(0, 4)}" : $"No client certificate specified")}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node Started at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDateTimeString(TheBaseAssets.MyServiceHostInfo.cdeCTIM, -1)}</td><tr>";
-            ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Last Update at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDateTimeString(DateTimeOffset.Now, -1)}</td><tr>";
-            ret2 += "</table>";
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Local Node-Scope:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{(TheBaseAssets.MyScopeManager.IsScopingEnabled ? $"A local Scope is set. Hash: {tScope}" : "Scoping is disabled")}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Client Cert Thumbprint:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{(TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb?.Length > 3 ? $"{TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb.Substring(0, 4)}" : $"No client certificate specified")}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node Started at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDateTimeString(TheBaseAssets.MyServiceHostInfo.cdeCTIM, -1)}</td><tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Last Update at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDateTimeString(DateTimeOffset.Now, -1)}</td><tr>");
+            ret2.Append("</table>");
 
             if (!IsSmall)
             {
-                ret2 += $"<h2>Service Routes:</h2><table style=\"margin-left:2%\">";
-                ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right; width:200px;\">Configured Routes:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{(string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ServiceRoute) ? "No Routes are configured" : $"{TheBaseAssets.MyServiceHostInfo.ServiceRoute}")}</td></tr>";
+                ret2.Append($"<h2>Service Routes:</h2><table style=\"margin-left:2%\">");
+                ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right; width:200px;\">Configured Routes:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{(string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ServiceRoute) ? "No Routes are configured" : $"{TheBaseAssets.MyServiceHostInfo.ServiceRoute}")}</td></tr>");
 
                 var CNs = TheQueuedSenderRegistry.GetCloudNodes(true);
                 if (CNs.Count > 0)
                 {
                     foreach (var tQ in CNs)
-                        ret2 += $"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">{tQ.MyTargetNodeChannel.TargetUrl}</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">Connected: {(tQ.IsConnected ? "Yes, all is good" : (tQ.IsConnecting ? "Not, yet - trying to connect" : "No, and not trying to connect!"))}{(!string.IsNullOrEmpty(tQ.GetLastError())?$" Last Error: {tQ.GetLastError()}":"")}</td><tr>";
+                        ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">{tQ.MyTargetNodeChannel.TargetUrl}</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">Connected: {(tQ.IsConnected ? "Yes, all is good" : (tQ.IsConnecting ? "Not, yet - trying to connect" : "No, and not trying to connect!"))}{(!string.IsNullOrEmpty(tQ.GetLastError())?$" Last Error: {tQ.GetLastError()}":"")}</td><tr>");
                 }
-                ret2 += "</table>";
+                ret2.Append("</table>");
             }
-            ret2 += "</div>";
-            return ret2;
+            ret2.Append("</div>");
+            return ret2.ToString();
         }
 
         internal static string ShowKPIs(bool DoReset)
@@ -176,7 +170,7 @@ namespace nsCDEngine.Communication
             return outText;
         }
 
-        private static readonly object lockSubscribers = new object();
+        private static readonly object lockSubscribers = new ();
 
         internal static bool GetSubscriptionStatusWithPublicChannelInfo(out Dictionary<string, List<Guid>> channelsByTopic, out List<TheChannelInfo> channels)
         {
@@ -184,7 +178,6 @@ namespace nsCDEngine.Communication
             channels = null;
             if (TheCommonUtils.cdeIsLocked(lockSubscribers))
             {
-                //outText += "<h2>Subscription Status currently locked...try again in a couple seconds</h2><ul>";
                 return false;
             }
             channelsByTopic = new Dictionary<string, List<Guid>>();
@@ -192,7 +185,6 @@ namespace nsCDEngine.Communication
             lock (lockSubscribers)
             {
                 List<TheSubscriptionInfo> allTopics = TheQueuedSenderRegistry.GetCurrentKnownTopics(false, "");
-                //allTopics.Sort();
 
                 foreach (var mkey in allTopics)
                 {
@@ -238,7 +230,7 @@ namespace nsCDEngine.Communication
                         headerInfo += sLastCustomText;
                 }
 
-                StringBuilder outText = new StringBuilder("");
+                StringBuilder outText = new ("");
                 outText.Append($"<div class=\"cdeInfoBlock\" style=\"width:750px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"engineStatuses\">Status of Engines on this Node</div><table class=\"cdeHilite\" style=\"border:1px solid gray;margin-left:2%\">");
                 outText.Append("<tr><th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; width:350px; min-width:350px\">Plugin Name</th>");
                 outText.Append("<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; width:80px;\">Version</th>");
@@ -272,10 +264,10 @@ namespace nsCDEngine.Communication
                 outText.Append("</table></div>");
                 if (statusOptions.ShowDetails || statusOptions.ShowManyDetails)
                 {
-                    var curSubByTopicStr = "<div class=\"cdeInfoBlock\" style=\"clear:left; width:750px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"subscribersByTopic\">Current Subscribers by Topic</div><ul>";
+                    StringBuilder curSubByTopicStr = new("<div class=\"cdeInfoBlock\" style=\"clear:left; width:750px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"subscribersByTopic\">Current Subscribers by Topic</div><ul>");
                     List<TheSubscriptionInfo> allTopics = TheQueuedSenderRegistry.GetCurrentKnownTopics(false, "").OrderBy(s => s.Topic).ToList();
 
-                    List<string> tScopes = new List<string> { "" };
+                    List<string> tScopes = new () { "" };
                     string tLastTopic = "";
                     var c1 = 0;
                     foreach (var mkey in allTopics)
@@ -285,58 +277,58 @@ namespace nsCDEngine.Communication
                         if (tCurTopic != tLastTopic)
                         {
                             if (tLastTopic != "")
-                                curSubByTopicStr += "</li>";
-                            curSubByTopicStr += "<li>" + tCurTopic;
+                                curSubByTopicStr.Append("</li>");
+                            curSubByTopicStr.Append("<li>" + tCurTopic);
                             tLastTopic = tCurTopic;
                         }
                         if (string.IsNullOrEmpty(mkey.RScopeID))
-                            curSubByTopicStr += "<ul><li><span style='color:purple'>Not Scoped</span>";
+                            curSubByTopicStr.Append("<ul><li><span style='color:purple'>Not Scoped</span>");
                         else
                         {
                             string tScop = mkey.RScopeID;
                             if (!tScopes.Contains(tScop))
                                 tScopes.Add(tScop);
                             if (tScop.Length < 4)
-                                curSubByTopicStr += $"<ul><li><span style='color:red'>ILLEGAL-Scope: {tScop.ToUpper()}</span>";
+                                curSubByTopicStr.Append($"<ul><li><span style='color:red'>ILLEGAL-Scope: {tScop.ToUpper()}</span>");
                             else
-                                curSubByTopicStr += $"<ul><li>{GetScopeHashML(tScop.Substring(0, 4).ToUpper())}";
+                                curSubByTopicStr.Append($"<ul><li>{GetScopeHashML(tScop.Substring(0, 4).ToUpper())}");
                         }
                         if (tLst != null && tLst.Count > 0)
                         {
-                            curSubByTopicStr += "<ul>";
+                            curSubByTopicStr.Append("<ul>");
                             foreach (string tUrl in tLst)
                             {
-                                curSubByTopicStr += "<li>" + tUrl + "</li>";
+                                curSubByTopicStr.Append("<li>" + tUrl + "</li>");
                             }
-                            curSubByTopicStr += "</ul>";
+                            curSubByTopicStr.Append("</ul>");
                         }
-                        curSubByTopicStr += "</li></ul>";
+                        curSubByTopicStr.Append("</li></ul>");
                         c1++;
                     }
                     if (c1 > 0)
                     {
-                        curSubByTopicStr += "</ul></div>";
+                        curSubByTopicStr.Append("</ul></div>");
                         outText.Append(curSubByTopicStr);
                     }
 
-                    var curScopesAndSubs = "<div class=\"cdeInfoBlock\" style=\"width:750px; \"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"scopesAndSubscribers\">Current Scopes and its subscribers</div><ul>";
+                    StringBuilder curScopesAndSubs = new("<div class=\"cdeInfoBlock\" style=\"width:750px; \"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"scopesAndSubscribers\">Current Scopes and its subscribers</div><ul>");
                     int c2 = 0;
                     foreach (string mkey in tScopes)
                     {
-                        curScopesAndSubs += $"<li><span style='color:orange'>{(string.IsNullOrEmpty(mkey) ? "Unscoped Nodes" : GetScopeHashML(mkey.Substring(0, 4).ToUpper()))}</span>";
+                        curScopesAndSubs.Append($"<li><span style='color:orange'>{(string.IsNullOrEmpty(mkey) ? "Unscoped Nodes" : GetScopeHashML(mkey.Substring(0, 4).ToUpper()))}</span>");
                         List<TheChannelInfo> tlst = TheQueuedSenderRegistry.GetSendersByRealScope(mkey);
                         if (tlst.Count > 0)
                         {
-                            curScopesAndSubs += "<ul>";
+                            curScopesAndSubs.Append("<ul>");
                             foreach (TheChannelInfo tChan in tlst)
-                                curScopesAndSubs += "<li>" + tChan.ToMLString() + "</li>";
-                            curScopesAndSubs += "</ul>";
+                                curScopesAndSubs.Append("<li>" + tChan.ToMLString() + "</li>");
+                            curScopesAndSubs.Append("</ul>");
                         }
                         c2++;
                     }
                     if (c2 > 0)
                     {
-                        curScopesAndSubs += "</ul></div>";
+                        curScopesAndSubs.Append("</ul></div>");
                         outText.Append(curScopesAndSubs);
                     }
                 }
@@ -357,7 +349,7 @@ namespace nsCDEngine.Communication
         }
 
         // Possible Sender Types to display in cdeStatus tables (does not include all enum values)
-        private static List<cdeSenderType> senderTypes = new List<cdeSenderType>
+        private static readonly List<cdeSenderType> senderTypes = new ()
         {
             cdeSenderType.NOTSET, cdeSenderType.CDE_LOCALHOST, cdeSenderType.CDE_CLOUDROUTE,
             cdeSenderType.CDE_BACKCHANNEL, cdeSenderType.CDE_DEVICE, cdeSenderType.CDE_JAVAJASON,
@@ -380,7 +372,7 @@ namespace nsCDEngine.Communication
 
         internal static string CreateTableLinks(TheCdeStatusOptions statusOptions)
         {
-            StringBuilder outText = new StringBuilder("<div class=\"cdeInfoBlock\" style=\"width:750px; min-height:initial;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\">Table Links</div>");
+            StringBuilder outText = new ("<div class=\"cdeInfoBlock\" style=\"width:750px; min-height:initial;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\">Table Links</div>");
             outText.Append("<ul><li><a href=\"#nodeInfo\">Node Info</a></li>");
             outText.Append("<li><a href=\"#engineStatuses\">Status of Engines on this Node</a></li>");
             if (statusOptions.ShowDetails || statusOptions.ShowManyDetails)
@@ -412,88 +404,80 @@ namespace nsCDEngine.Communication
 
         internal static string GetDiagReport(bool ShowHeader)
         {
-            string outText = "";
+            StringBuilder outText = new();
 
             if (ShowHeader)
             {
-                outText += AddHTMLHeader();
-                outText += InfoHeader(false);
+                outText.Append(AddHTMLHeader());
+                outText.Append(InfoHeader(false));
             }
 
             string tColor = "black";
-            outText += "<div class=\"cdeInfoBlock\" style=\"width:1570px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"threadInfo\">Thread Info ";
-            outText += $"<a download =\"ThreadInfo_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'threadInfoTable');\">(Export as CSV)</a></div>";
-            outText += "<table class=\"cdeHilite\" id=\"threadInfoTable\" width=\"95%\"><tbody>";
+            outText.Append("<div class=\"cdeInfoBlock\" style=\"width:1570px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"threadInfo\">Thread Info ");
+            outText.Append($"<a download =\"ThreadInfo_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'threadInfoTable');\">(Export as CSV)</a></div>");
+            outText.Append("<table class=\"cdeHilite\" id=\"threadInfoTable\" width=\"95%\"><tbody>");
             List<TheThreadInfo> tThreads = TheDiagnostics.GetThreadInfo();
-            outText += "<tr><td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Thread Name</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Thread ID</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>State</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Wait Reason</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Start Time</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>User time in ms</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Core time in ms</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Priority</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Is Background</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Is Pooled</td></tr>";
+            outText.Append("<tr><td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Thread Name</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Thread ID</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>State</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Wait Reason</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Start Time</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>User time in ms</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Core time in ms</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Priority</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Is Background</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Is Pooled</td></tr>");
             foreach (TheThreadInfo t in tThreads.OrderByDescending(s => s.UserTimeInMs))
             {
-                switch (t.State.ToLower())
+                tColor = t.State.ToLower() switch
                 {
-                    case "waiting":
-                        tColor = "Green";
-                        break;
-                    case "running":
-                        tColor = "red";
-                        break;
-                    case "ready":
-                        tColor = "purple";
-                        break;
-                    default:
-                        tColor = "Black";
-                        break;
-                }
+                    "waiting" => "Green",
+                    "running" => "red",
+                    "ready" => "purple",
+                    _ => "Black",
+                };
                 string tn = t.Name; if (string.IsNullOrEmpty(tn)) tn = "Unknown";
                 if (tn.ToLower().Equals("cdemain thread")) tColor = "pink";
-                outText += string.Format("<tr><td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tn);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.ID);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.State);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.WaitReason);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.StartTime);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1:0}</td>", tColor, t.UserTimeInMs);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1:0}</td>", tColor, t.CoreTimeInMs);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.Priority);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.IsBackground);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td></tr>", tColor, t.IsPooled);
-                outText += string.Format("<tr><td colspan=\"10\" class='cdeLogEntry' style='color:{0}'><SMALL>{1}</SMALL></td></tr>", tColor, t.StackFrame);
-                outText += "</tr>";
+                outText.Append(string.Format("<tr><td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tn));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.ID));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.State));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.WaitReason));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.StartTime));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1:0}</td>", tColor, t.UserTimeInMs));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1:0}</td>", tColor, t.CoreTimeInMs));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.Priority));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.IsBackground));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td></tr>", tColor, t.IsPooled));
+                outText.Append(string.Format("<tr><td colspan=\"10\" class='cdeLogEntry' style='color:{0}'><SMALL>{1}</SMALL></td></tr>", tColor, t.StackFrame));
+                outText.Append("</tr>");
             }
-            outText += "</tbody></table></div>";
+            outText.Append("</tbody></table></div>");
 
             List<TheModuleInfo> tList = TheDiagnostics.GetLoadedModules(0);
-            outText += "<div class=\"cdeInfoBlock\"  style=\"width:750;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"loadedModules\">Loaded Modules ";
-            outText += $"<a download =\"LoadedModules_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'loadedModulesTable');\">(Export as CSV)</a></div>";
-            outText += "<table class=\"cdeHilite\" id=\"loadedModulesTable\" width=\"95%\"><tbody>";
-            outText += "<tr><th class='cdeLogEntryHeader' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Module Name</th>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Memory Size</td></tr>";
+            outText.Append("<div class=\"cdeInfoBlock\"  style=\"width:750;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"loadedModules\">Loaded Modules ");
+            outText.Append($"<a download =\"LoadedModules_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'loadedModulesTable');\">(Export as CSV)</a></div>");
+            outText.Append("<table class=\"cdeHilite\" id=\"loadedModulesTable\" width=\"95%\"><tbody>");
+            outText.Append("<tr><th class='cdeLogEntryHeader' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Module Name</th>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Memory Size</td></tr>");
             foreach (TheModuleInfo t in tList)
             {
-                outText += string.Format("<tr><th class='cdeLogEntryHeader' style='color:{0}'>{1}</th>", tColor, t.Name);
-                outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.MemorySize);
-                outText += "</tr>";
+                outText.Append(string.Format("<tr><th class='cdeLogEntryHeader' style='color:{0}'>{1}</th>", tColor, t.Name));
+                outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, t.MemorySize));
+                outText.Append("</tr>");
             }
-            outText += "</tbody></table></div>";
+            outText.Append("</tbody></table></div>");
 
-            outText += "<div class=\"cdeInfoBlock\" style=\"width:1550;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"storageMirrors\">Storage Mirrors ";
-            outText += $"<a download =\"StorageMirrors_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'storageMirrorsTable');\">(Export as CSV)</a></div>";
-            outText += "<table class=\"cdeHilite\" id=\"storageMirrorsTable\" width=\"95%\"><tbody>";
-            outText += "<tr><th class='cdeLogEntryHeader' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;font-color:black'>Mirror ID</th>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black;text-align:center;max-width:100px'>Row count</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Size in Bytes</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Cache Store Cnt</td>";
-            outText += "<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Last Cache Store</td></tr>";
+            outText.Append("<div class=\"cdeInfoBlock\" style=\"width:1550;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"storageMirrors\">Storage Mirrors ");
+            outText.Append($"<a download =\"StorageMirrors_{TheCommonUtils.GetMyNodeName()}.csv\" href=\"#\" class=\'cdeExportLink\' onclick=\"return ExcellentExport.csv(this, 'storageMirrorsTable');\">(Export as CSV)</a></div>");
+            outText.Append("<table class=\"cdeHilite\" id=\"storageMirrorsTable\" width=\"95%\"><tbody>");
+            outText.Append("<tr><th class='cdeLogEntryHeader' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;font-color:black'>Mirror ID</th>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black;text-align:center;max-width:100px'>Row count</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Size in Bytes</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Cache Store Cnt</td>");
+            outText.Append("<td class='cdeLogEntry' style='font-weight:bold;font-variant:small-caps;text-decoration:underline;color:black'>Last Cache Store</td></tr>");
             foreach (string key in TheCDEngines.MyStorageMirrorRepository.Keys)
             {
-                outText += string.Format("<tr><th class='cdeLogEntryHeader' style='color:{0}'>{1}", tColor, key);
+                outText.Append(string.Format("<tr><th class='cdeLogEntryHeader' style='color:{0}'>{1}", tColor, key));
 
 
                 object MyStorageMirror = TheCDEngines.GetStorageMirror(key);
@@ -510,45 +494,45 @@ namespace nsCDEngine.Communication
                     {
                         string tUpdated = magicMethod.Invoke(MyStorageMirror, null).ToString();
                         if (!string.IsNullOrEmpty(tUpdated))
-                            outText += string.Format("{0}<br><span style='color:lightgray;font-size:xx-small'>{1}</span>{2}", StoreCanBeFlushed ? string.Format("<a href=/cdediag.aspx?FLUSH={0}>", TheCommonUtils.cdeEscapeString(key)) : "", tUpdated, StoreCanBeFlushed ? "</a>" : "");
+                            outText.Append(string.Format("{0}<br><span style='color:lightgray;font-size:xx-small'>{1}</span>{2}", StoreCanBeFlushed ? string.Format("<a href=/cdediag.aspx?FLUSH={0}>", TheCommonUtils.cdeEscapeString(key)) : "", tUpdated, StoreCanBeFlushed ? "</a>" : ""));
                     }
-                    outText += "</th>";
+                    outText.Append("</th>");
                     magicMethod = magicType.GetMethod("GetCount");
                     if (magicMethod != null)
                     {
                         string tUpdated = magicMethod.Invoke(MyStorageMirror, null).ToString();
                         if (!string.IsNullOrEmpty(tUpdated))
-                            outText += string.Format("<td class='cdeLogEntry' style='color:{0};text-align:center;max-width:100px'>{1}</td>", tColor, tUpdated);
+                            outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0};text-align:center;max-width:100px'>{1}</td>", tColor, tUpdated));
                     }
                     magicMethod = magicType.GetMethod("GetSize");
                     if (magicMethod != null)
                     {
                         string tUpdated = magicMethod.Invoke(MyStorageMirror, null).ToString();
                         if (!string.IsNullOrEmpty(tUpdated))
-                            outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tUpdated);
+                            outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tUpdated));
                     }
                     magicMethod = magicType.GetMethod("GetCacheStoreCount");
                     if (magicMethod != null)
                     {
                         string tUpdated = magicMethod.Invoke(MyStorageMirror, null).ToString();
-                        outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tUpdated);
+                        outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tUpdated));
                     }
                     magicMethod = magicType.GetMethod("GetLastCacheStore");
                     if (magicMethod != null)
                     {
                         DateTimeOffset tUpdated = TheCommonUtils.CDate(magicMethod.Invoke(MyStorageMirror, null));
                         if (tUpdated > DateTimeOffset.MinValue)
-                            outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tUpdated);
+                            outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, tUpdated));
                         else
-                            outText += string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, "Not stored, yet");
+                            outText.Append(string.Format("<td class='cdeLogEntry' style='color:{0}'>{1}</td>", tColor, "Not stored, yet"));
                     }
                 }
                 else
-                    outText += "</th>";
-                outText += "</tr>";
+                    outText.Append("</th>");
+                outText.Append("</tr>");
             }
-            outText += "</tbody></table></div>";
-            return outText;
+            outText.Append("</tbody></table></div>");
+            return outText.ToString();
         }
 
         internal static string RenderHostServiceInfo(bool ShowHeader)
@@ -574,30 +558,30 @@ namespace nsCDEngine.Communication
 
         private static string htmlClassToForm<T>(T pSource, string tableID = "")
         {
-            string outText = $"<table class=\"cdeHilite\" id=\"{tableID}\"><tbody>";
+            StringBuilder outText = new ($"<table class=\"cdeHilite\" id=\"{tableID}\"><tbody>");
             List<FieldInfo> Fieldsinfoarray = typeof(T).GetFields().OrderBy(x => x.Name).ToList();
             List<PropertyInfo> PropInfoArray = typeof(T).GetProperties().OrderBy(x => x.Name).ToList();
             foreach (FieldInfo finfo in Fieldsinfoarray)
             {
                 if (finfo.ToString().StartsWith("System.Collection") || finfo.Name.StartsWith("cde")) continue;
                 if (TheBaseAssets.MySettings.GetHiddenKeyList()?.Contains(finfo.Name)==true) continue;
-                outText += $"<tr><th class='cdeLogEntryHeader'>{finfo.Name}</th>";
+                outText.Append($"<tr><th class='cdeLogEntryHeader'>{finfo.Name}</th>");
                 object tObj = finfo.GetValue(pSource);
                 string tFld = tObj != null ? TheCommonUtils.CStr(tObj) : "Not set (NULL)";
-                outText += $"<td><td class='cdeLogEntry'>{tFld}</td></tr>";
+                outText.Append($"<td><td class='cdeLogEntry'>{tFld}</td></tr>");
             }
 
             foreach (PropertyInfo finfo in PropInfoArray)
             {
                 if (finfo.ToString().StartsWith("System.Collection")) continue;
                 if (TheBaseAssets.MySettings.GetHiddenKeyList()?.Contains(finfo.Name)==true) continue;
-                outText += $"<tr><th class='cdeLogEntryHeader'>{finfo.Name}</th>";
+                outText.Append($"<tr><th class='cdeLogEntryHeader'>{finfo.Name}</th>");
                 object tObj = finfo.GetValue(pSource, null);
                 string tFld = tObj != null ? TheCommonUtils.CStr(tObj) : "Not set (NULL)";
-                outText += $"<td><td class='cdeLogEntry cdeClip' style='width:500px;word-break: break-all;'>{tFld}</td></tr>";
+                outText.Append($"<td><td class='cdeLogEntry cdeClip' style='width:500px;word-break: break-all;'>{tFld}</td></tr>");
             }
-            outText += "</tbody></table>";
-            return outText;
+            outText.Append("</tbody></table>");
+            return outText.ToString();
         }
     }
 }

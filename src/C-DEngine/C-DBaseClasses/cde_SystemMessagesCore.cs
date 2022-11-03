@@ -66,7 +66,7 @@ namespace nsCDEngine.BaseClasses
     /// <summary>
     /// Defines a list of EventNames that are fired by TheBaseEngine for specific events in the system
     /// </summary>
-    public class eLoggerCategory
+    public static class eLoggerCategory
     {
         /// <summary>
         /// Event fired by an IBaseEngine, Plugin or service
@@ -98,7 +98,7 @@ namespace nsCDEngine.BaseClasses
     /// <summary>
     /// Defines a list of EventNames that are fired by TheBaseEngine for specific events in the system
     /// </summary>
-    public class eEngineEvents
+    public static class eEngineEvents
     {
         /// <summary>
         /// C-DEngine is about to shutdown. The MyServiceHostInfo.PreShutDownDelay sets the delay time for the shutdown. By default this is zero and the event is not fired
@@ -751,7 +751,7 @@ namespace nsCDEngine.BaseClasses
             ENG = tEngine;
             TXT = pText;
             LVL = pLevel;
-            SetOrigin(TheBaseAssets.MyServiceHostInfo?.DisableFastTSMs == true ? false : true);
+            SetOrigin((TheBaseAssets.MyServiceHostInfo?.DisableFastTSMs) != true);
         }
 
         private static long SerialSID = 1;

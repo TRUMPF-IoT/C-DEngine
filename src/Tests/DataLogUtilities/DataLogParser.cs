@@ -32,7 +32,7 @@ namespace DataLogUtilities
 
     class CompareOpcTagsP08 : IEqualityComparer<OpcClientDataLogEntry>
     {
-        long _toleranceInTicks;
+        readonly long _toleranceInTicks;
         public CompareOpcTagsP08(long toleranceInTicks = 0)
         {
             _toleranceInTicks = toleranceInTicks;
@@ -64,33 +64,21 @@ namespace DataLogUtilities
                     return true;
                 }
             }
-            if (x.TagId == $"[{y.TagId}].[statusCode]" && x.Source == y.Source)
+            if (x.TagId == $"[{y.TagId}].[statusCode]" && x.Source == y.Source && TheCommonUtils.CStr(x.value) == TheCommonUtils.CStr(y.Status))
             {
-                if (TheCommonUtils.CStr(x.value) == TheCommonUtils.CStr(y.Status))
-                {
-                    return true;
-                }
+                return true;
             }
-            if (y.TagId == $"[{x.TagId}].[statusCode]" && x.Source == y.Source)
+            if (y.TagId == $"[{x.TagId}].[statusCode]" && x.Source == y.Source && TheCommonUtils.CStr(y.value) == TheCommonUtils.CStr(x.Status))
             {
-                if (TheCommonUtils.CStr(y.value) == TheCommonUtils.CStr(x.Status))
-                {
-                    return true;
-                }
+                return true;
             }
-            if (x.TagId == $"[{y.TagId}].[sequenceNumber]" && x.Source == y.Source)
+            if (x.TagId == $"[{y.TagId}].[sequenceNumber]" && x.Source == y.Source && (y.SequenceNumber == null || (TheCommonUtils.CStr(x.value) == TheCommonUtils.CStr(y.SequenceNumber.Value))))
             {
-                if (y.SequenceNumber == null || (TheCommonUtils.CStr(x.value) == TheCommonUtils.CStr(y.SequenceNumber.Value)))
-                {
-                    return true;
-                }
+                return true;
             }
-            if (y.TagId == $"[{x.TagId}].[sequenceNumber]" && x.Source == y.Source)
+            if (y.TagId == $"[{x.TagId}].[sequenceNumber]" && x.Source == y.Source && (x.SequenceNumber == null || (TheCommonUtils.CStr(y.value) == TheCommonUtils.CStr(x.SequenceNumber.Value))))
             {
-                if (x.SequenceNumber == null || (TheCommonUtils.CStr(y.value) == TheCommonUtils.CStr(x.SequenceNumber.Value)))
-                {
-                    return true;
-                }
+                return true;
             }
 
             return false;
@@ -102,7 +90,6 @@ namespace DataLogUtilities
         }
     }
 
-    // TODO Expose from OpcUAJsonEventConverter?
     public class JSonOpcArrayElement
     {
         public string machineid { get; set; }
@@ -167,12 +154,7 @@ namespace DataLogUtilities
                 foreach (var meshTag in entry.PLS.PB.Where(e =>
                     !e.Key.StartsWith("DeviceGate")
                     && !e.Key.StartsWith("MeshSender")
-                    && !(e.Key == ("cdeDataNotReady"))
-                    && !(e.Key == ("EngineName"))
-                    && !(e.Key == ("ID"))
-                    && !(e.Key == ("DeviceType"))
-                    && !(e.Key == ("FriendlyName"))
-                    ))
+                    && (e.Key != "cdeDataNotReady") && (e.Key != "EngineName") && (e.Key != "ID") && (e.Key != "DeviceType") && (e.Key != "FriendlyName")))
                 {
                     opcTags.Add(new OpcClientDataLogEntry
                     {

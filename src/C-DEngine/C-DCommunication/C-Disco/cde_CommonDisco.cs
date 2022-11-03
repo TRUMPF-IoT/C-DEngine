@@ -25,14 +25,14 @@ namespace nsCDEngine.Discovery
         private readonly int DISCOExpireTime = 3600;
         private TheUPnPDeviceInfo MyDeviceUPnPInfo;
 
-        private readonly cdeConcurrentDictionary<string, Action<TheUPnPDeviceInfo>> mUPnpUIDs = new cdeConcurrentDictionary<string, Action<TheUPnPDeviceInfo>>();    //DIC-Allowed   STRING
-        private readonly cdeConcurrentDictionary<string, Action<TheUPnPDeviceInfo>> mUPnpLost = new cdeConcurrentDictionary<string, Action<TheUPnPDeviceInfo>>();    //DIC-Allowed   STRING
+        private readonly cdeConcurrentDictionary<string, Action<TheUPnPDeviceInfo>> mUPnpUIDs = new ();    //DIC-Allowed   STRING
+        private readonly cdeConcurrentDictionary<string, Action<TheUPnPDeviceInfo>> mUPnpLost = new ();    //DIC-Allowed   STRING
 
-        private readonly cdeConcurrentDictionary<Guid, ICDESniffer> MyDiscoScanners = new cdeConcurrentDictionary<Guid, ICDESniffer>();
-        private readonly cdeConcurrentDictionary<Guid, ICDEDiscoService> MyDiscoServices = new cdeConcurrentDictionary<Guid, ICDEDiscoService>();
+        private readonly cdeConcurrentDictionary<Guid, ICDESniffer> MyDiscoScanners = new ();
+        private readonly cdeConcurrentDictionary<Guid, ICDEDiscoService> MyDiscoServices = new ();
         internal static TheStorageMirror<TheUPnPDeviceInfo> MyUPnPDiscoveryPast;
         private Action<bool> eventDiscoReady;
-        private static readonly object LockNotify = new object();
+        private static readonly object LockNotify = new ();
 
         internal TheCommonDisco()
         {
@@ -61,16 +61,13 @@ namespace nsCDEngine.Discovery
             }
             MyUPnPDiscoveryPast = new TheStorageMirror<TheUPnPDeviceInfo>(Engines.TheCDEngines.MyIStorageService) { IsRAMStore = true, BlockWriteIfIsolated = true };
             MyUPnPDiscoveryPast.SetRecordExpiration(DISCOExpireTime, sinkDeviceExpired);
-            //MyUPnPDiscoveryPast.CacheStoreInterval = 60;
-            //MyUPnPDiscoveryPast.IsStoreIntervalInSeconds = true;
-            //MyUPnPDiscoveryPast.IsCachePersistent = true;
             MyUPnPDiscoveryPast.InitializeStore(true, true);
 
             var tCDEConnectUrl = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false);
             TheBaseAssets.MySYSLOG.WriteToLog(107, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("UPnP", "Starting Device", eMsgLevel.l3_ImportantMessage));
             MyDeviceUPnPInfo = new TheUPnPDeviceInfo()
             {
-                FriendlyName = TheBaseAssets.MyServiceHostInfo.ApplicationTitle + " at: " + tCDEConnectUrl + " - Services:" + pLiveEngines,// pStationEngines;
+                FriendlyName = TheBaseAssets.MyServiceHostInfo.ApplicationTitle + " at: " + tCDEConnectUrl + " - Services:" + pLiveEngines,
                 Manufacturer = TheBaseAssets.MyServiceHostInfo.VendorName,
                 ManufacturerUrl = TheBaseAssets.MyServiceHostInfo.VendorUrl,
                 ModelName = TheBaseAssets.MyServiceHostInfo.ApplicationName,
@@ -118,6 +115,7 @@ namespace nsCDEngine.Discovery
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
         protected virtual void Dispose(bool disposing)
         {
@@ -220,7 +218,6 @@ namespace nsCDEngine.Discovery
                 if (MyDiscoServices[key] != null)
                     MyDiscoServices[key].UpdateDiscoService(TheBaseAssets.MyServiceHostInfo.ApplicationTitle + " at: " + TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false) + " - Services:" + TheBaseAssets.MyServiceHostInfo.MyLiveServices);
             }
-            return;
         }
         public void UpdateContextID()
         {
@@ -231,7 +228,6 @@ namespace nsCDEngine.Discovery
                 if (MyDiscoServices[key] != null)
                     MyDiscoServices[key].UpdateContextID(TheBaseAssets.MyScopeManager.GetScrambledScopeID());     //GRSI: rare
             }
-            return;
         }
 
 
@@ -320,7 +316,7 @@ namespace nsCDEngine.Discovery
         {
             if (MyUPnPDiscoveryPast?.MyMirrorCache?.Count > 0)
                 return MyUPnPDiscoveryPast.MyMirrorCache.MyRecords.Values.ToList();
-            return null;
+            return new();
         }
         public List<TheUPnPDeviceInfo> GetAllUPnPDeviceInfo(Func<TheUPnPDeviceInfo, bool> pFunc)
         {
@@ -328,7 +324,7 @@ namespace nsCDEngine.Discovery
             {
                 return MyUPnPDiscoveryPast.MyMirrorCache.GetEntriesByFunc(pFunc);
             }
-            return null;
+            return new();
         }
         public TheUPnPDeviceInfo GetUPnPDeviceInfoByFunc(Func<TheUPnPDeviceInfo, bool> pFunc)
         {
@@ -382,8 +378,7 @@ namespace nsCDEngine.Discovery
                         return false;
                     }
                 }
-                if (tHistory == null)
-                    tHistory = pInfo;
+                tHistory ??= pInfo;
                 MyUPnPDiscoveryPast.MyMirrorCache.AddOrUpdateItem(tHistory); //gUSN
                 Uri tLocationUrl;
                 try
@@ -432,7 +427,7 @@ namespace nsCDEngine.Discovery
                     {
                         strStationRoles = strStationRoles.Substring(pos, strStationRoles.Length - pos);
                         string[] sRoles = strStationRoles.Split(';');
-                        List<string> discoveredStationRoles = new List<string>();
+                        List<string> discoveredStationRoles = new ();
                         foreach (string gt in sRoles)
                             discoveredStationRoles.Add(TheBaseAssets.MyScopeManager.AddScopeID(gt));
                         string[] apps = TheCommonUtils.cdeSplit(tHistory.FriendlyName, " at:", false, false);
@@ -478,8 +473,6 @@ namespace nsCDEngine.Discovery
                             {
                                 var t = TheThingRegistry.GetThingByMID(tHistory.ScannerID);
                                 (t.GetObject() as ICDEDiscoService)?.GetDeviceDetails(tHistory, mUPnpUIDs[tUID]);
-                                //if (pLocationUrl!=null)
-                                //    TheREST.GetRESTAsync(pLocationUrl, 0, sinkUPnPCustomDeviceFound, mUPnpUIDs[tUID]);
                             }
                             sendOnce = true;
                         }
@@ -494,8 +487,6 @@ namespace nsCDEngine.Discovery
                             {
                                 var t = TheThingRegistry.GetThingByMID(tHistory.ScannerID);
                                 (t.GetObject() as ICDEDiscoService)?.GetDeviceDetails(tHistory, mUPnpUIDs[tUID]);
-                                //if (pLocationUrl != null)
-                                //    TheREST.GetRESTAsync(pLocationUrl, 0, sinkUPnPCustomDeviceFound, mUPnpUIDs[tUID]);
                             }
                             sendOnce = true;
                         }
@@ -504,10 +495,8 @@ namespace nsCDEngine.Discovery
             }
             if (!sendOnce && hasAllFlag && pLocationUrl != null)
             {
-                //TheSystemMessageLog.ToCo(string.Format("UPnP Get Meta From: {0}", pLocationUrl));
                 var t = TheThingRegistry.GetThingByMID(tHistory.ScannerID);
                 (t?.GetObject() as ICDEDiscoService)?.GetDeviceDetails(tHistory,null);
-                //TheREST.GetRESTAsync(pLocationUrl, 0, sinkUPnPCustomDeviceFound, null);
             }
         }
 
@@ -569,7 +558,7 @@ namespace nsCDEngine.Discovery
 
         public void RegisterDeviceWithServer(Uri pTargetServer, Action<string, TheUPnPDeviceInfo> pCallback)
         {
-            TheREST tRest = new TheREST();
+            TheREST tRest = new ();
             var builder = new UriBuilder(pTargetServer) {Path = "DEVICEREG.JSON"};
             tRest.PostRESTAsync(builder.Uri, sinkRegResult, TheCommonUtils.SerializeObjectToJSONString(MyDeviceUPnPInfo), pCallback, sinkRegResult);
         }

@@ -63,8 +63,8 @@ namespace nsCDEngine.ViewModels
                         case 3:
                             if (storage != null && value != null && TheCommonUtils.CDate(storage) == TheCommonUtils.CDate(value)) return false;
                             break;
-                        case 4: //Binary Comparison - TODO:CODEREVIEW Could be very expensive to do Byte[] comparison
-                            if ((storage == null && value == null)) return false;// || ((storage as byte[]).GetHashCode() == (value as byte[]).GetHashCode())) return false;
+                        case 4: //Binary Comparison - Could be very expensive to do Byte[] comparison
+                            if ((storage == null && value == null)) return false;
                             break;
                         case 5: //Function - Never Set it!
                             return false;

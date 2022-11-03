@@ -91,7 +91,9 @@ namespace nsCDEngine.Engines.ThingService
                             var tThingReference = TheCommonUtils.DeserializeJSONStringToObject<TheThingReference>(TheCommonUtils.CStr(thingReferenceProps.Value));
                             tReferencedThing = tThingReference?.GetMatchingThing();
                         }
-                        catch { }
+                        catch { 
+                            //intended
+                        }
                     }
                     if (tReferencedThing != null)
                     {
@@ -347,43 +349,12 @@ namespace nsCDEngine.Engines.ThingService
                 });
         }
 
-        //internal static Task<ApplyConfigFilesResult> ApplyPipelineConfigJsonAsync(string pipelineConfigJson, IEnumerable<string> answerFilesJson, string configFileNameForLog, string[] answerFileNamesForLog)
-        //{
-        //    var pipeLineTasks = ApplyPipelineConfigJsonInternal(pipelineConfigJson, answerFilesJson, configFileNameForLog, answerFileNamesForLog);
-        //    if (pipeLineTasks == null)
-        //    {
-        //        return TheCommonUtils.TaskFromResult(new ApplyConfigFilesResult
-        //        {
-        //            Success = false,
-        //        });
-        //    }
-
-        //    return TheCommonUtils.TaskWhenAll(pipeLineTasks.Select(t => (Task)t))
-        //        .ContinueWith(t =>
-        //        {
-        //            bool bSuccess = true;
-        //            int failedFileCount = 0;
-        //            foreach (var task in pipeLineTasks)
-        //            {
-        //                if (task.IsFaulted)
-        //                {
-        //                    failedFileCount++;
-        //                    bSuccess = false;
-        //                }
-        //            }
-        //            return new ApplyConfigFilesResult { Success = bSuccess, NumberOfFiles = 1, NumberOfFailedFiles = failedFileCount };
-        //        });
-        //}
-
         static List<Task<List<TheThing>>> ApplyPipelineConfigJsonInternal(ThePipelineConfiguration pipelineConfig, IEnumerable<ThePipelineConfiguration> answerConfigs, string configFileNameForLog, string[] answerFileNamesForLog)
         {
-            List<Task<List<TheThing>>> pipeLineTasks = new List<Task<List<TheThing>>>();
+            List<Task<List<TheThing>>> pipeLineTasks = new ();
             try
             {
-                if (configFileNameForLog == null)
-                {
-                    configFileNameForLog = pipelineConfig?.FriendlyName ?? "Not specified";
-                }
+                configFileNameForLog ??= pipelineConfig?.FriendlyName ?? "Not specified";
                 if (pipelineConfig != null && pipelineConfig.ThingConfigurations != null)
                 {
                     var pipelines = new List<ThePipelineConfiguration>();
@@ -538,12 +509,9 @@ namespace nsCDEngine.Engines.ThingService
 
                             // First synchronously apply the configuration properties, so the plug-in does not start up with the old values
                             var tThing = new TheThingReference(specializedThingIdentity).GetMatchingThings().FirstOrDefault();
-                            if (tThing != null)
+                            if (tThing != null && !tThing.ApplyConfigurationPropertiesInternal(thingConfig, thingReferenceMap))
                             {
-                                if (!tThing.ApplyConfigurationPropertiesInternal(thingConfig, thingReferenceMap))
-                                {
-                                    TheBaseAssets.MySYSLOG.WriteToLog(7719, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, $"Error applying config properties", eMsgLevel.l3_ImportantMessage, $"{thingConfig}"));
-                                }
+                                TheBaseAssets.MySYSLOG.WriteToLog(7719, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, $"Error applying config properties", eMsgLevel.l3_ImportantMessage, $"{thingConfig}"));
                             }
                         }
 
@@ -573,8 +541,10 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>The pipeline answer configuration that only contains specialization values.</returns>
         public static ThePipelineConfiguration GeneratePipelineAnswerConfiguration(ThePipelineConfiguration pipelineConfig, bool bRemoveDefaultedValuesFromPipelineConfig)
         {
-            var pipelineAnswerConfig = new ThePipelineConfiguration();
-            pipelineAnswerConfig.ThingConfigurations = new List<TheThingConfiguration>();
+            var pipelineAnswerConfig = new ThePipelineConfiguration
+            {
+                ThingConfigurations = new List<TheThingConfiguration>()
+            };
             foreach (var thingConfig in pipelineConfig.ThingConfigurations)
             {
                 var thingAnswerConfig = new TheThingConfiguration
@@ -590,16 +560,9 @@ namespace nsCDEngine.Engines.ThingService
                         {
                             thingConfig.ConfigurationValues.Remove(config);
                         }
-                        else
+                        if (thingAnswerConfig.ThingSpecializationParameters.TryGetValue(config.Name, out var value) && ((config.Value == null && value == null) || (config.Value != null && TheCommonUtils.CStr(config.Value) == TheCommonUtils.CStr(value))))
                         {
-
-                        }
-                        if (thingAnswerConfig.ThingSpecializationParameters.TryGetValue(config.Name, out var value))
-                        {
-                            if ((config.Value == null && value == null) || (config.Value != null && TheCommonUtils.CStr(config.Value) == TheCommonUtils.CStr(value)))
-                            {
-                                thingAnswerConfig.ThingSpecializationParameters.Remove(config.Name);
-                            }
+                            thingAnswerConfig.ThingSpecializationParameters.Remove(config.Name);
                         }
 
                     }

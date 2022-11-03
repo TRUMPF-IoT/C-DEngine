@@ -41,7 +41,7 @@ namespace nsCDEngine.Engines.ThingService
             InitRR();
             if (MyLoggerEngine != null)
             {
-                TheEventLogData tSec = new TheEventLogData
+                TheEventLogData tSec = new ()
                 {
                     EventTime = DateTimeOffset.Now,
                     StationName = TheCommonUtils.GetMyNodeName(),
@@ -70,7 +70,7 @@ namespace nsCDEngine.Engines.ThingService
             InitRR();
             if (MyLoggerEngine != null)
             {
-                TheEventLogData tSec = new TheEventLogData
+                TheEventLogData tSec = new ()
                 {
                     EventTime = DateTimeOffset.Now,
                     StationName = TheCommonUtils.GetMyNodeName(),

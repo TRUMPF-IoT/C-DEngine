@@ -112,7 +112,7 @@ namespace nsCDEngine.Communication
                     }
                     if (!TheBaseAssets.MasterSwitch || !IsAlive || !MyWebSocketProcessor.IsActive || MyTargetNodeChannel.MySessionState == null)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSSender Thread Condition failed - Ending SenderThread IsAlive:{IsAlive} MyWSProccAlive:{(MyWebSocketProcessor == null ? false : MyWebSocketProcessor.IsActive)},SessionState:{(MyTargetNodeChannel?.MySessionState != null)} IsConnecting:{IsConnecting} IsConnected:{IsConnected}", eMsgLevel.l2_Warning));
+                        TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSSender Thread Condition failed - Ending SenderThread IsAlive:{IsAlive} MyWSProccAlive:{(MyWebSocketProcessor != null && MyWebSocketProcessor.IsActive)},SessionState:{(MyTargetNodeChannel?.MySessionState != null)} IsConnecting:{IsConnecting} IsConnected:{IsConnected}", eMsgLevel.l2_Warning));
                         break;
                     }
                     IsInWSPost = true;
@@ -128,7 +128,7 @@ namespace nsCDEngine.Communication
                         TheCoreQueueContent tQueued = GetNextMessage(out MCQCount);
                         if (tQueued != null)
                         {
-                            TheDeviceMessage tDev = new TheDeviceMessage();
+                            TheDeviceMessage tDev = new ();
                             if (tQueued.OrgMessage != null)
                             {
                                 if (tQueued.OrgMessage.ToCloudOnly() && MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE)

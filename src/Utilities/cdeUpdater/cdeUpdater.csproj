@@ -13,6 +13,7 @@
     <Version>5.145.0$(cdeNugetSuffix)</Version>
     <Authors>Chris Muench</Authors>
     <Company>C-Labs</Company>
+	  <LangVersion>preview</LangVersion>
     <Product>cdeUpdater for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
     <Copyright>Copyright © 2017-2022 TRUMPF Laser GmbH, authors: C-Labs</Copyright>

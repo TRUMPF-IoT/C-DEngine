@@ -56,7 +56,7 @@ namespace nsCDEngine.Engines
 #pragma warning disable CS0618 // Type or member is obsolete
             MyStorageService = pService;
 #pragma warning restore CS0618 // Type or member is obsolete
-            if (MyIStorageService == null && pService != null)
+            if (MyIStorageService == null)
             {
                 _MyIStorageService = pService;
                 bool Succes = _MyIStorageService.InitEdgeStore();
@@ -84,7 +84,7 @@ namespace nsCDEngine.Engines
         /// <summary>
         /// My storage mirror repository
         /// </summary>
-        internal static cdeConcurrentDictionary<string, object> MyStorageMirrorRepository = new cdeConcurrentDictionary<string, object>();      //DIC-Allowed STRING
+        internal static cdeConcurrentDictionary<string, object> MyStorageMirrorRepository = new ();      //DIC-Allowed STRING
         /// <summary>
         /// Registers a new Storage Mirror in the Center Storage Mirror Repository
         /// </summary>
@@ -108,10 +108,7 @@ namespace nsCDEngine.Engines
         {
             lock (MyStorageMirrorRepository.MyLock)
             {
-                //if (!MyStorageMirrorRepository.ContainsKey(IDTag))
-                //{
                 MyStorageMirrorRepository.TryRemove(IDTag, out _);
-                //}
             }
         }
 
@@ -157,7 +154,7 @@ namespace nsCDEngine.Engines
         /// <returns></returns>
         public static List<KeyValuePair<string, string>> EnumerateStorageMirror()
         {
-            List<KeyValuePair<string, string>> tPairList = new List<KeyValuePair<string, string>>();
+            List<KeyValuePair<string, string>> tPairList = new ();
             foreach (string key in MyStorageMirrorRepository.Keys)
             {
                 object MyStorageMirror = GetStorageMirror(key);
@@ -267,8 +264,11 @@ namespace nsCDEngine.Engines
             MyCustomTypes = pTypes;
             if (MyServiceStates == null)
             {
-                MyServiceStates = new TheStorageMirror<TheEngineState>(null) { IsRAMStore = true };
-                MyServiceStates.CacheTableName = "HostEngineStates";
+                MyServiceStates = new(null)
+                {
+                    IsRAMStore = true,
+                    CacheTableName = "HostEngineStates"
+                };
                 MyServiceStates.InitializeStore(true);
             }
             FindPlugins();
@@ -281,16 +281,13 @@ namespace nsCDEngine.Engines
             {
                 var tStore = TheBaseAssets.MyCDEPlugins.FirstOrDefault(s => s.Value.Categories != null && s.Value.Categories.Contains("IStorageService"));
                 tStorageEngine = CreatePlugin(tStore.Key);
-                if (tStorageEngine != null)
-                {
-                    if (!SetStorageService((IStorageService)tStorageEngine?.AssociatedPlugin))
-                        tStorageEngine = null;
-                }
+                if (tStorageEngine != null && !SetStorageService((IStorageService)tStorageEngine?.AssociatedPlugin))
+                    tStorageEngine = null;
             }
             TheBaseAssets.MyApplication?.MyUserManager?.Init(!TheBaseAssets.MyServiceHostInfo.IsUserManagerInStorage || MyIStorageService == null, false);
             TheBaseAssets.MySYSLOG.WriteToLog(4143, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "UserManager Started", eMsgLevel.l3_ImportantMessage));
 
-            TheBaseEngine tBase = new TheBaseEngine();
+            TheBaseEngine tBase = new ();
             ICDEPlugin tIBase = new TheThingEngine();
             MyThingEngine = (TheThingEngine)tIBase;
             tBase.SetEngineID(new Guid("{CDECCA18-E24C-418F-8CDB-C0889709D3FD}"));
@@ -322,7 +319,7 @@ namespace nsCDEngine.Engines
         }
 
         internal static bool IsHostReady = false;
-        private static readonly object LockStartup = new object();
+        private static readonly object LockStartup = new ();
         /// <summary>
         /// Starts all engines.
         /// </summary>
@@ -404,7 +401,7 @@ namespace nsCDEngine.Engines
 
             IsHostReady = TheThingRegistry.RegisterHost();
 
-            TheBaseEngine tBase = new TheBaseEngine();
+            TheBaseEngine tBase = new ();
             ICDEPlugin tIBase = new TheContentServiceEngine();
             tIBase.InitEngineAssets(tBase);
             tBase.AssociatedPlugin = tIBase;
@@ -424,7 +421,7 @@ namespace nsCDEngine.Engines
             }
 
             TheBaseAssets.MySYSLOG.WriteToLog(4137, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "Initializing Plugins (Create instance and call InitEngineAssets)", eMsgLevel.l7_HostDebugMessage));
-            List<IBaseEngine> tStartList = new List<IBaseEngine>();
+            List<IBaseEngine> tStartList = new ();
             foreach (string tTargetStation in TheBaseAssets.MyCDEPlugins.Keys.ToList()) //KEY
             {
                 if (string.IsNullOrEmpty(tTargetStation)) continue;
@@ -574,7 +571,7 @@ namespace nsCDEngine.Engines
                 && !pPluginName.Equals(MyCustomEngines?.GetType().FullName)
                 )
                 return null;    //new V4.106: Dont ever start a plugin twice! (StorageService already started)
-            TheBaseEngine tBase = new TheBaseEngine();
+            TheBaseEngine tBase = new ();
             ICDEPlugin tIBase = null;
             Type tNType = null;
             try
@@ -631,7 +628,7 @@ namespace nsCDEngine.Engines
                         TheBaseAssets.MyCDEPlugins[pPluginName].PluginPath = tPP;
                     Assembly tAss = Assembly.LoadFrom(TheBaseAssets.MyCDEPlugins[pPluginName].PluginPath);
                     tNType = tAss.GetTypes().First(s => s.FullName == pPluginName);
-                    var asa = Activator.CreateInstance(tNType); // tAss.FullName, tNType.FullName);// as ICDEPlugin;
+                    var asa = Activator.CreateInstance(tNType); 
                     tIBase = asa as ICDEPlugin;
                     TheBaseAssets.MyCDEPlugins[pPluginName].PluginType = tNType;
                     TheBaseAssets.MyCDEPluginTypes[pPluginName] = tNType;
@@ -674,10 +671,8 @@ namespace nsCDEngine.Engines
                 }
                 if (IsCustomEngine)
                 {
-                    if (MyPluginEngine == null)
-                        MyPluginEngine = tIBase.GetBaseEngine();
-                    if (MyPluginEngines == null)
-                        MyPluginEngines = new List<IBaseEngine>();
+                    MyPluginEngine ??= tIBase.GetBaseEngine();
+                    MyPluginEngines ??= new List<IBaseEngine>();
                     MyPluginEngines.Add(tIBase.GetBaseEngine());
                 }
             }
@@ -722,7 +717,7 @@ namespace nsCDEngine.Engines
 
         private static TheBaseEngine InitMiniRelay(string pEngineName, bool WillBeIsolated)
         {
-            TheBaseEngine tBase = new TheBaseEngine();
+            TheBaseEngine tBase = new ();
             ICDEPlugin tIBase = new TheMiniRelayEngine();
             tIBase.InitEngineAssets(tBase);
             tBase.AssociatedPlugin = tIBase;
@@ -818,7 +813,7 @@ namespace nsCDEngine.Engines
                         foreach (string t in ts)
                         {
                             TheChannelInfo tInfo = TheQueuedSenderRegistry.GetChannelInfoByUrl(t);
-                            if (tInfo == null) tInfo = new TheChannelInfo(TheBaseAssets.MyServiceHostInfo.IsConnectedToCloud ? cdeSenderType.CDE_CLOUDROUTE : cdeSenderType.CDE_SERVICE, t);
+                            tInfo ??= new TheChannelInfo(TheBaseAssets.MyServiceHostInfo.IsConnectedToCloud ? cdeSenderType.CDE_CLOUDROUTE : cdeSenderType.CDE_SERVICE, t);
                             tBase.StartEngine(tInfo);
                         }
                     }
@@ -835,7 +830,7 @@ namespace nsCDEngine.Engines
                 tThing.GetBaseThing().StatusLevel = 0;
         }
 
-        private static readonly object lockStartEngine = new object();
+        private static readonly object lockStartEngine = new ();
         /// <summary>
         /// Starts the engine with new URL.
         /// </summary>
@@ -854,7 +849,7 @@ namespace nsCDEngine.Engines
 
                     if (!"SCOPEVIOLATION".Equals(tTargetStation))
                     {
-                        if (((TheBaseAssets.MyServiceHostInfo.IgnoredEngines == null || !TheBaseAssets.MyServiceHostInfo.IgnoredEngines.Contains(tTargetStation))) &&
+                        if ((TheBaseAssets.MyServiceHostInfo.IgnoredEngines == null || !TheBaseAssets.MyServiceHostInfo.IgnoredEngines.Contains(tTargetStation)) &&
                         !((TheBaseAssets.MyServiceHostInfo.FallbackToSimulation && !TheBaseAssets.MyServiceHostInfo.SimulatedEngines.Contains(tTargetStation)) || (!TheBaseAssets.MyServiceHostInfo.FallbackToSimulation && TheBaseAssets.MyServiceHostInfo.SimulatedEngines.Contains(tTargetStation))))
                         {
                             IBaseEngine tBase = TheThingRegistry.GetBaseEngine(tTargetStation);
@@ -933,11 +928,8 @@ namespace nsCDEngine.Engines
                     }
                 }
             }
-            if (TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay)
-            {
-                if (tQ != null)
-                    tQ.CombineSubscriptions(DiscoveredStationRoles, out _);
-            }
+            if (TheBaseAssets.MyServiceHostInfo.cdeNodeType == cdeNodeType.Relay && tQ != null)
+                tQ.CombineSubscriptions(DiscoveredStationRoles, out _);
         }
 
         /// <summary>
@@ -981,19 +973,16 @@ namespace nsCDEngine.Engines
         {
             if (pReady != null)
             {
-                if (MyIStorageService != null)
+                if (MyIStorageService != null && MyAccessStats == null && TheBaseAssets.MyServiceHostInfo.TrackAccess)
                 {
-                    if (MyAccessStats == null && TheBaseAssets.MyServiceHostInfo.TrackAccess)
+                    MyAccessStats = new TheStorageMirror<TheAccessStatistics>(MyIStorageService)
                     {
-                        MyAccessStats = new TheStorageMirror<TheAccessStatistics>(MyIStorageService)
-                        {
-                            AllowFireUpdates = false,
-                            IsRAMStore = false,
-                            IsCachePersistent = false
-                        };
-                        MyAccessStats.CreateStore("AccessStatistics", "Shows statistics of C-DEngine Usage", null, true, TheBaseAssets.MyServiceHostInfo.IsNewDevice);
-                        MyAccessStats.InitializeStore(TheBaseAssets.MyServiceHostInfo.IsNewDevice);
-                    }
+                        AllowFireUpdates = false,
+                        IsRAMStore = false,
+                        IsCachePersistent = false
+                    };
+                    MyAccessStats.CreateStore("AccessStatistics", "Shows statistics of C-DEngine Usage", null, true, TheBaseAssets.MyServiceHostInfo.IsNewDevice);
+                    MyAccessStats.InitializeStore(TheBaseAssets.MyServiceHostInfo.IsNewDevice);
                 }
                 if (TheBaseAssets.MySession != null)
                     TheBaseAssets.MySession.InitStateManager();
@@ -1032,7 +1021,7 @@ namespace nsCDEngine.Engines
         {
             string UpdateDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
             if (string.IsNullOrEmpty(UpdateDirectory)) return;
-            DirectoryInfo di = new DirectoryInfo(UpdateDirectory);
+            DirectoryInfo di = new (UpdateDirectory);
             try
             {
 #if !CDE_NET35 && !CDE_STANDARD //Child Domains not supported on NET35
@@ -1079,7 +1068,7 @@ namespace nsCDEngine.Engines
             public List<string> ScanForCDEPlugins(string assemblyPath, out TSM resTSM) //,ref Dictionary<string, Type> pCDEPlugins)
             {
                 resTSM = null;
-                List<string> mList = new List<string>();
+                List<string> mList = new ();
 
                 Assembly tAss = null;
                 if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
@@ -1158,7 +1147,6 @@ namespace nsCDEngine.Engines
 
             foreach (FileInfo fiNext in fileInfo)
             {
-                //TheSystemMessageLog.ToCo("Testing File:" + fiNext.Name);
                 if (fiNext.Extension.ToUpper().Equals(".CDL")
                     || (
                             (
@@ -1194,14 +1182,12 @@ namespace nsCDEngine.Engines
                                 continue;
                             }
                         }
-                        //TheSystemMessageLog.ToCo("Found Plugin and loads:" + BaseDir + relativeCurrentDir + fiNext.Name);
-                        // TODO Figure out how to make Signature validation work on non-Windows platforms
                         if (!TheCommonUtils.IsDeviceSenderType(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType) && !TheBaseAssets.MyCodeSigner.IsTrusted(BaseDir + relativeCurrentDir + fiNext.Name)) // CODE REVIEW: Use Path.Combine here? //IDST-OK: No CodeSigning Trust Check on Devices
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(418, new TSM("TheCDEngines", $"Auth Failed on Plugin {fiNext.Name} - ({BaseDir + relativeCurrentDir + fiNext.Name}) it does not have correct signature", eMsgLevel.l1_Error));
                             continue;
                         }
-                        List<string> tL = pLoader.ScanForCDEPlugins(BaseDir + relativeCurrentDir + fiNext.Name, out TSM tTSM); //,ref TheBaseAssets.MyCDEPluginTypes);
+                        List<string> tL = pLoader.ScanForCDEPlugins(BaseDir + relativeCurrentDir + fiNext.Name, out TSM tTSM); 
                         foreach (var tLt in tL)
                         {
                             var tPs = tLt.Split(';');
@@ -1252,7 +1238,7 @@ namespace nsCDEngine.Engines
         /// <summary>
         /// The lock sink update stats
         /// </summary>
-        private static readonly object lockSinkUpdateStats = new object();
+        private static readonly object lockSinkUpdateStats = new ();
         /// <summary>
         /// Sinks the update stats.
         /// </summary>
@@ -1268,7 +1254,7 @@ namespace nsCDEngine.Engines
 
                 if (pResponse.MyRecords == null || pResponse.MyRecords.Count == 0)
                 {
-                    TheAccessStatistics tStat = new TheAccessStatistics { RelayNode = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false) };
+                    TheAccessStatistics tStat = new () { RelayNode = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false) };
                     if (IsTrackingUser)
                     {
                         int pos = pResponse.SQLFilter.IndexOf("UserID", StringComparison.Ordinal);
@@ -1363,7 +1349,9 @@ namespace nsCDEngine.Engines
             {
                 info = (EngineAssetInfoAttribute)pluginType.GetCustomAttributes(typeof(EngineAssetInfoAttribute), true).FirstOrDefault();
             }
-            catch { }
+            catch { 
+                //ignored
+            }
 
             if (info != null)
             {
@@ -1397,11 +1385,6 @@ namespace nsCDEngine.Engines
                 tIBase.SetCDEMinVersion(info.CDEMinVersion);
 
 
-                //if (info.DeviceTypes != null)
-                //{
-                //    tBase.SetDeviceTypes(info.DeviceTypes.ToList());
-                //}
-
                 if (info.AcceptsFilePush)
                 {
                     tIBase.GetEngineState().IsAcceptingFilePush = true;
@@ -1425,14 +1408,12 @@ namespace nsCDEngine.Engines
                     tIBase.AddPlatforms(info.Platforms.ToList());
                 }
 
-                if (info.IsService == true)
+                if (info.IsService)
                 {
                     tIBase.SetEngineService(true);
                 }
 
                 tIBase.SetPluginInfo(info.LongDescription, info.Price, info.HomeUrl, info.IconUrl, info.Developer, info.DeveloperUrl, info.Categories?.ToList(), info.CopyRights);
-
-                //ApplyDeviceTypeAttributes(pluginType, tIBase);
 
                 bResult = true;
             }
@@ -1444,14 +1425,6 @@ namespace nsCDEngine.Engines
             var deviceTypeInfos = new Dictionary<string, TheDeviceTypeInfo>();
 
             tIBase.GetDeviceTypes()?.Select(dt => deviceTypeInfos[dt.DeviceType] = dt);
-
-            // Read device type attributes from the engine
-            //try
-            //{
-            //    pluginType.GetCustomAttributes(typeof(DeviceTypeAttribute), true).Select(dt => dt as DeviceTypeAttribute).Select(dta => new TheDeviceTypeInfo(dta)).Select(dt => deviceTypeInfos[dt.DeviceType] = dt)
-            //    ; //TODO-MarkusH: This does not do anything, can it be removed?
-            //}
-            //catch { }
 
             // Now read device type attributes from all classes that implement ICDEThing
             try
@@ -1475,7 +1448,9 @@ namespace nsCDEngine.Engines
                     }
                 }
             }
-            catch { }
+            catch { 
+                //ignored
+            }
             if (deviceTypeInfos.Any())
             {
                 tIBase.SetDeviceTypes(deviceTypeInfos.Values.ToList());
@@ -1493,13 +1468,12 @@ namespace nsCDEngine.Engines
                 {
                     configAttribute = prop.GetCustomAttributes(typeof(ConfigPropertyAttribute), true).FirstOrDefault() as ConfigPropertyAttribute;
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
                 if (configAttribute != null)
                 {
-                    if (dt.ConfigProperties == null)
-                    {
-                        dt.ConfigProperties = new List<TheThing.TheConfigurationProperty>();
-                    }
+                    dt.ConfigProperties ??= new List<TheThing.TheConfigurationProperty>();
                     dt.ConfigProperties.Add(new TheThing.TheConfigurationProperty(prop.Name, prop.PropertyType, configAttribute));
                 }
             }
@@ -1513,10 +1487,7 @@ namespace nsCDEngine.Engines
                         {
                             if (configAttribute.cdeT != ePropertyTypes.NOCHANGE)
                             {
-                                if (dt.ConfigProperties == null)
-                                {
-                                    dt.ConfigProperties = new List<TheThing.TheConfigurationProperty>();
-                                }
+                                dt.ConfigProperties ??= new List<TheThing.TheConfigurationProperty>();
                                 dt.ConfigProperties.Add(new TheThing.TheConfigurationProperty(configAttribute.NameOverride, null, configAttribute));
                             }
                             else
@@ -1531,7 +1502,9 @@ namespace nsCDEngine.Engines
                     }
                 }
             }
-            catch { }
+            catch { 
+                //ignored
+            }
             foreach (var prop in thingTypeProps)
             {
                 SensorPropertyAttribute sensorAttribute = null;
@@ -1539,13 +1512,12 @@ namespace nsCDEngine.Engines
                 {
                     sensorAttribute = prop.GetCustomAttributes(typeof(SensorPropertyAttribute), true).FirstOrDefault() as SensorPropertyAttribute;
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
                 if (sensorAttribute != null)
                 {
-                    if (dt.SensorProperties == null)
-                    {
-                        dt.SensorProperties = new List<TheThing.TheSensorPropertyMeta>();
-                    }
+                    dt.SensorProperties ??= new List<TheThing.TheSensorPropertyMeta>();
                     dt.SensorProperties.Add(new TheThing.TheSensorPropertyMeta(prop.Name, prop.PropertyType, sensorAttribute));
                 }
             }
@@ -1560,13 +1532,12 @@ namespace nsCDEngine.Engines
                 {
                     sensorAttribute = prop.GetCustomAttributes(typeof(SensorPropertyAttribute), true).FirstOrDefault() as SensorPropertyAttribute;
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
                 if (sensorAttribute != null)
                 {
-                    if (dt.SensorProperties == null)
-                    {
-                        dt.SensorProperties = new List<TheThing.TheSensorPropertyMeta>();
-                    }
+                    dt.SensorProperties ??= new List<TheThing.TheSensorPropertyMeta>();
                     dt.SensorProperties.Add(new TheThing.TheSensorPropertyMeta(prop.Name, prop.PropertyType, sensorAttribute));
                 }
             }
@@ -1580,10 +1551,7 @@ namespace nsCDEngine.Engines
                         {
                             if (sensorAttribute.cdeT != ePropertyTypes.NOCHANGE)
                             {
-                                if (dt.SensorProperties == null)
-                                {
-                                    dt.SensorProperties = new List<TheThing.TheSensorPropertyMeta>();
-                                }
+                                dt.SensorProperties ??= new List<TheThing.TheSensorPropertyMeta>();
                                 dt.SensorProperties.Add(new TheThing.TheSensorPropertyMeta(sensorAttribute.NameOverride, null, sensorAttribute));
                             }
                             else
@@ -1598,7 +1566,9 @@ namespace nsCDEngine.Engines
                     }
                 }
             }
-            catch { }
+            catch { 
+                //ignored
+            }
         }
 
         private static void ApplySensorPropertyExtensionAttributes(Type thingType, TheDeviceTypeInfo dt, PropertyInfo[] thingTypeProps)
@@ -1610,16 +1580,15 @@ namespace nsCDEngine.Engines
                 {
                     sensorExtensionAttribute = prop.GetCustomAttributes(typeof(SensorPropertyExtensionAttribute), true).FirstOrDefault() as SensorPropertyExtensionAttribute;
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
                 if (sensorExtensionAttribute != null)
                 {
                     var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == prop.Name);
                     if (sensorProp != null)
                     {
-                        if (sensorProp.ExtensionData == null)
-                        {
-                            sensorProp.ExtensionData = new Dictionary<string, object>();
-                        }
+                        sensorProp.ExtensionData ??= new Dictionary<string, object>();
                         sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
                     }
                 }
@@ -1635,10 +1604,7 @@ namespace nsCDEngine.Engines
                             var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == sensorExtensionAttribute.NameOverride);
                             if (sensorProp != null)
                             {
-                                if (sensorProp.ExtensionData == null)
-                                {
-                                    sensorProp.ExtensionData = new Dictionary<string, object>();
-                                }
+                                sensorProp.ExtensionData ??= new Dictionary<string, object>();
                                 sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
                             }
                             else
@@ -1653,7 +1619,9 @@ namespace nsCDEngine.Engines
                     }
                 }
             }
-            catch { }
+            catch { 
+                //ignored
+            }
         }
 
     }

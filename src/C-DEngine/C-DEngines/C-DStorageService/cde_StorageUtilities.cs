@@ -27,53 +27,23 @@ namespace nsCDEngine.Engines.StorageService
     {
         internal static int GetTypeLength(string finfo)
         {
-            int TypeLength;
-            switch (finfo)
+            var TypeLength = finfo switch
             {
-                case "String":
-                    TypeLength = 20;
-                    break;
-                case "Int16":
-                case "Int32":
-                    TypeLength = 10;
-                    break;
-                case "Single":
-                    TypeLength = 15;
-                    break;
-                case "DateTimeOffset":
-                    TypeLength = 22;
-                    break;
-                case "DateTime":
-                    TypeLength = 20;
-                    break;
-                case "Boolean":
-                    TypeLength = 5;
-                    break;
-                case "Guid":
-                    TypeLength = 25;
-                    break;
-                case "Double":
-                    TypeLength = 15;
-                    break;
-                case "Int64":
-                    TypeLength = 12;
-                    break;
-                case "Byte":
-                    TypeLength = 5;
-                    break;
-                case "Char":
-                    TypeLength = 5;
-                    break;
-                case "Char[]":
-                    TypeLength = 100;
-                    break;
-                case "Byte[]":
-                    TypeLength = 0;
-                    break;
-                default:
-                    TypeLength = 20;
-                    break;
-            }
+                "String" => 20,
+                "Int16" or "Int32" => 10,
+                "Single" => 15,
+                "DateTimeOffset" => 22,
+                "DateTime" => 20,
+                "Boolean" => 5,
+                "Guid" => 25,
+                "Double" => 15,
+                "Int64" => 12,
+                "Byte" => 5,
+                "Char" => 5,
+                "Char[]" => 100,
+                "Byte[]" => 0,
+                _ => 20,
+            };
             return TypeLength;
         }
 
@@ -85,19 +55,13 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns></returns>
         internal static bool IsEnum(object finfo)
         {
-            if (finfo is FieldInfo)
+            if (finfo is FieldInfo i1 && i1.FieldType.IsEnum)
             {
-                if (((FieldInfo)finfo).FieldType.IsEnum)
-                {
-                    return true;
-                }
+                return true;
             }
-            if (finfo is PropertyInfo)
+            if (finfo is PropertyInfo p1 && p1.PropertyType.IsEnum)
             {
-                if (((PropertyInfo)finfo).PropertyType.IsEnum)
-                {
-                    return true;
-                }
+                return true;
             }
             return false;
         }
@@ -109,18 +73,15 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns>The integer ID of the parameter's type</returns>
         public static int GetTypeID(object pfinfo)
         {
-            //string fBaseType = "";
             bool tIsEnum = IsEnum(pfinfo);
             string fName;
-            if (pfinfo is FieldInfo)
+            if (pfinfo is FieldInfo i1)
             {
-                fName = ((FieldInfo)pfinfo).FieldType.FullName;
-                //tIsEnum = ((FieldInfo)pfinfo).FieldType.IsEnum;
+                fName = i1.FieldType.FullName;
             }
-            else if (pfinfo is PropertyInfo)
+            else if (pfinfo is PropertyInfo p1)
             {
-                fName = ((PropertyInfo)pfinfo).PropertyType.FullName;
-                //tIsEnum = ((PropertyInfo)pfinfo).PropertyType.IsEnum;
+                fName = p1.PropertyType.FullName;
             }
             else if (pfinfo is string)
             {
@@ -214,28 +175,25 @@ namespace nsCDEngine.Engines.StorageService
         internal static object cdeConvertObject(object pfinfo, string FieldContent)
         {
             string fName = "";
-            //string fBaseType = "";
             bool tIsEnum = IsEnum(pfinfo);
             Type[] TypeArgs = null;
-            if (pfinfo is FieldInfo)
+            if (pfinfo is FieldInfo p1)
             {
-                fName = ((FieldInfo)pfinfo).FieldType.FullName;
+                fName = p1.FieldType.FullName;
 #if CDE_NET35 || CDE_NET4
                 TypeArgs = ((FieldInfo)pfinfo).FieldType.GetGenericArguments().Where(t => !t.IsGenericParameter).ToArray();
 #else
-                TypeArgs = ((FieldInfo)pfinfo).FieldType.GenericTypeArguments;
+                TypeArgs = p1.FieldType.GenericTypeArguments;
 #endif
-                //tIsEnum = ((FieldInfo)pfinfo).FieldType.IsEnum;
             }
-            else if (pfinfo is PropertyInfo)
+            else if (pfinfo is PropertyInfo p2)
             {
-                fName = ((PropertyInfo)pfinfo).PropertyType.FullName;
+                fName = p2.PropertyType.FullName;
 #if CDE_NET35 || CDE_NET4
                 TypeArgs = ((PropertyInfo)pfinfo).PropertyType.GetGenericArguments().Where(t => !t.IsGenericParameter).ToArray();
 #else
-                TypeArgs = ((PropertyInfo)pfinfo).PropertyType.GenericTypeArguments;
+                TypeArgs = p2.PropertyType.GenericTypeArguments;
 #endif
-                //tIsEnum = ((PropertyInfo)pfinfo).PropertyType.IsEnum;
             }
             else
                 return "";
@@ -315,14 +273,8 @@ namespace nsCDEngine.Engines.StorageService
                                 Result = null;
                             else
                             {
-                                if(TypeArgs != null)
-                                {
-                                    if(TypeArgs.Length == 2)
-                                    {
-                                        if(TypeArgs[0].Equals(typeof(string)) && TypeArgs[1].Equals(typeof(cdeP)))
-                                            Result = TheCommonUtils.DeserializeJSONStringToObject<cdeConcurrentDictionary<string, cdeP>>(FieldContent);
-                                    }
-                                }
+                                if (TypeArgs != null && TypeArgs.Length == 2 && TypeArgs[0].Equals(typeof(string)) && TypeArgs[1].Equals(typeof(cdeP)))
+                                    Result = TheCommonUtils.DeserializeJSONStringToObject<cdeConcurrentDictionary<string, cdeP>>(FieldContent);
                             }
                             break;
                         }
@@ -353,14 +305,8 @@ namespace nsCDEngine.Engines.StorageService
                                 Result = null;
                             else
                             {
-                                if (TypeArgs != null)
-                                {
-                                    if (TypeArgs.Length == 2)
-                                    {
-                                        if (TypeArgs[0].Equals(typeof(string)) && TypeArgs[1] is object)
-                                            Result = TheCommonUtils.DeserializeJSONStringToObject<Dictionary<string, object>>(FieldContent);
-                                    }
-                                }
+                                if (TypeArgs != null && TypeArgs.Length == 2 && TypeArgs[0].Equals(typeof(string)) && TypeArgs[1] is not null)
+                                    Result = TheCommonUtils.DeserializeJSONStringToObject<Dictionary<string, object>>(FieldContent);
                             }
                         }
                         else
@@ -395,9 +341,9 @@ namespace nsCDEngine.Engines.StorageService
                 || value is decimal;
         }
 
-        internal static string[] PropertiesToExclude = { "MyPropertyBag" };
-        internal static string[] ThingStorePropertiesToInclude = { "cdeA", "cdeN", "cdeO", "cdeSEQ" };
-        internal static string[] defaultRows = new string[] { "cdeIDX", "cdeMID", "cdeCTIM", "cdeSCOPEID" };
+        internal static readonly string[] PropertiesToExclude = { "MyPropertyBag" };
+        internal static readonly string[] ThingStorePropertiesToInclude = { "cdeA", "cdeN", "cdeO", "cdeSEQ" };
+        internal static readonly string[] defaultRows = new string[] { "cdeIDX", "cdeMID", "cdeCTIM", "cdeSCOPEID" };
 
         /// <summary>
         /// Creates a unique ID from a C# Type.
@@ -493,12 +439,12 @@ namespace nsCDEngine.Engines.StorageService
         public static List<T> ConvertFromStoreRecord<T>(TheDataRetrievalRecord tRecords,bool IsWriting, out string ErrorText) where T : new()
         {
             ErrorText = "";
-            List<T> ResultList = new List<T>();
+            List<T> ResultList = new ();
             List<FieldInfo> Fieldsinfoarray = typeof(T).GetFields().Where(field => !Attribute.IsDefined(field, typeof(IgnoreDataMemberAttribute))).ToList();
             List<PropertyInfo> PropInfoArray = typeof(T).GetProperties().Where(prop => !Attribute.IsDefined(prop, typeof(IgnoreDataMemberAttribute))).ToList();
             foreach (List<string> tRec in tRecords.RECs)
             {
-                T tRes = new T();
+                T tRes = new ();
                 var FieldValue = "";
                 foreach (var fld in tRecords.FLDs)
                 {
@@ -558,7 +504,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns></returns>
         public static string SerializeDataToExecute(Type pMyType, string pMagicID, string pSqlToExecute, string pSqlColFilter, string pTableName)
         {
-            StorageGetRequest tDataGramm = new StorageGetRequest
+            StorageGetRequest tDataGramm = new ()
             {
                 SFI = pSqlToExecute,
                 CFI = pSqlColFilter,
@@ -650,7 +596,6 @@ namespace nsCDEngine.Engines.StorageService
                 catch (Exception e)
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(463, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("StorageUtils", "SerializeCreateStore", eMsgLevel.l1_Error, e.ToString()));
-                    //string err = e.Message;
                 }
                 FldCount++;
             }
@@ -674,7 +619,6 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     if (TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.ESSENTIALS)
                         TheBaseAssets.MySYSLOG.WriteToLog(464, new TSM("StorageUtils", "SerializeCreateStore2", eMsgLevel.l1_Error, e.ToString()));
-                    //string err = e.Message;
                 }
                 FldCount++;
             }
@@ -692,12 +636,12 @@ namespace nsCDEngine.Engines.StorageService
                 PropInfoArray = typeof(T).GetProperties().Where(prop => !Attribute.IsDefined(prop, typeof(IgnoreDataMemberAttribute)) && ThingStorePropertiesToInclude.Contains(prop.Name)).OrderBy(x => x.Name).ToList();
             else
                 PropInfoArray = typeof(T).GetProperties().Where(prop => !Attribute.IsDefined(prop, typeof(IgnoreDataMemberAttribute)) && !PropertiesToExclude.Contains(prop.Name)).OrderBy(x => x.Name).ToList();
-            TheDataRetrievalRecord tDataGramm = new TheDataRetrievalRecord {UID = GenerateUniqueIDFromType(typeof(T), pTableName)};
+            TheDataRetrievalRecord tDataGramm = new () {UID = GenerateUniqueIDFromType(typeof(T), pTableName)};
             int ColNo = 0;
 
             foreach (FieldInfo finfo in Fieldsinfoarray)
             {
-                TFD tFieldDesc = new TFD();
+                TFD tFieldDesc = new ();
                 fType = finfo.FieldType;
                 tFieldDesc.N = finfo.Name;
                 tFieldDesc.T = finfo.FieldType.ToString();
@@ -708,7 +652,7 @@ namespace nsCDEngine.Engines.StorageService
 
             foreach (PropertyInfo finfo in PropInfoArray)
             {
-                TFD tFieldDesc = new TFD
+                TFD tFieldDesc = new ()
                 {
                     N = finfo.Name,
                     T = finfo.PropertyType.ToString(),
@@ -720,9 +664,8 @@ namespace nsCDEngine.Engines.StorageService
 
             foreach (T item in MyValue)
             {
-                List<string> tRec = new List<string>();
+                List<string> tRec = new ();
 
-                //Fieldsinfoarray = item.GetType().GetFields().OrderBy(x => x.MetadataToken).ToList();
                 foreach (FieldInfo finfo in Fieldsinfoarray)
                 {
                     ColNo = GetColNoByName(tDataGramm.FLDs, finfo.Name);
@@ -777,13 +720,11 @@ namespace nsCDEngine.Engines.StorageService
                         catch (Exception e)
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(465, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("StorageUtils", "SerializeClassToRecord", eMsgLevel.l1_Error, e.ToString()));
-                            //string err = e.Message;
                         }
                         tRec.Add(orgValue == null ? string.Format("{0:000}", ColNo) : string.Format("{0:000}{1}", ColNo, orgValue));
                     }
                 }
 
-                //PropInfoArray = item.GetType().GetProperties().OrderBy(x => x.MetadataToken).ToList();
                 foreach (PropertyInfo finfo in PropInfoArray)
                 {
                     ColNo = GetColNoByName(tDataGramm.FLDs, finfo.Name);
@@ -846,41 +787,37 @@ namespace nsCDEngine.Engines.StorageService
                         catch (Exception e)
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(466, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("StorageUtils", "SerializeClassToRecord2", eMsgLevel.l1_Error, e.ToString()));
-                            //string err = e.Message;
                         }
                         tRec.Add(orgValue == null ? string.Format("{0:000}", ColNo) : string.Format("{0:000}{1}", ColNo, orgValue));
                     }
                 }
-                if (typeof(T).Equals(typeof(TheThingStore)))
+                if (typeof(T).Equals(typeof(TheThingStore)) && item is TheThingStore tThingStore)
                 {
-                    if (item is TheThingStore tThingStore)
+                    foreach (KeyValuePair<string, object> Prop in tThingStore.PB)
                     {
-                        foreach (KeyValuePair<string, object> Prop in tThingStore.PB)
+                        TFD pbDef = tDataGramm.FLDs.Find((tfd) => tfd.N.Equals(Prop.Key));
+                        if (pbDef == null)
                         {
-                            TFD pbDef = tDataGramm.FLDs.Find((tfd) => tfd.N.Equals(Prop.Key));
-                            if (pbDef == null)
-                            {
-                                int LastColNo = tDataGramm.FLDs[tDataGramm.FLDs.Count - 1].C;
-                                string fldType = "";
-                                if (Prop.Key.Equals("QValue"))
-                                    fldType = typeof(double).ToString();
-                                else if (Prop.Value != null)
-                                    fldType = Prop.Value.GetType().ToString();
-                                else
-                                    fldType = typeof(string).ToString();
-                                tDataGramm.FLDs.Add(new TFD
-                                {
-                                    N = Prop.Key,
-                                    T = fldType,
-                                    C = LastColNo + 1
-                                });
-                                tRec.Add(Prop.Value == null ? string.Format("{0:000}", LastColNo + 1) : string.Format("{0:000}{1}", LastColNo + 1, Prop.Value));
-                            }
+                            int LastColNo = tDataGramm.FLDs[tDataGramm.FLDs.Count - 1].C;
+                            string fldType = "";
+                            if (Prop.Key.Equals("QValue"))
+                                fldType = typeof(double).ToString();
+                            else if (Prop.Value != null)
+                                fldType = Prop.Value.GetType().ToString();
                             else
+                                fldType = typeof(string).ToString();
+                            tDataGramm.FLDs.Add(new TFD
                             {
-                                int pbKeyColumn = pbDef.C;
-                                tRec.Add(Prop.Value == null ? string.Format("{0:000}", pbKeyColumn) : string.Format("{0:000}{1}", pbKeyColumn, Prop.Value));
-                            }
+                                N = Prop.Key,
+                                T = fldType,
+                                C = LastColNo + 1
+                            });
+                            tRec.Add(Prop.Value == null ? string.Format("{0:000}", LastColNo + 1) : string.Format("{0:000}{1}", LastColNo + 1, Prop.Value));
+                        }
+                        else
+                        {
+                            int pbKeyColumn = pbDef.C;
+                            tRec.Add(Prop.Value == null ? string.Format("{0:000}", pbKeyColumn) : string.Format("{0:000}{1}", pbKeyColumn, Prop.Value));
                         }
                     }
                 }
@@ -941,14 +878,14 @@ namespace nsCDEngine.Engines.StorageService
         public static List<SQLFilter> CreateFilter(string pSQLFilter)
         {
             string[] tFilters = TheCommonUtils.cdeSplit(pSQLFilter, ";:;", false, true);
-            List<string> filterSep = new List<string>();
+            List<string> filterSep = new ();
             foreach (string filterStr in tFilters)
             {
                 string[] tFilters2 = TheCommonUtils.cdeSplit(filterStr, ";", false, true);
                 filterSep.AddRange(tFilters2);
             }
 
-            List<SQLFilter> filter = new List<SQLFilter>();
+            List<SQLFilter> filter = new ();
             foreach (string tf in filterSep)
             {
                 try
@@ -1049,13 +986,10 @@ namespace nsCDEngine.Engines.StorageService
                 // "Select" column filter clause must either contain columns in the "Group by" clause
                 // or aggregate functions
                 sepSelectCols[i] = sepSelectCols[i].Trim();
-                if (!sepGroupCols.Contains(sepSelectCols[i]))
+                if (!sepGroupCols.Contains(sepSelectCols[i]) && !pAggregateFunctions.Any(sepSelectCols[i].ToUpper().StartsWith))
                 {
-                    if (!pAggregateFunctions.Any(sepSelectCols[i].ToUpper().StartsWith))
-                    {
-                        newClause = "";
-                        break;
-                    }
+                    newClause = "";
+                    break;
                 }
             }
             if (!string.IsNullOrEmpty(newClause))

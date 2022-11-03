@@ -54,15 +54,14 @@ namespace nsCDEngine.BaseClasses
                 string codeSignThumb;
                 if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch") //Android and IOS
                 {
-                    if (MyCodeSigner == null)
-                        MyCodeSigner = new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
+                    MyCodeSigner ??= new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
                     codeSignThumb = MyCodeSigner.GetAppCert(bDontVerifyTrust, pFromFile, bVerifyTrustPath, bDontVerifyIntegrity);
                     if (!bDontVerifyTrust && string.IsNullOrEmpty(codeSignThumb))
                     {
                         return CryptoLoadMessage = $"No code-signing certificate found but required";
                     }
                     if (!pDLLName.Contains(Path.DirectorySeparatorChar))
-                        pDLLName = Path.Combine(AppDomain.CurrentDomain.RelativeSearchPath != null ? AppDomain.CurrentDomain.RelativeSearchPath : AppDomain.CurrentDomain.BaseDirectory, pDLLName);
+                        pDLLName = Path.Combine(AppDomain.CurrentDomain.RelativeSearchPath ?? AppDomain.CurrentDomain.BaseDirectory, pDLLName);
                     AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
                     var pLoader = new CryptoReferenceLoader();
 
@@ -466,6 +465,9 @@ namespace nsCDEngine.BaseClasses
             MyApplication = pApp;
 
             #region step 1: Moved from StartApplication to here as all the following code is updating TheBaseAssets
+            string tPrefix = MySettings.GetSetting("EnvVarPrefix");
+            if (!string.IsNullOrEmpty(tPrefix))
+                MyServiceHostInfo.EnvVarPrefix = tPrefix;
             //The following section are "app.config" only settings required before cdeTPI is loaded. These settings cannot be set via the Provisioning Service
             int delay = TheCommonUtils.CInt(MySettings.GetSetting("StartupDelay"));
             if (delay > 0)
@@ -558,10 +560,7 @@ namespace nsCDEngine.BaseClasses
             }
             #endregion
 
-            if (MyActivationManager == null)
-            {
-                MyActivationManager = new TheDefaultActivationManager(MySecrets, MySYSLOG);
-            }
+            MyActivationManager ??= new TheDefaultActivationManager(MySecrets, MySYSLOG);
 
 
             #region step 3: analyse os environment information
@@ -630,8 +629,7 @@ namespace nsCDEngine.BaseClasses
 
             MyServiceHostInfo.MiniHostInfo.MySYSLOG = MySYSLOG;
             MyServiceHostInfo.MiniHostInfo.MyKPIs = new TheKPIs();
-            if (MyScopeManager == null)
-                MyScopeManager = new TheDefaultScopeManager();
+            MyScopeManager ??= new TheDefaultScopeManager();
             MyScopeManager.SetMiniHSI(MyServiceHostInfo.MiniHostInfo);
             MyScopeManager.RegisterScopeChanged(localEventScopeChanged);
 
@@ -674,10 +672,7 @@ namespace nsCDEngine.BaseClasses
                 return;
             }
 
-            if (MyCodeSigner == null)
-            {
-                MyCodeSigner = new TheDefaultCodeSigning(MySecrets, MySYSLOG);
-            }
+            MyCodeSigner ??= new TheDefaultCodeSigning(MySecrets, MySYSLOG);
             string tBaseDir = MyServiceHostInfo.BaseDirectory;
             if (MyServiceHostInfo.cdeHostingType == cdeHostType.IIS) tBaseDir += "bin\\";
             string uDir = tBaseDir;

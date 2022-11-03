@@ -2702,8 +2702,7 @@ namespace nsCDEngine.Engines.StorageService
                 if (tRes.Cookie is not TheChartCookie tChartCookie) return;
 
                 tChartCookie.Groups = TheCommonUtils.CStringToList(tRes.ColumnFilter, ';');
-                if (tChartCookie.ValueDefinitions == null)
-                    tChartCookie.ValueDefinitions = new List<TheChartValueDefinition>();
+                tChartCookie.ValueDefinitions ??= new List<TheChartValueDefinition>();
                 string[] tVals = tChartCookie.ChartDefinition.ValueName.Split(',');
                 foreach (string tN in tChartCookie.Groups)
                 {
@@ -2825,8 +2824,7 @@ namespace nsCDEngine.Engines.StorageService
                         TheBaseAssets.MySYSLOG.WriteToLog(472, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("StorageMirror", $"Charts Factory ({tCookie.ChartDefinition.IChartFactoryType}) could be created. Using Default", eMsgLevel.l2_Warning));
                     }
                 }
-                if (tCookie.ChartFactory == null)
-                    tCookie.ChartFactory = new TheChartFactory();
+                tCookie.ChartFactory ??= new TheChartFactory();
             }
             tCookie.ChartFactory.CreateChartInfo(tCookie.ChartDefinition, "x","linear");
             foreach (var tRec in tRes.MyRecords)
@@ -2879,8 +2877,7 @@ namespace nsCDEngine.Engines.StorageService
                         TheBaseAssets.MySYSLOG.WriteToLog(472, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("StorageMirror", $"Charts Factory ({tCookie.ChartDefinition.IChartFactoryType}) could be created. Using Default", eMsgLevel.l2_Warning));
                     }
                 }
-                if (tCookie.ChartFactory == null)
-                    tCookie.ChartFactory = new TheChartFactory();
+                tCookie.ChartFactory ??= new TheChartFactory();
             }
             tCookie.ChartFactory.CreateChartInfo(tCookie.ChartDefinition, "x", "datetime");
 

@@ -77,8 +77,8 @@ namespace nsCDEngine.Communication.HttpService
                         var certChainInfo = new List<string>();
                         try
                         {
-                            X509Chain chain = new X509Chain();
-                            X509ChainPolicy chainPolicy = new X509ChainPolicy()
+                            X509Chain chain = new ();
+                            X509ChainPolicy chainPolicy = new ()
                             {
                                 RevocationMode = X509RevocationMode.NoCheck,
                                 RevocationFlag = X509RevocationFlag.EntireChain,
@@ -114,7 +114,6 @@ namespace nsCDEngine.Communication.HttpService
                                         certInfo += $" {chainStatus.StatusInformation}";
                                     }
                                     certChainInfo.Add(certInfo);
-                                    //lastChainElement = chainElement;
                                 }
                                 if (!string.IsNullOrEmpty(lastChainElement?.Certificate.Thumbprint))
                                 {
@@ -127,9 +126,10 @@ namespace nsCDEngine.Communication.HttpService
                                     }
                                     else
                                     {
-                                        tMsg += error += $" Thumbprint {rootThumbPrint} not in configured root thumbprint list.";
+                                        tMsg += $" Thumbprint {rootThumbPrint} not in configured root thumbprint list.";
                                     }
                                 }
+                                error += tMsg;
                                 TheBaseAssets.MySYSLOG.WriteToLog(2351, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("HttpService", "Certificate Chain status", eMsgLevel.l1_Error, tMsg));
                             }
                         }
@@ -137,7 +137,6 @@ namespace nsCDEngine.Communication.HttpService
                         {
                             error = $"Exception during cert processing for {pReq.RequestUri}";
                         }
-                        //File.AppendAllText(@"c:\temp\x\mylog.txt", $"{DateTimeOffset.Now}: Chain Validation: {isValid} {error}  [{TheCommonUtils.CListToString(certChainInfo, ",")}] {TheCommonUtils.CListToString(exceptions, ",")}\r\n");
                         if (!isValid)
                             error = $"Certificate Root not valid for {pReq.RequestUri}";
                     }
@@ -178,7 +177,7 @@ namespace nsCDEngine.Communication.HttpService
                 tReq.RemoteAddress = tReq.DeviceID.ToString();
             tReq.cdeRealPage = cdeGetEnginePage(tReq);
             string cdeRealPageUpper = tReq.cdeRealPage.ToUpperInvariant();
-            cdeConcurrentDictionary<string, string> inCookies = new cdeConcurrentDictionary<string, string>();
+            cdeConcurrentDictionary<string, string> inCookies = new ();
             if (!string.IsNullOrEmpty(cookieHeader))
             {
                 List<string> tCookies = TheCommonUtils.CStringToList(cookieHeader, ';');
@@ -271,17 +270,14 @@ namespace nsCDEngine.Communication.HttpService
                 pRequestData.AllowStatePush = true;
                 bool IsValidISB = false;
 
-                if (pRequestData.HttpMethod == "OPTIONS") //New for 4.301: many modern browsers check for preflight premissions see: https://dev.to/effingkay/cors-preflighted-requests--options-method-3024
+                if (pRequestData.HttpMethod == "OPTIONS" && (pRequestData.Header.ContainsKey("Access-Control-Request-Method") || pRequestData.Header.ContainsKey("Access-Control-Request-Headers"))) //New for 4.301: many modern browsers check for preflight premissions see: https://dev.to/effingkay/cors-preflighted-requests--options-method-3024
                 {
-                    if (pRequestData.Header.ContainsKey("Access-Control-Request-Method") || pRequestData.Header.ContainsKey("Access-Control-Request-Headers"))
-                    {
-                        pRequestData.StatusCode = (int)eHttpStatusCode.OK;
-                        pRequestData.AllowedMethods = (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.AccessControlAllowMethods) ? "*" : TheBaseAssets.MyServiceHostInfo.AccessControlAllowMethods);
-                        pRequestData.AllowedHeaders = (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.AccessControlAllowHeaders) ? "*" : TheBaseAssets.MyServiceHostInfo.AccessControlAllowHeaders);
-                        pRequestData.AllowStatePush = false;
-                        pRequestData.DontCompress = true;
-                        return;
-                    }
+                    pRequestData.StatusCode = (int)eHttpStatusCode.OK;
+                    pRequestData.AllowedMethods = (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.AccessControlAllowMethods) ? "*" : TheBaseAssets.MyServiceHostInfo.AccessControlAllowMethods);
+                    pRequestData.AllowedHeaders = (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.AccessControlAllowHeaders) ? "*" : TheBaseAssets.MyServiceHostInfo.AccessControlAllowHeaders);
+                    pRequestData.AllowStatePush = false;
+                    pRequestData.DontCompress = true;
+                    return;
                 }
                 if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.AccessControlAllowMethods) && TheBaseAssets.MyServiceHostInfo.AccessControlAllowMethods.IndexOf(pRequestData.HttpMethod, StringComparison.InvariantCultureIgnoreCase)<0)
                 {
@@ -292,7 +288,6 @@ namespace nsCDEngine.Communication.HttpService
                     pRequestData.DontCompress = true;
                     return;
                 }
-                //TheSystemMessageLog.ToCo(string.Format("Processing... {0}",pRequestData.cdeRealPage));
 
                 switch (pRequestData.cdeRealPage.ToUpperInvariant())
                 {
@@ -362,8 +357,8 @@ namespace nsCDEngine.Communication.HttpService
                                 int LanNo = 0; if (pxiParts.Length > 2) LanNo = TheCommonUtils.CInt(pxiParts[2]);
                                 pRequestData.ResponseBufferStr = "#!ipxe\n";
                                 pRequestData.ResponseBufferStr += string.Format("dhcp net{0}\n", LanNo);
-                                pRequestData.ResponseBufferStr += "set initiator-iqn " + pxiParts[0]; //"WES8";
-                                pRequestData.ResponseBufferStr += "\nset root-path iscsi:" + pxiParts[1]; // "192.168.3.13::::iqn.2000-01.com.synology:KAIKOSTORE.wes8";
+                                pRequestData.ResponseBufferStr += "set initiator-iqn " + pxiParts[0]; 
+                                pRequestData.ResponseBufferStr += "\nset root-path iscsi:" + pxiParts[1]; 
                                 pRequestData.ResponseBufferStr += "\nset keep-san 1\n";
                                 pRequestData.ResponseBufferStr += "sanboot ${root-path}\n";
                                 pRequestData.ResponseMimeType = "text/plain";
@@ -393,7 +388,6 @@ namespace nsCDEngine.Communication.HttpService
 
                         pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         pRequestData.SessionState = null;
-                        //pRequestData.Header = null;
                         pRequestData.StatusCode = (int)eHttpStatusCode.OK;
                         return;
                 }
@@ -441,13 +435,10 @@ namespace nsCDEngine.Communication.HttpService
 
         internal static void GetAnyFile(TheRequestData pRequestData, bool ProcessWRIntercept)
         {
-            if (pRequestData == null) return; // || pRequestData.RequestUri == null) return;
-            if (pRequestData.cdeRealPage.Length == 1)
+            if (pRequestData == null) return; 
+            if (pRequestData.cdeRealPage.Length == 1 && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.DefHomePage))
             {
-                if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.DefHomePage))
-                {
-                    pRequestData.cdeRealPage = $"{(TheBaseAssets.MyServiceHostInfo.DefHomePage.StartsWith("/")?"":"/")}{TheBaseAssets.MyServiceHostInfo.DefHomePage}";
-                }
+                pRequestData.cdeRealPage = $"{(TheBaseAssets.MyServiceHostInfo.DefHomePage.StartsWith("/") ? "" : "/")}{TheBaseAssets.MyServiceHostInfo.DefHomePage}";
             }
             if (pRequestData.StatusCode == 0)
                 ProcessB4Interceptors(pRequestData, ProcessWRIntercept);
@@ -518,7 +509,7 @@ namespace nsCDEngine.Communication.HttpService
                                 }
                             }
                             pRequestData.ResponseBufferStr = cdeStatus.GetDiagReport(true);
-                            pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter();
+                            pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
                         pRequestData.ResponseBufferStr = "";
@@ -531,7 +522,7 @@ namespace nsCDEngine.Communication.HttpService
                             if (!IsTokenValid(pRequestData, tQ))
                                 break;
                             pRequestData.ResponseBufferStr = cdeStatus.RenderHostServiceInfo(true);
-                            pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter();
+                            pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
                         pRequestData.ResponseBufferStr = "";
@@ -549,7 +540,7 @@ namespace nsCDEngine.Communication.HttpService
                                 DoReset = tQ.TryGetValue("RESET", out string InTopicRes);
                             }
                             pRequestData.ResponseBufferStr = cdeStatus.ShowKPIs(DoReset);
-                            pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter();
+                            pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
                         pRequestData.ResponseBufferStr = "";
@@ -558,7 +549,7 @@ namespace nsCDEngine.Communication.HttpService
                         break;
                     case "/CDESTATUS.JSON":
                         {
-                            TSM tgetServiceInfo = new TSM(eEngineName.ContentService, "CDE_GET_SERVICEINFO", Query);
+                            TSM tgetServiceInfo = new (eEngineName.ContentService, "CDE_GET_SERVICEINFO", Query);
 
                             if (!RemoteLoad(pRequestData, tQ))
                             {
@@ -595,7 +586,7 @@ namespace nsCDEngine.Communication.HttpService
                     case "/CDESTATUS.ASPX":
                         {
                             bool Force = false;
-                            cdeStatus.TheCdeStatusOptions statusOptions = new cdeStatus.TheCdeStatusOptions();
+                            cdeStatus.TheCdeStatusOptions statusOptions = new ();
                             if (tQ != null)
                             {
                                 statusOptions.ShowManyDetails = tQ.ContainsKey("SUBDET");
@@ -633,7 +624,7 @@ namespace nsCDEngine.Communication.HttpService
                                         LastCdeStatus += TheBaseAssets.MySession.GetSessionLog();
                                     if(statusOptions.ShowSysLog)
                                         LastCdeStatus += TheBaseAssets.MySYSLOG.GetNodeLog(pRequestData.SessionState, TheCommonUtils.cdeStripHTML(InTopic), true);
-                                    LastCdeStatus += cdeStatus.AddHTMLFooter();
+                                    LastCdeStatus += cdeStatus.AddHTMLFooter;
                                 }
                                 if (LastCdeStatus!=null)
                                     pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(LastCdeStatus);
@@ -651,10 +642,7 @@ namespace nsCDEngine.Communication.HttpService
                         pRequestData.AllowStatePush = false;
                         break;
                     default:
-                        if (MySkinProviders == null)
-                        {
-                            MySkinProviders = TheThingRegistry.GetBaseEnginesByCap(eThingCaps.SkinProvider);
-                        }
+                        MySkinProviders ??= TheThingRegistry.GetBaseEnginesByCap(eThingCaps.SkinProvider);
                         if (pRequestData.cdeRealPage.Equals("/apple-touch-icon-precomposed.png", StringComparison.OrdinalIgnoreCase))
                             pRequestData.cdeRealPage = "Images/UPNPICON.PNG"; //UPnP Icon
                         else if (pRequestData.cdeRealPage.Equals("/ICON.PNG", StringComparison.OrdinalIgnoreCase))
@@ -788,8 +776,7 @@ namespace nsCDEngine.Communication.HttpService
                 else
                     pRequestData.SessionState.SScopeID = TheBaseAssets.MyScopeManager.GetScrambledScopeID();     //GRSI: rare
                 cdeStreamFile(pRequestData, true, 10, TheCommonUtils.CGuid(tQ["NID"]),true);
-                if (pRequestData.ResponseBuffer == null)
-                    pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array("Node did not respond");
+                pRequestData.ResponseBuffer ??= TheCommonUtils.CUTF8String2Array("Node did not respond");
                 return true;
             }
             return false;
@@ -833,7 +820,7 @@ namespace nsCDEngine.Communication.HttpService
 
 
         #region BLOBLOADERS
-        internal static cdeConcurrentDictionary<string, DateTimeOffset> IsStreaming = new cdeConcurrentDictionary<string, DateTimeOffset>();
+        internal static cdeConcurrentDictionary<string, DateTimeOffset> IsStreaming = new ();
         internal static void cdeStreamFile(TheRequestData pRequest, bool IsSynchron, long pCacheTime, Guid pTargetNode, bool IncludeTRD = false)
         {
             if (pRequest.cdeRealPage.Length < 2) return;
@@ -844,9 +831,9 @@ namespace nsCDEngine.Communication.HttpService
                 return;
             }
             bool JustFetchDontPublish = false;
-            bool WasFound = true; // IsStreaming.TryGetValue(htmlFile, out var tLastDate);
+            bool WasFound = true; 
             var tLastDate = IsStreaming.GetOrAdd(htmlFile, (key) => { WasFound = false; return DateTimeOffset.Now; });
-            if (WasFound) //!IsStreaming.TryAdd(htmlFile, DateTimeOffset.Now))
+            if (WasFound) 
             {
                 if (DateTimeOffset.Now.Subtract(tLastDate).TotalSeconds > TheBaseAssets.MyServiceHostInfo.SessionTimeout)
                     IsStreaming.RemoveNoCare(htmlFile);
@@ -920,9 +907,9 @@ namespace nsCDEngine.Communication.HttpService
 
         #region events
         private static Action<TheRequestData> sinkGetStatus;
-        private static readonly cdeConcurrentDictionary<string, Action<TheRequestData>> MyHttpInterceptorsBefore = new cdeConcurrentDictionary<string, Action<TheRequestData>>();  //DIC-Allowed   STRING
-        private static readonly cdeConcurrentDictionary<string, Action<TheRequestData>> MyHttpInterceptorsAfter = new cdeConcurrentDictionary<string, Action<TheRequestData>>();   //DIC-Allowed   STRING
-        internal static List<string> GlobalScripts = new List<string>();
+        private static readonly cdeConcurrentDictionary<string, Action<TheRequestData>> MyHttpInterceptorsBefore = new ();  //DIC-Allowed   STRING
+        private static readonly cdeConcurrentDictionary<string, Action<TheRequestData>> MyHttpInterceptorsAfter = new ();   //DIC-Allowed   STRING
+        internal static List<string> GlobalScripts = new ();
         public void RegisterGlobalScriptInterceptor(string pUrl, Action<TheRequestData> sinkInterceptHttp)
         {
             if (String.IsNullOrEmpty(pUrl) || sinkInterceptHttp == null)
@@ -1034,26 +1021,24 @@ namespace nsCDEngine.Communication.HttpService
             bool b1 = false;
             bool b2 = false;
 
-            if (strPath1 != null && strPath2 != null)
+            if (strPath1 != null && strPath2 != null && strPath1 != "/" && strPath2 != "/")
             {
-                // Ignore the root path because NMI needs that.
-                if (strPath1 != "/" && strPath2 != "/")
+                // Make sure the paths end in underscore,
+                // otherwise Uri.IsBaseOf returns false positives.
+                if (!strPath1.EndsWith("/")) strPath1 += "/";
+                if (!strPath2.EndsWith("/")) strPath2 += "/";
+
+                try
                 {
-                    // Make sure the paths end in underscore,
-                    // otherwise Uri.IsBaseOf returns false positives.
-                    if (!strPath1.EndsWith("/")) strPath1 += "/";
-                    if (!strPath2.EndsWith("/")) strPath2 += "/";
+                    Uri u1 = new("http://localhost" + strPath1);
+                    Uri u2 = new("http://localhost" + strPath2);
 
-                    try
-                    {
-                        Uri u1 = new Uri("http://localhost" + strPath1);
-                        Uri u2 = new Uri("http://localhost" + strPath2);
-
-                        b1 = u1.IsBaseOf(u2);
-                        b2 = u2.IsBaseOf(u1);
-                    }
-                    catch
-                    { }
+                    b1 = u1.IsBaseOf(u2);
+                    b2 = u2.IsBaseOf(u1);
+                }
+                catch
+                { 
+                    //ignored
                 }
             }
 
@@ -1119,68 +1104,34 @@ namespace nsCDEngine.Communication.HttpService
                 response += $"Cache-Control: max-age={TheBaseAssets.MyServiceHostInfo.CacheMaxAge}, public\r\n";
             else
                 response += "Cache-Control: no-cache\r\n";
-            if (!pRequestData.DontCompress)
-            {
-                if (TheBaseAssets.MyServiceHostInfo.IsOutputCompressed || (pRequestData.Header?.ContainsKey("Accept-Encoding")==true && pRequestData.Header["Accept-Encoding"].Contains("gzip")))
-                    response += "Content-Encoding: gzip\r\n";
-            }
+            if (!pRequestData.DontCompress && (TheBaseAssets.MyServiceHostInfo.IsOutputCompressed || (pRequestData.Header?.ContainsKey("Accept-Encoding") == true && pRequestData.Header["Accept-Encoding"].Contains("gzip"))))
+                response += "Content-Encoding: gzip\r\n";
 
             var cors = TheBaseAssets.MySettings.GetSetting("Access-Control-Allow-Origin");
             if (!string.IsNullOrEmpty(cors))
                 response += $"Access-Control-Allow-Origin: {cors}\r\n";
 
-            //if (pRequestData.StatusCode!=200) //TODO: Support Persistent Connections in V2
             if (pRequestData.HttpVersion > 1.0)
                 response += "Connection: close\r\n";
-            if (pRequestData.StatusCode == (int)eHttpStatusCode.OK || pRequestData.StatusCode == (int)eHttpStatusCode.PermanentMoved)
+            if ((pRequestData.StatusCode == (int)eHttpStatusCode.OK || pRequestData.StatusCode == (int)eHttpStatusCode.PermanentMoved) && pRequestData.SessionState != null && pRequestData.SessionState.StateCookies != null && pRequestData.SessionState.StateCookies.Count > 0)
             {
-                if (pRequestData.SessionState != null && pRequestData.SessionState.StateCookies != null && pRequestData.SessionState.StateCookies.Count > 0)
+                string cookieHeader = pRequestData.Header?.cdeSafeGetValue("Cookie");
+                List<string> inCookies = new();
+                if (!string.IsNullOrEmpty(cookieHeader))
                 {
-                    string cookieHeader = pRequestData.Header?.cdeSafeGetValue("Cookie");
-                    List<string> inCookies = new List<string>();
-                    if (!string.IsNullOrEmpty(cookieHeader))
-                    {
-                        inCookies = TheCommonUtils.CStringToList(cookieHeader, ';');
-                        for (int i = 0; i < inCookies.Count; i++)
-                            inCookies[i] = inCookies[i].Split('=')[0].Trim();
-                    }
-                    foreach (string tKey in pRequestData.SessionState.StateCookies.Keys)
-                    {
-                        if (inCookies.Contains(tKey.Trim(), StringComparer.OrdinalIgnoreCase)) continue;
-                        string[] cp = pRequestData.SessionState.StateCookies[tKey.Trim()].Split(';');
-                        var outCookies = tKey.Trim();
-                        outCookies += "=" + cp[0].Trim();
-                        response += string.Format("Set-Cookie: {0}\r\n", outCookies);
-                    }
-
-// TODO: Figure out why session state doesn't work with the TcpListener, only HttpListener
-// Could it be that the cookies are not set correctly? With this code basic NMI Login doesn't work either...
-//                    var inCookies = new Dictionary<string, string>();
-//                    if (!string.IsNullOrEmpty(cookieHeader))
-//                    {
-//                        var inCookiesKV = TheCommonUtils.CStringToList(cookieHeader, ';');
-//                        for (int i = 0; i < inCookiesKV.Count; i++)
-//                        {
-//                            var kv = inCookiesKV[i].Split('=');
-//                            inCookies.Add(kv[0].Trim(), kv.Length > 1 ? kv[1].Trim() : null);
-//                        }
-//                    }
-//                    foreach (var tKeyValue in pRequestData.SessionState.StateCookies)
-//                    {
-//                        string cv;
-//                        if (inCookies.TryGetValue(tKeyValue.Key.Trim(), out cv) && cv == tKeyValue.Value)
-//                            continue;
-//                        //if (outCookies.Length > 0) outCookies += ";";
-//                        string[] cp = tKeyValue.Value.Split(';');
-//                        var outCookies = tKeyValue.Key.Trim();
-//                        outCookies += "=" + cp[0].Trim();
-//                        response += string.Format("Set-Cookie: {0}\r\n", outCookies);
-//                    }
-
+                    inCookies = TheCommonUtils.CStringToList(cookieHeader, ';');
+                    for (int i = 0; i < inCookies.Count; i++)
+                        inCookies[i] = inCookies[i].Split('=')[0].Trim();
+                }
+                foreach (string tKey in pRequestData.SessionState.StateCookies.Keys)
+                {
+                    if (inCookies.Contains(tKey.Trim(), StringComparer.OrdinalIgnoreCase)) continue;
+                    string[] cp = pRequestData.SessionState.StateCookies[tKey.Trim()].Split(';');
+                    var outCookies = tKey.Trim();
+                    outCookies += "=" + cp[0].Trim();
+                    response += string.Format("Set-Cookie: {0}\r\n", outCookies);
                 }
             }
-            //if (!string.IsNullOrEmpty(outCookies))
-            //    response += string.Format("Set-Cookie: {0}\r\n",outCookies);
             response += "\r\n";
             return response;
         }

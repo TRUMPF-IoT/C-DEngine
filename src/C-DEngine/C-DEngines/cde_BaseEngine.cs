@@ -107,7 +107,9 @@ namespace nsCDEngine.Engines
                         mPluginInfo.Platform = tPluginPlatform;
                     }
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
             }
         }
         internal ICDEThing MyBaseThing;
@@ -253,7 +255,7 @@ namespace nsCDEngine.Engines
         /// </summary>
         /// <param name="mIsMulti"></param>
         [Obsolete("Retired in V4 - will be removed in V5")]
-        public void SetMultiChannel(bool mIsMulti) { EngineState.IsMultiChannel = false;  /*mIsMulti;*/ }
+        public void SetMultiChannel(bool mIsMulti) { EngineState.IsMultiChannel = false; }
 
         /// <summary>
         /// Defines TheBaseEngine as a Mini Relay (Pub/Sub Relaying Only - no Application Code)
@@ -272,27 +274,21 @@ namespace nsCDEngine.Engines
             if (MyBaseThing != null && MyBaseThing.GetBaseThing() != null)
             {
                 int HighestLevel = 0;
-                mEngineState.HighStatusThing = GetDashboardGuid(); // MyBaseThing.GetBaseThing().cdeMID;
+                mEngineState.HighStatusThing = GetDashboardGuid(); 
                 if (pLevel >= 0)
                 {
                     HighestLevel = pLevel;
                 }
                 else
                 {
-                    //int CombinedCode = 0;
                     List<TheThing> tDeviceList = TheThingRegistry.GetThingsOfEngine(GetEngineName());
                     foreach (TheThing tDevice in tDeviceList)
                     {
-                        if (tDevice.HasLiveObject && tDevice != MyBaseThing.GetBaseThing())
+                        if (tDevice.HasLiveObject && tDevice != MyBaseThing.GetBaseThing() && tDevice.StatusLevel > HighestLevel)
                         {
-                            //if (tDevice.StatusLevel > 1)
-                            //    CombinedCode++;
-                            if (tDevice.StatusLevel > HighestLevel)
-                            {
-                                HighestLevel = tDevice.StatusLevel;
-                                if (HighestLevel > 1)
-                                    mEngineState.HighStatusThing = tDevice.cdeMID;
-                            }
+                            HighestLevel = tDevice.StatusLevel;
+                            if (HighestLevel > 1)
+                                mEngineState.HighStatusThing = tDevice.cdeMID;
                         }
                     }
                 }
@@ -311,7 +307,6 @@ namespace nsCDEngine.Engines
         /// </summary>
         public void SetIsInitializing()
         {
-            //if (EngineState.IsMultiChannel) return;
             EngineState.IsInitializing = true;
             EngineState.InitWaitCounter = 0;
         }
@@ -569,8 +564,7 @@ namespace nsCDEngine.Engines
         /// <param name="pCapa"></param>
         public void AddCapability(eThingCaps pCapa)
         {
-            if (mPluginInfo.Capabilities == null)
-                mPluginInfo.Capabilities = new List<eThingCaps>();
+            mPluginInfo.Capabilities ??= new List<eThingCaps>();
             if (!mPluginInfo.Capabilities.Contains(pCapa))
                 mPluginInfo.Capabilities.Add(pCapa);
         }
@@ -605,8 +599,7 @@ namespace nsCDEngine.Engines
         {
             if (mPluginInfo != null)
             {
-                if (mPluginInfo.FilesManifest == null)
-                    mPluginInfo.FilesManifest = new List<string>();
+                mPluginInfo.FilesManifest ??= new List<string>();
                 if (GetEngineState() == null || GetEngineState().IsMiniRelay || GetEngineState().EngineType==null) return;
                 Assembly a = Assembly.GetAssembly(GetEngineState().EngineType);
                 if (!mPluginInfo.FilesManifest.Contains(a.ManifestModule.Name))
@@ -624,11 +617,9 @@ namespace nsCDEngine.Engines
         {
             if (mPluginInfo != null && pPlatformList != null)
             {
-                if (mPluginInfo.AllPlatforms == null)
-                    mPluginInfo.AllPlatforms = new List<cdePlatform>();
+                mPluginInfo.AllPlatforms ??= new List<cdePlatform>();
                 if (GetEngineState() == null || GetEngineState().IsMiniRelay || GetEngineState().EngineType == null) return;
-                if (pPlatformList != null)
-                    mPluginInfo.AllPlatforms.AddRange(pPlatformList);
+                mPluginInfo.AllPlatforms.AddRange(pPlatformList);
             }
         }
 
@@ -718,8 +709,7 @@ namespace nsCDEngine.Engines
         /// <param name="sinkInterceptHttp"></param>
         public void RegisterJSEngine(Action<TheRequestData> sinkInterceptHttp)
         {
-            if (sinkInterceptHttp == null)
-                sinkInterceptHttp =sinkReturnEngineResource;
+            sinkInterceptHttp ??=sinkReturnEngineResource;
             GetEngineState().HasJSEngine = true;
             TheCommCore.MyHttpService.RegisterHttpInterceptorB4(string.Format("{0}.js",GetEngineName()), sinkInterceptHttp);
         }
@@ -738,8 +728,7 @@ namespace nsCDEngine.Engines
         public void RegisterCSS(string cssDarkPath, string cssLitePath, Action<TheRequestData> sinkInterceptHttp)
         {
             if (!TheBaseAssets.MasterSwitch) return;
-            if (sinkInterceptHttp == null)
-                sinkInterceptHttp = sinkReturnEngineResource;
+            sinkInterceptHttp ??= sinkReturnEngineResource;
             GetEngineState().HasCustomCSS = true;
             GetEngineState().CSS = cssDarkPath;
             TheCommCore.MyHttpService?.RegisterHttpInterceptorB4(cssDarkPath, sinkInterceptHttp);
@@ -794,8 +783,7 @@ namespace nsCDEngine.Engines
             if (EngineState.IsUnloaded)
                 return false;
 
-            if (pChannelInfo == null)
-                pChannelInfo = TheBaseAssets.LocalHostQSender.MyTargetNodeChannel;
+            pChannelInfo ??= TheBaseAssets.LocalHostQSender.MyTargetNodeChannel;
 
             EngineState.IsLiveEngine = true; //Engine is started and alive
 
@@ -857,8 +845,6 @@ namespace nsCDEngine.Engines
             }
 
             EngineState.IsLiveEngine = false;
-            //EngineState = new TheEngineState { LastMessage = "Service was Shutdown!" }; //TODO: Review...not sure why this has to be reset so hard
-            //MyBaseThing.GetBaseThing().SetIThingObject(null);
             EngineState.LastMessage = "Service was Shutdown!";
             EngineState.IsStarted = false;
             EngineState.StatusLevel = 0;
@@ -918,7 +904,7 @@ namespace nsCDEngine.Engines
             if (EngineState == null || EngineState.ServiceNode == Guid.Empty || EngineState.IsService) return;
             EngineState.LastSentInitialize = DateTimeOffset.Now;
 
-            TSM tTSM = new TSM(GetEngineName(), "CDE_INITIALIZE", TheBaseAssets.MyScopeManager.AddScopeID(GetEngineName()));
+            TSM tTSM = new (GetEngineName(), "CDE_INITIALIZE", TheBaseAssets.MyScopeManager.AddScopeID(GetEngineName()));
             tTSM.SetSendPulse(true);
             tTSM.SetNoDuplicates(true);
             tTSM.SetToServiceOnly(true);
@@ -934,7 +920,7 @@ namespace nsCDEngine.Engines
         public void ReplyInitialized(TSM pMessage)
         {
             EngineState.LastSentInitialized = DateTimeOffset.Now;
-            TSM tInitialize = new TSM(GetEngineName(), "CDE_INITIALIZED") { QDX = 3 };
+            TSM tInitialize = new (GetEngineName(), "CDE_INITIALIZED") { QDX = 3 };
             tInitialize.SetNoDuplicates(true);
             TheCommCore.PublishToOriginator(pMessage, tInitialize);
         }
@@ -958,7 +944,7 @@ namespace nsCDEngine.Engines
             EngineState.LastSentSubscribe = DateTimeOffset.Now;
 
             string strSubs = TheBaseAssets.MyScopeManager.AddScopeID(GetEngineName());
-            TSM tTSM = new TSM(GetEngineName(), "CDE_SUBSCRIBE", strSubs);
+            TSM tTSM = new (GetEngineName(), "CDE_SUBSCRIBE", strSubs);
             tTSM.SetToServiceOnly(true);    //NEW@2012-10-27: Remove Chatter to scondary clouds
             tTSM.SetNoDuplicates(true);
             tTSM.QDX = 2;
@@ -970,7 +956,7 @@ namespace nsCDEngine.Engines
             if (EngineState == null || EngineState.ServiceNode == Guid.Empty || EngineState.IsService) return;
 
             string strSubs = TheBaseAssets.MyScopeManager.AddScopeID(GetEngineName());
-            TSM tTSM = new TSM(GetEngineName(), "CDE_UNSUBSCRIBE", strSubs);
+            TSM tTSM = new (GetEngineName(), "CDE_UNSUBSCRIBE", strSubs);
             tTSM.SetToServiceOnly(true);
             tTSM.SetNoDuplicates(true);
             tTSM.QDX = 2;
@@ -1031,11 +1017,8 @@ namespace nsCDEngine.Engines
             }
             bool tIsProcessed = false;
             TheUserDetails tCurrentUser = TheUserManager.GetCurrentUser(TheCommonUtils.CGuid(pMessage.Message.SEID));
-            if (tCurrentUser == null)
-            {
-                if (!string.IsNullOrEmpty(pMessage.Message.UID))
-                    tCurrentUser = TheUserManager.GetUserByID(TheCommonUtils.CSCDecrypt2GUID(pMessage.Message.UID, TheBaseAssets.MySecrets.GetAI()));
-            }
+            if (tCurrentUser == null && !string.IsNullOrEmpty(pMessage.Message.UID))
+                tCurrentUser = TheUserManager.GetUserByID(TheCommonUtils.CSCDecrypt2GUID(pMessage.Message.UID, TheBaseAssets.MySecrets.GetAI()));
             if (tCurrentUser!=null)
                 pMessage.CurrentUserID = tCurrentUser.cdeMID;
 
@@ -1132,7 +1115,7 @@ namespace nsCDEngine.Engines
                             if (string.IsNullOrEmpty(tAlternative))
                                 tAlternative = "NOTSUPPORTED";
                             TheBaseAssets.MySYSLOG.WriteToLog(401, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(GetEngineName(), string.Format("Engine {0} cannot be initialized on this service! Suggesting better node at : {1}", GetEngineName(), tAlternative), eMsgLevel.l6_Debug));
-                            TSM tInitialize = new TSM(GetEngineName(), "CDE_NOT-INITIALIZED", tAlternative) {QDX = 3};
+                            TSM tInitialize = new (GetEngineName(), "CDE_NOT-INITIALIZED", tAlternative) {QDX = 3};
                             tInitialize.SetNoDuplicates(true);
                             tInitialize.SID = pMessage.Message.SID;
                             tInitialize.SetDoNotRelay(true);
@@ -1148,7 +1131,7 @@ namespace nsCDEngine.Engines
                             case "NMI_GET_DATA":    //Request for Controls from Web-Relay for HTML5 Interface
                                 if (cmd.Length > 3)
                                 {
-                                    TSM tTsm = new TSM(eEngineName.NMIService, "NMI_CUSTOM_HTML:" + cmd[1]);
+                                    TSM tTsm = new (eEngineName.NMIService, "NMI_CUSTOM_HTML:" + cmd[1]);
                                     if (EngineState.EngineType == null || EngineState.EngineType.AssemblyQualifiedName == null)
                                         tTsm.PLS = string.Format("<h1>Plugin Assembly for {0} on node {1} not found...did you specify SetEngineTypeName() in the SetBaseEngine() call?</h1>", EngineState.ClassName, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID);
                                     else
@@ -1267,21 +1250,17 @@ namespace nsCDEngine.Engines
                         }
                         break;
                 }
-                if (!tIsProcessed)
+                if (!tIsProcessed && !string.IsNullOrEmpty(pMessage.Message.OWN))
                 {
-                    if (!string.IsNullOrEmpty(pMessage.Message.OWN))
+                    TheThing tThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(pMessage.Message.OWN));
+                    if (tThing != null)
                     {
-                        TheThing tThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(pMessage.Message.OWN));
-                        if (tThing != null)
-                        {
-                            TheThing.HandleByThing(tThing, pMessage.Topic, pMessage.Message, pMessage.LocalCallback);
-                            tIsProcessed = true;
-                        }
+                        TheThing.HandleByThing(tThing, pMessage.Topic, pMessage.Message, pMessage.LocalCallback);
+                        tIsProcessed = true;
                     }
                 }
                 if (!tIsProcessed)
                 {
-                    //RegisterInit(pMessage); //NEW: 2012-05-10 - Fast init if a valid packet comes in from the engine; TODO: Needs new INitialization Events!
                     TheThing baseThing;
                     if (MyBaseThing != null && (baseThing = MyBaseThing.GetBaseThing()) != null) //.HasRegisteredEvents(eEngineEvents.IncomingMessage))
                     {

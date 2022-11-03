@@ -49,7 +49,7 @@ namespace cdeASPNetMiddleware
         /// </summary>
         /// <param name="context">The http context.</param>
         /// <param name="ws">The incoming WebSockets.</param>
-        public async Task ProcessWSRequest(HttpContext context, WebSocket ws)
+        public static async Task ProcessWSRequest(HttpContext context, WebSocket ws)
         {
             try
             {

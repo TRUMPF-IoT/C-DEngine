@@ -22,7 +22,7 @@ namespace nsCDEngine.BaseClasses
     public static partial class TheCommonUtils
     {
 #region Serialization Helpers
-        internal static JsonSerializerSettings cdeNewtonJSONConfig = new JsonSerializerSettings
+        internal static JsonSerializerSettings cdeNewtonJSONConfig = new ()
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
             DateFormatHandling = DateFormatHandling.IsoDateFormat,
@@ -47,8 +47,8 @@ namespace nsCDEngine.BaseClasses
                 _objectSerializer = jsonSerializer;
             }
 
-            StringBuilder sb = new StringBuilder(256);
-            StringWriter sw = new StringWriter(sb, CultureInfo.InvariantCulture);
+            StringBuilder sb = new (256);
+            StringWriter sw = new (sb, CultureInfo.InvariantCulture);
             using (var jsonWriter = new JsonTextWriter(sw))
             {
                 jsonWriter.Formatting = _objectSerializer.Formatting;
@@ -57,7 +57,6 @@ namespace nsCDEngine.BaseClasses
             }
 
             return sw.ToString();
-            //return cdeNewtonsoft.Json.JsonConvert.SerializeObject(tData, cdeNewtonsoft.Json.Formatting.None, cdeNewtonJSONConfig);
         }
         static JsonSerializer _objectSerializer;
         /// <summary>
@@ -105,13 +104,9 @@ namespace nsCDEngine.BaseClasses
         // This function does not verify that the fileName is under the ClientBin directory. Internal use only and only when fileName is known to be under ClientBin!
         internal static void SerializeObjectToJSONFileInternal<T>(string fileName, T tData)
         {
-            //string tJSON = TheCommonUtils.SerializeObjectToJSONString(tData);
             using (var writeFile = new System.IO.StreamWriter(fileName, false))
             {
-                //writeFile.Write(tJSON);
-                if (_fileSerializer == null)
-                {
-                    _fileSerializer = new JsonSerializer
+                _fileSerializer ??= new JsonSerializer
                     {
                         Formatting = cdeNewtonJSONConfig.Formatting,
                         ReferenceLoopHandling = cdeNewtonJSONConfig.ReferenceLoopHandling,
@@ -122,7 +117,6 @@ namespace nsCDEngine.BaseClasses
                         MissingMemberHandling = cdeNewtonJSONConfig.MissingMemberHandling,
                         //Context = new System.Runtime.Serialization.StreamingContext(System.Runtime.Serialization.StreamingContextStates.All, true),
                     };
-                }
                 _fileSerializer.Serialize(writeFile, tData);
                 writeFile.Flush();
 #if !CDE_STANDARD

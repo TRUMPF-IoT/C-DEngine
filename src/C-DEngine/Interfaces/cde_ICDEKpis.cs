@@ -8,7 +8,7 @@ namespace nsCDEngine.BaseClasses
     /// <summary>
     /// All existing default KPI names in the C-DEngine
     /// </summary>
-    public enum eKPINames
+    public enum eKPINames //NOSONAR - CDE API Rule
     {
         /// <summary>
         /// The q senders

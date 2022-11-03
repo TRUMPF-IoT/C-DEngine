@@ -18,9 +18,9 @@ namespace nsCDEngine.Engines.NMIService
     internal static class TheFormsGenerator
     {
         #region NEW-NMI4.1 Element Subscription
-        private static readonly cdeConcurrentDictionary<Guid, cdeConcurrentDictionary<Guid, TheNMISubscription>> MyNMIElements = new cdeConcurrentDictionary<Guid, cdeConcurrentDictionary<Guid, TheNMISubscription>>();
-        private static readonly cdeConcurrentDictionary<Guid, TheNMISubscription> MyAliveNMINodes = new cdeConcurrentDictionary<Guid, TheNMISubscription>();
-        private static readonly cdeConcurrentDictionary<Guid, TheNMISubscription> MyAliveThings = new cdeConcurrentDictionary<Guid, TheNMISubscription>();
+        private static readonly cdeConcurrentDictionary<Guid, cdeConcurrentDictionary<Guid, TheNMISubscription>> MyNMIElements = new ();
+        private static readonly cdeConcurrentDictionary<Guid, TheNMISubscription> MyAliveNMINodes = new ();
+        private static readonly cdeConcurrentDictionary<Guid, TheNMISubscription> MyAliveThings = new ();
         internal static int GetNMINodeCount()
         {
             return MyAliveNMINodes.Count;
@@ -107,7 +107,7 @@ namespace nsCDEngine.Engines.NMIService
                         return tThing;
                     RegisterNewNMINode(pClientInfo.NodeID, tFld.cdeMID, tThing.cdeMID, pDataItem, true);
                     var OnUpdateName = pDataItem;
-                    if (OnUpdateName.StartsWith("MyPropertyBag."))  //TODO: Test this with Prop of Prop
+                    if (OnUpdateName.StartsWith("MyPropertyBag."))  
                         OnUpdateName = OnUpdateName.Split('.')[1];
                     tThing.GetProperty(OnUpdateName, true).SetPublication(true, Guid.Empty); //Guid.Empty uses PublishCentral - a specific node would use SYSTEMWIDE
                     return tThing;
@@ -122,7 +122,7 @@ namespace nsCDEngine.Engines.NMIService
                 return;
             lock (MyAliveNMINodes.MyLock)
             {
-                List<Guid> tToDel = new List<Guid>();
+                List<Guid> tToDel = new ();
                 foreach (Guid tK in MyAliveNMINodes.Keys)
                 {
                     if (DateTimeOffset.Now.Subtract(MyAliveNMINodes[tK].cdeCTIM).TotalSeconds > TheBaseAssets.MyServiceHostInfo.SessionTimeout * 2)
@@ -141,7 +141,7 @@ namespace nsCDEngine.Engines.NMIService
 
         internal static void DisableNMISubscriptions(Guid NodeID)
         {
-            List<TheNMISubscription> tToUnregister = new List<TheNMISubscription>();
+            List<TheNMISubscription> tToUnregister = new ();
             lock (MyNMIElements.MyLock) //This can cause jams of threads here! Highly optimized to get out of lock as fast as possible - could use a reader lock as we dont delete/add to the array- just change a prop
             {
                 foreach (var k in MyNMIElements.Keys)
@@ -156,7 +156,7 @@ namespace nsCDEngine.Engines.NMIService
                             tSub = MyNMIElements[k][tK];
                             continue;
                         }
-                        if (MyNMIElements[k][tK].HasLiveSub == true)
+                        if (MyNMIElements[k][tK].HasLiveSub)
                         {
                             IsOneStillAlive = true;
                             break;
@@ -174,7 +174,7 @@ namespace nsCDEngine.Engines.NMIService
                     if (tThing == null)
                         continue;
                     var OnUpdateName = tG.DataItem;
-                    if (OnUpdateName.StartsWith("MyPropertyBag."))  //TODO: Test this with Prop of Prop
+                    if (OnUpdateName.StartsWith("MyPropertyBag."))  
                         OnUpdateName = OnUpdateName.Split('.')[1];
                     tThing.GetProperty(OnUpdateName, true).SetPublication(false, Guid.Empty); //Guid.Empty uses PublishCentral - a specific node would use SYSTEMWIDE
                     MyNMIElements.RemoveNoCare(tG.cdeMID);
@@ -257,7 +257,7 @@ namespace nsCDEngine.Engines.NMIService
 
         internal static List<TheFieldInfo> GetPermittedFields(Guid FormId, TheClientInfo pClientInfo, TheFOR tso, bool UpdateSubs)
         {
-            List<TheFieldInfo> tReturnLst = new List<TheFieldInfo>();
+            List<TheFieldInfo> tReturnLst = new ();
             try
             {
                 Func<TheFieldInfo, bool> pSelector = (s => TheUserManager.HasUserAccess(pClientInfo.UserID, s.cdeA) &&
@@ -281,7 +281,7 @@ namespace nsCDEngine.Engines.NMIService
                             if (tso != null)
                             {
                                 var tfo = tso.Flds.Where(s => s.FldOrder == tFld.FldOrder);
-                                if (tfo != null && tfo.Count() > 0)
+                                if (tfo != null && tfo.Any())
                                 {
                                     foreach (TheFLDOR tF in tfo)
                                     {
@@ -331,16 +331,10 @@ namespace nsCDEngine.Engines.NMIService
             {
                 cdeConcurrentDictionary<string, string> tPlat = ThePropertyBag.GetDictionary(pPlatBag[eWebPlatform.Any], "=");
 
-                if (tPlat.ContainsKey("Hide") && TheCommonUtils.CBool(tPlat["Hide"]))
-                {
-                    if (platPlat == null || (platPlat.ContainsKey("Show") && !TheCommonUtils.CBool(platPlat["Show"])))
-                        return false;
-                }
-                if (tPlat.ContainsKey("RequireFirstNode") && TheCommonUtils.CBool(tPlat["RequireFirstNode"]) && !pInfo.IsFirstNode)
-                {
-                    if (platPlat == null || (platPlat.ContainsKey("AllowAllNodes") && !TheCommonUtils.CBool(platPlat["AllowAllNodes"])))
-                        return false;
-                }
+                if (tPlat.ContainsKey("Hide") && TheCommonUtils.CBool(tPlat["Hide"]) && (platPlat == null || (platPlat.ContainsKey("Show") && !TheCommonUtils.CBool(platPlat["Show"]))))
+                    return false;
+                if (tPlat.ContainsKey("RequireFirstNode") && TheCommonUtils.CBool(tPlat["RequireFirstNode"]) && !pInfo.IsFirstNode && (platPlat == null || (platPlat.ContainsKey("AllowAllNodes") && !TheCommonUtils.CBool(platPlat["AllowAllNodes"]))))
+                    return false;
             }
             else
             {
@@ -364,16 +358,10 @@ namespace nsCDEngine.Engines.NMIService
             {
                 cdeConcurrentDictionary<string, string> tPlat = ThePropertyBag.GetDictionary(pPlatBag[eWebPlatform.Any], "=");
 
-                if (tPlat.ContainsKey("HideAddButton") && TheCommonUtils.CBool(tPlat["HideAddButton"]))
-                {
-                    if (platPlat == null || (platPlat.ContainsKey("ShowAddButton") && !TheCommonUtils.CBool(platPlat["ShowAddButton"])))
-                        return false;
-                }
-                if (tPlat.ContainsKey("RequireFirstNodeForAdd") && TheCommonUtils.CBool(tPlat["RequireFirstNodeForAdd"]) && !pInfo.IsFirstNode)
-                {
-                    if (platPlat == null || (platPlat.ContainsKey("AllowAddOnAllNodes") && !TheCommonUtils.CBool(platPlat["AllowAddOnAllNodes"])))
-                        return false;
-                }
+                if (tPlat.ContainsKey("HideAddButton") && TheCommonUtils.CBool(tPlat["HideAddButton"]) && (platPlat == null || (platPlat.ContainsKey("ShowAddButton") && !TheCommonUtils.CBool(platPlat["ShowAddButton"]))))
+                    return false;
+                if (tPlat.ContainsKey("RequireFirstNodeForAdd") && TheCommonUtils.CBool(tPlat["RequireFirstNodeForAdd"]) && !pInfo.IsFirstNode && (platPlat == null || (platPlat.ContainsKey("AllowAddOnAllNodes") && !TheCommonUtils.CBool(platPlat["AllowAddOnAllNodes"]))))
+                    return false;
             }
             else
             {
@@ -393,7 +381,7 @@ namespace nsCDEngine.Engines.NMIService
             if (TheCDEngines.MyNMIService == null)
                 return null;
 
-            TheScreenInfo tInfo = new TheScreenInfo
+            TheScreenInfo tInfo = new ()
             {
                 cdeMID = pScreenId,
                 MyDashboard = null,
@@ -406,17 +394,7 @@ namespace nsCDEngine.Engines.NMIService
             TheThing tLiveForm = TheThingRegistry.GetThingByMID("*", pScreenId);
             if (tLiveForm == null || !TheUserManager.HasUserAccess(tClientInfo.UserID, tLiveForm.cdeA))
             {
-                return null; //V3.1: BUG 126 - could lead to racing condition. TODO: Revisit later
-                //TheFormInfo tI = new TheFormInfo(tLiveForm) { FormTitle = (tLiveForm == null ? "Form not Found!" : "Access Denied!") };
-                //tI.TargetElement = pScreenId.ToString();
-                //tI.AssociatedClassName = pScreenId.ToString();
-                //tInfo.MyStorageInfo.Add(tI);
-                //tI.FormFields = new List<TheFieldInfo>();
-                //TheFieldInfo tFldInfo = new TheFieldInfo(null, null, 10, 0, 0);
-                //tFldInfo.Type = eFieldType.SmartLabel;
-                //tFldInfo.Header = (tLiveForm == null ? "This Form was defined but has not Meta-Data associated with it." : "You do not have the required access permissions!");
-                //tI.FormFields.Add(tFldInfo);
-                //return tInfo;
+                return null; 
             }
             string tFormName = TheThing.GetSafePropertyString(tLiveForm, "FriendlyName");
             List<TheThing> tFields = TheThingRegistry.GetThingsByFunc("*", s => s.cdeO == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID && TheThing.GetSafePropertyString(s, "FormName") == tFormName && TheThing.GetSafePropertyBool(s, "IsLiveTag") && (s.UID == Guid.Empty || s.UID == tClientInfo.UserID));
@@ -424,7 +402,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 string tFormTitle = TheThing.GetSafePropertyString(tLiveForm, "FormTitle");
                 if (string.IsNullOrEmpty(tFormTitle)) tFormTitle = tFormName;
-                TheFormInfo tI = new TheFormInfo(tLiveForm)
+                TheFormInfo tI = new (tLiveForm)
                 {
                     FormTitle = tFormTitle,
                     TargetElement = pScreenId.ToString(),
@@ -454,8 +432,7 @@ namespace nsCDEngine.Engines.NMIService
                         tFldInfo.Flags = tFlags;
                         IsNewFld = false;
                     }
-                    if (tFldInfo.PropertyBag == null)
-                        tFldInfo.PropertyBag = new ThePropertyBag();
+                    tFldInfo.PropertyBag ??= new ThePropertyBag();
                     ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, "IsOnTheFly", "=", "True");
                     ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, "UXID", "=", $"{tTh.cdeMID}");
                     tFldInfo.Header = tTh.FriendlyName;
@@ -483,7 +460,7 @@ namespace nsCDEngine.Engines.NMIService
                         ThePropertyBag.PropBagUpdateValue(tFldInfo.PropertyBag, "EnableTap", "=", "True");
                         tFldInfo.RegisterUXEvent(tTh, eUXEvents.OnPropertyChanged, "IsDown", (pThing, pObj) =>
                         {
-                            if (!(pObj is TheProcessMessage pMsg) || pMsg.Message == null) return;
+                            if (pObj is not TheProcessMessage pMsg || pMsg.Message == null) return;
                             TheThing.SetSafePropertyBool(pThing, "IsDown", TheCommonUtils.CBool(pMsg.Message.PLS));
                         });
                     }
@@ -532,7 +509,7 @@ namespace nsCDEngine.Engines.NMIService
             if (TheCDEngines.MyNMIService == null)
                 return null;
 
-            TheScreenInfo tInfo = new TheScreenInfo
+            TheScreenInfo tInfo = new ()
             {
                 cdeMID = pScreenId,
                 MyDashboard = TheNMIEngine.GetDashboardById(pScreenId),
@@ -567,7 +544,7 @@ namespace nsCDEngine.Engines.NMIService
              ).OrderBy(s => s.Category).ThenBy(s => s.FldOrder).ToList();
             if (tInfo.MyDashPanels != null)
             {
-                List<Guid> AlreadyFound = new List<Guid>();
+                List<Guid> AlreadyFound = new ();
                 foreach (TheDashPanelInfo tDP in tInfo.MyDashPanels)
                 {
                     string tCtrl = "";
@@ -610,7 +587,7 @@ namespace nsCDEngine.Engines.NMIService
                                     if (AlreadyFound.Contains(tMG)) continue;
                                     AlreadyFound.Add(tMG);
                                     TheFormInfo tI = GenerateForm(tMG, pClientInfo);
-                                    if (tI != null && (!tI.GetFromFirstNodeOnly || pClientInfo.IsFirstNode)) //TODO-V4: VERIFY
+                                    if (tI != null && (!tI.GetFromFirstNodeOnly || pClientInfo.IsFirstNode)) 
                                     {
                                         tI.TargetElement = tDP.cdeMID.ToString();
                                         tInfo.MyStorageInfo.Add(tI);
@@ -637,7 +614,7 @@ namespace nsCDEngine.Engines.NMIService
                     TheScreenInfo tI = GenerateLiveScreen(tThing.cdeMID, tClientInfo);
                     if (tI != null)
                     {
-                        TSM tTsm = new TSM(eEngineName.NMIService, "NMI_LIVESCREENMETA:" + tThing.cdeMID.ToString());
+                        TSM tTsm = new (eEngineName.NMIService, "NMI_LIVESCREENMETA:" + tThing.cdeMID.ToString());
                         tI.ForceReload = true;
                         tTsm.PLS = TheCommonUtils.SerializeObjectToJSONString(tI);
                         TheCommCore.PublishToOriginator(pMsg, tTsm);
@@ -670,9 +647,9 @@ namespace nsCDEngine.Engines.NMIService
                         int tFldOrder = TheCommonUtils.CInt(TheThing.GetSafePropertyNumber(tFormThing, "FldOrder"));
                         if (tFldOrder == 0) tFldOrder = 1000;
                         int tFlag = TheCommonUtils.CInt(TheThing.GetSafePropertyNumber(tFormThing, "Flag"));
-                        TheDashPanelInfo tD = new TheDashPanelInfo(tFormThing.GetBaseThing())
+                        TheDashPanelInfo tD = new (tFormThing.GetBaseThing())
                         {
-                            cdeO = tTag.cdeMID, // tFormThing.GetBaseThing().cdeMID, // CODE REVIEW/TODO cdeO indicates the plug-in from which localizaed resources are read: is this sufficient for all live screens?
+                            cdeO = tTag.cdeMID, // tFormThing.GetBaseThing().cdeMID, // CODE REVIEW cdeO indicates the plug-in from which localizaed resources are read: is this sufficient for all live screens?
                             cdeMID = tFormThing.GetBaseThing().cdeMID,
                             cdeA = tFormThing.GetBaseThing().cdeA,
                             Flags = tFlag,
@@ -695,7 +672,7 @@ namespace nsCDEngine.Engines.NMIService
                 int tFldOrder = TheCommonUtils.CInt(TheThing.GetSafePropertyNumber(tFormThing, "FldOrder"));
                 if (tFldOrder == 0) tFldOrder = 1000;
                 int tFlag = TheCommonUtils.CInt(TheThing.GetSafePropertyNumber(tFormThing, "Flag"));
-                TheDashPanelInfo tD = new TheDashPanelInfo(tFormThing.GetBaseThing())
+                TheDashPanelInfo tD = new (tFormThing.GetBaseThing())
                 {
                     cdeMID = tFormThing.GetBaseThing().cdeMID,
                     cdeA = tFormThing.GetBaseThing().cdeA,
@@ -753,7 +730,7 @@ namespace nsCDEngine.Engines.NMIService
                         string medback = "RES(C-Labs-DialogItemBackColor)"; if (DashCommand.Length > 8) medback = DashCommand[8];
                         string fullback = ""; if (DashCommand.Length > 9) fullback = DashCommand[9];
                         bool bIsControl = DashCommand[0].Equals("ACT");
-                        tPanelInfo = new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing(), PanelGuid, title, cmd) {Description = descr}; // CODE REVIEW/TODO: Is this still used? How can we obtain the owning engine for loc string lookup?
+                        tPanelInfo = new TheDashPanelInfo(TheCDEngines.MyNMIService.GetBaseThing(), PanelGuid, title, cmd) {Description = descr};
                         ThePropertyBag.PropBagUpdateValue(tPanelInfo.PropertyBag, "BackgroundSmall", "=", smallback);
                         ThePropertyBag.PropBagUpdateValue(tPanelInfo.PropertyBag, "BackgroundMedium", "=", medback);
                         ThePropertyBag.PropBagUpdateValue(tPanelInfo.PropertyBag, "BackgroundFull", "=", fullback);

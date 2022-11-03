@@ -16,7 +16,7 @@ namespace nsCDEngine.Engines
     /// This class will be used to manage the Host on this node - in V3.2 only the Thing is available but does not do anything
     /// In V4 we will add Plugin Management, TheServiceHostInfo and other NodeHost related functions, properties and communication here
     /// </summary>
-    internal class TheNodeHost : ICDEThing
+    internal class TheNodeHost : TheThingBase
     {
         /// <summary>
         /// Interval at which TheNodeHost will gather KPI totals from TheCDEKPIs
@@ -50,65 +50,7 @@ namespace nsCDEngine.Engines
             MyBaseThing.SetIThingObject(this);
         }
 
-        #region - Rare to Override
-        public void SetBaseThing(TheThing pThing)
-        {
-            MyBaseThing = pThing;
-        }
-        public TheThing GetBaseThing()
-        {
-            return MyBaseThing;
-        }
-        public cdeP GetProperty(string pName, bool DoCreate)
-        {
-            if (MyBaseThing != null)
-                return MyBaseThing.GetProperty(pName, DoCreate);
-            return null;
-        }
-        public cdeP SetProperty(string pName, object pValue)
-        {
-            if (MyBaseThing != null)
-                return MyBaseThing.SetProperty(pName, pValue);
-            return null;
-        }
-        public void RegisterEvent(string pName, Action<ICDEThing, object> pCallBack)
-        {
-            if (MyBaseThing != null)
-                MyBaseThing.RegisterEvent(pName, pCallBack);
-        }
-        public void UnregisterEvent(string pName, Action<ICDEThing, object> pCallBack)
-        {
-            if (MyBaseThing != null)
-                MyBaseThing.UnregisterEvent(pName, pCallBack);
-        }
-        public void FireEvent(string pEventName, ICDEThing sender, object pPara, bool FireAsync)
-        {
-            if (MyBaseThing != null)
-                MyBaseThing.FireEvent(pEventName, sender, pPara, FireAsync);
-        }
-        public bool HasRegisteredEvents(string pEventName)
-        {
-            if (MyBaseThing != null)
-                return MyBaseThing.HasRegisteredEvents(pEventName);
-            return false;
-        }
-        protected TheThing MyBaseThing ;
-
-        protected bool mIsUXInitialized;
-        protected bool mIsInitCalled;
-        protected bool mIsInitialized;
-        public bool IsUXInit()
-        { return mIsUXInitialized; }
-        public bool IsInit()
-        { return mIsInitialized; }
-
-        public virtual void HandleMessage(ICDEThing sender, object pMsg)
-        {
-        }
-
-        #endregion
-
-        public bool Init()
+        public override bool Init()
         {
             if (mIsInitCalled) return false;
 
@@ -125,12 +67,12 @@ namespace nsCDEngine.Engines
 
             if (TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs)
             {
-                var taskKpiThread = new System.Threading.Thread(() =>
+                var taskKpiThread = new Thread(() =>
                 {
                     TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: NodeHost starting Task KPI thread");
                     do
                     {
-                        Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) // TheCommonUtils.SleepOneEye(1000, 1000);
+                        Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) // TheCommonUtils.SleepOneEye(1000, 1000)
                     var kpis = TheCommonUtils.GetTaskKpis(null);
                         TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: {TheCommonUtils.SerializeObjectToJSONString(kpis)}");
                     } while (TheBaseAssets.MasterSwitch && TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs);
@@ -152,19 +94,6 @@ namespace nsCDEngine.Engines
             {
                 TheCDEKPIs.ToThingProperties(MyBaseThing, true);
             }
-        }
-
-        public bool Delete()
-        {
-            mIsInitialized = false;
-            // TODO Properly implement delete
-            return true;
-        }
-
-        public bool CreateUX()
-        {
-            mIsUXInitialized = true;
-            return true;
         }
     }
 }

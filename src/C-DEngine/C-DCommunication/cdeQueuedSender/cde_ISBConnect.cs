@@ -191,25 +191,22 @@ namespace nsCDEngine.Communication
             mURL = pUrl;
             mInitSubs = pInitialSubscriptions;
             TheSessionState tSessionState = TheBaseAssets.MySession.CreateSession(null, Guid.Empty);
-            if (!string.IsNullOrEmpty(pEasyScope))
+            if (pIsScrambledID)
             {
-                if (pIsScrambledID)
-                {
-                    mSScope = tSessionState.SScopeID = pEasyScope;
-                    RS = TheBaseAssets.MyScopeManager.GetRealScopeID(tSessionState.SScopeID);   //GRSI: rare
-                }
-                else
-                {
-                    RS = TheBaseAssets.MyScopeManager.GetRealScopeIDFromEasyID(pEasyScope);
-                    mSScope= tSessionState.SScopeID = TheBaseAssets.MyScopeManager.GetScrambledScopeID(RS, true);    //GRSI: rare
-                }
+                mSScope = tSessionState.SScopeID = pEasyScope;
+                RS = TheBaseAssets.MyScopeManager.GetRealScopeID(tSessionState.SScopeID);   //GRSI: rare
+            }
+            else
+            {
+                RS = TheBaseAssets.MyScopeManager.GetRealScopeIDFromEasyID(pEasyScope);
+                mSScope = tSessionState.SScopeID = TheBaseAssets.MyScopeManager.GetScrambledScopeID(RS, true);    //GRSI: rare
             }
             MyQSender = new TheQueuedSender
             {
                 MyISBlock = this
             };
             IS = TheBaseAssets.MyScopeManager.AddScopeID(pInitialSubscriptions, false, RS);
-            if (MyQSender.StartSender(new TheChannelInfo(Guid.Empty,RS, cdeSenderType.CDE_CUSTOMISB, pUrl)
+            if (MyQSender.StartSender(new TheChannelInfo(Guid.Empty, RS, cdeSenderType.CDE_CUSTOMISB, pUrl)
             {
                 MySessionState = tSessionState
             }, null, false))
@@ -260,7 +257,7 @@ namespace nsCDEngine.Communication
         {
             string noMSG = null;
             string strSubs = TheBaseAssets.MyScopeManager.AddScopeID(pTopics, RS,ref noMSG, false,true);     //GRSI: rare
-            TSM tTSM = new TSM(eEngineName.ContentService, "CDE_SUBSCRIBE", strSubs);
+            TSM tTSM = new (eEngineName.ContentService, "CDE_SUBSCRIBE", strSubs);
             tTSM.SetNoDuplicates(true);
             tTSM.QDX = 2;
             MyQSender.Subscribe(strSubs);
@@ -286,7 +283,7 @@ namespace nsCDEngine.Communication
         {
             string noMSG = null;
             string strSubs = TheBaseAssets.MyScopeManager.AddScopeID(pTopics, RS, ref noMSG, false, true);     //GRSI: rare
-            TSM tTSM = new TSM(eEngineName.ContentService, "CDE_UNSUBSCRIBE", strSubs);
+            TSM tTSM = new (eEngineName.ContentService, "CDE_UNSUBSCRIBE", strSubs);
             tTSM.SetNoDuplicates(true);
             tTSM.QDX = 2;
             MyQSender.Unsubscribe(strSubs, keepAlive);

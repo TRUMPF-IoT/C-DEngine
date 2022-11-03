@@ -220,7 +220,7 @@ namespace nsCDEngine.Engines.NMIService
     /// <summary>
     /// Predefined screen classes.
     /// </summary>
-    public class eScreenClass
+    public static class eScreenClass
     {
         /// <summary>
         /// Declares a screen containing a form
@@ -299,7 +299,7 @@ namespace nsCDEngine.Engines.NMIService
         public string S { get; set; }
     }
 
-    public class eNMIEvents
+    public static class eNMIEvents
     {
         /// <summary>
         /// This event is called when a NMIControl has set the "OnLoaded" property
@@ -944,8 +944,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             get
             {
-                if (_propertyBag == null)
-                    _propertyBag = new ThePropertyBag();
+                _propertyBag ??= new ThePropertyBag();
                 return _propertyBag;
             }
             set
@@ -1010,8 +1009,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (pCallback == null)
                 return;
-            if (PropertyBag == null)
-                PropertyBag = new ThePropertyBag();
+            PropertyBag ??= new ThePropertyBag();
             string tVal;
             switch (pEvent)
             {
@@ -1597,8 +1595,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             get
             {
-                if (_propertyBag == null)
-                    _propertyBag = new ThePropertyBag();
+                _propertyBag ??= new ThePropertyBag();
                 return _propertyBag;
             }
             set
@@ -1825,8 +1822,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             get
             {
-                if (_propertyBag == null)
-                    _propertyBag = new ThePropertyBag();
+                _propertyBag ??= new ThePropertyBag();
                 return _propertyBag;
             }
             set
@@ -2167,8 +2163,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             get
             {
-                if (_propertyBag == null)
-                    _propertyBag = new ThePropertyBag();
+                _propertyBag ??= new ThePropertyBag();
                 return _propertyBag;
             }
             set
@@ -2335,7 +2330,6 @@ namespace nsCDEngine.Engines.NMIService
             if (tDash == null) return false;
             if (pMSG == null || pMSG.CurrentUserID == Guid.Empty)
             {
-                //TODO: This should be throttled that we dont have too many back-forth between node and browser
                 Communication.TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH", $"{TheCommonUtils.cdeGuidToString(ContainerControlGuid == Guid.Empty ? cdeMID : ContainerControlGuid)}:{(DefaultView == eDefaultView.Form ? "CMyForm" : "CMyTable")}:{TheCommonUtils.cdeGuidToString(cdeMID)}:{TheCommonUtils.CGuid(tDash.cdeMID)}"));
                 return false;
             }
@@ -2496,8 +2490,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             get
             {
-                if (_propertyBag == null)
-                    _propertyBag = new ThePropertyBag();
+                _propertyBag ??= new ThePropertyBag();
                 return _propertyBag;
             }
             set

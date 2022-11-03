@@ -42,10 +42,8 @@ namespace nsCDEngine.Security
         {
             if (AID?.Length > 5)
             {
-                if (TheBaseAssets.MySecrets == null)
-                    TheBaseAssets.MySecrets = new TheDefaultSecrets();
-                if (TheBaseAssets.MyCrypto == null)
-                    TheBaseAssets.MyCrypto = new TheDefaultCrypto(TheBaseAssets.MySecrets);
+                TheBaseAssets.MySecrets ??= new TheDefaultSecrets();
+                TheBaseAssets.MyCrypto ??= new TheDefaultCrypto(TheBaseAssets.MySecrets);
                 TheBaseAssets.MySecrets.SatKays(AID);
                 if (TheBaseAssets.MySecrets.IsApplicationIDValid())
                     return true;
@@ -247,17 +245,7 @@ namespace nsCDEngine.Security
             eventScopeIDChanged?.Invoke(ReqConfig);
         }
 
-        public string GetScrambledScopeID()
-        {
-            if (!IsScopingEnabled) return "";
-            if (FastSScopeID != null)
-                return FastSScopeID;
-            MyServiceHostInfo?.MyKPIs?.IncrementKPI(eKPINames.KPI4);
-            string t = Base64Encode(CU.GetRandomUInt(0, 1000) + "&" + ScopeID);
-            if (MyServiceHostInfo?.EnableFastSecurity == true)
-                FastSScopeID = t;
-            return t;
-        }
+
         public void SetScopeIDFromScrambledID(string pScrambledId)
         {
             if (string.IsNullOrEmpty(pScrambledId))
@@ -278,6 +266,18 @@ namespace nsCDEngine.Security
             else
                 return "";
         }
+        public string GetScrambledScopeID()
+        {
+            if (!IsScopingEnabled) return "";
+            if (FastSScopeID != null)
+                return FastSScopeID;
+            MyServiceHostInfo?.MyKPIs?.IncrementKPI(eKPINames.KPI4);
+            string t = Base64Encode(CU.GetRandomUInt(0, 1000) + "&" + ScopeID);
+            if (MyServiceHostInfo?.EnableFastSecurity == true)
+                FastSScopeID = t;
+            return t;
+        }
+
         public string GetScrambledScopeID(string pRealScopeID, bool IsRealId)
         {
             if (string.IsNullOrEmpty(pRealScopeID)) return "";
@@ -397,7 +397,7 @@ namespace nsCDEngine.Security
         public string AddScopeID(string pTopics, string pScramScopeID, ref string pMessageSID, bool bFirstTopicOnly, bool IsScramRScope)
         {
             if (string.IsNullOrEmpty(pTopics)) return "";
-            if (string.IsNullOrEmpty(pScramScopeID) && string.IsNullOrEmpty(pMessageSID) == true)
+            if (string.IsNullOrEmpty(pScramScopeID) && string.IsNullOrEmpty(pMessageSID))
                 return pTopics;
             else
             {
@@ -426,7 +426,7 @@ namespace nsCDEngine.Security
                             {
                                 if (!t.Contains("@"))
                                 {
-                                    if (tScrambledID == null || !(MyServiceHostInfo?.EnableFastSecurity==true))    //SECURITY: If EnableFast Security is true, all Topics wil have same SScopeID
+                                    if (tScrambledID == null || (MyServiceHostInfo?.EnableFastSecurity != true))    //SECURITY: If EnableFast Security is true, all Topics wil have same SScopeID
                                     {
                                         tScrambledID = GetScrambledScopeID(pScramScopeID, IsScramRScope);   //GRSI: rare
                                     }
@@ -477,11 +477,8 @@ namespace nsCDEngine.Security
             }
             else
             {
-                if (!IsAllowedForeignProcessing && !ScopeID.Equals(tRSID))
-                {
-                    if (string.IsNullOrEmpty(RProSco) || !tRSID.Equals(RProSco))
-                        return "SCOPEVIOLATION";
-                }
+                if (!IsAllowedForeignProcessing && !ScopeID.Equals(tRSID) && (string.IsNullOrEmpty(RProSco) || !tRSID.Equals(RProSco)))
+                    return "SCOPEVIOLATION";
                 string tC = pCommand.Substring(0, pCommand.IndexOf('@'));
                 return tC;
             }
@@ -538,7 +535,7 @@ namespace nsCDEngine.Security
                 if (!PathPrefix.EndsWith("/")) PathPrefix += "/";
             }
             string pSessID = pSessionID.ToString();
-            if (pCounter == 1 && pSessionID == Guid.Empty && !(MyServiceHostInfo?.UseFixedConnectionUrl==true))
+            if (pCounter == 1 && pSessionID == Guid.Empty && (MyServiceHostInfo?.UseFixedConnectionUrl != true))
                 pSessID = "P" + GetCryptoGuid().ToString().Substring(1);
             MyServiceHostInfo?.MyKPIs?.IncrementKPI(eKPINames.KPI4);
             string tPath = PathPrefix + "ISB" + Uri.EscapeUriString(Base64Encode($"{string.Format("{0:00000}",CU.GetRandomUInt(0, 99999))}{(string.IsNullOrEmpty(MyServiceHostInfo?.ProtocolVersion)?"40":MyServiceHostInfo?.ProtocolVersion)}_{pCounter}_{((int)(pOriginType))}_{pSessID}"));
@@ -704,7 +701,7 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         private static Guid GetCryptoGuid()
         {
-            RNGCryptoServiceProvider crypto = new RNGCryptoServiceProvider();
+            RNGCryptoServiceProvider crypto = new ();
             byte[] data = new byte[16];
             crypto.GetBytes(data);
             return CU.CGuid(data);
@@ -778,6 +775,7 @@ namespace nsCDEngine.Security
             }
             catch (Exception)
             {
+                //ignored
             }
             return "";
         }

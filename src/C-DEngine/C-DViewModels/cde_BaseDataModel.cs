@@ -16,7 +16,7 @@ using System.Reflection;
 using System.Threading;
 #pragma warning disable 1591
 
-//#pragma warning disable CS1591    //TODO: Remove and document public methods
+//#pragma warning disable CS1591   
 
 
 namespace nsCDEngine.ViewModels
@@ -159,8 +159,7 @@ namespace nsCDEngine.ViewModels
         public virtual Action<object, TheProcessMessage> RegisterEvent(string pEventName, Action<object, TheProcessMessage> pCallback)
         {
             if (pCallback == null || string.IsNullOrEmpty(pEventName)) return null;
-            if (TMDBRegisteredEventsOLD == null)
-                TMDBRegisteredEventsOLD = new TheCommonUtils.RegisteredEventHelper<object, TheProcessMessage>();
+            TMDBRegisteredEventsOLD ??= new TheCommonUtils.RegisteredEventHelper<object, TheProcessMessage>();
 
             return TMDBRegisteredEventsOLD.RegisterEvent(pEventName, pCallback);
         }
@@ -216,8 +215,7 @@ namespace nsCDEngine.ViewModels
         public virtual Action<TheProcessMessage, object> RegisterEvent2(string pEventName, Action<TheProcessMessage, object> pCallback)
         {
             if (pCallback == null || string.IsNullOrEmpty(pEventName)) return null;
-            if (TMDBRegisteredEvents == null)
-                TMDBRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<TheProcessMessage, object>();
+            TMDBRegisteredEvents ??= new TheCommonUtils.RegisteredEventHelper<TheProcessMessage, object>();
 
             return TMDBRegisteredEvents.RegisterEvent(pEventName, pCallback);
         }
@@ -286,6 +284,17 @@ namespace nsCDEngine.ViewModels
         }
 
         /// <summary>
+        /// Initialization of TheDataBase
+        /// Sets the cdeMID to a NewGuid and the cdeCTIM Timestamp to the current time
+        /// </summary>
+        public TheDataBase()
+        {
+            cdeMID = Guid.NewGuid();
+            cdeCTIM = DateTimeOffset.Now;
+            cdeN = TheBaseAssets.MyServiceHostInfo?.MyDeviceInfo != null ? TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID : Guid.Empty;
+        }
+
+        /// <summary>
         /// Clonse an incoming object into this object
         /// </summary>
         /// <param name="t">Incoming object to be cloned</param>
@@ -300,17 +309,6 @@ namespace nsCDEngine.ViewModels
             t.cdePRI = cdePRI;
             t.cdeN = cdeN;
             return t;
-        }
-
-        /// <summary>
-        /// Initialization of TheDataBase
-        /// Sets the cdeMID to a NewGuid and the cdeCTIM Timestamp to the current time
-        /// </summary>
-        public TheDataBase()
-        {
-            cdeMID = Guid.NewGuid();
-            cdeCTIM = DateTimeOffset.Now;
-            cdeN = TheBaseAssets.MyServiceHostInfo?.MyDeviceInfo != null ? TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID : Guid.Empty;
         }
     }
 
@@ -404,10 +402,6 @@ namespace nsCDEngine.ViewModels
         /// Publication Topic. Most plugins use the Plugin-Service ClassName
         /// </summary>
         public string Topic { get; set; }
-        /// <summary>
-        /// ID of the Current user associated with this Message
-        /// </summary>
-        //internal TheUserDetails CurrentUser { get; set; }
         public Guid CurrentUserID { get; set; }
         /// <summary>
         /// new in 4.2: contains the complete ClientInfo of an incoming request
@@ -597,6 +591,12 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
             MyRSA = null;
         }
 
@@ -617,7 +617,9 @@ namespace nsCDEngine.ViewModels
                         myRSATemp.Dispose();
 #endif
                     }
-                    catch { }
+                    catch { 
+                    //intent
+                    }
                 }
             }
         }
@@ -793,7 +795,6 @@ namespace nsCDEngine.ViewModels
         /// </summary>
 		public cdeConcurrentDictionary<string, string> StateCookies { get; set; }
 
-        //public bool IsMobileDevice { get; set; }
         /// <summary>
         /// Current Browser platform the last request was sent from
         /// </summary>
@@ -820,7 +821,7 @@ namespace nsCDEngine.ViewModels
             return $"SID=({cdeMID}) CID:{(CID == Guid.Empty ? "not set" : CID.ToString().Substring(0, 4))} DID:{MyDevice} RemoteAddr:({RemoteAddress}) LastAccess:({LastAccess}) End:{EndTime} Browser:({Browser} {BrowserDesc})</br>CurrentUrl:({CurrentURL}) UA:{UserAgent}".ToString(CultureInfo.InvariantCulture);
         }
 
-        internal object MySessionLock = new object();
+        internal object MySessionLock = new ();
 
         /// <summary>
         /// Increase the FID Serial Number by one
@@ -868,7 +869,6 @@ namespace nsCDEngine.ViewModels
         public string RequestCookiesStr { get; set; }
 
         public int TimeOut { get; set; }
-        //public bool IsMobileDevice { get; set; }
         public eWebPlatform WebPlatform { get; set; }
 
         public string RequestUriString { get; set; }
@@ -1091,7 +1091,7 @@ namespace nsCDEngine.ViewModels
 
         internal static TheRequestData CloneForWS(TheRequestData pData)
         {
-            TheRequestData tData = new TheRequestData
+            TheRequestData tData = new ()
             {
                 AllowCaching = pData.AllowCaching,
                 AllowStatePush = pData.AllowStatePush,
@@ -1129,10 +1129,6 @@ namespace nsCDEngine.ViewModels
                 DisableChunking = pData.DisableChunking,
                 DisableKeepAlive = pData.DisableKeepAlive
             };
-            //tData.Header = pData.Header;
-
-            //tData.RequestCookies = pData.RequestCookies;
-
             return tData;
         }
         /// <summary>
@@ -1175,7 +1171,6 @@ namespace nsCDEngine.ViewModels
                         tData.ResponseBufferStr = TheCommonUtils.cdeSubstringMax(TheCommonUtils.cdeDecompressToString(pData.ResponseBuffer), 512);
                     else
                         tData.ResponseBufferStr = TheCommonUtils.cdeSubstringMax(TheCommonUtils.CArray2UTF8String(pData.ResponseBuffer), 512);
-                    //TheDeviceMessage tDev = TheCommonUtils.DeserializeJSONStringToObject<TheDeviceMessage>(tData.ResponseBufferStr);
                 }
                 catch (Exception)
                 {
@@ -1287,24 +1282,6 @@ namespace nsCDEngine.ViewModels
         /// file or directory.
         /// </summary>
         public DateTimeOffset CreateTime { get; set; }
-
-        ///// <summary>
-        ///// Gets an instance of the parent directory.
-        ///// </summary>
-        //public string Directory { get; set; }
-
-        ///// <summary>
-        ///// Gets a string representing the directory's
-        ///// full path.
-        ///// </summary>
-        //public string DirectoryName { get; set; }
-
-        ///// <summary>
-        ///// Gets the string representing the extension part of the file.
-        ///// For example, for a file C:\MyFile.txt, this
-        ///// property returns ".txt".
-        ///// </summary>
-        //public string Extension { get; set; }
 
         /// <summary>
         /// Gets or sets a value that determines if the
@@ -1577,8 +1554,6 @@ namespace nsCDEngine.ViewModels
         /// This is set to true if the device is running the C-DEngine.
         /// </summary>
         public bool IsCDEngine { get; set; }
-        //public string PastRoles { get; set; }
-
         public string ServiceUrl { get; set; }
 
         public bool HasPresentation { get; set; }
@@ -1621,7 +1596,7 @@ namespace nsCDEngine.ViewModels
 
         public ThePluginInfo Clone()
         {
-            ThePluginInfo t = new ThePluginInfo();
+            ThePluginInfo t = new ();
             CloneBase(t);
             t.ServiceName = ServiceName;
             t.ServiceDescription = ServiceDescription;
@@ -1686,7 +1661,6 @@ namespace nsCDEngine.ViewModels
         {
             cdeMID = pKey;
             RoleName = pName;
-            //AccessLevel = ACL;
             Comment = pComment;
             HomeScreen = pHomeScreen;
             IsAdmin = pIsAdmin;
@@ -1723,7 +1697,7 @@ namespace nsCDEngine.ViewModels
 
         public TheBlobData CloneForSerial()
         {
-            TheBlobData tD = new TheBlobData
+            TheBlobData tD = new ()
             {
                 BlobName = BlobName,
                 LastBlobUpdate = LastBlobUpdate,

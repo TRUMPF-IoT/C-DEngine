@@ -388,8 +388,7 @@ namespace nsCDEngine.Engines.NMIService
                                     break;
                             }
                         }
-                        if (astream == null)
-                            astream = TheCommonUtils.GetSystemResource(null, pMsg.Message.PLS);
+                        astream ??= TheCommonUtils.GetSystemResource(null, pMsg.Message.PLS);
                         if (astream != null)
                         {
                             var tTopic = $"NMI_GLOBAL_{cmd[0].Substring(15)}:{pMsg.Message.PLS}";

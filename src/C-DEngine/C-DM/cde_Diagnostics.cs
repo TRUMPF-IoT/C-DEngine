@@ -43,8 +43,7 @@ namespace nsCDEngine.ISM
         /// <param name="IsBackGround">If true, this thread is a designated background thread</param>
         public static void SetThreadName(string tName,bool IsBackGround)
         {
-            if (EnableThreadDiag == null)
-                EnableThreadDiag = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableThreadDiagnostics"));
+            EnableThreadDiag ??= TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableThreadDiagnostics"));
             if (EnableThreadDiag==true)
             {
                 if (IsBackGround)
@@ -64,12 +63,12 @@ namespace nsCDEngine.ISM
                     }
                     else
                     {
-                        if (!string.IsNullOrEmpty(tName) && !string.IsNullOrEmpty(t)) t += ":cde" + tName;
+                        if (!string.IsNullOrEmpty(tName)) t += ":cde" + tName;
                     }
                     if (MyThreadNames != null && ThreadID < MAX_IDS)
                     {
                         MyThreadNames[ThreadID] = t;
-                        MyThreadStacks[ThreadID] = System.Threading.Thread.CurrentThread; // TheCommonUtils.GetStackInfo(new System.Diagnostics.StackTrace(true));
+                        MyThreadStacks[ThreadID] = System.Threading.Thread.CurrentThread; 
                     }
                 }
             }
@@ -77,7 +76,7 @@ namespace nsCDEngine.ISM
 
         internal static List<TheThreadInfo> GetThreadInfo()
         {
-            List<TheThreadInfo> tList = new List<TheThreadInfo>();
+            List<TheThreadInfo> tList = new ();
 #if CDE_STANDARD //No Thread Name Diagnostics
 #else
             try
@@ -138,7 +137,7 @@ namespace nsCDEngine.ISM
         /// <param name="nProcID"> </param>
         internal static List<TheModuleInfo> GetLoadedModules (int nProcID)
         {
-            List<TheModuleInfo> tList = new List<TheModuleInfo>();
+            List<TheModuleInfo> tList = new ();
             try
             {
                 Process proc = null;
@@ -152,7 +151,7 @@ namespace nsCDEngine.ISM
                 {
                     for (int i = 0; i < nCount; i++)
                     {
-                        TheModuleInfo t = new TheModuleInfo()
+                        TheModuleInfo t = new ()
                         {
                             Name = modules[i].ModuleName,
                             MemorySize = modules[i].ModuleMemorySize
@@ -182,7 +181,6 @@ namespace nsCDEngine.ISM
             }
             catch ( Exception)
             {
-                //TheSystemMessageLog.ToCo(e.Message);
                 return null;
             }
         }
@@ -192,26 +190,17 @@ namespace nsCDEngine.ISM
         /// <param name="state">ThreadState value that needs to be translated. </param>
         public static String ThreadStateToString (ThreadState state)
         {
-            switch (state)
+            return state switch
             {
-                case ThreadState.Initialized:
-                    return "Initialized";
-                case ThreadState.Ready:
-                    return "Ready";
-                case ThreadState.Running:
-                    return "Running";
-                case ThreadState.Standby:
-                    return "StandBy";
-                case ThreadState.Terminated:
-                    return "Terminated";
-                case ThreadState.Transition:
-                    return "Transition";
-                case ThreadState.Wait:
-                    return "Waiting";
-                case ThreadState.Unknown:
-                default:
-                    return "Uknown";
-            }
+                ThreadState.Initialized => "Initialized",
+                ThreadState.Ready => "Ready",
+                ThreadState.Running => "Running",
+                ThreadState.Standby => "StandBy",
+                ThreadState.Terminated => "Terminated",
+                ThreadState.Transition => "Transition",
+                ThreadState.Wait => "Waiting",
+                _ => "Uknown",
+            };
         }
 
         /// <summary>
@@ -220,39 +209,23 @@ namespace nsCDEngine.ISM
         /// <param name="reason">ThreadWaitReason value that needs to be translated. </param>
         public static String ThreadWaitReasonToString (ThreadWaitReason reason)
         {
-            switch (reason)
+            return reason switch
             {
-                case ThreadWaitReason.EventPairHigh:
-                    return "EventPairHigh";
-                case ThreadWaitReason.EventPairLow:
-                    return "EventPairLow";
-                case ThreadWaitReason.ExecutionDelay:
-                    return "Execution Delay";
-                case ThreadWaitReason.Executive:
-                    return "Executive";
-                case ThreadWaitReason.FreePage:
-                    return "FreePage";
-                case ThreadWaitReason.LpcReceive:
-                    return "LPC Recieve";
-                case ThreadWaitReason.LpcReply:
-                    return "LPC Reply";
-                case ThreadWaitReason.PageIn:
-                    return "Page In";
-                case ThreadWaitReason.PageOut:
-                    return "Page Out";
-                case ThreadWaitReason.Suspended:
-                    return "Suspended";
-                case ThreadWaitReason.SystemAllocation:
-                    return "System Allocation";
-                case ThreadWaitReason.UserRequest:
-                    return "User Request";
-                case ThreadWaitReason.VirtualMemory:
-                    return "Virtual Memory";
-                case ThreadWaitReason.Unknown:
-                default:
-                    return "Unknown";
-
-            }
+                ThreadWaitReason.EventPairHigh => "EventPairHigh",
+                ThreadWaitReason.EventPairLow => "EventPairLow",
+                ThreadWaitReason.ExecutionDelay => "Execution Delay",
+                ThreadWaitReason.Executive => "Executive",
+                ThreadWaitReason.FreePage => "FreePage",
+                ThreadWaitReason.LpcReceive => "LPC Recieve",
+                ThreadWaitReason.LpcReply => "LPC Reply",
+                ThreadWaitReason.PageIn => "Page In",
+                ThreadWaitReason.PageOut => "Page Out",
+                ThreadWaitReason.Suspended => "Suspended",
+                ThreadWaitReason.SystemAllocation => "System Allocation",
+                ThreadWaitReason.UserRequest => "User Request",
+                ThreadWaitReason.VirtualMemory => "Virtual Memory",
+                _ => "Unknown",
+            };
         }
         /// <summary>
         /// Method translates thread priority level enumerator value into a String value.
@@ -260,18 +233,13 @@ namespace nsCDEngine.ISM
         /// <param name="level">Thread priority value that needs to be translated. </param>
         public static String PriorityToString(int level)
         {
-            switch (level)
+            return level switch
             {
-                case 8:
-                    return "Normal";
-                case 13:
-                    return "High";
-                case 24:
-                    return "Real Time";
-                case 4:
-                default:
-                    return "Idle";
-            }
+                8 => "Normal",
+                13 => "High",
+                24 => "Real Time",
+                _ => "Idle",
+            };
         }
     }
 }

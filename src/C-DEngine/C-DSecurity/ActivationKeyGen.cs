@@ -30,7 +30,7 @@ namespace nsCDEngine.ActivationKey
             licenses = new List<TheLicense>();
             try
             {
-                var licenseFileContainer = Directory.EnumerateFiles(licenseDirectory, "*.cdex"); // TODO Review license file deployment mechanism and naming
+                var licenseFileContainer = Directory.EnumerateFiles(licenseDirectory, "*.cdex"); 
                 foreach (var containerFile in licenseFileContainer)
                 {
                     using (var zipFileStream = new FileStream(containerFile, FileMode.Open, FileAccess.Read))
@@ -50,7 +50,6 @@ namespace nsCDEngine.ActivationKey
                                             var license = TheCommonUtils.DeserializeJSONStringToObject<TheLicense>(licenseJson);
                                             if (!license.ValidateSignature(publicKeyCSPBlobs))
                                             {
-                                                //Console.WriteLine("Invalid or unrecognized signature on license {0}", licenseFile);
                                                 return false;
                                             }
                                             licenses.Add(license);
@@ -61,14 +60,13 @@ namespace nsCDEngine.ActivationKey
                         }
                     }
                 }
-                var licenseFiles = Directory.EnumerateFiles(licenseDirectory, "*.cdel"); // TODO Review license file deployment mechanism and naming
+                var licenseFiles = Directory.EnumerateFiles(licenseDirectory, "*.cdel"); // Review license file deployment mechanism and naming
                 foreach (var licenseFile in licenseFiles)
                 {
                     var licenseJson = File.ReadAllText(licenseFile);
                     var license = TheCommonUtils.DeserializeJSONStringToObject<TheLicense>(licenseJson);
                     if (!license.ValidateSignature(publicKeyCSPBlobs))
                     {
-                        //Console.WriteLine("Invalid or unrecognized signature on license {0}", licenseFile);
                         return false;
                     }
                     licenses.Add(license);
@@ -77,7 +75,6 @@ namespace nsCDEngine.ActivationKey
             }
             catch (Exception)
             {
-                //Console.WriteLine("Failed to extract license:" + ee.ToString());
                 return false;
             }
 
@@ -89,7 +86,6 @@ namespace nsCDEngine.ActivationKey
             var license = TheCommonUtils.DeserializeJSONStringToObject<TheLicense>(licenseText);
             if (!license.ValidateSignature(publicKeyCSPBlobs))
             {
-                //Console.WriteLine("Invalid or unrecognized signature on license {0}", licenseFile);
                 return null;
             }
             return license;
@@ -140,7 +136,6 @@ namespace nsCDEngine.ActivationKey
             }
             var sortedLicenses = licenses.OrderBy((l) => l.LicenseId.ToString());
 
-            byte[] licenseSignature;
             byte[] licenseParams = GenerateLicenseParameters(sortedLicenses);
             if (licenseParams == null || licenseParams.Length > TheActivationUtils.MaxLicenseParameters)
             {
@@ -161,7 +156,7 @@ namespace nsCDEngine.ActivationKey
             }
             uint expirationInDays = (uint)expirationTemp;
 
-            if (!TheActivationUtils.GenerateLicenseSignature(deviceId, signingKey, expirationInDays, sortedLicenses.ToArray(), licenseParams, flags, out licenseSignature))
+            if (!TheActivationUtils.GenerateLicenseSignature(deviceId, signingKey, expirationInDays, sortedLicenses.ToArray(), licenseParams, flags, out byte[] licenseSignature))
             {
                 return null;
             }
@@ -183,7 +178,6 @@ namespace nsCDEngine.ActivationKey
             activationKey[22] = 15; // Ensure we always get 6x6 characters in base32
 
             var key = TheActivationUtils.Base32Encode(activationKey);
-            //var testKey = TheActivationUtils.Base32Decode(key.Replace("-",""));
             return key;
         }
 

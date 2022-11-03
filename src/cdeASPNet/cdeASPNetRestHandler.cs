@@ -23,10 +23,8 @@ namespace cdeASPNetMiddleware
 
     public class cdeASPNetRestHandler
     {
-        public static string ExpiredText;
-
         private readonly RequestDelegate _next;
-
+        public static string ExpiredText;
         public cdeASPNetRestHandler(RequestDelegate next)
         {
             _next = next;
@@ -61,7 +59,7 @@ namespace cdeASPNetMiddleware
 
             if (Request.Path.ToString().EndsWith("cdeRestart.aspx") && cdeASPNetCommon.IsTokenValid(Request))
             {
-                //HttpRuntime.UnloadAppDomain(); TODO: Restart ASP.NET Core
+                TheBaseAssets.MyApplication?.Shutdown(true);
                 return;
             }
             if (Request.Path.ToString().EndsWith("ashx", StringComparison.CurrentCultureIgnoreCase))
@@ -77,29 +75,26 @@ namespace cdeASPNetMiddleware
             if (tReq == null)
                 return;
 
-            using (MemoryStream ms = new MemoryStream())
+            using (MemoryStream ms = new ())
             {
                 await Request.Body.CopyToAsync(ms);
                 tReq.PostData = ms.ToArray();
             }
             tReq.PostDataLength = tReq.PostData.Length;
 
-            if (TheCommCore.MyHttpService != null && TheCommCore.MyHttpService.cdeProcessPost(tReq))
+            if (TheCommCore.MyHttpService != null && TheCommCore.MyHttpService.cdeProcessPost(tReq) && tReq.StatusCode != 0)
             {
-                if (tReq.StatusCode != 0)
+                Response.StatusCode = tReq.StatusCode;
+                cdeASPNetCommon.AddCookiesToHeader(Response, tReq);
+                Response.Headers.Add("Cache-Control", tReq.AllowCaching ? "max-age=60, public" : "no-cache");
+                if (tReq.StatusCode > 300 && tReq.StatusCode < 400 && tReq.Header != null)
+                    Response.Headers.Add("Location", tReq.Header.cdeSafeGetValue("Location"));
+                if (tReq.ResponseBuffer != null)
                 {
-                    Response.StatusCode = tReq.StatusCode;
-                    cdeASPNetCommon.AddCookiesToHeader(Response, tReq);
-                    Response.Headers.Add("Cache-Control", tReq.AllowCaching ? "max-age=60, public" : "no-cache");
-                    if (tReq.StatusCode > 300 && tReq.StatusCode < 400 && tReq.Header != null)
-                        Response.Headers.Add("Location", tReq.Header.cdeSafeGetValue("Location"));
-                    if (tReq.ResponseBuffer != null)
-                    {
-                        Response.Headers.Add("cdeDeviceID", TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString());
-                        Response.ContentType = tReq.ResponseMimeType;
-                        await Response.Body.WriteAsync(tReq.ResponseBuffer);
-                        return;
-                    }
+                    Response.Headers.Add("cdeDeviceID", TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString());
+                    Response.ContentType = tReq.ResponseMimeType;
+                    await Response.Body.WriteAsync(tReq.ResponseBuffer);
+                    return;
                 }
             }
             await _next.Invoke(pContext);

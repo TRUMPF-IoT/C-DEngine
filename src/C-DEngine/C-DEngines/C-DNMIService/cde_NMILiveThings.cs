@@ -226,7 +226,7 @@ namespace nsCDEngine.ViewModels
 
         private void OnDownloadClick(ICDEThing pThing, object pPara)
         {
-            if (!(pPara is TheProcessMessage pMSG) || pMSG.Message == null) return;
+            if (pPara is not TheProcessMessage pMSG || pMSG.Message == null) return;
 
             string[] cmd = pMSG.Message.PLS.Split(':');
             if (cmd.Length > 2)
@@ -234,7 +234,7 @@ namespace nsCDEngine.ViewModels
                 TheThing tThing = TheThingRegistry.GetThingByMID("*", TheCommonUtils.CGuid(cmd[2]), true);
                 if (tThing == null) return;
 
-                TSM tFilePush = new TSM(eEngineName.ContentService, string.Format("CDE_FILE:{0}.JSON:application/zip", tThing.FriendlyName))
+                TSM tFilePush = new (eEngineName.ContentService, string.Format("CDE_FILE:{0}.JSON:application/zip", tThing.FriendlyName))
                 {
                     SID = pMSG.Message.SID,
                     PLS = "bin",
@@ -428,14 +428,12 @@ namespace nsCDEngine.ViewModels
         public override bool Init()
         {
             if (mIsInitCalled) return false;
-            {
-                mIsInitCalled = true;
-                if (string.IsNullOrEmpty(MyBaseThing.ID))
-                    MyBaseThing.ID = Guid.NewGuid().ToString();
-                MyBaseThing.FireEvent("OnInitialized", this, new TSM(MyBaseThing.cdeMID.ToString(), "Was Init"), false);
+            mIsInitCalled = true;
+            if (string.IsNullOrEmpty(MyBaseThing.ID))
+                MyBaseThing.ID = Guid.NewGuid().ToString();
+            MyBaseThing.FireEvent("OnInitialized", this, new TSM(MyBaseThing.cdeMID.ToString(), "Was Init"), false);
 
-                TheBaseEngine.WaitForStorageReadiness(sinkStorageStationIsReadyFired, true);
-            }
+            TheBaseEngine.WaitForStorageReadiness(sinkStorageStationIsReadyFired, true);
             return false;
         }
 
@@ -466,7 +464,7 @@ namespace nsCDEngine.ViewModels
         public Guid StoreMID { get { return MyTagLog.StoreMID; } }
         public void Write(TheNMILiveTag pTag,string pEventLabel,string pComment)
         {
-            TheNMITagLogEntry tEntry = new TheNMITagLogEntry
+            TheNMITagLogEntry tEntry = new ()
             {
                 ID = pTag.GetBaseThing().ID,
                 Value = TheCommonUtils.CDbl(pTag.GetBaseThing().Value),

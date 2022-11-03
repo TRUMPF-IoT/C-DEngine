@@ -63,20 +63,20 @@ namespace nsCDEngine.Engines.StorageService
         /// <summary>
         /// My records
         /// </summary>
-        internal cdeConcurrentDictionary<string, T> MyRecords = new cdeConcurrentDictionary<string, T>();
+        internal cdeConcurrentDictionary<string, T> MyRecords = new ();
         private List<T> recordsBySequenceNumber;
         private long sequenceNumberOffset = 1;
 
         // For AppendOnly and TrackInsertionOrder StorageMirrors
         // Keeps track of the starting offsets for each file for "deletion from start"
-        private cdeConcurrentDictionary<string, long> fileOffsets = new cdeConcurrentDictionary<string, long>();
+        private readonly cdeConcurrentDictionary<string, long> fileOffsets = new ();
 
         #region MyRecordsHelpers
         // Helper functions to manipulate MyRecords while keeping the recordsBySequenceNumber in sync
         // These private functions assume that the MyRecordsLock has been taken by the caller
         private bool TryAddInternal(string pStrKey, T item)
         {
-            bool addToSequence = AppendOnly ? true : MyRecords.TryAdd(pStrKey, item);
+            bool addToSequence = AppendOnly || MyRecords.TryAdd(pStrKey, item);
             if (addToSequence)
             {
                 if (recordsBySequenceNumber != null)
@@ -290,7 +290,7 @@ namespace nsCDEngine.Engines.StorageService
                 string fileToRewrite = "";
                 if (MaxCacheFileSize > 0)
                 {
-                    DirectoryInfo di = new DirectoryInfo(TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
+                    DirectoryInfo di = new (TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
                     FileInfo[] fileInfo = di.GetFiles($"{MyStoreID.Replace('&', 'n')}*");
                     if (fileInfo.Length > 0)
                     {
@@ -329,59 +329,17 @@ namespace nsCDEngine.Engines.StorageService
                             List<string> encryptedItems = TheCommonUtils.DeserializeJSONStringToObject<List<string>>(content);
                             encryptedItems.RemoveRange(0, countToRemove);
                             File.WriteAllText(fileToRewrite, TheCommonUtils.SerializeObjectToJSONString(encryptedItems));
-                            //TheCommonUtils.SerializeObjectToJSONFileInternal(fileToRewrite, encryptedItems);
                         }
                         else
                         {
                             List<T> items = TheCommonUtils.DeserializeJSONStringToObject<List<T>>(content);
                             items.RemoveRange(0, countToRemove);
                             File.WriteAllText(fileToRewrite, TheCommonUtils.SerializeObjectToJSONString(items));
-                            //TheCommonUtils.SerializeObjectToJSONFileInternal(fileToRewrite, items);
                         }
                     }
                 }
             }
         }
-
-        // TODO Encapsulate SequenceNumber in a class to avoid comparison or other unsafe operations in the future
-        //class SequenceNumber
-        //{
-        //    private long _sequenceNumber;
-
-        //    public bool IsEqual(SequenceNumber number)
-        //    {
-        //        return number._sequenceNumber == _sequenceNumber;
-        //    }
-
-        //    public SequenceNumber GetNext()
-        //    {
-        //        long newSequenceNumber = this._sequenceNumber + 1;
-        //        if (newSequenceNumber == 0)
-        //        {
-        //            newSequenceNumber++;
-        //        }
-        //        else if (newSequenceNumber == long.MaxValue)
-        //        {
-        //            newSequenceNumber++;
-        //        }
-        //        return new SequenceNumber { _sequenceNumber = newSequenceNumber };
-        //    }
-
-        //    public SequenceNumber GetPrevious()
-        //    {
-        //        long newSequenceNumber = this._sequenceNumber - 1;
-        //        if (newSequenceNumber == 0)
-        //        {
-        //            newSequenceNumber--;
-        //        }
-        //        if (newSequenceNumber == long.MaxValue)
-        //        {
-        //            newSequenceNumber--;
-        //        }
-        //        return new SequenceNumber { _sequenceNumber = newSequenceNumber };
-        //    }
-
-        //}
 
         internal long GetNextSequenceNumber(long sequenceNumber)
         {
@@ -579,8 +537,6 @@ namespace nsCDEngine.Engines.StorageService
                         newTimer.Dispose();
                     }
                 }
-                //TheQueuedSenderRegistry.UnregisterHealthTimer(RemoveExpired);
-                //TheQueuedSenderRegistry.RegisterHealthTimer(RemoveExpired);
             }
             else
             {
@@ -596,12 +552,16 @@ namespace nsCDEngine.Engines.StorageService
             {
                 previousTimer?.Change(Timeout.Infinite, Timeout.Infinite);
             }
-            catch { }
+            catch { 
+                //ignored
+            }
             try
             {
                 previousTimer?.Dispose();
             }
-            catch { }
+            catch { 
+                //ignored
+            }
         }
 
         /// <summary>
@@ -609,9 +569,14 @@ namespace nsCDEngine.Engines.StorageService
         /// </summary>
         public void Dispose()
         {
-            DisposeExpireTimer();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            DisposeExpireTimer();
+        }
         /// <summary>
         /// Sets the maximum size of the store.
         /// </summary>
@@ -630,10 +595,7 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return false;
             }
-            if (recordsBySequenceNumber==null)
-            {
-                recordsBySequenceNumber = new List<T>();
-            }
+            recordsBySequenceNumber ??= new List<T>();
             return true;
         }
 
@@ -690,10 +652,10 @@ namespace nsCDEngine.Engines.StorageService
                 //lock (MyRecordsLock)                //LOCK-REVIEW: Here we need both locks: Write AND MyRecordsLock that no reading and Saving happens until this is done
                 {
                     // In case records are split among many files
-                    List<string> filesToReturn = new List<string>();
+                    List<string> filesToReturn = new ();
                     if (AppendOnly && MaxCacheFileSize > 0)
                     {
-                        DirectoryInfo di = new DirectoryInfo(TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
+                        DirectoryInfo di = new (TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
                         FileInfo[] fileInfo = di.GetFiles($"{MyStoreID.Replace('&', 'n')}*");
                         if (fileInfo.Length > 0)
                         {
@@ -752,7 +714,7 @@ namespace nsCDEngine.Engines.StorageService
                                 fileOffsets.TryAdd(FileToReturn, recordsBySequenceNumber.Count);
                             if (LoadFile(FileToReturn))
                             {
-                                bLoaded = i == 0 ? true : bLoaded && true;
+                                bLoaded = i == 0 || bLoaded;
                             }
                             else
                             {
@@ -760,20 +722,19 @@ namespace nsCDEngine.Engines.StorageService
                                 {
                                     // Log: encountered corrupted storage mirror, falling back to latest snapshot (data may have been lost)
                                     TheBaseAssets.MySYSLOG.WriteToLog(4809, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed, but recovered from previous backup copy. Some data may have been lost.", FileToReturn, typeof(T)), eMsgLevel.l2_Warning));
-                                    bLoaded = i == 0 ? true : bLoaded && true;
+                                    bLoaded = i == 0 || bLoaded;
                                 }
                                 else
                                 {
                                     if (System.IO.File.Exists(FileToReturn) || System.IO.File.Exists(FileToReturn + ".1"))
                                     {
-                                        // TODO: Log: encountered corrupted storage mirror, unable to recover. All data has been lost.
                                         if (UseSafeSave)
                                             TheBaseAssets.MySYSLOG.WriteToLog(4810, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed. Unable to recover from previous backup copies but maybe no file existed before.", FileToReturn, typeof(T)), eMsgLevel.l1_Error));
                                     }
                                     else
                                     {
                                         // No Store files exists: consider the store loaded
-                                        bLoaded = i == 0 ? true : bLoaded && true;
+                                        bLoaded = i == 0 || bLoaded;
                                     }
                                     // Remove record of offset if loading failed
                                     if (AppendOnly && TracksInsertionOrder)
@@ -825,7 +786,7 @@ namespace nsCDEngine.Engines.StorageService
                     if(AppendOnly)
                         pLoadContent = TheCommonUtils.CArray2UTF8String(FileBytes);
                     else
-                        pLoadContent = TheCommonUtils.Decrypt(FileBytes, TheBaseAssets.MySecrets.GetNodeKey()); // TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToByteArray()); // TheBaseAssets.cdeAI);
+                        pLoadContent = TheCommonUtils.Decrypt(FileBytes, TheBaseAssets.MySecrets.GetNodeKey()); 
                 }
                 else
                     pLoadContent = TheCommonUtils.CArray2UTF8String(FileBytes);
@@ -921,7 +882,6 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns><c>true</c> if XXXX, <c>false</c> otherwise.</returns>
         public bool SaveCacheToDisk(bool SaveSync, bool WaitForSave)
         {
-            //TheSystemMessageLog.ToCo(string.Format("Supposed to Save:{0} sync:{1} wait:{2}",MyStoreID.Replace('&', 'n'),SaveSync,WaitForSave));
             if (!IsCachePersistent || TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID || (TheBaseAssets.MyServiceHostInfo.IsIsolated && BlockWriteIfIsolated))
             {
                 return false;
@@ -930,12 +890,9 @@ namespace nsCDEngine.Engines.StorageService
             mCacheCounter++;
             if (!SaveSync)
             {
-                if (!IsStoreIntervalInSeconds)
+                if (!IsStoreIntervalInSeconds && mCacheCounter < CacheStoreInterval)
                 {
-                    if (mCacheCounter < CacheStoreInterval)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
                 if (!UseSafeSave)
                 {
@@ -957,11 +914,10 @@ namespace nsCDEngine.Engines.StorageService
             }
             else
             {
-                var waitCount = Interlocked.Increment(ref _saveLockWaitCount);
+                Interlocked.Increment(ref _saveLockWaitCount);
             }
 
             mTotalCacheCounter++;
-            //TheBaseAssets.MySYSLOG.WriteToLog(480, new TSM("TheMirrorCache", string.Format("Writing For Type: {0}", typeof(T).ToString()), eMsgLevel.l3_ImportantMessage, TheCommonUtils.GetStackInfo(new System.Diagnostics.StackTrace(true))));
             if (SaveSync)
                 DoSaveCacheToDisk(WaitForSave, true);
             else
@@ -987,7 +943,7 @@ namespace nsCDEngine.Engines.StorageService
         }
 
         long _saveLockWaitCount = 0; // Counts how many threads have attempted to take the saveLock
-        readonly object saveLock = new object(); // This lock must be taken while writing to the cache files
+        readonly object saveLock = new (); // This lock must be taken while writing to the cache files
         /// <summary>
         /// Does the save cache to disk.
         /// </summary>
@@ -1028,14 +984,14 @@ namespace nsCDEngine.Engines.StorageService
                         // Don't save too often: wait until the store interval or 10s
                         TheCommonUtils.TaskDelayOneEye(delay, 100).ContinueWith(t =>
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Running Scheduled Save for {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l4_Message));//, $"Count: {waitCountOnEnter}. Delay: {delay}"));
+                            TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Running Scheduled Save for {typeof(T)} {MyStoreID} after skipped saves", eMsgLevel.l4_Message));
                             DoSaveCacheToDisk(waitForSave, false);
                             Interlocked.Decrement(ref TheBaseAssets.DelayShutDownCount);
                         });
                     }
                     else
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Not Scheduling Save for {typeof(T)} {MyStoreID} because wait for save was not specified and no other save was pending", eMsgLevel.l4_Message));//, $"Count: {waitCountOnEnter}. Delay: {delay}"));
+                        TheBaseAssets.MySYSLOG.WriteToLog(4818, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheMirrorCache", $"Not Scheduling Save for {typeof(T)} {MyStoreID} because wait for save was not specified and no other save was pending", eMsgLevel.l4_Message));
                     }
                 }
                 else
@@ -1056,18 +1012,13 @@ namespace nsCDEngine.Engines.StorageService
                             // Reset the wait counter. Any threads coming in after this are not guaranteed that the content of the cache will be saved so need to actually take the lock
                             waitCountOnEnter = Interlocked.Exchange(ref _saveLockWaitCount, 0);
 
-                            //TheSystemMessageLog.ToCo("In Save in Lock");
-
                             if (recordsBySequenceNumber != null)
                             {
                                 storeData = new StoreData<T> { SequenceNumberOffset = sequenceNumberOffset, Records = recordsBySequenceNumber };
                             }
                             else
                             {
-                                storeData = MyRecords.Values; // .ToList(); No need to clone as we hold a read lock    //LOCK-REVIEW: staring here, internal store and list can diviate, but no lock required
-                                                              //storeData = tRetList;
-                                                              //if (tRetList.Count == 0) // Must at least delete the file for empty record set!
-                                                              //    return;
+                                storeData = MyRecords.Values; //LOCK-REVIEW: staring here, internal store and list can diviate, but no lock required
                             }
 
                             if ((IsReady && recordsBySequenceNumber != null) || MyRecords.Count > 0)
@@ -1169,7 +1120,6 @@ namespace nsCDEngine.Engines.StorageService
                 }
             }
             Interlocked.Decrement(ref TheBaseAssets.DelayShutDownCount);
-            return;
         }
 
         /// <summary>
@@ -1192,13 +1142,10 @@ namespace nsCDEngine.Engines.StorageService
             {
                 Task<bool> appendTask = DoAppendRecordsToDisk(items, waitForSave, true);
                 appendTask.Wait();
-                if (appendTask.Result)
+                if (appendTask.Result && TracksInsertionOrder)
                 {
-                    if (TracksInsertionOrder)
-                    {
-                        foreach (T item in items.Values)
-                            TryAddInternal(item.cdeMID.ToString(), item);
-                    }
+                    foreach (T item in items.Values)
+                        TryAddInternal(item.cdeMID.ToString(), item);
                 }
             }
             else
@@ -1207,13 +1154,10 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     Task<bool> appendTask = DoAppendRecordsToDisk(items, waitForSave, false);
                     appendTask.Wait();
-                    if (appendTask.Result)
+                    if (appendTask.Result && TracksInsertionOrder)
                     {
-                        if (TracksInsertionOrder)
-                        {
-                            foreach (T item in items.Values)
-                                TryAddInternal(item.cdeMID.ToString(), item);
-                        }
+                        foreach (T item in items.Values)
+                            TryAddInternal(item.cdeMID.ToString(), item);
                     }
                 });
             }
@@ -1283,7 +1227,7 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         // Find the correct file to append to
                         string fileToReturn = "";
-                        DirectoryInfo di = new DirectoryInfo(TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
+                        DirectoryInfo di = new (TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
                         List<T> baseLineItems = null; // Any records that need to be inserted at the beginning of a new file
                         if (MaxCacheFileSize > 0)
                         {
@@ -1294,7 +1238,7 @@ namespace nsCDEngine.Engines.StorageService
                                 FileInfo newestFile = orderedFileInfo.Last();
                                 if ((1.0 * newestFile.Length / 1000) > MaxCacheFileSize)
                                 {
-                                    string fileName = $"{MyStoreID.Replace('&', 'n')}_{DateTime.Now.ToString("yyyMMdd_HHmmss")}";
+                                    string fileName = $"{MyStoreID.Replace('&', 'n')}_{DateTime.Now:yyyMMdd_HHmmss}";
                                     fileToReturn = TheCommonUtils.cdeFixupFileName(cacheFileFolder + fileName, true);
                                     baseLineItems = NewCacheFileCallback?.Invoke(null);
                                 }
@@ -1303,7 +1247,7 @@ namespace nsCDEngine.Engines.StorageService
                             }
                             else
                             {
-                                string fileName = $"{MyStoreID.Replace('&', 'n')}_{DateTime.Now.ToString("yyyMMdd_HHmmss")}";
+                                string fileName = $"{MyStoreID.Replace('&', 'n')}_{DateTime.Now:yyyMMdd_HHmmss}";
                                 fileToReturn = TheCommonUtils.cdeFixupFileName(cacheFileFolder + fileName, true);
                                 baseLineItems = NewCacheFileCallback?.Invoke(null);
                             }
@@ -1358,7 +1302,7 @@ namespace nsCDEngine.Engines.StorageService
                                 string tJSON = "";
                                 if (fileStream.Length == 0)
                                 {
-                                    List<T> itemsToAppend = new List<T>();
+                                    List<T> itemsToAppend = new ();
                                     if (baseLineItems?.Count > 0)
                                     {
                                         itemsToAppend.AddRange(baseLineItems);
@@ -1466,7 +1410,7 @@ namespace nsCDEngine.Engines.StorageService
                 MyRecords.Clear();
                 if (recordsBySequenceNumber != null)
                 {
-                    sequenceNumberOffset += recordsBySequenceNumber.Count();
+                    sequenceNumberOffset += recordsBySequenceNumber.Count;
                     recordsBySequenceNumber.Clear();
                 }
             });
@@ -1503,25 +1447,22 @@ namespace nsCDEngine.Engines.StorageService
                 string FileToReturn = TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true);
                 try
                 {
-                    if (System.IO.File.Exists(FileToReturn))
+                    if (File.Exists(FileToReturn) && BackupFirst)
                     {
-                        if (BackupFirst)
-                        {
-                            //Creates a new, blank zip file to work with - the file will be
-                            //finalized when the using statement completes
-                            string BackupFile = $"{FileToReturn}_{TheCommonUtils.GetTimeStamp()}.CDEB";
-                            int i = 0;
-                            while (System.IO.File.Exists(BackupFile))
-                                BackupFile = $"{FileToReturn}_{TheCommonUtils.GetTimeStamp()}_{i++}.CDEB";
+                        //Creates a new, blank zip file to work with - the file will be
+                        //finalized when the using statement completes
+                        string BackupFile = $"{FileToReturn}_{TheCommonUtils.GetTimeStamp()}.CDEB";
+                        int i = 0;
+                        while (File.Exists(BackupFile))
+                            BackupFile = $"{FileToReturn}_{TheCommonUtils.GetTimeStamp()}_{i++}.CDEB";
 #if !CDE_NET35 && !CDE_NET4
-                            using (System.IO.Compression.ZipArchive newFile = System.IO.Compression.ZipFile.Open(BackupFile, System.IO.Compression.ZipArchiveMode.Create))
-                            {
-                                newFile.CreateEntry(FileToReturn);
-                            }
+                        using (System.IO.Compression.ZipArchive newFile = System.IO.Compression.ZipFile.Open(BackupFile, System.IO.Compression.ZipArchiveMode.Create))
+                        {
+                            newFile.CreateEntry(FileToReturn);
+                        }
 #else
                             System.IO.File.Move(FileToReturn, $"{BackupFile}AK");
 #endif
-                        }
                     }
                 }
                 catch (Exception e)
@@ -1655,7 +1596,9 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         items = MyRecords?.Select(kv => kv.Value)?.ToList(); // Calls ConcurrentDictionary.GetEnumerator() which takes no lock but the snapshot is only consistent if no concurrent writes happen
                     }
-                    catch { }
+                    catch { 
+                        //ignored
+                    }
                 });
                 return items;
             }
@@ -1675,7 +1618,9 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         keys = MyRecords?.Select(kv => kv.Key)?.ToList();
                     }
-                    catch { }
+                    catch { 
+                        //ignored
+                    }
                 });
                 return keys;
             }
@@ -1725,7 +1670,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="CallBack">The call back.</param>
         public void AddAnItem(T pDetails, Action<List<T>> CallBack)
         {
-            List<T> tList = new List<T>
+            List<T> tList = new ()
             {
                 pDetails
             };
@@ -1739,13 +1684,11 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="CallBack">The call back.</param>
         public void AddAnItem(Guid pID, T pDetail, Action<T> CallBack)
         {
-            //MyRecordsLockSlim.EnterWriteLock(); //LOCK-REVIEW: is this necessary? DoAddItem has own lock and SaveCacheToDisk is not write operation
             if (pID != Guid.Empty)
                 pDetail.cdeMID = pID;
             DoAddItem(pDetail.cdeMID, pDetail, false);  //Must not remove items as its not under a lock
             if (IsCachePersistent)
                 SaveCacheToDisk(false, true);
-            //MyRecordsLockSlim.ExitWriteLock();
             CallBack?.Invoke(pDetail);
         }
         /// <summary>
@@ -1755,7 +1698,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="CallBack">The call back.</param>
         public void AddItems(List<T> pDetails, Action<List<T>> CallBack)
         {
-            List<T> retList = new List<T>();
+            List<T> retList = new ();
             MyRecordsRWLock.RunUnderWriteLock( () =>  //LOCK-REVIEW: is this ok for consitency? -> Possible optimization: Could only use write lock around DoAddItem
             {
                 foreach (T detail in pDetails)
@@ -1780,18 +1723,15 @@ namespace nsCDEngine.Engines.StorageService
         /// <param name="CallBack">Callback with a list of all successfully added items</param>
         public void AddItems(Dictionary<Guid, T> pDetails, Action<List<T>> CallBack)
         {
-            List<T> retList = new List<T>();
+            List<T> retList = new ();
             MyRecordsRWLock.RunUnderWriteLock(() => //LOCK-REVIEW: is this ok for consitency?
             {
                 foreach (Guid tID in pDetails.Keys)
                 {
                     T detail = pDetails[tID];
                     detail.cdeMID = tID;
-                    if (!MyRecords.ContainsKey(tID.ToString()))
-                    {
-                        if (DoAddItem(tID, detail, false))
-                            retList.Add(detail);
-                    }
+                    if (!MyRecords.ContainsKey(tID.ToString()) && DoAddItem(tID, detail, false))
+                        retList.Add(detail);
                 }
                 RemoveRetired();
             });
@@ -1799,19 +1739,7 @@ namespace nsCDEngine.Engines.StorageService
                 SaveCacheToDisk(false, true);
             CallBack?.Invoke(retList);
         }
-        /// <summary>
-        /// Removes an item.
-        /// </summary>
-        /// <param name="pDetails">The p details.</param>
-        /// <param name="CallBack">The call back.</param>
-        public void RemoveAnItem(T pDetails, Action<List<T>> CallBack)
-        {
-            List<T> tList = new List<T>
-            {
-                pDetails
-            };
-            RemoveItems(tList, CallBack);
-        }
+
         /// <summary>
         /// Removes the items.
         /// </summary>
@@ -1872,7 +1800,7 @@ namespace nsCDEngine.Engines.StorageService
         public void UpdateItem(T pDetails, Action<List<T>> CallBack)
         {
             if (pDetails == null) return;
-            List<T> tList = new List<T>() { pDetails };
+            List<T> tList = new () { pDetails };
             UpdateItems(tList, CallBack);
         }
         /// <summary>
@@ -1904,16 +1832,6 @@ namespace nsCDEngine.Engines.StorageService
             }
         }
 
-        /// <summary>
-        /// Adds the or update item.
-        /// </summary>
-        /// <param name="pKey">The p key.</param>
-        /// <param name="pDetails">The p details.</param>
-        /// <param name="CallBack">The call back.</param>
-        public void AddOrUpdateItem(Guid pKey, T pDetails, Action<T> CallBack)
-        {
-            AddOrUpdateItemKey(pKey.ToString(), pDetails, CallBack);
-        }
         /// <summary>
         /// Blob and MyEngines
         /// </summary>
@@ -2050,6 +1968,20 @@ namespace nsCDEngine.Engines.StorageService
             return o;
         }
 
+        private readonly object lockRemoveExpired = new();
+        /// <summary>
+        /// Removes an item.
+        /// </summary>
+        /// <param name="pDetails">The p details.</param>
+        /// <param name="CallBack">The call back.</param>
+        public void RemoveAnItem(T pDetails, Action<List<T>> CallBack)
+        {
+            List<T> tList = new()
+            {
+                pDetails
+            };
+            RemoveItems(tList, CallBack);
+        }
         /// <summary>
         /// Removes an item.
         /// </summary>
@@ -2073,14 +2005,12 @@ namespace nsCDEngine.Engines.StorageService
                 SaveCacheToDisk(false, true);
         }
 
-        private readonly object lockRemoveExpired = new object();
         /// <summary>
         /// Removes the expired.
         /// </summary>
         /// <param name="notused">unused state</param>
         internal void RemoveExpired(object notused)
         {
-            //RemoveCounter++;
             if (MyRecords!=null && !TheCommonUtils.cdeIsLocked(lockRemoveExpired) && MyRecords.Any())
             {
                 lock (lockRemoveExpired)
@@ -2128,7 +2058,6 @@ namespace nsCDEngine.Engines.StorageService
                             eventRecordExpired?.Invoke(s.Value);
                         }
                     }
-                    //RemoveItemsByKeyList(tList.Select(x => x.Key).ToList(), null);
                     TheCommonUtils.cdeRunAsync("ExpireRecords", true, (o) => RemoveItemsByKeyList(tList.Select(x => x.Key).ToList(), null));
                 }
                 catch
@@ -2143,26 +2072,35 @@ namespace nsCDEngine.Engines.StorageService
         internal void RemoveRetired()
         {
             if (MaxStoreSize == 0) return; //LOCK-REVIEW: We do not want to do this if there is a lock aready here (logic rather then read/write) MUST NOT CHECK FOR:  || MyRecordsRWLock.IsLocked() <= thi is NEVER false!
+            if (Count > MaxStoreSize)
             {
-                if (Count > MaxStoreSize)
+                int toDel = Count - MaxStoreSize;
+                List<T> tList;
+                MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>  //LOCK-REVIEW: Used for consitency not read/write. write-Lock in RemoveItems. but created here as Crash was seen in linq on slow IPL Win7.NET4 devices
                 {
-                    int toDel = Count - MaxStoreSize;
-                    List<T> tList;
-                    MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>  //LOCK-REVIEW: Used for consitency not read/write. write-Lock in RemoveItems. but created here as Crash was seen in linq on slow IPL Win7.NET4 devices
+                    if (recordsBySequenceNumber != null)
                     {
-                        if (recordsBySequenceNumber != null)
-                        {
-                            tList = recordsBySequenceNumber.Where(item => item != null && item.cdeEXP >= 0).Take(toDel).ToList(); // CODE REVIEW if cdeEXP < 0 the item is not removed from the cache due to size or time expiration (needed for Historian BaseLine snapshots)
-                        }
-                        else
-                        {
-                            // CODE REVIEW: This is inefficient for large caches, especially since it gets called with each newly added item once the threshold is reached
-                            tList = MyRecords.Values.OrderBy(s => s.cdeCTIM).Take(toDel).ToList();
-                        }
-                        RemoveItems(tList, null);
-                    });
-                }
+                        tList = recordsBySequenceNumber.Where(item => item != null && item.cdeEXP >= 0).Take(toDel).ToList(); // CODE REVIEW if cdeEXP < 0 the item is not removed from the cache due to size or time expiration (needed for Historian BaseLine snapshots)
+                    }
+                    else
+                    {
+                        // CODE REVIEW: This is inefficient for large caches, especially since it gets called with each newly added item once the threshold is reached
+                        tList = MyRecords.Values.OrderBy(s => s.cdeCTIM).Take(toDel).ToList();
+                    }
+                    RemoveItems(tList, null);
+                });
             }
+        }
+
+        /// <summary>
+        /// Adds the or update item.
+        /// </summary>
+        /// <param name="pKey">The p key.</param>
+        /// <param name="pDetails">The p details.</param>
+        /// <param name="CallBack">The call back.</param>
+        public void AddOrUpdateItem(Guid pKey, T pDetails, Action<T> CallBack)
+        {
+            AddOrUpdateItemKey(pKey.ToString(), pDetails, CallBack);
         }
         /// <summary>
         /// Adds the or update item.
@@ -2212,7 +2150,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns>T.</returns>
         public T GetEntryByID(string strID)
         {
-            T tRes = null; // default(T);
+            T tRes = null; 
             MyRecordsRWLock.RunUnderReadLock(() =>
             {
                 MyRecords.TryGetValue(strID, out tRes);
@@ -2226,7 +2164,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns>T.</returns>
         public T GetEntryByID(Guid ID)
         {
-            T tRes = null; // default(T);
+            T tRes = null; 
             MyRecordsRWLock.RunUnderReadLock(() => //LOCK-REVIEW: This is a highly contentious lock (i.e. TheQueudSender.SendQueued). Consider a reader-writer lock here!
             {
                 MyRecords.TryGetValue(ID.ToString(), out tRes);
@@ -2242,7 +2180,6 @@ namespace nsCDEngine.Engines.StorageService
         public bool ContainsByFunc(Func<T, bool> pSelector)
         {
             return MyRecords.Values.Any(pSelector);
-            //return tR2>0;
         }
 
         /// <summary>
@@ -2258,9 +2195,6 @@ namespace nsCDEngine.Engines.StorageService
                 try
                 {
                     tRes = MyRecords.Where(kv => pSelector(kv.Value))?.Select(kv => kv.Value)?.FirstOrDefault();
-                    //var results = MyRecords.Values.Where(pSelector);
-                    //var enumerable = results as IList<T> ?? results.ToList();
-                    //tRes = enumerable?.FirstOrDefault();
                 }
                 catch (Exception)
                 {
@@ -2276,9 +2210,7 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns>List&lt;T&gt;.</returns>
         public List<T> GetEntriesByFunc(Func<T, bool> pSelector)
         {
-            List<T> tRes = null; // default(T);
-                                 //if (MyRecordsLockSlim.IsWriteLockHeld)  //LOCK-REVIEW: Can we do this????
-                                 //  return tRes;
+            List<T> tRes = null; 
             MyRecordsRWLock.RunUnderReadLock(() =>
             {
                 if (pSelector == null)
@@ -2304,15 +2236,15 @@ namespace nsCDEngine.Engines.StorageService
         /// <returns>StoreReponse object containing the records retrieved from disk</returns>
         internal TheStorageMirror<T>.StoreResponse GetRecordsFromDisk(string filter, string orderBy, int pageNumber, int topRecords)
         {
-            TheStorageMirror<T>.StoreResponse tResponse = new TheStorageMirror<T>.StoreResponse();
+            TheStorageMirror<T>.StoreResponse tResponse = new ();
             MyRecordsRWLock.RunUnderReadLock(() =>
             {
                 try
                 {
-                    List<string> cacheFiles = new List<string>();
+                    List<string> cacheFiles = new ();
                     if (MaxCacheFileSize > 0)
                     {
-                        DirectoryInfo di = new DirectoryInfo(TheCommonUtils.cdeFixupFileName("cache\\", true));
+                        DirectoryInfo di = new (TheCommonUtils.cdeFixupFileName("cache\\", true));
                         FileInfo[] fileInfo = di.GetFiles($"{MyStoreID.Replace('&', 'n')}*");
                         if (fileInfo.Length > 0)
                         {
@@ -2323,7 +2255,7 @@ namespace nsCDEngine.Engines.StorageService
                     }
                     else
                         cacheFiles.Add(TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true));
-                    List<T> records = new List<T>();
+                    List<T> records = new ();
                     foreach (string cacheFile in cacheFiles)
                     {
                         if (!TheCommonUtils.IsNullOrWhiteSpace(filter))
@@ -2332,13 +2264,13 @@ namespace nsCDEngine.Engines.StorageService
                             Func<T, bool> deleg = ExpressionBuilder.GetExpression<T>(filterList).Compile();
 
                             // Avoids loading entire file into memory at once if possible
-                            using (FileStream fileStream = new FileStream(cacheFile, FileMode.Open, FileAccess.Read))
-                            using (StreamReader streamReader = new StreamReader(fileStream))
-                            using (JsonTextReader jsonReader = new JsonTextReader(streamReader))
+                            using (FileStream fileStream = new (cacheFile, FileMode.Open, FileAccess.Read))
+                            using (StreamReader streamReader = new (fileStream))
+                            using (JsonTextReader jsonReader = new (streamReader))
                             {
                                 if (fileStream.Length > 0)
                                 {
-                                    JsonSerializer serializer = new JsonSerializer();
+                                    JsonSerializer serializer = new ();
                                     jsonReader.Read();
                                     if (jsonReader.TokenType == JsonToken.StartArray)
                                     {
@@ -2456,7 +2388,7 @@ namespace nsCDEngine.Engines.StorageService
 
     internal class TheMirrorCacheReaderWriterLock<T> : IReaderWriterLock where T : TheDataBase, INotifyPropertyChanged, new()
     {
-        static public TimeSpan defaultTimeout = new TimeSpan(0, 0, 30);
+        public static readonly TimeSpan defaultTimeout = new (0, 0, 30);
         readonly ReaderWriterLockSlim _rwLock;
         readonly TheMirrorCache<T> _cache;
         TimeSpan _timeout;
@@ -2473,19 +2405,14 @@ namespace nsCDEngine.Engines.StorageService
 
         void Log(string msg)
         {
-            if (DoLog)
+            if (DoLog && _cache.MyStoreID != "EventLog")
             {
-                //System.Diagnostics.Debug.WriteLine($"{DateTimeOffset.Now}: {msg} {GetLockNameAndThread()}");
-                if (_cache.MyStoreID != "EventLog")
-                {
-                    TheBaseAssets.MySYSLOG?.WriteToLog(4820, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheMirrorCache", msg, eMsgLevel.l6_Debug, GetLockNameAndThread()));
-                }
+                TheBaseAssets.MySYSLOG?.WriteToLog(4820, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheMirrorCache", msg, eMsgLevel.l6_Debug, GetLockNameAndThread()));
             }
         }
 
         void LogTimeout(string msg, int count)
         {
-            //System.Diagnostics.Debug.WriteLine($"{DateTimeOffset.Now}: Timeout after {_timeout.TotalMilliseconds} ms: {msg} {GetLockNameAndThread()}");
             if (typeof(T) != typeof(TheEventLogEntry))
                 TheBaseAssets.MySYSLOG?.WriteToLog(4819, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheMirrorCache", $"Blocked on lock for {_timeout.TotalMilliseconds * count} ms: {msg}", eMsgLevel.l6_Debug, GetLockNameAndThread()));
         }

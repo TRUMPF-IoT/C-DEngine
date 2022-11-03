@@ -69,14 +69,6 @@ namespace nsCDEngine.ActivationKey
                 skuId = 0;
                 return false;
             }
-            //if (activationRequestKeyArray[j+1] != (byte) ((checksum >> 8) + activationRequestKeyArray[0]))
-            //{
-            //    return Guid.Empty;
-            //}
-            //if (activationRequestKeyArray[j + 2] != (byte)(((activationRequestKeyArray[0]) | 0x02) & 0x03))
-            //{
-            //    return Guid.Empty;
-            //}
             creationTime = new DateTime(1970, 1, 1) + new TimeSpan(0, (int)(tenMinuteIntervalsSinceUnixEpoch * 10), 0);
             deviceId = new Guid(tGu);
             return true;
@@ -86,7 +78,6 @@ namespace nsCDEngine.ActivationKey
         {
             if (deviceId == Guid.Empty)
             {
-                //TheBaseAssets.MySYSLOG.WriteToLog(10000, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ThingService, "Unable to generate activation key: device id not configured.", eMsgLevel.l2_Warning, ""));
                 return null;
             }
             byte[] tGu = deviceId.ToByteArray();
@@ -101,23 +92,21 @@ namespace nsCDEngine.ActivationKey
             byte[] activationRequestKey = new byte[3 + tGu.Length + 2 + 1 + 1];
 
             int j = 0;
-            //activationRequestKey[0] = (byte) (DateTime.UtcNow.Ticks & 0xff);
-            //j++;
 
-            byte checksum = 0;// activationRequestKey[0];
+            byte checksum = 0;
             for (int i = 0; i < tGu.Length; i++)
             {
                 if (i < 3)
                 {
                     activationRequestKey[j] = (byte)((tenMinuteIntervalsSinceUnixEpoch & 0xff) ^ checksum);
-                    tenMinuteIntervalsSinceUnixEpoch = tenMinuteIntervalsSinceUnixEpoch >>= 8;
+                    tenMinuteIntervalsSinceUnixEpoch >>= 8;
                     checksum += activationRequestKey[j];
                     j++;
                 }
                 else if (i < 5)
                 {
                     activationRequestKey[j] = (byte)((SkuId & 0xff) ^ checksum);
-                    SkuId = SkuId >>= 8;
+                    SkuId >>= 8;
                     checksum += activationRequestKey[j];
                     j++;
                 }
@@ -127,8 +116,6 @@ namespace nsCDEngine.ActivationKey
             }
             activationRequestKey[j] = (byte)(checksum & 0xff);
             j++;
-            //activationRequestKey[j + 1] = (byte) ((checksum >> 8) + activationRequestKey[0]);
-            //activationRequestKey[j + 2] =  (byte) (((activationRequestKey[0]) | 0x02) & 0x03); // ensure positive big int and 36 chars in output
 
             activationRequestKey[j] = 15; // padding
             return TheActivationUtils.Base32Encode(activationRequestKey);

@@ -9,6 +9,7 @@ using nsCDEngine.ViewModels;
 using nsCDEngine.Engines;
 using nsCDEngine.Engines.ThingService;
 using nsCDEngine.Security;
+using System.Linq;
 // ReSharper disable DelegateSubtraction
 // ReSharper disable ConditionIsAlwaysTrueOrFalse
 
@@ -23,10 +24,6 @@ namespace nsCDEngine.Communication
         {
             return TheQueuedSenderRegistry.ShowQSenderDetails(ShowQueueDetails);
         }
-        //internal static List<string> GetUrlForTopic(string pTopic)
-        //{
-        //    return TheQueuedSenderRegistry.GetUrlForTopic(pTopic, false);
-        //}
         internal static void RegisterDebugLogCallback(Action<Action<string>> pCallback)
         {
             cdeStatus.eventEventLogRequested -= pCallback;
@@ -191,11 +188,13 @@ namespace nsCDEngine.Communication
                             TheBaseAssets.MyServiceHostInfo.MyStationWSPort++;
                             TheBaseAssets.MySettings.UpdateLocalSettings();
                         }
+#if CDE_USECSWS
                         MyWebSockets = new TheWSServer();
                         MyWebSockets.Startup();
                         if (MyWebSockets.IsActive)
                             TheBaseAssets.MySYSLOG.WriteToLog(5051, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSocketCS Server Started (License see http://sta.github.io/websocket-sharp/)", eMsgLevel.l3_ImportantMessage));
                         else
+#endif
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(5052, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSocketCS Server failed to Start - WebSockets will be disabled and fallback to http is on", eMsgLevel.l1_Error));
                             TheBaseAssets.MyServiceHostInfo.DisableWebSockets = true;
@@ -204,7 +203,7 @@ namespace nsCDEngine.Communication
                 }
                 else
                 {
-                    if (TheBaseAssets.MyServiceHostInfo.MyStationWSPort != TheBaseAssets.MyServiceHostInfo.MyStationPort || !(MyWebService?.IsHttpListener==true))
+                    if (TheBaseAssets.MyServiceHostInfo.MyStationWSPort != TheBaseAssets.MyServiceHostInfo.MyStationPort || (MyWebService?.IsHttpListener != true))
                         TheBaseAssets.MySYSLOG.WriteToLog(5053, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSockets NOT Started", eMsgLevel.l2_Warning));
                 }
             }
@@ -267,7 +266,6 @@ namespace nsCDEngine.Communication
                 TargetMessage.OWN = tOriginatorThing.ToString();
             }
 
-            //PublishCentral(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + tOrg, sourceMessage, true), TargetMessage, false, null, IncludeLocalNode);
             var topicWithScope = TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE;" + tOrg, sourceMessage.SID,ref sourceMessage.SID, true, false);
             TheBaseAssets.MySYSLOG.WriteToLog(5060, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("TheCommCore", $"PublishToOriginator: {topicWithScope} {tOrg} {TargetMessage.SID} {sourceMessage.SID} {IncludeLocalNode}", eMsgLevel.l6_Debug, TSM.L(eDEBUG_LEVELS.VERBOSE) ? TargetMessage.TXT : TargetMessage?.ToString()), false);
             PublishCentral(topicWithScope, TargetMessage, false, null, IncludeLocalNode);
@@ -336,7 +334,7 @@ namespace nsCDEngine.Communication
         /// <param name="pTopics"></param>
         public static void SubscribeCentral(string pTopics)
         {
-            TSM TargetMessage = new TSM(eEngineName.ContentService, "CDE_SUBSCRIBE", pTopics);
+            TSM TargetMessage = new (eEngineName.ContentService, "CDE_SUBSCRIBE", pTopics);
             PublishCentral(TheBaseAssets.MyScopeManager.AddScopeID("CDE_SYSTEMWIDE",true, TheBaseAssets.MyScopeManager.ScopeID), TargetMessage, false, null);
         }
 
@@ -438,8 +436,6 @@ namespace nsCDEngine.Communication
         internal static void PublishCentral(string pTopic, TSM pMessage, bool AddScopeToTopic, Action<TSM> pLocalCallback, bool IncludeLocal = false, bool IsTrustedSender = false)
         {
             if (!TheBaseAssets.MasterSwitch || pMessage == null) return;
-            //if (AddScopeToTopic)
-            //    pTopic = TheBaseAssets.MyScopeManager.AddScopeID(pTopic, pMessage, true);
 #if !JC_COMMDEBUG
             try
             {
@@ -578,8 +574,7 @@ namespace nsCDEngine.Communication
                         TheBaseAssets.MySession.GetSessionState(TheCommonUtils.CGuid(tSessionID), pRequestData, !DoCreateNewSession);
                     if (MyHttpService != null && TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage > 0 && pRequestData.SessionState?.CertScopes==null)
                     {
-                        List<string> tEasyScopes = new List<string>();
-                        //TODO:KPIs here
+                        List<string> tEasyScopes = new ();
                         switch (TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage)
                         {
                             case 4: //Cert MUST contain scope - if that does not match the SCope in the connect TDM connection will be closed
@@ -651,7 +646,6 @@ namespace nsCDEngine.Communication
                                     TheBaseAssets.MySYSLOG.WriteToLog(299, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", $"WS: Matching existing QSenderSession to Request Session. QSSession:{tSend.MyTargetNodeChannel.MySessionState?.cdeMID} ReqSession:{pRequestData.SessionState?.cdeMID}", eMsgLevel.l3_ImportantMessage));
                                     TheBaseAssets.MySession.RemoveSession(pRequestData.SessionState);
                                     pRequestData.SessionState = tSend.MyTargetNodeChannel.MySessionState;
-                                    //TheBaseAssets.MySession.RemoveSessionsByDeviceID(tSend.MyTargetNodeChannel.cdeMID, tSend.MyTargetNodeChannel.MySessionState.cdeMID);
                                 }
                             }
                         }
@@ -691,7 +685,7 @@ namespace nsCDEngine.Communication
 
                     string Topic = null;
                     List<TheDeviceMessage> tDevMsg = null;
-                    if (!string.IsNullOrEmpty(pRequestData.RequestUri.Query) && tSenderType == cdeSenderType.CDE_JAVAJASON)   //TODO: Check if we can make sure topics are only coming from JS DONE 4.205.1
+                    if (!string.IsNullOrEmpty(pRequestData.RequestUri.Query) && tSenderType == cdeSenderType.CDE_JAVAJASON)   
                     {
                         Topic = TheCommonUtils.cdeUnescapeString(pRequestData.RequestUri.Query.Substring(1));
                         if (CheckSimpleTopics(Topic, pRequestData, tSend))
@@ -736,10 +730,7 @@ namespace nsCDEngine.Communication
                                             {
                                                 return IsValidISB;
                                             }
-                                            if (toRemove == null)
-                                            {
-                                                toRemove = new List<TheDeviceMessage>();
-                                            }
+                                            toRemove ??= new List<TheDeviceMessage>();
                                             toRemove.Add(tDev);
                                         }
                                     }
@@ -920,15 +911,26 @@ namespace nsCDEngine.Communication
                         }
                     }
                 }
-                else if (!TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper)
+                else if (!TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper && Topic.Length > 11)
                 {
-                    if (Topic.Length > 11) //tUser.PrimaryRole.Equals("ADMIN") &&
+                    string tscope = Topic.Substring(11, Topic.Length - 11);
+                    if (!TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser && pRequestData?.SessionState != null)
+                        tscope = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, tscope);
+                    TheUserDetails tUser = TheUserManager.PerformLoginByScope(pRequestData, tscope);
+                    if (tUser != null)
                     {
-                        string tscope = Topic.Substring(11, Topic.Length - 11);
-                        if (!TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser && pRequestData?.SessionState != null)
-                            tscope = TheCommonUtils.cdeRSADecrypt(pRequestData.SessionState.cdeMID, tscope);
-                        TheUserDetails tUser = TheUserManager.PerformLoginByScope(pRequestData, tscope);
-                        if (tUser != null)
+                        bool LogOk = true;
+                        if (TheBaseAssets.MyServiceHostInfo.AllowAdhocScopes)
+                        {
+                            var realp = TheCommonUtils.CUri(pRequestData?.SessionState?.InitReferer, false)?.AbsolutePath;
+                            if (!string.IsNullOrEmpty(realp))
+                            {
+                                var page = Engines.NMIService.TheNMIEngine.GetPages().FirstOrDefault(s => s.PageName.Equals(realp, StringComparison.InvariantCultureIgnoreCase));
+                                if (page?.AllowScopeQuery == true)
+                                    LogOk = TheQueuedSenderRegistry.IsScopeKnown(tscope, false);
+                            }
+                        }
+                        if (LogOk)
                         {
                             TheBaseAssets.MySession.WriteSession(pRequestData?.SessionState);
                             tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
@@ -1052,8 +1054,7 @@ namespace nsCDEngine.Communication
                         return IsValidISB;
                     }
                 }
-                if (tSend == null)
-                    tSend = new TheQueuedSender();
+                tSend ??= new TheQueuedSender();
                 if (pRequestData.DeviceID != Guid.Empty)
                 {
                     if (TheBaseAssets.MyServiceHostInfo.NodeBlacklist.Contains(pRequestData.DeviceID))
@@ -1096,19 +1097,17 @@ namespace nsCDEngine.Communication
                                 pRequestData.SessionState.MyDevice = pRequestData.DeviceID;
                                 TheBaseAssets.MySession.RemoveSessionsByDeviceID(pRequestData.DeviceID, pRequestData.SessionState.cdeMID);
                             }
-                            if (tSend.MyTargetNodeChannel.MySessionState == null)
-                                tSend.MyTargetNodeChannel.MySessionState = pRequestData.SessionState;
+                            tSend.MyTargetNodeChannel.MySessionState ??= pRequestData.SessionState;
                         }
                     }
                     else
                     {
-                        if ((pRequestData.WebSocket as TheWSProcessorBase) != null)
+                        if (pRequestData.WebSocket is TheWSProcessorBase)
                             (pRequestData.WebSocket as TheWSProcessorBase).OwnerNodeID = pRequestData.DeviceID;
                         tSend.eventErrorDuringUpload -= OnCommError;
                         tSend.eventConnected -= sinkConnected;
                         TheBaseAssets.MySYSLOG.WriteToLog(2994, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("CoreComm", $"ProcessISBRequest: QueuedSender could not be created for DeviceID:{TheCommonUtils.GetDeviceIDML(pRequestData.DeviceID)} ignored", eMsgLevel.l2_Warning));
                         return IsValidISB;
-                        //tSend = null;
                     }
                 }
                 if (tSend != null)
@@ -1137,14 +1136,14 @@ namespace nsCDEngine.Communication
             {
                 return null;
             }
-            TheDeviceMessage tDev = new TheDeviceMessage
+            TheDeviceMessage tDev = new ()
             {
                 SID = pSender?.MyTargetNodeChannel?.RealScopeID != null ? TheBaseAssets.MyScopeManager.GetScrambledScopeID(pSender.MyTargetNodeChannel.RealScopeID, true) : TheBaseAssets.MyScopeManager.GetScrambledScopeID(), //GRSI: rare //RScope-OK: Initial Connect from Primary Scope Only //4.209: Ok no to JavaJson
                 NPA = TheBaseAssets.MyScopeManager.GetISBPath(TheBaseAssets.MyServiceHostInfo.RootDir, pSender.MyTargetNodeChannel.SenderType, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType, 1, Guid.Empty, true),
                 TOP = pSender?.MyISBlock != null ? $"CDE_CONNECT:;:{TheCommonUtils.SerializeObjectToJSONString<TheISBConnect>(pSender.MyISBlock)}" : SetConnectingBufferStr(pSender.MyTargetNodeChannel, pSender?.MyTargetNodeChannel?.RealScopeID), //RScope-OK: Initial Connect from Primary Scope Only
                 DID = pSender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON || pSender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB ? pSender.MyTargetNodeChannel.cdeMID.ToString() : TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString()
             };
-            List<TheDeviceMessage> tDevList = new List<TheDeviceMessage> {tDev};
+            List<TheDeviceMessage> tDevList = new () {tDev};
             return TheCommonUtils.CUTF8String2Array(TheCommonUtils.SerializeObjectToJSONString(tDevList));
         }
         internal static string SetConnectingBufferStr(TheChannelInfo pChannel, string pRealScopeID)
@@ -1171,10 +1170,10 @@ namespace nsCDEngine.Communication
             return true;
         }
 
-        #region Publish Error handling
+#region Publish Error handling
         internal static void sinkConnected(TheQueuedSender pSend, TheChannelInfo pChannel)
         {
-            //TODO JavaScript Connection
+            //JavaScript Connection
         }
         internal static void OnCommError(TheQueuedSender pSend, string pErrorText)
         {
@@ -1185,7 +1184,7 @@ namespace nsCDEngine.Communication
                 pSend.eventConnected -= sinkConnected;
             }
         }
-        #endregion
+#endregion
 
 
     }

@@ -33,11 +33,11 @@ namespace nsCDEngine.Communication
                 return true;
 
             IsClient = true;
-            if (MyQSender == null) MyQSender = pSender;
+            MyQSender ??= pSender;
             Uri TargetUri = TheCommonUtils.CUri(pSender.MyTargetNodeChannel.TargetUrl, true);
             string TargetUriPath = TargetUri.AbsolutePath;
             OwnerNodeID = MyQSender.MyTargetNodeChannel.cdeMID;
-            Uri tTarget = new Uri(TargetUri, TheBaseAssets.MyScopeManager.GetISBPath(TargetUriPath, TheCommonUtils.GetOriginST(pSender.MyTargetNodeChannel), pSender.MyTargetNodeChannel.SenderType, 1, Guid.Empty, true));
+            Uri tTarget = new (TargetUri, TheBaseAssets.MyScopeManager.GetISBPath(TargetUriPath, TheCommonUtils.GetOriginST(pSender.MyTargetNodeChannel), pSender.MyTargetNodeChannel.SenderType, 1, Guid.Empty, true));
             tTarget = tTarget.SetWSInfo(tTarget.Port, "");
 
             try
@@ -149,7 +149,6 @@ namespace nsCDEngine.Communication
 
         private void websocket_Opened(object sender, EventArgs e)
         {
-            //MyQSender.IsConnected = true;
             eventConnected?.Invoke(this, true,null);
             byte[] tSendBuffer = TheCommCore.SetConnectingBuffer(MyQSender);
             PostToSocket(null, tSendBuffer, false, true);

@@ -8,6 +8,7 @@ using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
@@ -455,11 +456,8 @@ namespace nsCDEngine.BaseClasses
                             Array.Copy(KPIs, newKPIs, entries);
                             KPIs = newKPIs;
                         }
-                        if (KPIs.Length > entries)
-                        {
-                            if (KPIIndexes.TryAdd(name, entries))
-                                Interlocked.Exchange(ref KPIs[entries], value);
-                        }
+                        if (KPIs.Length > entries && KPIIndexes.TryAdd(name, entries))
+                            Interlocked.Exchange(ref KPIs[entries], value);
                         if (dontReset)
                         {
                             doNotReset.Add(name);
@@ -480,7 +478,7 @@ namespace nsCDEngine.BaseClasses
         public static DateTimeOffset LastReset { get; set; }
 
         // Array of KPI names that should not be reset
-        private static readonly List<string> doNotReset = new List<string>
+        private static readonly List<string> doNotReset = new ()
         {
             nameof(eKPINames.TotalEngineErrors), nameof(eKPINames.TotalEventTimeouts), nameof(eKPINames.UnsignedNodes), nameof(eKPINames.UnsignedPlugins),
             nameof(eKPINames.UniqueMeshes), nameof(eKPINames.SeenBeforeCount), nameof(eKPINames.KnownNMINodes), nameof(eKPINames.StreamsNotFound),
@@ -490,7 +488,7 @@ namespace nsCDEngine.BaseClasses
 
 
         // Array of KPI names that should not have a total computed when harvesting to TheThing
-        private static readonly List<string> doNotComputeTotals = new List<string>
+        private static readonly List<string> doNotComputeTotals = new ()
         {
             nameof(eKPINames.UnsignedNodes), nameof(eKPINames.UnsignedPlugins), nameof(eKPINames.UniqueMeshes), nameof(eKPINames.BruteDelay),
             nameof(eKPINames.QSenders), nameof(eKPINames.QSenderInRegistry), nameof(eKPINames.SetPsFired), nameof(eKPINames.TotalEngineErrors),
@@ -503,7 +501,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static Dictionary<string, object> GetDictionary()
         {
-            TheThing tn = new TheThing();
+            TheThing tn = new ();
             ToThingProperties(tn, !TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableKPIs")));
             return tn.GetPBAsDictionary();
         }
@@ -511,7 +509,6 @@ namespace nsCDEngine.BaseClasses
         private static void CreateKPIIndexes()
         {
             // We could wait here for engines, but then other KPIs will not be written in meantime
-            // await TheBaseEngine.WaitForEnginesStartedAsync();
             KPIIndexes = new cdeConcurrentDictionary<string, int>();
             lock (KPIIndexes)
             {
@@ -535,9 +532,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (KPIIndexes == null)
                 CreateKPIIndexes();
-            if (KPIs == null)
-                KPIs = new long[KPIIndexes.Count];
-            return;
+            KPIs ??= new long[KPIIndexes == null ? 1 : KPIIndexes.Count];
         }
 
         /// <summary>
@@ -547,17 +542,18 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static string GetKPIs(bool DoReset)
         {
-            string tRes = $"C-DEngine-KPIs: LR:{LastReset:MM/dd/yyyy hh:mm:ss.fff--tt} ";
+            StringBuilder tRes = new ();
+            tRes.Append($"C-DEngine-KPIs: LR:{LastReset:MM/dd/yyyy hh:mm:ss.fff--tt} ");
             List<string> orderedKeys = KPIIndexes.Keys.OrderBy(s => s).ToList();
             foreach (string key in orderedKeys)
             {
-                tRes += $"{key}:{GetKPI(key)} ";
+                tRes.Append($"{key}:{GetKPI(key)} ");
             }
             if (DoReset) Reset();
-            return tRes;
+            return tRes.ToString();
         }
 
-        private static readonly object thingHarvestLock = new object();
+        private static readonly object thingHarvestLock = new ();
         internal static void ToThingProperties(TheThing pThing, bool bReset)
         {
             lock(thingHarvestLock)
@@ -565,8 +561,7 @@ namespace nsCDEngine.BaseClasses
                 if (pThing == null) return;
                 if (KPIIndexes == null)
                     CreateKPIIndexes();
-                if (KPIs == null)
-                    KPIs = new long[KPIIndexes.Count];
+                KPIs ??= new long[KPIIndexes == null ? 1 : KPIIndexes.Count];
 
                 if (KPIs != null && KPIIndexes != null)
                 {

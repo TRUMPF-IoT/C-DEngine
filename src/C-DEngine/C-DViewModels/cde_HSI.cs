@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 #pragma warning disable 1591
 
 namespace nsCDEngine.ViewModels
@@ -355,7 +356,6 @@ namespace nsCDEngine.ViewModels
             MyStationURL = "NOT SET YET";   //MSU-OK
             MyDeviceMoniker = "CDEV://";
             MyStationMoniker = "HTTP://";
-            //LocalServiceRoute = ""; //LOCALHOST";
             MyAppPresenter = "C-Labs presents: ";
             VendorName = "C-Labs";
             favicon_ico = "favicon.ico";
@@ -378,7 +378,7 @@ namespace nsCDEngine.ViewModels
             AllowLocalHost = false;
             CSSMain = "MYSTYLES.MIN.CSS";
             CSSDlg = "MYSTYLES.MIN.CSS";
-            UPnPDeviceType = "DimmableLight"; // "SensorManagement"; // "InternetGatewayDevice";
+            UPnPDeviceType = "DimmableLight"; 
             DISCOScanRate = 60;
             DISCOMX = 3;
             DISCOSubnet = "";
@@ -495,7 +495,7 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// The allowed unscoped nodes set in the App.config. This is used to allow Cloud to Cloud connections. 
         /// </summary>
-        internal List<Guid> AllowedUnscopedNodes = new List<Guid>();
+        internal List<Guid> AllowedUnscopedNodes = new ();
 
         /// <summary>
         /// Gets or sets a value indicating whether to cloud-to-cloud upstream only aka "Diode Traffic in one direction only". 
@@ -517,7 +517,6 @@ namespace nsCDEngine.ViewModels
         }
         internal bool IsNodePermitted(Guid pNodeId)
         {
-            //if (MyServiceHostInfo.IsCloudService && TheCommonUtils.IsScopingEnabled()) return true;
             if (pNodeId == Guid.Empty || PermittedUnscopedNodesIDs == null || PermittedUnscopedNodesIDs.Count == 0)
                 return false;
             foreach (string t in PermittedUnscopedNodesIDs)
@@ -637,7 +636,6 @@ namespace nsCDEngine.ViewModels
             return IsDirty;
         }
 
-        private int mStatusLevel;
         /// <summary>
         /// The current StatusLevel of the Relay - aggregates all Engine Status Levels to the highest level
         /// 0=Idle
@@ -654,11 +652,9 @@ namespace nsCDEngine.ViewModels
             // ReSharper disable once ValueParameterNotUsed
             internal set
             {
-                mStatusLevel = value;
                 int tNewLevel = StatusLevel;
-                if (mStatusLevel != tNewLevel)
+                if (value != tNewLevel)
                 {
-                    mStatusLevel = tNewLevel;
                     TheNMIEngine.SetUXProperty(Guid.Empty, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID, // Engines.NMIService.TheNMIEngine.eOverallStatusButtonGuid,
                         $"Background={TheNMIEngine.GetStatusColor(tNewLevel)}");
                 }
@@ -669,15 +665,12 @@ namespace nsCDEngine.ViewModels
                 List<IBaseEngine> tList = TheThingRegistry.GetBaseEngines(true);
                 if (tList != null && tList.Count > 0)
                 {
-                    //int CombinedCode = 0;
                     int HighestLevel = 0;
                     foreach (IBaseEngine tDevice in tList)
                     {
                         if (tDevice.GetBaseThing() != null && tDevice.GetBaseThing().GetBaseThing() != null)
                         {
                             int tstat = tDevice.GetBaseThing().GetBaseThing().StatusLevel;
-                            //if (tstat > 1)
-                            //    CombinedCode++;
                             if (tstat > HighestLevel)
                                 HighestLevel = tstat;
                         }
@@ -786,8 +779,7 @@ namespace nsCDEngine.ViewModels
         /// <param name="pList"></param>
         public void AddManifestFiles(List<string> pList)
         {
-            if (ManifestFiles == null)
-                ManifestFiles = new List<string>();
+            ManifestFiles ??= new List<string>();
             ManifestFiles.AddRange(pList);
 
         }
@@ -1264,7 +1256,7 @@ namespace nsCDEngine.ViewModels
             }
         }
 
-        private List<Uri> CurrentRoutes = new List<Uri>();
+        private List<Uri> CurrentRoutes = new ();
         internal bool HasServiceRoute(Uri pUri)
         {
             if (pUri == null)
@@ -1646,6 +1638,10 @@ namespace nsCDEngine.ViewModels
         public string DebTrgtSrv { get; set; }
         public string SrvSec { get; set; }
 
+        /// <summary>
+        /// This prefix is used to read environment variables and can be overwritten by OEMs
+        /// </summary>
+        public string EnvVarPrefix { get; internal set; } = "CDE_";
         /// <summary>
         /// The Root Path on the current node.
         /// </summary>
@@ -2180,7 +2176,7 @@ namespace nsCDEngine.ViewModels
 
         internal TheSessionState MySessionState { get; set; }
         internal string RealScopeID { get; private set; }       //Primary RScopeID of the QSender
-        private readonly List<string> AltScopes = new List<string>();
+        private readonly List<string> AltScopes = new ();
         internal int RedIdx { get; set; }
         internal Guid TruDID { get; set; }
         private string mClientCertificateThumb;
@@ -2228,6 +2224,10 @@ namespace nsCDEngine.ViewModels
             this.IsOneWay = pc.IsOneWay;
             this.OneWayTSMFilter = pc.OneWayTSMFilter.ToArray();
         }
+        public TheChannelInfo(Guid pDeviceID, cdeSenderType pSenderType, TheSessionState sessionState) : this(pDeviceID, null, pSenderType, null)
+        {
+            this.MySessionState = sessionState;
+        }
 
         internal TheChannelInfo(Guid pDeviceID)
         {
@@ -2244,17 +2244,11 @@ namespace nsCDEngine.ViewModels
         {
         }
 
-        public TheChannelInfo(Guid pDeviceID, cdeSenderType pSenderType, TheSessionState sessionState) : this(pDeviceID, null, pSenderType, null)
-        {
-            this.MySessionState = sessionState;
-        }
-
         internal TheChannelInfo(Guid pDeviceID, string pScopeID, cdeSenderType pSenderType, string pTargetUrl) : this()
         {
             cdeMID = pDeviceID;
             SenderType = pSenderType;
             TargetUrl = pTargetUrl;
-            //TheChannelInfo tC = nsCDEngine.Communication.TheQueuedSenderRegistry.GetChannelInfoByUrl(TargetUrl);
             if (cdeMID == Guid.Empty)
             {
                 if (string.IsNullOrEmpty(TargetUrl) || TheCommonUtils.IsUrlLocalhost(TargetUrl))
@@ -2277,61 +2271,7 @@ namespace nsCDEngine.ViewModels
             }
         }
 
-        internal void SetRealScopeID(string pRealScopeID)
-        {
-            RealScopeID = pRealScopeID; //RScope-OK: Update Primary RScope
-            if (string.IsNullOrEmpty(RealScopeID))
-            {
-                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "Illegal Connect by Unscoped Node Detected!", eMsgLevel.l1_Error, $"{this}");
-                //throw new Exception("Illegal Connect by Unscoped Node Detected!"); This would prevent connection of unscoped nodes
-            }
-            else
-                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "QSender Scope Changed", eMsgLevel.l4_Message, $"{this} ({this?.RealScopeID?.Substring(0, 4).ToUpper()})");
-        }
-
-        internal bool AddAltScopes(List<string> pAlternateScopes)
-        {
-            if (pAlternateScopes?.Count > 0)
-            {
-                bool FoundAtLeastOne = false;
-                foreach (var ts in pAlternateScopes)
-                {
-                    if (RealScopeID != ts && !AltScopes.Contains(ts))
-                    {
-                        AltScopes.Add(ts);
-                        FoundAtLeastOne = true;
-                    }
-                }
-                return FoundAtLeastOne;
-            }
-            return false;
-        }
-
-        internal bool ContainsAltScope(string pInScope)
-        {
-            return AltScopes?.Contains(pInScope) == true;
-        }
-
-        internal bool HasRScope(string pInScope)
-        {
-            if ((string.IsNullOrEmpty(RealScopeID) && string.IsNullOrEmpty(pInScope)) || RealScopeID?.Equals(pInScope) == true || (AltScopes.Count > 0 && AltScopes.Contains(pInScope)))    //RScope-OK: New way of verifying Correct RScope
-                return true;
-            return false;
-        }
-
-        internal string GetScopes()
-        {
-            string ret = "";
-            if (!string.IsNullOrEmpty(RealScopeID)) //RScope-OK
-                ret += RealScopeID.Substring(0, 4).ToUpper();   //RScope-OK
-            foreach (var s in AltScopes)
-            {
-                ret += $" {s.Substring(0, 4).ToUpper()}";
-            }
-            return ret;
-        }
-
-        /// <summary>
+         /// <summary>
         /// Creates a new Channel Info from cdeSenderType and Target URL
         /// </summary>
         /// <param name="pSenderType">Requested Sender Type of the Channel</param>
@@ -2390,6 +2330,60 @@ namespace nsCDEngine.ViewModels
             };
         }
 
+        internal void SetRealScopeID(string pRealScopeID)
+        {
+            RealScopeID = pRealScopeID; //RScope-OK: Update Primary RScope
+            if (string.IsNullOrEmpty(RealScopeID))
+            {
+                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "Illegal Connect by Unscoped Node Detected!", eMsgLevel.l1_Error, $"{this}");
+                //throw new Exception("Illegal Connect by Unscoped Node Detected!"); This would prevent connection of unscoped nodes
+            }
+            else
+                TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "QSender Scope Changed", eMsgLevel.l4_Message, $"{this} ({this?.RealScopeID?.Substring(0, 4).ToUpper()})");
+        }
+
+        internal bool AddAltScopes(List<string> pAlternateScopes)
+        {
+            if (pAlternateScopes?.Count > 0)
+            {
+                bool FoundAtLeastOne = false;
+                foreach (var ts in pAlternateScopes)
+                {
+                    if (RealScopeID != ts && !AltScopes.Contains(ts))
+                    {
+                        AltScopes.Add(ts);
+                        FoundAtLeastOne = true;
+                    }
+                }
+                return FoundAtLeastOne;
+            }
+            return false;
+        }
+
+        internal bool ContainsAltScope(string pInScope)
+        {
+            return AltScopes?.Contains(pInScope) == true;
+        }
+
+        internal bool HasRScope(string pInScope)
+        {
+            if ((string.IsNullOrEmpty(RealScopeID) && string.IsNullOrEmpty(pInScope)) || RealScopeID?.Equals(pInScope) == true || (AltScopes.Count > 0 && AltScopes.Contains(pInScope)))    //RScope-OK: New way of verifying Correct RScope
+                return true;
+            return false;
+        }
+
+        internal string GetScopes()
+        {
+            StringBuilder ret = new ();
+            if (!string.IsNullOrEmpty(RealScopeID)) //RScope-OK
+                ret.Append(RealScopeID.Substring(0, 4).ToUpper());   //RScope-OK
+            foreach (var s in AltScopes)
+            {
+                ret.Append($" {s.Substring(0, 4).ToUpper()}");
+            }
+            return ret.ToString();
+        }
+
         /// <summary>
         /// Compares two TheChannelInfos or this TheChannelInfo to a given TargetUrl
         /// </summary>
@@ -2404,11 +2398,8 @@ namespace nsCDEngine.ViewModels
             }
             else
             {
-                if (obj is TheChannelInfo tO)
-                {
-                    if (tO.cdeMID != Guid.Empty && cdeMID != Guid.Empty && tO.cdeMID == cdeMID)
-                        return true;
-                }
+                if (obj is TheChannelInfo tO && tO.cdeMID != Guid.Empty && cdeMID != Guid.Empty && tO.cdeMID == cdeMID)
+                    return true;
             }
             return false;
         }
@@ -2809,8 +2800,7 @@ namespace nsCDEngine.ViewModels
             internal set
             {
                 mLastMessage = value;
-                if (mEngineThing == null)
-                    mEngineThing = TheThingRegistry.GetBaseEngineAsThing(ClassName);
+                mEngineThing ??= TheThingRegistry.GetBaseEngineAsThing(ClassName);
                 if (mEngineThing != null)
                     mEngineThing.LastMessage = mLastMessage;
             }
@@ -2819,8 +2809,7 @@ namespace nsCDEngine.ViewModels
         {
             get
             {
-                if (mEngineThing == null)
-                    mEngineThing = TheThingRegistry.GetBaseEngineAsThing(ClassName);
+                mEngineThing ??= TheThingRegistry.GetBaseEngineAsThing(ClassName);
                 if (mEngineThing != null)
                     return TheThing.GetSafePropertyDate(mEngineThing, "UpdateDate");
                 return DateTimeOffset.MinValue;
@@ -2830,8 +2819,7 @@ namespace nsCDEngine.ViewModels
         {
             get
             {
-                if (mEngineThing == null)
-                    mEngineThing = TheThingRegistry.GetBaseEngineAsThing(ClassName);
+                mEngineThing ??= TheThingRegistry.GetBaseEngineAsThing(ClassName);
                 if (mEngineThing != null)
                     return TheThing.GetSafePropertyDate(mEngineThing, "RegisterDate");
                 return DateTimeOffset.MinValue;
@@ -2848,16 +2836,14 @@ namespace nsCDEngine.ViewModels
         {
             get
             {
-                if (mEngineThing == null)
-                    mEngineThing = TheThingRegistry.GetBaseEngineAsThing(ClassName);
+                mEngineThing ??= TheThingRegistry.GetBaseEngineAsThing(ClassName);
                 if (mEngineThing == null)
                     return true;
                 return mEngineThing.IsDisabled;
             }
             set
             {
-                if (mEngineThing == null)
-                    mEngineThing = TheThingRegistry.GetBaseEngineAsThing(ClassName);
+                mEngineThing ??= TheThingRegistry.GetBaseEngineAsThing(ClassName);
                 if (mEngineThing != null)
                     mEngineThing.IsDisabled = value;
             }
@@ -2914,17 +2900,10 @@ namespace nsCDEngine.ViewModels
         {
             get
             {
-                //if (IsIsolated)
-                //{
                 if (!IsDisabled)
                     return "<$IsEnabled$>";
                 else
                     return "<$IsDisabled$>";
-                //}
-                //else
-                //{
-                //    return "<i class='fa fa-3x' style='color:gray; opacity:0.1'>&#xf05E;</i>";
-                //}
             }
         }
 
@@ -2971,7 +2950,7 @@ namespace nsCDEngine.ViewModels
             {
                 string aURL = "";
                 if (IsService)
-                    aURL = "THIS-NODE"; // TheBaseAssets.MyServiceHostInfo.MyServiceURL;
+                    aURL = "THIS-NODE"; 
                 else
                 {
                     if (ServiceNode != Guid.Empty)

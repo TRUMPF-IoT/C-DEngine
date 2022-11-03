@@ -36,11 +36,12 @@ namespace cdeUpdater
                     }
                 }
             }
-            catch { }
+            catch { 
+                //ignored
+            }
 
             foreach (string t in args)
                 StartupLog("Arg " + t);
-            //Thread.Sleep(10000);
             if (args.Length < 3)
                 return;
 
@@ -66,7 +67,6 @@ namespace cdeUpdater
                 HostType = CHostType(args[3]);
 
             StartupLog($"Upgrading to \"{target}\" of {processName} / pid {processPid} in directory {processDirectory}");
-            //Thread.Sleep(10000);
             try
             {
                 switch (target.ToUpper())
@@ -146,7 +146,10 @@ namespace cdeUpdater
 
                     case "START":
                         StartupLog($"Waiting to close {processName} / {processPid} in directory {processDirectory}");
-                        while (IsMainProcessRunning(processName, processDirectory, processPid)) ;
+                        while (IsMainProcessRunning(processName, processDirectory, processPid))
+                        {
+                            Thread.Sleep(5);
+                        }
                         StartProcess(processName, processDirectory);
                         StartupLog($"Starting {processName}.exe in directory ${processDirectory}");
                         return;
@@ -157,7 +160,7 @@ namespace cdeUpdater
                         return;
                 }
                 string[] NewFiles = cdeSplit(target, ";:;", true, true);
-                List<string> MyNewFiles = new List<string>();
+                List<string> MyNewFiles = new ();
                 foreach (string tFile in NewFiles)
                 {
                     if (!File.Exists(tFile))
@@ -214,7 +217,7 @@ namespace cdeUpdater
                     }
                     catch (Exception ee)
                     {
-                        StartupLog($"File: {tFile} failed to upgrade: {ee.ToString()}");
+                        StartupLog($"File: {tFile} failed to upgrade: {ee}");
                     }
                 }
             }
@@ -250,8 +253,8 @@ namespace cdeUpdater
             if (string.IsNullOrEmpty(pToSplit)) return new string[] { pToSplit };
             if (RemoveDuplicates)
             {
-                List<string> tList = new List<string>();
-                int tPos = 0;
+                List<string> tList = new ();
+                int tPos;
                 int oldPos = 0;
                 do
                 {
@@ -275,7 +278,7 @@ namespace cdeUpdater
 
         private static void StartProcess(string pName, string pDire)
         {
-            using (Process mainProcess = new Process())
+            using (Process mainProcess = new ())
             {
                 mainProcess.StartInfo.FileName = pName + ".exe";
                 mainProcess.StartInfo.WorkingDirectory = pDire;
@@ -296,7 +299,6 @@ namespace cdeUpdater
                 {
                     if (processPid == clsProcess.Id)
                     {
-                        ProcessStartInfo tINfo = clsProcess.StartInfo;
                         clsProcess.Kill();
                         StartupLog($"Kill sent for {processName} / {processPid}");
                     }
@@ -305,15 +307,15 @@ namespace cdeUpdater
                 {
                     try
                     {
-                        var mainModule = clsProcess.MainModule.FileName;
                         if ((clsProcess.MainModule.FileName.ToUpperInvariant().Contains(filePath)))
                         {
-                            ProcessStartInfo tINfo = clsProcess.StartInfo;
                             clsProcess.Kill();
                             StartupLog($"Kill send for {processName} in {processDirectory}");
                         }
                     }
-                    catch { }
+                    catch { 
+                        //ignored
+                    }
                 }
             }
         }
@@ -322,16 +324,13 @@ namespace cdeUpdater
         {
             try
             {
-                System.Management.ManagementScope scope = new System.Management.ManagementScope("root\\MicrosoftIISv2");
+                System.Management.ManagementScope scope = new ("root\\MicrosoftIISv2");
                 scope.Connect();
-                System.Management.ManagementObject appPool = new System.Management.ManagementObject(scope, new System.Management.ManagementPath("IIsApplicationPool.Name='W3SVC/AppPools/" + pPoolName + "'"), null);
-                if (appPool != null)
-                {
-                    if (DoRestart)
-                        appPool.InvokeMethod("Recycle", null, null);
-                    else
-                        appPool.InvokeMethod("Stop", null, null);
-                }
+                System.Management.ManagementObject appPool = new (scope, new System.Management.ManagementPath("IIsApplicationPool.Name='W3SVC/AppPools/" + pPoolName + "'"), null);
+                if (DoRestart)
+                    appPool?.InvokeMethod("Recycle", null, null);
+                else
+                    appPool?.InvokeMethod("Stop", null, null);
             }
             catch (Exception ee)
             {
@@ -341,10 +340,7 @@ namespace cdeUpdater
 
         private static void StartStopService(bool StartService, string processName, string processDirectory, int processPid)
         {
-            //bool IsRunning = IsMainProcessRunning(args[2]);
-            //if ((IsRunning && args[0].ToUpper().Equals("STARTSVC")) || (!IsRunning && args[0].ToUpper().Equals("STOPSVC")))
-            //    return;
-            ServiceController service = new ServiceController(processName);
+            ServiceController service = new (processName);
             try
             {
                 if (StartService)
@@ -366,14 +362,13 @@ namespace cdeUpdater
             }
             catch
             {
+                //ignored
             }
         }
 
         static private bool IsMainProcessRunning(string pMainExecutable, string processDirectory, int processPid)
         {
             if (string.IsNullOrEmpty(pMainExecutable)) return false;
-            //Process [] tP = Process.GetProcessesByName(pMainExecutable);
-            //tP = Process.GetProcesses();
             var filePath = processDirectory != null ? Path.Combine(processDirectory, pMainExecutable).ToUpperInvariant() : pMainExecutable.ToUpperInvariant();
 
             foreach (Process clsProcess in Process.GetProcesses())
@@ -387,13 +382,14 @@ namespace cdeUpdater
                 {
                     try
                     {
-                        var mainModule = clsProcess.MainModule.FileName;
                         if ((clsProcess.MainModule.FileName.ToUpperInvariant().Contains(filePath)))
                         {
                             return true;
                         }
                     }
-                    catch { }
+                    catch { 
+                        //ignored
+                    }
                 }
             }
             return false;
@@ -410,6 +406,7 @@ namespace cdeUpdater
             }
             catch
             {
+                //ignored
             }
             return ret;
         }
@@ -430,14 +427,16 @@ namespace cdeUpdater
 
         public static void SetSystemTime(DateTime pDate)
         {
-            SystemTime updatedTime = new SystemTime();
-            updatedTime.Year = (ushort)pDate.Year;
-            updatedTime.Month = (ushort)pDate.Month;
-            updatedTime.Day = (ushort)pDate.Day;
-            // UTC time; it will be modified according to the regional settings of the target computer so the actual hour might differ
-            updatedTime.Hour = (ushort)pDate.Hour;
-            updatedTime.Minute = (ushort)pDate.Minute;
-            updatedTime.Second = (ushort)0;
+            SystemTime updatedTime = new ()
+            {
+                Year = (ushort)pDate.Year,
+                Month = (ushort)pDate.Month,
+                Day = (ushort)pDate.Day,
+                // UTC time; it will be modified according to the regional settings of the target computer so the actual hour might differ
+                Hour = (ushort)pDate.Hour,
+                Minute = (ushort)pDate.Minute,
+                Second = (ushort)0
+            };
             // Call the unmanaged function that sets the new date and time instantly
             Win32SetSystemTime(ref updatedTime);
         }
@@ -458,12 +457,11 @@ namespace cdeUpdater
             int retVal;
             try
             {
-                if (inObj is int) return (int)inObj;
+                if (inObj is int i1) return i1;
                 retVal = Convert.ToInt32(inObj);
             }
             catch (Exception)
             {
-                //string u=e.Message;
                 retVal = 0;
             }
             return retVal;
@@ -480,7 +478,9 @@ namespace cdeUpdater
                 {
                     File.AppendAllText(startupLogPath, String.Format("{0}: {1}\r\n", DateTime.Now, text));
                 }
-                catch { }
+                catch { 
+                    //ignored
+                }
             }
         }
         /// <summary>

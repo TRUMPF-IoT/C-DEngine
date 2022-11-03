@@ -92,8 +92,9 @@ namespace nsCDEngine.Communication
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
-        protected void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -203,8 +204,7 @@ namespace nsCDEngine.Communication
                     TheBaseAssets.MySYSLOG.WriteToLog(4362, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheWSServer", "WebSocketServer-ProcessRequest Error", eMsgLevel.l1_Error, e.ToString()));
                 }
             }
-            if (MySessionRequestData.SessionState == null)
-                MySessionRequestData.SessionState = tRequestData.SessionState;
+            MySessionRequestData.SessionState ??= tRequestData.SessionState;
             if (MySessionRequestData.DeviceID == Guid.Empty)
                 MySessionRequestData.DeviceID = tRequestData.DeviceID;
             if (tRequestData.SessionState != null && MyQSender != null)

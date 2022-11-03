@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
+#define NEW_REST_ASYNC
 
 using System;
 using System.IO;
@@ -10,7 +11,6 @@ using System.Collections.Generic;
 using System.Threading;
 using nsCDEngine.ViewModels;
 using System.Security.Cryptography.X509Certificates;
-
 //LOG RANGE: 250 -259
 
 //NETCF Cookies: http://piao8163.blog.163.com/blog/static/969724782011101091723145/
@@ -286,7 +286,7 @@ namespace nsCDEngine.Communication
                         {
                             byte[] tBuf = new byte[read];
                             TheCommonUtils.cdeBlockCopy(myRequestState.BufferRead, 0, tBuf, 0, read);
-                            if (myRequestState.ResultData == null) myRequestState.ResultData = new List<byte[]>();
+                            myRequestState.ResultData ??= new List<byte[]>();
                             myRequestState.ResultData.Add(tBuf);
                             myRequestState.ResultDataPos += read;
                         }
@@ -452,8 +452,7 @@ namespace nsCDEngine.Communication
 
         private static void ProcessCookies(TheInternalRequestState myRequestState)
         {
-            if (myRequestState.MyRequestData.SessionState == null)
-                myRequestState.MyRequestData.SessionState = new TheSessionState();
+            myRequestState.MyRequestData.SessionState ??= new TheSessionState();
             if (myRequestState.MyRequestData.SessionState.StateCookies == null)
                 myRequestState.MyRequestData.SessionState.StateCookies = new cdeConcurrentDictionary<string, string>();
             if (myRequestState.response.Headers != null)
@@ -793,7 +792,7 @@ namespace nsCDEngine.Communication
                         {
                             byte[] tBuf = new byte[read];
                             TheCommonUtils.cdeBlockCopy(tRequestState.BufferRead, 0, tBuf, 0, read);
-                            if (tRequestState.ResultData == null) tRequestState.ResultData = new List<byte[]>();
+                            tRequestState.ResultData ??= new List<byte[]>();
                             tRequestState.ResultData.Add(tBuf);
                             tRequestState.ResultDataPos += read;
                         }

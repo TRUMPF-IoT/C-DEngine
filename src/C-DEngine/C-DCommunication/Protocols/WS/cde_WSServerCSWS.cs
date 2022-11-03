@@ -27,7 +27,7 @@ namespace nsCDEngine.Communication
             {
                 if (TheBaseAssets.MyServiceHostInfo.MyStationPort == TheBaseAssets.MyServiceHostInfo.MyStationWSPort)
                     TheBaseAssets.MyServiceHostInfo.MyStationWSPort =(ushort)(TheBaseAssets.MyServiceHostInfo.MyStationPort + 1);
-                appServer = new WebSocketServer(TheBaseAssets.MyServiceHostInfo.MyStationWSPort) { ReuseAddress = true }; // tUri.ToString());
+                appServer = new WebSocketServer(TheBaseAssets.MyServiceHostInfo.MyStationWSPort) { ReuseAddress = true }; 
                 appServer.AddWebSocketService<CDEWSBehavior>(TheBaseAssets.MyServiceHostInfo.RootDir + "/ISB");
                 appServer.Log.Level = LogLevel.Fatal;
                 appServer.Log.Output = sinkLog;
@@ -37,7 +37,7 @@ namespace nsCDEngine.Communication
             }
             catch (Exception ee)
             {
-                TheBaseAssets.MySYSLOG.WriteToLog(4378, new TSM("TheWSServer", "WebSocket-sharp could not start!", eMsgLevel.l1_Error, $"Port: {TheBaseAssets.MyServiceHostInfo.MyStationWSPort} {ee.ToString()}"));
+                TheBaseAssets.MySYSLOG.WriteToLog(4378, new TSM("TheWSServer", "WebSocket-sharp could not start!", eMsgLevel.l1_Error, $"Port: {TheBaseAssets.MyServiceHostInfo.MyStationWSPort} {ee}"));
             }
         }
 
@@ -91,7 +91,7 @@ namespace nsCDEngine.Communication
             {
                 mProcessor = new TheWSProcessor(this);
 
-                TheRequestData tRequestData = new TheRequestData
+                TheRequestData tRequestData = new ()
                 {
                     RequestUri = Context.RequestUri,
                     HttpMethod = "GET",
@@ -101,10 +101,10 @@ namespace nsCDEngine.Communication
                 {
                     switch (tKey.ToLower())
                     {
-                        case "user-agent": //tRequestData.UserAgent = pContext.Request.UserAgent;
+                        case "user-agent": 
                             tRequestData.UserAgent = Context.Headers[tKey];
                             break;
-                        case "content-type": //tRequestData.ResponseMimeType = pContext.Request.ContentType;
+                        case "content-type":
                             tRequestData.ResponseMimeType = Context.Headers[tKey];
                             break;
                     }

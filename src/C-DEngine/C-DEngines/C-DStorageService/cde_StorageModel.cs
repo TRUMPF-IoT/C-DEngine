@@ -24,7 +24,7 @@ namespace nsCDEngine.Engines.StorageService.Model
 
         public static TheStorageCaps GetDefaults()
         {
-            TheStorageCaps tCaps = new TheStorageCaps
+            TheStorageCaps tCaps = new ()
             {
                 RedundancyFactor = eRedundancyFactor.RF_NOREDUNDANCY,
                 StorageCapacity = 60,

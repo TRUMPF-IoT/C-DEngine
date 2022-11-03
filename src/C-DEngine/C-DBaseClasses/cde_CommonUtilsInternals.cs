@@ -48,13 +48,10 @@ namespace nsCDEngine.BaseClasses
             if (iStr.Length == 0) return "";
             //<New>CM,3.5.200,3/12/2004,SQLEncode will not allow the SQL Remarks syntax anymore
             int pos = iStr.IndexOf("'", 0);
-            if (pos >= 0)
-            {
-                if (iStr.IndexOf("--", pos) >= 0)
-                    iStr = iStr.Substring(0, pos);
-            }
+            if (pos >= 0 && iStr.IndexOf("--", pos) >= 0)
+                iStr = iStr.Substring(0, pos);
             //</New>
-            return iStr.Replace("'", "''"); //+ CHAR(39) +'");
+            return iStr.Replace("'", "''"); 
         }
 
         #region internal Get... functions
@@ -75,7 +72,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static TheClientInfo GetClientInfo(TheProcessMessage pMsg)
         {
-            TheClientInfo tRes = new TheClientInfo
+            TheClientInfo tRes = new ()
             {
                 UserID = pMsg.CurrentUserID,
                 NodeID = pMsg.Message.GetOriginator(),
@@ -89,7 +86,7 @@ namespace nsCDEngine.BaseClasses
             TheSessionState tSess = TheBaseAssets.MySession.ValidateSEID(TheCommonUtils.CGuid(pMsg.Message.SEID));  //HIGH NMI frequency
             if (tSess != null)
             {
-                tRes.LCID = TheCommonUtils.GetLCID(pMsg); // tSess.LCID;
+                tRes.LCID = TheCommonUtils.GetLCID(pMsg); 
                 tRes.WebPlatform = tSess.WebPlatform;
                 tRes.IsMobile = (tSess.WebPlatform == eWebPlatform.Mobile);
             }
@@ -273,9 +270,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static void SwitchBytes(byte[] bytes, int i, int j)
         {
-            var temp = bytes[i];
-            bytes[i] = bytes[j];
-            bytes[j] = temp;
+            (bytes[j], bytes[i]) = (bytes[i], bytes[j]);
         }
 
         internal static string MOTLockGenerator()
@@ -422,7 +417,7 @@ namespace nsCDEngine.BaseClasses
             }
             if (astreamjs != null)
             {
-                using (StreamReader tStrjs = new StreamReader(astreamjs))
+                using (StreamReader tStrjs = new (astreamjs))
                 {
                     return tStrjs.ReadToEnd();
                 }
@@ -452,7 +447,7 @@ namespace nsCDEngine.BaseClasses
                     if (imgStream != null)
                     {
 #if !CDE_NET35
-                        using (MemoryStream ms = new MemoryStream())
+                        using (MemoryStream ms = new ())
                         {
                             imgStream.CopyTo(ms);
                             return ms.ToArray();
@@ -496,7 +491,9 @@ namespace nsCDEngine.BaseClasses
                 }
                 attribute = (pluginType.Assembly.GetCustomAttributes(typeof(T), false)?[0] as T);
             }
-            catch (Exception) { }
+            catch (Exception) { 
+                //intent
+            }
             return attribute;
         }
 
@@ -511,7 +508,21 @@ namespace nsCDEngine.BaseClasses
         #region Internal Process Helpers
         internal static bool cdeRunAsync(string pThreadName, bool TrapExceptions, cdeWaitCallback callBack, int timeout, object pState = null)
         {
-            var task = cdeRunTaskAsync(pThreadName, callBack, pState);
+            Task task = null;
+            if (TrapExceptions)
+            {
+                try
+                {
+                    task=cdeRunTaskAsync(pThreadName, callBack, pState);
+                }
+                catch (Exception eee)
+                {
+                    TheBaseAssets.MySYSLOG?.WriteToLog(TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("cdeRunAsync", $"Exception ({eee.Message}) during task Invokation", eMsgLevel.l1_Error), 5001);
+                    return false;
+                }
+            }
+            else
+                task = cdeRunTaskAsync(pThreadName, callBack, pState);
             if (timeout > 0)
             {
                 if (TrapExceptions)
@@ -520,7 +531,9 @@ namespace nsCDEngine.BaseClasses
                     {
                         task.Wait(timeout);
                     }
-                    catch { }
+                    catch { 
+                        //intent
+                    }
                 }
                 else
                 {
@@ -710,9 +723,9 @@ namespace nsCDEngine.BaseClasses
         }
 
         #region internal Event helpers
-        internal abstract class RegisteredEventHelperBase<T> where T : System.MulticastDelegate
+        internal abstract class RegisteredEventHelperBase<T> where T : MulticastDelegate
         {
-            private readonly ViewModels.cdeConcurrentDictionary<string, T> MyRegisteredEvents = new ViewModels.cdeConcurrentDictionary<string, T>();
+            private readonly cdeConcurrentDictionary<string, T> MyRegisteredEvents = new ();
 
             internal List<string> GetKnownEvents()
             {
@@ -796,12 +809,9 @@ namespace nsCDEngine.BaseClasses
             /// <param name="doFire">Action that will invoke the actual action for the event. This allows for the caller to provide arguments to the invokation.</param>
             protected void FireEvent(string pEventName, Action<T> doFire)
             {
-                if (!string.IsNullOrEmpty(pEventName))
+                if (!string.IsNullOrEmpty(pEventName) && MyRegisteredEvents.TryGetValue(pEventName, out var action))
                 {
-                    if (MyRegisteredEvents.TryGetValue(pEventName, out var action))
-                    {
-                        doFire(action);
-                    }
+                    doFire(action);
                 }
             }
         }
@@ -885,7 +895,7 @@ namespace nsCDEngine.BaseClasses
         {
             var handlers = action?.GetInvocationList();
             var tCreateTime = DateTime.UtcNow; // UtcNow is significantly faster and we only need elapsed time here
-            var result = Parallel.ForEach(handlers, new ParallelOptions { MaxDegreeOfParallelism = 10 }, innerAction =>
+            Parallel.ForEach(handlers, new ParallelOptions { MaxDegreeOfParallelism = 10 }, innerAction =>
             {
                 PendingTask pendingTask = null;
                 var tStartTime = DateTime.UtcNow; // UtcNow is significantly faster and we only need elapsed time here
@@ -922,14 +932,14 @@ namespace nsCDEngine.BaseClasses
 #else
         private static readonly TaskCreationOptions defaultTaskCreationOptions = TaskCreationOptions.DenyChildAttach | TaskCreationOptions.PreferFairness;
 #endif
-        private class PendingTask
+        private sealed class PendingTask
         {
             public Task task;
             public DateTime startTime;
             public DateTime createTime;
             public DateTime endTime;
         }
-        private static readonly List<PendingTask> _globalTasks = new List<PendingTask>();
+        private static readonly List<PendingTask> _globalTasks = new ();
 
         /// <summary>
         /// Helper to shield from platform differences when returning a value from a function that is conditionally compiled with the async keyword,
@@ -996,7 +1006,6 @@ namespace nsCDEngine.BaseClasses
                 var targetFrameworkData = tAss.GetCustomAttributesData()?.FirstOrDefault(at => at.AttributeType.FullName == typeof(System.Runtime.Versioning.TargetFrameworkAttribute).FullName);
                 var nameArg = targetFrameworkData?.ConstructorArguments[0];
                 targetFrameworkSku = nameArg?.Value?.ToString();
-                //targetFrameworkName = targetFramework.FrameworkName;
 #else
                 // No real need to distinguish on .Net4 hosts: all plug-ins on a .Net4 C-DEngine will be considered as .Net4 plug-ins
                 targetFrameworkSku = ".NETFramework,Version=v4.0";
@@ -1047,7 +1056,6 @@ namespace nsCDEngine.BaseClasses
                             tPluginPlatform = cdePlatform.NETSTD_V20;
                             break;
                         default:
-                            // TODO What should we do for 3.x and 1.x?
                             break;
                     }
                     break;
@@ -1091,7 +1099,6 @@ namespace nsCDEngine.BaseClasses
                                     }
                                     break;
                                 default:
-                                    // TODO What should we do for 4.8 etc.?
                                     break;
                             }
                             break;
@@ -1162,7 +1169,7 @@ namespace nsCDEngine.BaseClasses
         internal static string SaveBlobToDisk(TSM pMessage, string[] command, string PathAdd)
         {
             byte[] fileBytes = null;
-            bool IsImage = false;   //TODO: find a compatible way to create a ThumbNail in UWA, Android and IOS
+            bool IsImage = false;   
             string Extension = "";
             string tTargetFileName = command[1];
             string FinalFileName = null;
@@ -1240,11 +1247,11 @@ namespace nsCDEngine.BaseClasses
                     if (!string.IsNullOrEmpty(PathAdd))
                         FinalFileName = Path.Combine(PathAdd.ToLower(), FinalFileName);
                     FileToReturn = cdeFixupFileName(FinalFileName);
-                    TheCommonUtils.CreateDirectories(FileToReturn);
+                    CreateDirectories(FileToReturn);
 
                     TheBaseAssets.MySYSLOG.WriteToLog(454, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, string.Format("FilePush writes to: {0}", FileToReturn), eMsgLevel.l6_Debug), true);
 
-                    System.IO.FileStream _FileStream = new System.IO.FileStream(FileToReturn, System.IO.FileMode.Create, System.IO.FileAccess.Write);
+                    FileStream _FileStream = new (FileToReturn, FileMode.Create, FileAccess.Write);
                     _FileStream.Write(fileBytes, 0, fileBytes.Length);
 #if CDE_STANDARD   //Core uses Dispose not CLose
                     _FileStream.Dispose();
@@ -1290,10 +1297,7 @@ namespace nsCDEngine.BaseClasses
         static cdeConcurrentDictionary<string, object> _logFileLocks = null;
         internal static void LogDataToFile(string fileName, Dictionary<string, object> logInfo, string logSource, string sourceItem)
         {
-            if (_logFileLocks == null)
-            {
-                _logFileLocks = new cdeConcurrentDictionary<string, object>();
-            }
+            _logFileLocks ??= new cdeConcurrentDictionary<string, object>();
             var _logFileLock = _logFileLocks.GetOrAdd(fileName, f => new object());
             int retriesLeft = 0;
             do
@@ -1309,7 +1313,6 @@ namespace nsCDEngine.BaseClasses
                     {
                         File.AppendAllText(fileName, $"{loginfoJson},\r\n");
                     }
-                    //File.AppendAllText("opcclientdata.log", $"{DateTimeOffset.Now:O},{property.Name},0x{((int?)(pValue.WrappedValue.TypeInfo?.BuiltInType)) ?? 0:x4},{pValue.Value},0x{pValue.StatusCode.Code:x8},{timeStampForProperty.UtcDateTime:yyyy-MM-ddTHH:mm:ss.fffZ},{pValue.ServerTimestamp.ToUniversalTime():yyyy-MM-ddTHH:mm:ss.fffZ}\r\n");
                     retriesLeft = 0;
                 }
                 catch (Exception e)
@@ -1323,7 +1326,7 @@ namespace nsCDEngine.BaseClasses
                         retriesLeft--;
                         if (retriesLeft < 50)
                         {
-                            System.Threading.Thread.Sleep(100);
+                            Thread.Sleep(100);
                         }
                         if (retriesLeft <= 0)
                         {
@@ -1341,11 +1344,8 @@ namespace nsCDEngine.BaseClasses
             if (string.IsNullOrEmpty(baseDirectory))
                 baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-            if (!string.IsNullOrEmpty(baseDirectory))
-            {
-                if (!baseDirectory.EndsWith(System.IO.Path.DirectorySeparatorChar.ToString()))
-                    baseDirectory += System.IO.Path.DirectorySeparatorChar.ToString();
-            }
+            if (!string.IsNullOrEmpty(baseDirectory) && !baseDirectory.EndsWith(Path.DirectorySeparatorChar.ToString()))
+                baseDirectory += Path.DirectorySeparatorChar.ToString();
             return baseDirectory;
         }
 
@@ -1379,16 +1379,18 @@ namespace nsCDEngine.BaseClasses
             byte[] returnValue = null;
             try
             {
-                using (FileStream fr = new FileStream(fileToReturn, FileMode.Open))
+                using (FileStream fr = new (fileToReturn, FileMode.Open))
                 {
-                    using (BinaryReader br = new BinaryReader(fr))
+                    using (BinaryReader br = new (fr))
                     {
                         returnValue = br.ReadBytes((int)fr.Length);
                     }
                 }
             }
             catch (Exception)
-            { }
+            {
+                //intent
+            }
             return returnValue;
         }
 
@@ -1444,11 +1446,8 @@ namespace nsCDEngine.BaseClasses
             {
                 fileToReturn = fileToReturn.Replace('/', '\\');
             }
-            if (!AllowCacheAccess)
-            {
-                if (fileToReturn.ToLower().Contains("\\cache") || fileToReturn.ToLower().Contains("/cache"))   //do not allow access to cache folder!
-                    return "";
-            }
+            if (!AllowCacheAccess && (fileToReturn.ToLower().Contains("\\cache") || fileToReturn.ToLower().Contains("/cache")))
+                return "";
             return fileToReturn;
         }
 

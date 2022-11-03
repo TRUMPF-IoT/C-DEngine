@@ -7,7 +7,7 @@ namespace nsCDEngine.Communication
     /// <summary>
     /// HTTP Status Code
     /// </summary>
-    public enum eHttpStatusCode : int
+    public enum eHttpStatusCode 
     {
         /// <summary>
         /// 100 Continue for HTTP1.1 telegrams
