@@ -1737,6 +1737,9 @@ namespace nsCDEngine.Engines.ThingService
             var tResBag = MyPropertyBag;
             for (int i = 0; i < tPath.Length; i++)
             {
+                if (tResBag == null)
+                    return null;
+
                 var tName = (i == 0 ? tPath[i].Substring(1) : tPath[i]);
                 if (i == tPath.Length - 1)
                     tName = tName.Substring(0, tName.Length - 1);
@@ -1759,19 +1762,9 @@ namespace nsCDEngine.Engines.ThingService
                     if (!tP.HasThing())
                         tP.SetThing(this);
                     tP.cdeO = tParent.cdeMID;
-                    if (i < tPath.Length - 1)
-                    {
-                        if (tP.cdePB == null && DoCreate)
-                        {
-                            tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
-                        }
-                        tResBag = tP.cdePB;
-                    }
-                }
-                if (tResBag == null) // && i < tPath.Length - 1) //If we keep this, there will be a "bug" recorded with SonarCloud that tResBag could be null in the last iteration of the for() loop
-                {
-                    // If we still have to go further down but the next cdePB has not been created: give up.
-                    return null;
+                    if (i < tPath.Length - 1 && tP.cdePB == null && DoCreate)
+                        tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
+                    tResBag = tP.cdePB;
                 }
                 if (i > 0)
                     tP.cdeOP = tParent as cdeP;
