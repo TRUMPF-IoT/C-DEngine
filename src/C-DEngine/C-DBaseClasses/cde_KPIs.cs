@@ -424,8 +424,13 @@ namespace nsCDEngine.BaseClasses
         /// Resets all the KPIs to zero
         /// </summary>
         public static void Reset()
-            => KPIs.Clear();
+        {
+            // Intentionally left blank.
 
+            // Reason: Reset did NOT reset all KPIs.
+            // Instead it was initializing the KPIs if not yet done which is not necessary anymore.
+        }
+            
         /// <summary>
         /// Returns a string of all KPIs
         /// </summary>

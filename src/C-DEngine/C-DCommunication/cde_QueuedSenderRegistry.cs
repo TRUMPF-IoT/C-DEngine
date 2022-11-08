@@ -595,7 +595,15 @@ namespace nsCDEngine.Communication
             try
             {
                 if (MyQueuedSenderList.ContainsID(pSend.MyTargetNodeChannel.cdeMID)) return 1;
-                MyQueuedSenderList.AddOrUpdateItem(pSend.MyTargetNodeChannel.cdeMID, pSend, null);
+                MyQueuedSenderList.AddOrUpdateItem(pSend.MyTargetNodeChannel.cdeMID, pSend, sender =>
+                {
+                    var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash ??
+                                    (sender.MyTargetNodeChannel.RealScopeID == null
+                                        ? "unscoped"
+                                        : sender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                    TheCDEKPIs.IncrementKPI(
+                        $"[{eKPINames.QSenders}].[Scope].[{scopeHash}]");
+                });
                 return 2;
             }
             catch (Exception e)
@@ -618,7 +626,15 @@ namespace nsCDEngine.Communication
 , TheCommonUtils.GetStackInfo(new System.Diagnostics.StackTrace(true))
 #endif
                             ));
-                        MyQueuedSenderList.RemoveAnItemByID(pNodeChannel.cdeMID, null);
+
+                        MyQueuedSenderList.RemoveAnItemByID(pNodeChannel.cdeMID, sender =>
+                        {
+                            var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash ??
+                                            (sender.MyTargetNodeChannel.RealScopeID == null
+                                                ? "unscoped"
+                                                : sender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                            TheCDEKPIs.DecrementKPI($"[{eKPINames.QSenders}].[Scope].[{scopeHash}]");
+                        });
                         return true;
                     }
                 }
@@ -1096,7 +1112,7 @@ namespace nsCDEngine.Communication
                             meshInfoStatus.MeshInfo.TotalMeshSize = allQSInMesh.Count;
                             meshInfoStatus.MeshInfo.MeshSize = allQSInMesh.Count(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL);
                             meshInfoStatus.MeshInfo.ConnectedBrowsers = allQSInMesh.Count(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON);
-                            meshInfoStatus.MeshInfo.ScopeIDHash = qs.MyTargetNodeChannel.ScopeIDHash ?? (qs.MyTargetNodeChannel.RealScopeID == null ? "unscoped" : qs.MyTargetNodeChannel.RealScopeID.ToUpper().Substring(0, 4));
+                            meshInfoStatus.MeshInfo.ScopeIDHash = qs.MyTargetNodeChannel.ScopeIDHash ?? (qs.MyTargetNodeChannel.RealScopeID == null ? "unscoped" : qs.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpper());
                             meshInfoStatus.MeshInfo.NodeDiagInfo = qs.GetNodeDiagInfo();
                         }
                         catch(Exception)
