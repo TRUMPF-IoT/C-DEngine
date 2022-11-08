@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
+using cdeNewtonsoft.Json.Linq;
 using nsCDEngine.Communication;
 using nsCDEngine.Engines.ThingService;
 using nsCDEngine.ViewModels;
@@ -38,14 +39,8 @@ namespace nsCDEngine.BaseClasses
     /// </summary>
     public static class TheCDEKPIs
     {
-        // Array of KPI metrics
-        private static long[] KPIs;
-
-        // Maps the name of the KPI to the index in the KPI array
-        private static cdeConcurrentDictionary<string, int> KPIIndexes = null;
-
-        // Number of elements to increase the KPI array by when full
-        private const int arrayIncreaseSize = 10;
+        // Dictionary of the KPI metrics
+        private static cdeConcurrentDictionary<string, long> KPIs = new();
 
         #region Legacy KPI Properties
         public static double QSenders
@@ -279,26 +274,14 @@ namespace nsCDEngine.BaseClasses
         /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
         /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void IncrementKPI(string name, bool dontReset = false)
-        {
-            if (KPIIndexes != null && KPIs != null)
-            {
-                bool exists = KPIIndexes.TryGetValue(name, out int index);
-                if (exists)
-                    Interlocked.Increment(ref KPIs[index]);
-                else
-                    CreateNewEntry(name, 1, dontReset);
-            }
-        }
+            => IncrementKPI(name, 1, dontReset);
 
         /// <summary>
         /// Increments an existing KPI by 1 using an eKPINames enum.
         /// </summary>
         /// <param name="eKPI">Enum that determines which KPI to increment</param>
         public static void IncrementKPI(eKPINames eKPI)
-        {
-            if (KPIs != null)
-                Interlocked.Increment(ref KPIs[(int)eKPI]);
-        }
+            => IncrementKPI(eKPI.ToString(), 1);
 
         /// <summary>
         /// Increments an existing KPI by name by a given amount.  If the KPI does not exist,
@@ -310,14 +293,9 @@ namespace nsCDEngine.BaseClasses
         /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void IncrementKPI(string name, long value, bool dontReset = false)
         {
-            if (KPIIndexes != null && KPIs != null)
-            {
-                bool exists = KPIIndexes.TryGetValue(name, out int index);
-                if (exists)
-                    Interlocked.Add(ref KPIs[index], value);
-                else
-                    CreateNewEntry(name, value, dontReset);
-            }
+            KPIs.AddOrUpdate(name,
+                key => CreateNewEntry(key, value, dontReset),
+                (_, oldValue) => oldValue + value);
         }
 
         /// <summary>
@@ -326,10 +304,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="eKPI">Enum that determines which KPI to increment</param>
         /// <param name="value">The value to add to the KPI</param>
         public static void IncrementKPI(eKPINames eKPI, long value)
-        {
-            if (KPIs != null)
-                Interlocked.Add(ref KPIs[(int)eKPI], value);
-        }
+            => IncrementKPI(eKPI.ToString(), value);
 
         /// <summary>
         /// Decrements an existing KPI by name by 1.  If the KPI does not exist,
@@ -340,14 +315,9 @@ namespace nsCDEngine.BaseClasses
         /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void DecrementKPI(string name, bool dontReset = false)
         {
-            if (KPIIndexes != null && KPIs != null)
-            {
-                bool exists = KPIIndexes.TryGetValue(name, out int index);
-                if (exists)
-                    Interlocked.Decrement(ref KPIs[index]);
-                else
-                    CreateNewEntry(name, 0, dontReset);
-            }
+            KPIs.AddOrUpdate(name,
+                key => CreateNewEntry(key, 0, dontReset),
+                (_, oldValue) => --oldValue);
         }
 
         /// <summary>
@@ -355,10 +325,7 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         /// <param name="eKPI">Enum that determines which KPI to decrement</param>
         public static void DecrementKPI(eKPINames eKPI)
-        {
-            if (KPIs != null)
-                Interlocked.Decrement(ref KPIs[(int)eKPI]);
-        }
+            => DecrementKPI(eKPI.ToString());
 
         /// <summary>
         /// Sets an existing KPI to a new value.  If the KPI does not exist,
@@ -370,14 +337,9 @@ namespace nsCDEngine.BaseClasses
         /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void SetKPI(string name, long value, bool dontReset = false)
         {
-            if (KPIIndexes != null && KPIs != null)
-            {
-                bool exists = KPIIndexes.TryGetValue(name, out int index);
-                if (exists)
-                    Interlocked.Exchange(ref KPIs[index], value);
-                else
-                    CreateNewEntry(name, value, dontReset);
-            }
+            KPIs.AddOrUpdate(name,
+                key => CreateNewEntry(key, value, dontReset),
+                (_, _) => value);
         }
 
         /// <summary>
@@ -386,10 +348,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="eKPI">Enum that determines which KPI to set</param>
         /// <param name="value">Value of the KPI to set</param>
         public static void SetKPI(eKPINames eKPI, long value)
-        {
-            if (KPIs != null)
-                Interlocked.Exchange(ref KPIs[(int)eKPI], value);
-        }
+            => SetKPI(eKPI.ToString(), value);
 
         /// <summary>
         /// Return the value of an existing KPI by name
@@ -397,16 +356,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="name">The name of the KPI whose value will be returned</param>
         /// <returns>The value of the KPI</returns>
         public static long GetKPI(string name)
-        {
-            long kpi = 0;
-            if (KPIIndexes != null && KPIs != null)
-            {
-                bool exists = KPIIndexes.TryGetValue(name, out int index);
-                if (exists)
-                    kpi = Interlocked.Read(ref KPIs[index]);
-            }
-            return kpi;
-        }
+            => KPIs.TryGetValue(name, out var kpi) ? kpi : 0;
 
         /// <summary>
         /// Return the value of an existing KPI using an eKPINames enum
@@ -414,12 +364,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="eKPI">Enum that determines which KPI value to return</param>
         /// <returns>The value of the KPI</returns>
         public static long GetKPI(eKPINames eKPI)
-        {
-            long kpi = 0;
-            if (KPIs != null)
-                kpi = Interlocked.Read(ref KPIs[(int)eKPI]);
-            return kpi;
-        }
+            => GetKPI(eKPI.ToString());
 
         /// <summary>
         /// Increments the KPI for a TSMByENG with the given engine name by 1.
@@ -427,49 +372,21 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         /// <param name="pEngine">The engine name corresponding to the KPI</param>
         /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
-        /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
+        /// This means that a separate "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void IncTSMByEng(string pEngine, bool dontReset = false)
-        {
-            if (KPIIndexes != null && KPIs != null)
-            {
-                bool exists = KPIIndexes.TryGetValue($"TSMbyENG-{pEngine}", out int index);
-                if (exists)
-                    Interlocked.Increment(ref KPIs[index]);
-                else
-                    CreateNewEntry($"TSMbyENG-{pEngine}", 1, dontReset);
-            }
-        }
+            => IncrementKPI($"TSMbyENG-{pEngine}", dontReset);
 
-        // Creates a new entry in the KPIIndexes and KPIs.  If the KPIs array is full, it will be recreated.
-        private static void CreateNewEntry(string name, long value, bool dontReset)
+        // Adds KPI by its name to the dontReset and doNotComputeTotals lists depending on the dontReset parameter.
+        // Returns the given value for the new entry.
+        private static long CreateNewEntry(string name, long value, bool dontReset)
         {
-            try
+            if (dontReset)
             {
-                lock (KPIIndexes)
-                {
-                    lock (KPIs)
-                    {
-                        int entries = KPIIndexes.Count;
-                        if (entries == KPIs.Length)
-                        {
-                            long[] newKPIs = new long[entries + arrayIncreaseSize];
-                            Array.Copy(KPIs, newKPIs, entries);
-                            KPIs = newKPIs;
-                        }
-                        if (KPIs.Length > entries && KPIIndexes.TryAdd(name, entries))
-                            Interlocked.Exchange(ref KPIs[entries], value);
-                        if (dontReset)
-                        {
-                            doNotReset.Add(name);
-                            doNotComputeTotals.Add(name);
-                        }
-                    }
-                }
+                doNotReset.Add(name);
+                doNotComputeTotals.Add(name);
             }
-            catch (Exception)
-            {
-                // Log exception?
-            }
+
+            return value;
         }
 
         /// <summary>
@@ -496,9 +413,6 @@ namespace nsCDEngine.BaseClasses
             nameof(eKPINames.SessionCount), nameof(eKPINames.WSTestClients), nameof(eKPINames.KPI3), nameof(eKPINames.KPI7), nameof(eKPINames.KPI8), nameof(eKPINames.KPI9)
         };
 
-
-
-
         internal static Dictionary<string, object> GetDictionary()
         {
             TheThing tn = new ();
@@ -506,98 +420,70 @@ namespace nsCDEngine.BaseClasses
             return tn.GetPBAsDictionary();
         }
 
-        private static void CreateKPIIndexes()
-        {
-            // We could wait here for engines, but then other KPIs will not be written in meantime
-            KPIIndexes = new cdeConcurrentDictionary<string, int>();
-            lock (KPIIndexes)
-            {
-                Array indexes = Enum.GetValues(typeof(eKPINames));
-                foreach (var index in indexes)
-                {
-                    KPIIndexes.TryAdd(Enum.GetName(typeof(eKPINames), index), (int)index);
-                }
-                List<string> engineNames = TheThingRegistry.GetEngineNames(false);
-                foreach (string engineName in engineNames)
-                {
-                    KPIIndexes.TryAdd($"TSMbyENG-{engineName}", KPIIndexes.Count);
-                }
-            }
-        }
-
         /// <summary>
         /// Resets all the KPIs to zero
         /// </summary>
         public static void Reset()
-        {
-            if (KPIIndexes == null)
-                CreateKPIIndexes();
-            KPIs ??= new long[KPIIndexes == null ? 1 : KPIIndexes.Count];
-        }
+            => KPIs.Clear();
 
         /// <summary>
         /// Returns a string of all KPIs
         /// </summary>
-        /// <param name="DoReset">if try, the KPIs are reset after the string was constructed</param>
+        /// <param name="doReset">if true, the KPIs are reset after the string was constructed.</param>
         /// <returns></returns>
-        public static string GetKPIs(bool DoReset)
+        public static string GetKPIs(bool doReset)
         {
             StringBuilder tRes = new ();
             tRes.Append($"C-DEngine-KPIs: LR:{LastReset:MM/dd/yyyy hh:mm:ss.fff--tt} ");
-            List<string> orderedKeys = KPIIndexes.Keys.OrderBy(s => s).ToList();
+            List<string> orderedKeys = KPIs.Keys.OrderBy(s => s).ToList();
             foreach (string key in orderedKeys)
             {
                 tRes.Append($"{key}:{GetKPI(key)} ");
             }
-            if (DoReset) Reset();
+            if (doReset) Reset();
             return tRes.ToString();
         }
 
         private static readonly object thingHarvestLock = new ();
         internal static void ToThingProperties(TheThing pThing, bool bReset)
         {
-            lock(thingHarvestLock)
+            if (pThing == null) return;
+
+            lock (thingHarvestLock)
             {
-                if (pThing == null) return;
-                if (KPIIndexes == null)
-                    CreateKPIIndexes();
-                KPIs ??= new long[KPIIndexes == null ? 1 : KPIIndexes.Count];
-
-                if (KPIs != null && KPIIndexes != null)
+                TimeSpan timeSinceLastReset = DateTimeOffset.Now.Subtract(LastReset);
+                bool resetReady = timeSinceLastReset.TotalMilliseconds >= 1000;
+                foreach (var keyVal in KPIs)
                 {
-                    TimeSpan timeSinceLastReset = DateTimeOffset.Now.Subtract(LastReset);
-                    bool resetReady = timeSinceLastReset.TotalMilliseconds >= 1000;
-                    foreach (var keyVal in KPIIndexes.GetDynamicEnumerable())
-                    {
-                        bool donres = doNotReset.Contains(keyVal.Key);
-                        long kpiValue;
-                        if (bReset && !donres && resetReady)
-                            kpiValue = Interlocked.Exchange(ref KPIs[keyVal.Value], 0);
-                        else
-                            kpiValue = Interlocked.Read(ref KPIs[keyVal.Value]);
+                    bool dontReset = doNotReset.Contains(keyVal.Key);
 
-                        // LastReset not set yet - shouldn't happen since it is set in first call to Reset (TheBaseAssets.InitAssets)
-                        if (LastReset == DateTimeOffset.MinValue || timeSinceLastReset.TotalSeconds <= 1 || donres)
-                            pThing.SetProperty(keyVal.Key, kpiValue);
-                        else
-                            pThing.SetProperty(keyVal.Key, kpiValue / timeSinceLastReset.TotalSeconds); // Normalize value to "per second"
-                        if (!doNotComputeTotals.Contains(keyVal.Key))
-                        {
-                            pThing.SetProperty(keyVal.Key + "Total", TheThing.GetSafePropertyNumber(pThing, keyVal.Key + "Total") + kpiValue);
-                        }
+                    long kpiValue = keyVal.Value;
+                    if (bReset && !dontReset && resetReady)
+                        SetKPI(keyVal.Key, 0);
+
+                    // LastReset not set yet - shouldn't happen since it is set in first call to Reset (TheBaseAssets.InitAssets)
+                    if (LastReset == DateTimeOffset.MinValue || timeSinceLastReset.TotalSeconds <= 1 || dontReset)
+                        pThing.SetProperty(keyVal.Key, kpiValue);
+                    else
+                        pThing.SetProperty(keyVal.Key, kpiValue / timeSinceLastReset.TotalSeconds); // Normalize value to "per second"
+
+                    if (!doNotComputeTotals.Contains(keyVal.Key))
+                    {
+                        pThing.SetProperty(keyVal.Key + "Total", TheThing.GetSafePropertyNumber(pThing, keyVal.Key + "Total") + kpiValue);
                     }
-                    if (bReset && resetReady)
-                        LastReset = DateTimeOffset.Now;
-                    // Grab some KPIs from sources - Workaround, this should be computed in the source instead
-                    SetKPI(eKPINames.QSenders, TheQueuedSenderRegistry.GetSenderListNodes().Count);
-                    SetKPI(eKPINames.QSenderInRegistry, TheQueuedSenderRegistry.Count());
-                    SetKPI(eKPINames.SessionCount, TheBaseAssets.MySession.GetSessionCount());
-                    SetKPI(eKPINames.UniqueMeshes, TheQueuedSenderRegistry.GetUniqueMeshCount());
-                    SetKPI(eKPINames.UnsignedNodes, TheQueuedSenderRegistry.GetUnsignedNodeCount());
-                    SetKPI(eKPINames.KnownNMINodes, Engines.NMIService.TheFormsGenerator.GetNMINodeCount());
-                    SetKPI(eKPINames.StreamsNotFound, Communication.HttpService.TheHttpService.IsStreaming.Count);
-                    SetKPI(eKPINames.BlobsNotFound, Engines.ContentService.TheContentServiceEngine.BlobsNotHere.Count);
                 }
+                if (bReset && resetReady)
+                    LastReset = DateTimeOffset.Now;
+
+                // Grab some KPIs from sources - Workaround, this should be computed in the source instead
+                SetKPI(eKPINames.QSenders, TheQueuedSenderRegistry.GetSenderListNodes().Count);
+                SetKPI(eKPINames.QSenderInRegistry, TheQueuedSenderRegistry.Count());
+                SetKPI(eKPINames.SessionCount, TheBaseAssets.MySession.GetSessionCount());
+                SetKPI(eKPINames.UniqueMeshes, TheQueuedSenderRegistry.GetUniqueMeshCount());
+                SetKPI(eKPINames.UnsignedNodes, TheQueuedSenderRegistry.GetUnsignedNodeCount());
+                SetKPI(eKPINames.KnownNMINodes, Engines.NMIService.TheFormsGenerator.GetNMINodeCount());
+                SetKPI(eKPINames.StreamsNotFound, Communication.HttpService.TheHttpService.IsStreaming.Count);
+                SetKPI(eKPINames.BlobsNotFound, Engines.ContentService.TheContentServiceEngine.BlobsNotHere.Count);
             }
         }
     }
