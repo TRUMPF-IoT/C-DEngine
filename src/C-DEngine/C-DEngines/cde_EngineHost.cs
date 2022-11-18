@@ -16,6 +16,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
@@ -370,7 +371,7 @@ namespace nsCDEngine.Engines
 
 #if !CDE_NET4
             TheBaseAssets.MySYSLOG.WriteToLog(4172, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files", eMsgLevel.l7_HostDebugMessage));
-            TheThing.ApplyConfigurationFilesAsync().ContinueWith(t =>
+            Task tACFA = TheThing.ApplyConfigurationFilesAsync().ContinueWith(t =>
             {
                 if (t.IsCompleted)
                 {
@@ -396,6 +397,8 @@ namespace nsCDEngine.Engines
                     }
                 }
             });
+            if (TheCommonUtils.IsMeadowFeather())
+                tACFA.Wait();
 #endif
             TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Starting Engines", eMsgLevel.l7_HostDebugMessage));
 
