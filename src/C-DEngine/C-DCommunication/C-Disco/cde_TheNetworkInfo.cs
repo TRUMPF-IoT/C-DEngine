@@ -224,18 +224,17 @@ namespace nsCDEngine.Discovery
                 {
                     if (string.IsNullOrEmpty(MyHostName))
                         MyHostName = cdeGetHostName();
-
-                    IPHostEntry hostByName = cdeGetHostEntry(MyHostName);
-                if (hostByName == null) return false;
+                    IPHostEntry hostByName = TheCommonUtils.IsMeadowFeather() ? null : cdeGetHostEntry(MyHostName);
+                    if (hostByName == null) return false;
                     TheSystemMessageLog.ToCo(string.Format("NetworkInfo - HostName : {0}", hostByName.HostName));
-                    ArrayList tAddressTable = new (hostByName.AddressList);
+                    ArrayList tAddressTable = new(hostByName.AddressList);
                     foreach (IPAddress address in tAddressTable)
                     {
                         if (address.AddressFamily != AddressFamily.InterNetworkV6)
                         {
                             NewAddition = true;
                             byte[] ipAdressBytes = address.GetAddressBytes();
-                            TheIPDef tI = new () { ipAdressBytes = ipAdressBytes, SubnetBytes = new byte[] { 255, 0, 0, 0 }, IPAddr = address, IsDnsEnabled = true, IsPrivateIP = IsPrivateIPBytes(ipAdressBytes) };
+                            TheIPDef tI = new() { ipAdressBytes = ipAdressBytes, SubnetBytes = new byte[] { 255, 0, 0, 0 }, IPAddr = address, IsDnsEnabled = true, IsPrivateIP = IsPrivateIPBytes(ipAdressBytes) };
                             if (address.ToString().Equals(IPAddress.Loopback.ToString()))
                             {
                                 HasLoop = true;

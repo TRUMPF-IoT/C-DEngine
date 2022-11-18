@@ -124,20 +124,23 @@ namespace nsCDEngine.Communication
 
         internal static bool StartCommunications()
         {
-            System.Net.ServicePointManager.ServerCertificateValidationCallback += ValidateServerCertificate;
-            if (!TheBaseAssets.MyServiceHostInfo.DisableTls12)
+            if (!TheCommonUtils.IsMeadowFeather())
             {
-                try
+                System.Net.ServicePointManager.ServerCertificateValidationCallback += ValidateServerCertificate;
+                if (!TheBaseAssets.MyServiceHostInfo.DisableTls12)
                 {
+                    try
+                    {
 #if CDE_NET35 || CDE_NET4
                     System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)0x00000C00;
 #else
-                System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+                        System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
 #endif
-                }
-                catch
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(505, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", $"Setting of SecurityProtocol to TLS1.2 failed. This node will only support {System.Net.ServicePointManager.SecurityProtocol}", eMsgLevel.l1_Error));
+                    }
+                    catch
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(505, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", $"Setting of SecurityProtocol to TLS1.2 failed. This node will only support {System.Net.ServicePointManager.SecurityProtocol}", eMsgLevel.l1_Error));
+                    }
                 }
             }
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType != cdeHostType.IIS && TheBaseAssets.MyServiceHostInfo.cdeHostingType != cdeHostType.ASPCore && !TheCommonUtils.IsHostADevice() && TheBaseAssets.MyServiceHostInfo.cdeNodeType != cdeNodeType.Active)
