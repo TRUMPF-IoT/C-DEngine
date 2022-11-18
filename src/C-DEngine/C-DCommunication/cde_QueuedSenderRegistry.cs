@@ -601,8 +601,7 @@ namespace nsCDEngine.Communication
                                     (sender.MyTargetNodeChannel.RealScopeID == null
                                         ? "unscoped"
                                         : sender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-                    TheCDEKPIs.IncrementKPI(
-                        $"[{eKPINames.QSenders}].[Scope].[{scopeHash}]");
+                    TheCDEKPIs.IncrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
                 });
                 return 2;
             }
@@ -633,7 +632,7 @@ namespace nsCDEngine.Communication
                                             (sender.MyTargetNodeChannel.RealScopeID == null
                                                 ? "unscoped"
                                                 : sender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-                            TheCDEKPIs.DecrementKPI($"[{eKPINames.QSenders}].[Scope].[{scopeHash}]");
+                            TheCDEKPIs.DecrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
                         });
                         return true;
                     }
