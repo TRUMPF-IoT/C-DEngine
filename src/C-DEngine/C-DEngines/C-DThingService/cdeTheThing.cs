@@ -2977,10 +2977,9 @@ namespace nsCDEngine.Engines.ThingService
                     var thingTypeProps = pThingType.GetProperties();
                     foreach (var prop in thingTypeProps)
                     {
-                        OPCUAPropertyAttribute uaAttribute = null;
                         try
                         {
-                            uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
+                            OPCUAPropertyAttribute uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
                             if (uaAttribute != null)
                             {
                                 var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
@@ -3007,6 +3006,24 @@ namespace nsCDEngine.Engines.ThingService
                                     if (uaAttribute.UAUserWriteMask != 0)
                                         tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
                                 }
+                            }
+                            OPCUAVariableAttribute uaVariAttribute = prop.GetCustomAttributes(typeof(OPCUAVariableAttribute), true).FirstOrDefault() as OPCUAVariableAttribute;
+                            if (uaVariAttribute != null)
+                            {
+                                var tProp = pThing.GetProperty(prop.Name, false);
+                                tProp?.SetProperty(nameof(OPCUAVariableAttribute.IsVariable), uaVariAttribute.IsVariable);
+                            }
+                            OPCUAHAVariableAttribute uaHAVariAttribute = prop.GetCustomAttributes(typeof(OPCUAHAVariableAttribute), true).FirstOrDefault() as OPCUAHAVariableAttribute;
+                            if (uaHAVariAttribute != null)
+                            {
+                                var tProp = pThing.GetProperty(prop.Name, false);
+                                tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.Historizing), uaHAVariAttribute.Historizing);
+                                if (uaHAVariAttribute.MinimumSamplingInterval != 0)
+                                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MinimumSamplingInterval), uaHAVariAttribute.MinimumSamplingInterval);
+                                if (uaHAVariAttribute.MaximumSamplingInterval != 0)
+                                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MaximumSamplingInterval), uaHAVariAttribute.MaximumSamplingInterval);
+                                if (uaHAVariAttribute.ArchiveStart != DateTimeOffset.MinValue)
+                                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.ArchiveStart), uaHAVariAttribute.ArchiveStart);
                             }
                         }
                         catch
@@ -3041,5 +3058,20 @@ namespace nsCDEngine.Engines.ThingService
         public int UAWriteMask;
         public int UAUserWriteMask;
         public bool UAMandatory;
+    }
+
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    public class OPCUAVariableAttribute: OPCUAPropertyAttribute
+    {
+        public bool IsVariable=true;
+    }
+
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    public class OPCUAHAVariableAttribute : OPCUAVariableAttribute
+    {
+        public bool Historizing;
+        public int MinimumSamplingInterval;
+        public int MaximumSamplingInterval;
+        public DateTimeOffset ArchiveStart;
     }
 }
