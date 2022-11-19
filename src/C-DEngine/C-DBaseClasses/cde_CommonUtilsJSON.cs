@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
+using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -40,6 +41,13 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static string SerializeObjectToJSONString<T>(T tData)
         {
+#if CDE_MEADOW
+            if (IsMeadowFeather())
+            {
+                string t = System.Text.Json.JsonSerializer.Serialize(tData);
+                return t;
+            }
+#endif
             if (_objectSerializer == null)
             {
                 var jsonSerializer = JsonSerializer.CreateDefault(cdeNewtonJSONConfig);
@@ -68,6 +76,13 @@ namespace nsCDEngine.BaseClasses
         public static T DeserializeJSONStringToObject<T>(string json)
         {
             if (json == null) return default;
+#if CDE_MEADOW
+            if (IsMeadowFeather())
+            {
+                T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json);
+                return tDataf;
+            }
+#endif
             T tData = JsonConvert.DeserializeObject<T>(json, cdeNewtonJSONConfig);
             return tData;
         }

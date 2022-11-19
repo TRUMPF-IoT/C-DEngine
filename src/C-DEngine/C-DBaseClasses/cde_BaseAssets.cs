@@ -52,7 +52,7 @@ namespace nsCDEngine.BaseClasses
                 Dictionary<string, string> tL = new();
                 Assembly tCryptoAssembly = null;
                 string codeSignThumb;
-                if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch") //Android and IOS
+                if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
                 {
                     MyCodeSigner ??= new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
                     codeSignThumb = MyCodeSigner.GetAppCert(bDontVerifyTrust, pFromFile, bVerifyTrustPath, bDontVerifyIntegrity);
@@ -129,7 +129,7 @@ namespace nsCDEngine.BaseClasses
                     }
                 }
                 else
-                    return CryptoLoadMessage = $"The {pDLLName} is not trusted";
+                    return CryptoLoadMessage = $"The {pDLLName} is not trusted. Don't Trust:{bDontVerifyTrust} Interfaces Found:{tL?.Count}";
             }
             catch (Exception e)
             {
@@ -692,7 +692,9 @@ namespace nsCDEngine.BaseClasses
             }
             else
                 uDir += "C-DEngine.dll";
-            MyServiceHostInfo.CodeSignThumb = MyCodeSigner.GetAppCert(MyServiceHostInfo.DontVerifyTrust, uDir, MyServiceHostInfo.VerifyTrustPath, MyServiceHostInfo.DontVerifyIntegrity);  //Must be loaded here to set trust level in HSI
+            if (!TheCommonUtils.IsFeather())
+                MyServiceHostInfo.CodeSignThumb = MyCodeSigner.GetAppCert(MyServiceHostInfo.DontVerifyTrust, uDir, MyServiceHostInfo.VerifyTrustPath, MyServiceHostInfo.DontVerifyIntegrity);  //Must be loaded here to set trust level in HSI
+            MySYSLOG.WriteToLog(4153, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheBaseAssets", $"CodeSign ({MyServiceHostInfo.DontVerifyTrust}) Thumb:{MyServiceHostInfo.CodeSignThumb}", eMsgLevel.l4_Message));
 
             if (MyLoc is TheDefaultLocalizationUtils)
             {
@@ -725,7 +727,7 @@ namespace nsCDEngine.BaseClasses
             if ((os.Platform != PlatformID.Win32NT && !TheCommonUtils.IsNetCore()) || (os.Platform == PlatformID.Win32NT && (os.Version.Major < 6 || (os.Version.Major == 6 && os.Version.Minor < 2))))
             {
                 MyServiceHostInfo.IsWebSocket8Active = false;
-                string tWSMsg = "Older Windows or non-Windows OS Detected - No OS Support for WebSockets Found: ";
+                string tWSMsg = $"Older Windows ({os.Version.Major}.{os.Version.Minor}) or non-Windows OS ({os.Platform} IsNetCore:{TheCommonUtils.IsNetCore()}) Detected - No OS Support for WebSockets Found: ";
 #if !CDE_USECSWS //OK
                 TheBaseAssets.MyServiceHostInfo.DisableWebSockets = true;
                 tWSMsg += "WebSockets are turned Off";

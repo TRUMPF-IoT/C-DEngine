@@ -143,6 +143,7 @@ namespace nsCDEngine.ISM
                 return;
             try
             {
+                if (CU.IsFeather()) return;
                 var tConfig = TheBaseAssets.MyApplication?.GetApplicationConfig();
                 if (tConfig == null) return;
 
@@ -189,15 +190,16 @@ namespace nsCDEngine.ISM
             try
             {
                 //step 1: Read from disk previous settings
-                Dictionary<string, string> tSettings;
-                var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
-                if (File.Exists(tpiFile))    //Does not exist with RandomDeviceID=true
+                Dictionary<string, string> tSettings= new Dictionary<string, string>();
+                if (!TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
                 {
-                    byte[] tBuf = File.ReadAllBytes(tpiFile);
-                    tSettings = TheBaseAssets.MyCrypto.DecryptKV(tBuf);
+                    var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
+                    if (File.Exists(tpiFile))    
+                    {
+                        byte[] tBuf = File.ReadAllBytes(tpiFile);
+                        tSettings = TheBaseAssets.MyCrypto.DecryptKV(tBuf);
+                    }
                 }
-                else
-                    tSettings = new Dictionary<string, string>();
 
                 //step 2: update settings with the latest configured settings
                 if (tSettings.ContainsKey("ServiceRoute") || !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ServiceRoute))
@@ -284,7 +286,7 @@ namespace nsCDEngine.ISM
                     }
                 }
 
-                //step 4: Remove private keys from MyCmdArgs to disallow access via public TheBaseAssets.MyCmdArgs
+                //step 5: Remove private keys from MyCmdArgs to disallow access via public TheBaseAssets.MyCmdArgs
                 foreach (var k in MyPrivateSettings.Keys)
                 {
                     if (MyPrivateSettings[k].cdeO != null)
@@ -297,7 +299,7 @@ namespace nsCDEngine.ISM
                     tSettings[k] = MyPrivateSettings[k].Value; //making sure all private settings are stored in cdeTPI
                 }
 
-                //step 5: remove all incoming temporary settings  //[{"Name":"Administrator","UID":"Admin","Role":"NMIADMIN","HS":"","EMail":"z@z.zz","PWD":"zzzzzzzz","ACL":"255"}]
+                //step 6: remove all incoming temporary settings  //[{"Name":"Administrator","UID":"Admin","Role":"NMIADMIN","HS":"","EMail":"z@z.zz","PWD":"zzzzzzzz","ACL":"255"}]
                 bool NoDelete = CU.CBool(GetArgOrEnv(TheBaseAssets.MyCmdArgs, "DontDeleteEasyScope"));    //Not a great setting name but has history
                 foreach (var s in RemovedSettings)
                 {
@@ -310,11 +312,15 @@ namespace nsCDEngine.ISM
                 }
                 //sample "Coufs" [{{\"Name\":\"Administrator\",\"UID\":\"Admin\",\"Role\":\"NMIADMIN\",\"HS\":\"\",\"EMail\":\"z@z.zz\",\"PWD\":\"zzzzzzzz\",\"ACL\":\"255\"}}]
                 //step 6: Encrypt and store in cache folder
-                byte[] pBuffer = TheBaseAssets.MyCrypto.EncryptKV(tSettings);
-                CU.CreateDirectories(tpiFile);
-                File.WriteAllBytes(tpiFile, pBuffer);
+                if (!TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
+                {
+                    byte[] pBuffer = TheBaseAssets.MyCrypto.EncryptKV(tSettings);
+                    var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
+                    CU.CreateDirectories(tpiFile);
+                    File.WriteAllBytes(tpiFile, pBuffer);
+                    TheBaseAssets.MyApplication?.MyISMRoot?.SendSettingsToProse(pBuffer);
+                }
                 TheBaseAssets.MySettings.FireEvent("SettingsChanged", null, true);
-                TheBaseAssets.MyApplication?.MyISMRoot?.SendSettingsToProse(pBuffer);
                 return true;
             }
             catch (Exception e)
@@ -333,25 +339,30 @@ namespace nsCDEngine.ISM
         {
             if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.BaseDirectory))
             {
-                TheBaseAssets.MyServiceHostInfo.BaseDirectory = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash();
+                TheBaseAssets.MyServiceHostInfo.BaseDirectory = CU.GetCurrentAppDomainBaseDirWithTrailingSlash();
             }
-            var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
-            if (tpiFile == null)
-                return false;
-            if (File.Exists(tpiFile))    //Does not exist with RandomDeviceID=true
+            if (!TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
             {
-                byte[] tBuf = File.ReadAllBytes(tpiFile);
-                Dictionary<string, string> tSettings = TheBaseAssets.MyCrypto.DecryptKV(tBuf);
-                if (tBuf.Length > 0 && !(tSettings?.Count > 0))
-                {
-                    TheSystemMessageLog.ToCo("Local cdeTPI file has no entries. Most likely crypto lib is not matching, node will terminate"); //Syslog is not initiated at this point
-                    TheBaseAssets.IsStarting = false;
-                    TheBaseAssets.MyApplication?.Shutdown(true);
-                    TheBaseAssets.MasterSwitch = false;
+                var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
+                if (tpiFile == null)
                     return false;
+                if (File.Exists(tpiFile))    //Does not exist with RandomDeviceID=true
+                {
+                    byte[] tBuf = File.ReadAllBytes(tpiFile);
+                    Dictionary<string, string> tSettings = TheBaseAssets.MyCrypto.DecryptKV(tBuf); //This just ensures the settings can be read otherwise terminate app here
+                    if (tBuf.Length > 0 && !(tSettings?.Count > 0))
+                    {
+                        TheSystemMessageLog.ToCo("Local cdeTPI file has no entries. Most likely crypto lib is not matching, node will terminate"); //Syslog is not initiated at this point
+                        TheBaseAssets.IsStarting = false;
+                        TheBaseAssets.MyApplication?.Shutdown(true);
+                        TheBaseAssets.MasterSwitch = false;
+                        return false;
+                    }
                 }
             }
 
+            if (CU.IsFeather())
+                return false;
 #if !CDE_STANDARD
             var appSettings = ConfigurationManager.AppSettings;
 #else
@@ -460,6 +471,8 @@ namespace nsCDEngine.ISM
                         }
                     }
                 }
+                if (CU.IsFeather())
+                    return null;
                 if (appSettings == null && Assembly.GetEntryAssembly()?.Location != null) //android or ios dont have this
                 {
                     var appSettingsCollection = new System.Collections.Specialized.NameValueCollection();
@@ -716,7 +729,6 @@ namespace nsCDEngine.ISM
                 }
             }
             TheBaseAssets.MyServiceHostInfo.SetProxy(GetArgOrEnv(CmdArgs, "ProxyToken"));
-
             if (TheBaseAssets.MyScopeManager.IsScopingEnabled)
                 TheBaseAssets.MyServiceHostInfo.RequiresConfiguration = false;
 
@@ -941,10 +953,13 @@ namespace nsCDEngine.ISM
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.IsCloudDisabled = CU.CBool(temp);
 
-                CU.cdeRunAsync("PingForInternet", true, (o) =>
+                if (!CU.IsFeather())
                 {
-                    TheNetworkInfo.IsConnectedToInternet();
-                });
+                    CU.cdeRunAsync("PingForInternet", true, (o) =>
+                    {
+                        TheNetworkInfo.IsConnectedToInternet();
+                    });
+                }
                 temp = GetArgOrEnv(CmdArgs, "MyAltStationURLs");
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.MyAltStationURLs.AddRange(temp.Split(';'));
@@ -1096,8 +1111,6 @@ namespace nsCDEngine.ISM
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.RelayEngines.AddRange(temp.Split(';'));
 
-
-
             temp = GetArgOrEnv(CmdArgs, "PermittedUnscopedNodeIDs");
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.PermittedUnscopedNodesIDs.AddRange(temp.Split(';'));
@@ -1109,7 +1122,6 @@ namespace nsCDEngine.ISM
             temp = GetArgOrEnv(CmdArgs, "DisableRSAToBrowser");
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.DisableRSAToBrowser = CU.CBool(temp);
-
 
             temp = GetArgOrEnv(CmdArgs, "IsViewer");
             if (!string.IsNullOrEmpty(temp))

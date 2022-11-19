@@ -16,6 +16,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
@@ -369,33 +370,36 @@ namespace nsCDEngine.Engines
             }
 
 #if !CDE_NET4
-            TheBaseAssets.MySYSLOG.WriteToLog(4172, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files", eMsgLevel.l7_HostDebugMessage));
-            TheThing.ApplyConfigurationFilesAsync().ContinueWith(t =>
+            if (!TheCommonUtils.IsFeather())
             {
-                if (t.IsCompleted)
+                TheBaseAssets.MySYSLOG.WriteToLog(4172, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files", eMsgLevel.l7_HostDebugMessage));
+                TheThing.ApplyConfigurationFilesAsync().ContinueWith(t =>
                 {
-                    var result = t.Result;
-                    if (result.Success)
+                    if (t.IsCompleted)
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(4173, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files - Done", eMsgLevel.l3_ImportantMessage, $"Files: {result.NumberOfFiles} Failed: {result.NumberOfFailedFiles}"));
+                        var result = t.Result;
+                        if (result.Success)
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(4173, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files - Done", eMsgLevel.l3_ImportantMessage, $"Files: {result.NumberOfFiles} Failed: {result.NumberOfFailedFiles}"));
+                        }
+                        else
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(4174, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files: One or more errors occurred. See previous log entries for additional details.", eMsgLevel.l1_Error, $"Files: {result.NumberOfFiles} Failed: {result.NumberOfFailedFiles}. {TheCommonUtils.GetAggregateExceptionMessage(t.Exception, !TSM.L(eDEBUG_LEVELS.ESSENTIALS))}"));
+                        }
                     }
                     else
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(4174, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files: One or more errors occurred. See previous log entries for additional details.", eMsgLevel.l1_Error, $"Files: {result.NumberOfFiles} Failed: {result.NumberOfFailedFiles}. {TheCommonUtils.GetAggregateExceptionMessage(t.Exception, !TSM.L(eDEBUG_LEVELS.ESSENTIALS))}"));
+                        if (t.Exception != null)
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(4174, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files: One or more errors occurred. See previous log entries for additional details.", eMsgLevel.l1_Error, TheCommonUtils.GetAggregateExceptionMessage(t.Exception, !TSM.L(eDEBUG_LEVELS.ESSENTIALS))));
+                        }
+                        else
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(4174, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files: One or more errors occurred. See previous log entries for details.", eMsgLevel.l1_Error));
+                        }
                     }
-                }
-                else
-                {
-                    if (t.Exception != null)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(4174, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files: One or more errors occurred. See previous log entries for additional details.", eMsgLevel.l1_Error, TheCommonUtils.GetAggregateExceptionMessage(t.Exception, !TSM.L(eDEBUG_LEVELS.ESSENTIALS))));
-                    }
-                    else
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(4174, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files: One or more errors occurred. See previous log entries for details.", eMsgLevel.l1_Error));
-                    }
-                }
-            });
+                });
+            }
 #endif
             TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Starting Engines", eMsgLevel.l7_HostDebugMessage));
 

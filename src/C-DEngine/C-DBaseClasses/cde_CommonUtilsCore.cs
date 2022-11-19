@@ -39,6 +39,17 @@ namespace nsCDEngine.BaseClasses
         }
 
         /// <summary>
+        /// Returns true if the CDE runs on a "Feather Board" - single core and limited resources
+        /// </summary>
+        /// <returns></returns>
+        public static bool IsFeather()
+        {
+            if (mIsFeather != null) return mIsFeather==true;
+            mIsFeather=CBool(TheBaseAssets.MySettings?.GetSetting("IsFeatherBoard")) || AppDomain.CurrentDomain?.FriendlyName == "Meadow.dll";
+            return mIsFeather==true;
+        }
+        private static bool? mIsFeather=null;
+        /// <summary>
         /// Detect the presence of the portable .NET Core platform.
         /// </summary>
         /// <returns>True if running on .NET Core.</returns>
@@ -1415,11 +1426,11 @@ namespace nsCDEngine.BaseClasses
                     pFireEventTimeout = TheBaseAssets.MyServiceHostInfo.EventTimeout; //3.2 was hardcoded 60000
                 if (pFireEventTimeout < 0)
                 {
-                    TheCommonUtils.cdeRunAsync("DFE-T,O No Timeout", true, (o) => action(para, Para2), null);
+                    cdeRunAsync("DFE-T,O No Timeout", true, (o) => action(para, Para2), null);
                 }
                 else
                 {
-                    TheCommonUtils.cdeRunAsync("DFE-T,O with Timeout", true, (o) =>
+                    cdeRunAsync("DFE-T,O with Timeout", true, (o) =>
                     {
                         DoFireEventParallelInternal(action, a =>
                         {
@@ -1461,25 +1472,33 @@ namespace nsCDEngine.BaseClasses
         /// <seealso cref="cdeRunAsync(string,bool,cdeWaitCallback,object)"/>
         public static Task cdeRunTaskAsync(string pThreadName, cdeWaitCallback callBack, object pState = null, bool longRunning = false)
         {
-            PendingTask pendingTask = null;
-            if (TheBaseAssets.MyServiceHostInfo?.EnableTaskKPIs == true)
+            Task task;
+            if (IsFeather() && longRunning)
             {
-                pendingTask = new PendingTask { createTime = DateTime.UtcNow };
+                Console.WriteLine($"Starting Thread: {pThreadName}");
+                task = Task.Run(async () => callBack);
             }
-            var task = Task.Factory.StartNew((o) =>
+            else
             {
-                if (pendingTask != null)
+                PendingTask pendingTask = null;
+                if (TheBaseAssets.MyServiceHostInfo?.EnableTaskKPIs == true)
                 {
-                    pendingTask.startTime = DateTime.UtcNow;
+                    pendingTask = new PendingTask { createTime = DateTime.UtcNow };
                 }
-
-                callBack?.Invoke(pState);
-
-                if (pendingTask != null)
+                task = Task.Factory.StartNew((o) =>
                 {
-                    pendingTask.endTime = DateTime.UtcNow;
-                }
-            }, pThreadName, defaultTaskCreationOptions | (longRunning ? TaskCreationOptions.LongRunning : 0));
+                    if (pendingTask != null)
+                    {
+                        pendingTask.startTime = DateTime.UtcNow;
+                    }
+
+                    callBack?.Invoke(pState);
+
+                    if (pendingTask != null)
+                    {
+                        pendingTask.endTime = DateTime.UtcNow;
+                    }
+                }, pThreadName, defaultTaskCreationOptions | (longRunning ? TaskCreationOptions.LongRunning : 0));
 
 #if CDE_NET4 || CDE_NET35
             // On Net4 and earlier a task with an unobserved exception takes down the process during garbage collection/finalization of the task object
@@ -1488,10 +1507,11 @@ namespace nsCDEngine.BaseClasses
             task.ContinueWith(c => { var ignored = c.Exception; }, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
 #endif
 
-            if (pendingTask != null)
-            {
-                pendingTask.task = task;
-                _globalTasks.Add(pendingTask);
+                if (pendingTask != null)
+                {
+                    pendingTask.task = task;
+                    _globalTasks.Add(pendingTask);
+                }
             }
             return task;
         }
