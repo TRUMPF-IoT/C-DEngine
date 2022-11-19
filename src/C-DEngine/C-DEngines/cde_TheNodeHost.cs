@@ -63,26 +63,29 @@ namespace nsCDEngine.Engines
             TheThing.SetSafePropertyString(MyBaseThing, "Description", TheBaseAssets.MyAppInfo.LongDescription);
             mIsInitialized = true;
 
-            TheThing.SetSafePropertyBool(MyBaseThing, "EnableKPIs", TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableKPIs")));
-
-            if (TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs)
+            var kpiEn = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableKPIs"));
+            TheThing.SetSafePropertyBool(MyBaseThing, "EnableKPIs", kpiEn);
+            if (kpiEn)
             {
-                var taskKpiThread = new Thread(() =>
+                if (TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs)
                 {
-                    TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: NodeHost starting Task KPI thread");
-                    do
+                    var taskKpiThread = new Thread(() =>
                     {
-                        Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) // TheCommonUtils.SleepOneEye(1000, 1000)
-                    var kpis = TheCommonUtils.GetTaskKpis(null);
-                        TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: {TheCommonUtils.SerializeObjectToJSONString(kpis)}");
-                    } while (TheBaseAssets.MasterSwitch && TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs);
-                    TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: NodeHost ending Task KPI thread");
-                });
-                taskKpiThread.Start();
+                        TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: NodeHost starting Task KPI thread");
+                        do
+                        {
+                            Thread.Sleep(1000); // Keeping it simple here, to minimize interference on task scheduler/thread scheduler etc. (Assumption: not used on production systems) // TheCommonUtils.SleepOneEye(1000, 1000)
+                            var kpis = TheCommonUtils.GetTaskKpis(null);
+                            TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: {TheCommonUtils.SerializeObjectToJSONString(kpis)}");
+                        } while (TheBaseAssets.MasterSwitch && TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs);
+                        TheSystemMessageLog.ToCo($"Tasks {DateTime.Now}: NodeHost ending Task KPI thread");
+                    });
+                    taskKpiThread.Start();
+                }
+                KPIHarvestInterval = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetAppSetting("KPIHarvestIntervalInSeconds", "5", false, true));
+                if (KPIHarvestInterval > 0)
+                    TheQueuedSenderRegistry.RegisterHealthTimer(sinkCyclic);
             }
-            KPIHarvestInterval = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetAppSetting("KPIHarvestIntervalInSeconds","5",false,true));
-            if (KPIHarvestInterval>0)
-                TheQueuedSenderRegistry.RegisterHealthTimer(sinkCyclic);
             return true;
         }
 

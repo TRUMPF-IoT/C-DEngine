@@ -2863,6 +2863,7 @@ namespace nsCDEngine.Engines.NMIService
             PropertyInfo[] info = type.GetProperties();
             foreach (PropertyInfo property in info)
             {
+                //TODO: Meadow crashes here - bug reported with Meadow:https://github.com/WildernessLabs/Meadow_Issues/issues/242
                 var Value = property.GetValue(pInObj, null);
                 if (Value == null) continue;
                 bool tAddVal = true;
