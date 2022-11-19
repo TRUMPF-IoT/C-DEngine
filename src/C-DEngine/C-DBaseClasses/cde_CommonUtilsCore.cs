@@ -39,13 +39,13 @@ namespace nsCDEngine.BaseClasses
         }
 
         /// <summary>
-        /// Returns true if the CDE runs on a Meadow Feather Board
+        /// Returns true if the CDE runs on a "Feather Board" - single core and limited resources
         /// </summary>
         /// <returns></returns>
-        public static bool IsMeadowFeather()
+        public static bool IsFeather()
         {
             if (mIsFeather != null) return mIsFeather==true;
-            mIsFeather=AppDomain.CurrentDomain?.FriendlyName == "Meadow.dll";
+            mIsFeather=CBool(TheBaseAssets.MySettings?.GetSetting("IsFeatherBoard")) || AppDomain.CurrentDomain?.FriendlyName == "Meadow.dll";
             return mIsFeather==true;
         }
         private static bool? mIsFeather=null;
@@ -1473,7 +1473,7 @@ namespace nsCDEngine.BaseClasses
         public static Task cdeRunTaskAsync(string pThreadName, cdeWaitCallback callBack, object pState = null, bool longRunning = false)
         {
             Task task;
-            if (IsMeadowFeather() && longRunning)
+            if (IsFeather() && longRunning)
             {
                 Console.WriteLine($"Starting Thread: {pThreadName}");
                 task = Task.Run(async () => callBack);

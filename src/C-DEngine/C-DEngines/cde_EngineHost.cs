@@ -370,7 +370,7 @@ namespace nsCDEngine.Engines
             }
 
 #if !CDE_NET4
-            if (!TheCommonUtils.IsMeadowFeather())
+            if (!TheCommonUtils.IsFeather())
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4172, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files", eMsgLevel.l7_HostDebugMessage));
                 TheThing.ApplyConfigurationFilesAsync().ContinueWith(t =>

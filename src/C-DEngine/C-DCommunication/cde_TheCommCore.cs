@@ -124,7 +124,7 @@ namespace nsCDEngine.Communication
 
         internal static bool StartCommunications()
         {
-            if (!TheCommonUtils.IsMeadowFeather())
+            if (!TheCommonUtils.IsFeather())
             {
                 System.Net.ServicePointManager.ServerCertificateValidationCallback += ValidateServerCertificate;
                 if (!TheBaseAssets.MyServiceHostInfo.DisableTls12)

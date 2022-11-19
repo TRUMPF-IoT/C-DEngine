@@ -143,7 +143,7 @@ namespace nsCDEngine.ISM
                 return;
             try
             {
-                if (CU.IsMeadowFeather()) return;
+                if (CU.IsFeather()) return;
                 var tConfig = TheBaseAssets.MyApplication?.GetApplicationConfig();
                 if (tConfig == null) return;
 
@@ -361,7 +361,7 @@ namespace nsCDEngine.ISM
                 }
             }
 
-            if (CU.IsMeadowFeather())
+            if (CU.IsFeather())
                 return false;
 #if !CDE_STANDARD
             var appSettings = ConfigurationManager.AppSettings;
@@ -471,7 +471,7 @@ namespace nsCDEngine.ISM
                         }
                     }
                 }
-                if (CU.IsMeadowFeather())
+                if (CU.IsFeather())
                     return null;
                 if (appSettings == null && Assembly.GetEntryAssembly()?.Location != null) //android or ios dont have this
                 {
@@ -953,7 +953,7 @@ namespace nsCDEngine.ISM
                 if (!string.IsNullOrEmpty(temp))
                     TheBaseAssets.MyServiceHostInfo.IsCloudDisabled = CU.CBool(temp);
 
-                if (!CU.IsMeadowFeather())
+                if (!CU.IsFeather())
                 {
                     CU.cdeRunAsync("PingForInternet", true, (o) =>
                     {

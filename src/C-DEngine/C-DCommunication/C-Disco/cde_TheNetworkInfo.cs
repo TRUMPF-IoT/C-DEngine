@@ -224,7 +224,7 @@ namespace nsCDEngine.Discovery
                 {
                     if (string.IsNullOrEmpty(MyHostName))
                         MyHostName = cdeGetHostName();
-                    IPHostEntry hostByName = TheCommonUtils.IsMeadowFeather() ? null : cdeGetHostEntry(MyHostName);
+                    IPHostEntry hostByName = TheCommonUtils.IsFeather() ? null : cdeGetHostEntry(MyHostName);
                     if (hostByName == null) return false;
                     TheSystemMessageLog.ToCo(string.Format("NetworkInfo - HostName : {0}", hostByName.HostName));
                     ArrayList tAddressTable = new(hostByName.AddressList);

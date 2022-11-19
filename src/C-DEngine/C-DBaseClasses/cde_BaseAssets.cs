@@ -692,7 +692,7 @@ namespace nsCDEngine.BaseClasses
             }
             else
                 uDir += "C-DEngine.dll";
-            if (!TheCommonUtils.IsMeadowFeather())
+            if (!TheCommonUtils.IsFeather())
                 MyServiceHostInfo.CodeSignThumb = MyCodeSigner.GetAppCert(MyServiceHostInfo.DontVerifyTrust, uDir, MyServiceHostInfo.VerifyTrustPath, MyServiceHostInfo.DontVerifyIntegrity);  //Must be loaded here to set trust level in HSI
             MySYSLOG.WriteToLog(4153, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheBaseAssets", $"CodeSign ({MyServiceHostInfo.DontVerifyTrust}) Thumb:{MyServiceHostInfo.CodeSignThumb}", eMsgLevel.l4_Message));
 

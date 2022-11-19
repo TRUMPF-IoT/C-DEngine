@@ -98,7 +98,7 @@ namespace nsCDEngine.Communication
                 IsConnected = true;
                 MyNodeInfo = new TheNodeInfoClone
                 {
-                    MyServiceInfo = TheCommonUtils.IsMeadowFeather() ? null : TheCommonUtils.DeserializeJSONStringToObject<TheServiceHostInfoClone>(TheCommonUtils.SerializeObjectToJSONString(TheBaseAssets.MyServiceHostInfo)),
+                    MyServiceInfo = TheCommonUtils.IsFeather() ? null : TheCommonUtils.DeserializeJSONStringToObject<TheServiceHostInfoClone>(TheCommonUtils.SerializeObjectToJSONString(TheBaseAssets.MyServiceHostInfo)),
                     MyNodeID = TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID,
                 };
                 SetTrustLevel();
