@@ -44,9 +44,7 @@ namespace nsCDEngine.BaseClasses
 #if CDE_MEADOW
             if (IsMeadowFeather())
             {
-                Console.WriteLine($"B4 SerJSON: {tData}");
                 string t = System.Text.Json.JsonSerializer.Serialize(tData);
-                Console.WriteLine($"After SerJSON: {tData}");
                 return t;
             }
 #endif
@@ -81,9 +79,7 @@ namespace nsCDEngine.BaseClasses
 #if CDE_MEADOW
             if (IsMeadowFeather())
             {
-                Console.WriteLine($"B4 DeSerJSON");
                 T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json);
-                Console.WriteLine($"After DeSerJSON");
                 return tDataf;
             }
 #endif
