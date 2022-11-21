@@ -597,12 +597,16 @@ namespace nsCDEngine.BaseClasses
             return tRes.ToString();
         }
 
-        private static readonly object thingHarvestLock = new ();
-        internal static void ToThingProperties(TheThing pThing, bool bReset)
+        
+        private static readonly object _thingHarvestLock = new ();
+        internal static void ToThingProperties(TheThing pThing, bool bReset, bool force = true)
         {
             if (pThing == null) return;
 
-            lock (thingHarvestLock)
+            if(force) Monitor.Enter(_thingHarvestLock);
+            else if (!Monitor.TryEnter(_thingHarvestLock)) return;
+
+            try
             {
                 _syncKPIs.EnterUpgradeableReadLock();
                 try
@@ -633,7 +637,7 @@ namespace nsCDEngine.BaseClasses
                             }
                         }
 
-                        if (kpi.LabeledKpis is {Count: > 0})
+                        if (kpi.LabeledKpis is { Count: > 0 })
                         {
                             kpiProp ??= pThing.GetProperty(keyVal.Key, true);
 
@@ -672,7 +676,7 @@ namespace nsCDEngine.BaseClasses
                             _syncKPIs.EnterWriteLock();
                             try
                             {
-                                if(kpi.Value != null) kpi.Value = 0;
+                                if (kpi.Value != null) kpi.Value = 0;
                                 kpi.LabeledKpis.ForEach(labeledKpi => { labeledKpi.Value = 0; });
                             }
                             finally
@@ -698,6 +702,10 @@ namespace nsCDEngine.BaseClasses
                 SetKPI(eKPINames.KnownNMINodes, Engines.NMIService.TheFormsGenerator.GetNMINodeCount());
                 SetKPI(eKPINames.StreamsNotFound, Communication.HttpService.TheHttpService.IsStreaming.Count);
                 SetKPI(eKPINames.BlobsNotFound, Engines.ContentService.TheContentServiceEngine.BlobsNotHere.Count);
+            }
+            finally
+            {
+                Monitor.Exit(_thingHarvestLock);
             }
         }
 
