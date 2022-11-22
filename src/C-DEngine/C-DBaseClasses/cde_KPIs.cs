@@ -41,33 +41,30 @@ namespace nsCDEngine.BaseClasses
         {
             public IDictionary<string, string> Labels { get; set; }
             public double Value { get; set; }
+
+            internal LabeledKpi Harvest(bool reset)
+            {
+                var clonedKpi = new LabeledKpi
+                {
+                    Labels = Labels?.ToDictionary(l => l.Key, l => l.Value),
+                    Value = Value
+                };
+                if (reset) Value = 0;
+                return clonedKpi;
+            }
         }
 
         private class Kpi
         {
             public List<LabeledKpi> LabeledKpis { get; } = new();
             public double? Value { get; set; }
-            internal Kpi Harvest()
+
+            internal Kpi Harvest(bool reset)
             {
-                var clonedKpi = new Kpi
-                {
-                    Value = this.Value,
-                };
-                var labeledKpis = clonedKpi.LabeledKpis;
-                foreach(var labeledKpi in this.LabeledKpis)
-                {
-                    labeledKpis.Add(new LabeledKpi
-                    {
-                        Value = labeledKpi.Value,
-                        Labels = labeledKpi.Labels.ToDictionary(kv => kv.Key, kv => kv.Value),
-                    });
-                }
-                return clonedKpi;
-            }
-            static internal Dictionary<string, Kpi> HarvestAll()
-            {
-                var clonedKpis = KPIs.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Harvest());
-                return clonedKpis;
+                var clone = new Kpi {Value = Value};
+                clone.LabeledKpis.AddRange(LabeledKpis.Select(kpi => kpi.Harvest(reset)));
+                if (reset && Value != null) Value = 0;
+                return clone;
             }
         }
 
@@ -628,8 +625,8 @@ namespace nsCDEngine.BaseClasses
             if(force) Monitor.Enter(_thingHarvestLock);
             else if (!Monitor.TryEnter(_thingHarvestLock)) return;
 
-            TimeSpan timeSinceLastReset = DateTimeOffset.Now.Subtract(LastReset);
-            bool resetReady = timeSinceLastReset.TotalMilliseconds >= 1000;
+            var timeSinceLastReset = DateTimeOffset.Now.Subtract(LastReset);
+            var resetReady = timeSinceLastReset.TotalMilliseconds >= 1000;
 
             try
             {
@@ -637,97 +634,100 @@ namespace nsCDEngine.BaseClasses
                 _syncKPIs.EnterUpgradeableReadLock();
                 try
                 {
-                    // We are now holding a global KPI lock which blocks all operations that report KPIs, for example message processing
-                    // Take a snapshot of current KPIs
-                    harvestedKpis = Kpi.HarvestAll();
-
-                    // Reset the KPIs
-                    foreach (var keyVal in KPIs)
-                    {
-                        var dontReset = doNotReset.Contains(keyVal.Key);
-                        if (bReset && !dontReset && resetReady)
+                    // We are now holding a global KPI lock which blocks all operations that report KPIs, for example message processing 
+                    // Take a snapshot of current KPIs 
+                    harvestedKpis = KPIs.ToDictionary(kpi => kpi.Key,
+                        kpi =>
                         {
-                            var kpi = keyVal.Value;
-                            _syncKPIs.EnterWriteLock();
-                            try
+                            Kpi harvestedKpi;
+                            if (bReset && resetReady && !doNotReset.Contains(kpi.Key))
                             {
-                                if (kpi.Value != null) kpi.Value = 0;
-                                kpi.LabeledKpis.ForEach(labeledKpi => { labeledKpi.Value = 0; });
+                                _syncKPIs.EnterWriteLock();
+                                try
+                                {
+                                    harvestedKpi = kpi.Value.Harvest(true);
+                                }
+                                finally
+                                {
+                                    _syncKPIs.ExitWriteLock();
+                                }
                             }
-                            finally
+                            else
                             {
-                                _syncKPIs.ExitWriteLock();
+                                harvestedKpi = kpi.Value.Harvest(false);
                             }
-                        }
-                    }
+
+                            return harvestedKpi;
+                        });
                 }
                 finally
                 {
                     // Resume global KPI processing
                     _syncKPIs.ExitUpgradeableReadLock();
                 }
+                
                 if (bReset && resetReady)
                     LastReset = DateTimeOffset.Now;
 
                 foreach (var keyVal in harvestedKpis)
+                {
+                    var dontReset = doNotReset.Contains(keyVal.Key);
+                    var dontComputeTotals = doNotComputeTotals.Contains(keyVal.Key);
+
+                    // LastReset not set yet - shouldn't happen since it is set in first call to Reset (TheBaseAssets.InitAssets)
+                    var perSecond = !(LastReset == DateTimeOffset.MinValue || timeSinceLastReset.TotalSeconds <= 1 || dontReset);
+
+                    var kpi = keyVal.Value;
+                    cdeP kpiProp = null;
+                    cdeP kpiPropTotal = null;
+                    if (kpi.Value != null)
                     {
-                        var dontReset = doNotReset.Contains(keyVal.Key);
-                        var dontComputeTotals = doNotComputeTotals.Contains(keyVal.Key);
+                        kpiProp = !perSecond
+                            ? pThing.SetProperty(keyVal.Key, kpi.Value)
+                            : pThing.SetProperty(keyVal.Key, kpi.Value / timeSinceLastReset.TotalSeconds); // // Normalize values to "per second"
 
-                        // LastReset not set yet - shouldn't happen since it is set in first call to Reset (TheBaseAssets.InitAssets)
-                        var perSecond = !(LastReset == DateTimeOffset.MinValue || timeSinceLastReset.TotalSeconds <= 1 || dontReset);
-
-                        var kpi = keyVal.Value;
-                        cdeP kpiProp = null;
-                        cdeP kpiPropTotal = null;
-                        if (kpi.Value != null)
+                        if (!dontComputeTotals)
                         {
-                            kpiProp = !perSecond
-                                ? pThing.SetProperty(keyVal.Key, kpi.Value)
-                                : pThing.SetProperty(keyVal.Key, kpi.Value / timeSinceLastReset.TotalSeconds);
-
-                            if (!dontComputeTotals)
-                            {
-                                kpiPropTotal = pThing.GetProperty($"{keyVal.Key}Total", true);
-                                pThing.SetProperty($"{keyVal.Key}Total", (kpiPropTotal.GetValue() as long? ?? 0) + kpi.Value.Value);
-                            }
+                            kpiPropTotal = pThing.GetProperty($"{keyVal.Key}Total", true);
+                            pThing.SetProperty($"{keyVal.Key}Total", (kpiPropTotal.GetValue() as long? ?? 0) + kpi.Value.Value);
                         }
-
-                        if (kpi.LabeledKpis is { Count: > 0 })
-                        {
-                            kpiProp ??= pThing.GetProperty(keyVal.Key, true);
-
-                            var labeledKpisPropertyName = "LabeledKpis";
-                            if (!perSecond)
-                            {
-                                var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis);
-                                kpiProp.SetProperty(labeledKpisPropertyName, kpiJson);
-                            }
-                            else
-                            {
-                                // Normalize value to "per second"
-                                var perSecondKpisJson = CalculatePerSecondJson(kpi.LabeledKpis, timeSinceLastReset.TotalSeconds);
-                                kpiProp.SetProperty(labeledKpisPropertyName, perSecondKpisJson);
-                            }
-
-                            if (!dontComputeTotals)
-                            {
-                                kpiPropTotal ??= pThing.GetProperty($"{keyVal.Key}Total", true);
-
-                                var totalKpisJson = kpiPropTotal.GetProperty("LabeldKpis")?.GetValue() as string;
-
-                                var totalKpis = !string.IsNullOrWhiteSpace(totalKpisJson)
-                                    ? TheCommonUtils.DeserializeJSONStringToObject<List<LabeledKpi>>(totalKpisJson)
-                                    : new List<LabeledKpi>();
-
-                                totalKpis = ComputeTotals(totalKpis, kpi.LabeledKpis);
-                                totalKpisJson = TheCommonUtils.SerializeObjectToJSONString(totalKpis);
-
-                                kpiPropTotal.SetProperty(labeledKpisPropertyName, totalKpisJson);
-                            }
-                        }
-
                     }
+
+                    if (kpi.LabeledKpis is { Count: > 0 })
+                    {
+                        kpiProp ??= pThing.GetProperty(keyVal.Key, true);
+
+                        var labeledKpisPropertyName = "LabeledKpis";
+                        if (!perSecond)
+                        {
+                            var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis);
+                            kpiProp.SetProperty(labeledKpisPropertyName, kpiJson);
+                        }
+                        else
+                        {
+                            // Normalize values to "per second"
+                            var perSecondKpisJson = CalculatePerSecondJson(kpi.LabeledKpis, timeSinceLastReset.TotalSeconds);
+                            kpiProp.SetProperty(labeledKpisPropertyName, perSecondKpisJson);
+                        }
+
+                        if (!dontComputeTotals)
+                        {
+                            kpiPropTotal ??= pThing.GetProperty($"{keyVal.Key}Total", true);
+
+                            var totalKpisJson = kpiPropTotal.GetProperty("LabeldKpis")?.GetValue() as string;
+
+                            var totalKpis = !string.IsNullOrWhiteSpace(totalKpisJson)
+                                ? TheCommonUtils.DeserializeJSONStringToObject<List<LabeledKpi>>(totalKpisJson)
+                                : new List<LabeledKpi>();
+
+                            totalKpis = ComputeTotals(totalKpis, kpi.LabeledKpis);
+                            totalKpisJson = TheCommonUtils.SerializeObjectToJSONString(totalKpis);
+
+                            kpiPropTotal.SetProperty(labeledKpisPropertyName, totalKpisJson);
+                        }
+                    }
+                }
+
                 // Grab some KPIs from sources - Workaround, this should be computed in the source instead
                 SetKPI(eKPINames.QSenders, TheQueuedSenderRegistry.GetSenderListNodes().Count);
                 SetKPI(eKPINames.QSenderInRegistry, TheQueuedSenderRegistry.Count());
