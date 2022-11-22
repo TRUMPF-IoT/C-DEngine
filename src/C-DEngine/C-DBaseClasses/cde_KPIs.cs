@@ -47,6 +47,28 @@ namespace nsCDEngine.BaseClasses
         {
             public List<LabeledKpi> LabeledKpis { get; } = new();
             public double? Value { get; set; }
+            internal Kpi Harvest()
+            {
+                var clonedKpi = new Kpi
+                {
+                    Value = this.Value,
+                };
+                var labeledKpis = clonedKpi.LabeledKpis;
+                foreach(var labeledKpi in this.LabeledKpis)
+                {
+                    labeledKpis.Add(new LabeledKpi
+                    {
+                        Value = labeledKpi.Value,
+                        Labels = labeledKpi.Labels.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    });
+                }
+                return clonedKpi;
+            }
+            static internal Dictionary<string, Kpi> HarvestAll()
+            {
+                var clonedKpis = KPIs.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Harvest());
+                return clonedKpis;
+            }
         }
 
         // Dictionary of the KPI metrics which are represented as JSON containing the KPIs labels with the label values and the metric value itself
@@ -606,14 +628,48 @@ namespace nsCDEngine.BaseClasses
             if(force) Monitor.Enter(_thingHarvestLock);
             else if (!Monitor.TryEnter(_thingHarvestLock)) return;
 
+            TimeSpan timeSinceLastReset = DateTimeOffset.Now.Subtract(LastReset);
+            bool resetReady = timeSinceLastReset.TotalMilliseconds >= 1000;
+
             try
             {
+                Dictionary<string, Kpi> harvestedKpis;
                 _syncKPIs.EnterUpgradeableReadLock();
                 try
                 {
-                    TimeSpan timeSinceLastReset = DateTimeOffset.Now.Subtract(LastReset);
-                    bool resetReady = timeSinceLastReset.TotalMilliseconds >= 1000;
+                    // We are now holding a global KPI lock which blocks all operations that report KPIs, for example message processing
+                    // Take a snapshot of current KPIs
+                    harvestedKpis = Kpi.HarvestAll();
+
+                    // Reset the KPIs
                     foreach (var keyVal in KPIs)
+                    {
+                        var dontReset = doNotReset.Contains(keyVal.Key);
+                        if (bReset && !dontReset && resetReady)
+                        {
+                            var kpi = keyVal.Value;
+                            _syncKPIs.EnterWriteLock();
+                            try
+                            {
+                                if (kpi.Value != null) kpi.Value = 0;
+                                kpi.LabeledKpis.ForEach(labeledKpi => { labeledKpi.Value = 0; });
+                            }
+                            finally
+                            {
+                                _syncKPIs.ExitWriteLock();
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    // Resume global KPI processing
+                    _syncKPIs.ExitUpgradeableReadLock();
+                }
+                if (bReset && resetReady)
+                    LastReset = DateTimeOffset.Now;
+
+                foreach (var keyVal in harvestedKpis)
                     {
                         var dontReset = doNotReset.Contains(keyVal.Key);
                         var dontComputeTotals = doNotComputeTotals.Contains(keyVal.Key);
@@ -671,28 +727,7 @@ namespace nsCDEngine.BaseClasses
                             }
                         }
 
-                        if (bReset && !dontReset && resetReady)
-                        {
-                            _syncKPIs.EnterWriteLock();
-                            try
-                            {
-                                if (kpi.Value != null) kpi.Value = 0;
-                                kpi.LabeledKpis.ForEach(labeledKpi => { labeledKpi.Value = 0; });
-                            }
-                            finally
-                            {
-                                _syncKPIs.ExitWriteLock();
-                            }
-                        }
                     }
-                    if (bReset && resetReady)
-                        LastReset = DateTimeOffset.Now;
-                }
-                finally
-                {
-                    _syncKPIs.ExitUpgradeableReadLock();
-                }
-
                 // Grab some KPIs from sources - Workaround, this should be computed in the source instead
                 SetKPI(eKPINames.QSenders, TheQueuedSenderRegistry.GetSenderListNodes().Count);
                 SetKPI(eKPINames.QSenderInRegistry, TheQueuedSenderRegistry.Count());
