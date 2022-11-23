@@ -84,18 +84,18 @@ namespace nsCDEngine.Engines
                 }
                 KPIHarvestInterval = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetAppSetting("KPIHarvestIntervalInSeconds", "5", false, true));
                 if (KPIHarvestInterval > 0)
-                    TheQueuedSenderRegistry.RegisterHealthTimer(sinkCyclic);
+                    TheQueuedSenderRegistry.RegisterHealthTimer(SinkCyclic);
             }
             return true;
         }
 
-        private void sinkCyclic(long timer)
+        private void SinkCyclic(long timer)
         {
             if (KPIHarvestInterval == 0) return;
             if (timer % KPIHarvestInterval != 0) return;
             if (TheThing.GetSafePropertyBool(MyBaseThing, "EnableKPIs"))
             {
-                TheCDEKPIs.ToThingProperties(MyBaseThing, true);
+                TheCDEKPIs.ToThingProperties(MyBaseThing, true, false);
             }
         }
     }

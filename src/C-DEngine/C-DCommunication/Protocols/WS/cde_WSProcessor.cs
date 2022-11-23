@@ -135,7 +135,7 @@ namespace nsCDEngine.Communication
                 {
                     // CODE REVIEW MH: ProcessWS synchronously can run for quite a bit until the first await. Should we start this as a new task?
                     ConnectSuccess = true;
-                    ProcessWS(); //Sets Connecting and Connected when ready
+                    _ = ProcessWS(); //Sets Connecting and Connected when ready
                 }
                 else
                 {
