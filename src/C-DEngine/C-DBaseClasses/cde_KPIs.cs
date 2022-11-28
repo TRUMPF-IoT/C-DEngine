@@ -689,7 +689,7 @@ namespace nsCDEngine.BaseClasses
                         if (!dontComputeTotals)
                         {
                             kpiPropTotal = pThing.GetProperty($"{keyVal.Key}Total", true);
-                            pThing.SetProperty($"{keyVal.Key}Total", (kpiPropTotal.GetValue() as long? ?? 0) + kpi.Value.Value);
+                            pThing.SetProperty($"{keyVal.Key}Total", TheCommonUtils.CDbl(kpiPropTotal.GetValue()) + kpi.Value.Value);
                         }
                     }
 
