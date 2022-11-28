@@ -220,16 +220,28 @@ namespace nsCDEngine.Engines.ThingService
             }
             return false;
         }
-
         /// <summary>
         /// Updates the given Thing in TheThingRegistry- if Fire Update is true, a ThingUpdated event on TheThingRegistry will be fired for TheRulesEngine. If set to "False" TheRulesEngine will not be notified.
         /// TheThingRegistry's StorageMirror will also NOT fire HasUpdates if FireUpdate is set to false.
         /// TheBaseEngine of TheThing will always get eEngineEvents.ThingUpdated if this function is called.
         /// </summary>
-        /// <param name="pThing"></param>
-        /// <param name="FireUpdate"></param>
+        /// <param name="pThing">Target Thing</param>
+        /// <param name="FireUpdate">If true, ThingUpdated event is fired</param>
         /// <returns></returns>
         public static TheThing UpdateThing(ICDEThing pThing, bool FireUpdate)
+        {
+            return UpdateThing(pThing, FireUpdate, false);
+        }
+        /// <summary>
+        /// Updates the given Thing in TheThingRegistry- if Fire Update is true, a ThingUpdated event on TheThingRegistry will be fired for TheRulesEngine. If set to "False" TheRulesEngine will not be notified.
+        /// TheThingRegistry's StorageMirror will also NOT fire HasUpdates if FireUpdate is set to false.
+        /// TheBaseEngine of TheThing will always get eEngineEvents.ThingUpdated if this function is called.
+        /// </summary>
+        /// <param name="pThing">Target Thing</param>
+        /// <param name="FireUpdate">If true, ThingUpdated event is fired</param>
+        /// <param name="DontUpdateRegistry">If true, the ThingRegistry will not be written do disk</param>
+        /// <returns></returns>
+        public static TheThing UpdateThing(ICDEThing pThing, bool FireUpdate, bool DontUpdateRegistry)
         {
             if (TheCDEngines.MyThingEngine == null || TheCDEngines.MyThingEngine.MyThingRegistry == null || pThing == null ||
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings == null) return null;
@@ -245,7 +257,8 @@ namespace nsCDEngine.Engines.ThingService
 
             bool AllowFireOld = TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.AllowFireUpdates;
             if (!FireUpdate) TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.AllowFireUpdates = false;
-            TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.UpdateItem(tThing, null);
+            if (!DontUpdateRegistry)
+                TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.UpdateItem(tThing, null);
             _thingByIdCache = null;
 
             if (!FireUpdate) TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.AllowFireUpdates = AllowFireOld;

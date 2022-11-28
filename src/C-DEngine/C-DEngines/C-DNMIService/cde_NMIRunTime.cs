@@ -103,7 +103,7 @@ namespace nsCDEngine.Engines.NMIService
                                     {
                                         cdeP tP = tMything.SetProperty(tProperties.Name, tProperties.ToString());
                                         if ((tP.cdeE & 0x40) != 0)
-                                            TheThingRegistry.UpdateThing(tMything, false);
+                                            TheThingRegistry.UpdateThing(tMything, false, tP.IsHighSpeed);
                                     }
                                 }
                                 catch

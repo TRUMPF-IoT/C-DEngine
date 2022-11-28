@@ -80,7 +80,9 @@ namespace nsCDEngine.Engines.ThingService
         /// Bit 3(4) If set to TRUE, the CTIM of the Property will be automatically set to DateTimeOffset.Now if the property was changed.
         /// Bit 4(8) If set to TRUE, the property will ALWAYS update - no mater if the old value= new value ("forceWrite")
         /// Bit 5(16) if Set to TRUE, the property will NOT be sent via initial NMI_SET_DATA to browsers, only updates are sent
-        /// Bit 7(64)=Property is NMI related
+        /// Bit 7(64) Property is NMI related
+        /// Bit 8(128) Property change does not cause ThingRegistry to be written to disk (for High speed/real-time properties)
+        /// Bit 9(256) If set, property events are fired sychronously (default is async)
         /// </summary>
         public int cdeE { get; set; }
 
@@ -572,6 +574,28 @@ namespace nsCDEngine.Engines.ThingService
             return this;
         }
 
+        /// <summary>
+        /// if set, this Property changes frequently and will not cause the ThingRegistry to be written to Disk on Change
+        /// </summary>
+        /// <param name="IsHighSpeed"></param>
+        /// <returns></returns>
+        public cdeP SetHighSpeed(bool IsHighSpeed)
+        {
+            if (IsHighSpeed)
+                cdeFOC |= 0x80;
+            else
+                cdeFOC &= 0xFF7F;
+            return this;
+        }
+
+        /// <summary>
+        /// Is true if cdeFOC Flag Bit 8 (128 = HighSpeed) is set
+        /// </summary>
+        public bool IsHighSpeed
+        {
+            get { return (cdeFOC & 128) != 0; }
+        }
+
         #region Property Management
 
         /// <summary>
@@ -942,7 +966,7 @@ namespace nsCDEngine.Engines.ThingService
             ret.cdeT = (int)pType;
             ret = pProp.SetProperty(pName, pValue);
             if (UpdateThing && ret.OwnerThing != null)
-                TheThingRegistry.UpdateThing(ret.OwnerThing, true);
+                TheThingRegistry.UpdateThing(ret.OwnerThing, true, ret.IsHighSpeed);
             return ret;
         }
 
@@ -961,7 +985,7 @@ namespace nsCDEngine.Engines.ThingService
             if (pProp == null) return null;
             cdeP ret = pProp.SetProperty(pName, pValue, pType, ForceUpdate ? 0x20 : -1, null); //NEW3.1: 0x20 was 8
             if (UpdateThing && ret.OwnerThing != null)
-                TheThingRegistry.UpdateThing(ret.OwnerThing, true);
+                TheThingRegistry.UpdateThing(ret.OwnerThing, true, ret.IsHighSpeed);
             return ret;
         }
 
