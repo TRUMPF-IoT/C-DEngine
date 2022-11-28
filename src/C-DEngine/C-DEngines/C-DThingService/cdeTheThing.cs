@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -1670,22 +1671,19 @@ namespace nsCDEngine.Engines.ThingService
             {
                 if (DoCreate)
                 {
-                    tProp = new cdeP(this) { Name = pName, cdeO = cdeMID };
-                    if (MyPropertyBag.TryAdd(pName, tProp) && !NoFireAdded)
-                        FireEvent(eThingEvents.PropertyAdded, this, tProp, true);
-                    //TODO This can race. Propose fix (for future release)
-                    //bool bAdded = false;
-                    //tProp = MyPropertyBag.GetOrAdd(pName, name =>
-                    //{
-                    //    bAdded = true; return new cdeP(this) { Name = pName, cdeO = cdeMID };
-                    //});
-                    //if (bAdded)
-                    //{
-                    //    if (!NoFireAdded)
-                    //    {
-                    //        FireEvent(eThingEvents.PropertyAdded, this, tProp, true);
-                    //    }
-                    //}
+                    bool bAdded = false;
+                    tProp = MyPropertyBag.GetOrAdd(pName, name =>
+                    {
+                        bAdded = true; return new cdeP(this) { Name = pName, cdeO = cdeMID };
+                    });
+                    if (bAdded)
+                    {
+                        OPCUATypeAttribute.ApplyUAPropertyAttributes(this, tProp);
+                        if (!NoFireAdded)
+                        {
+                            FireEvent(eThingEvents.PropertyAdded, this, tProp, true);
+                        }
+                    }
                     //else { }
                     NoFireAdded = false;
                 }
@@ -1747,9 +1745,21 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     if (DoCreate)
                     {
-                        tP = new cdeP(this) { Name = tName, cdeO = tParent.cdeMID };
-                        if (tResBag.TryAdd(tName, tP) && !NoFireAdded)
-                            FireEvent(eThingEvents.PropertyAdded, this, tP, true);
+                        bool bAdded = false;
+                        tP = tResBag.GetOrAdd(tName, name =>
+                        {
+                            bAdded = true; return new cdeP(this) { Name = tName, cdeO = tParent.cdeMID };
+                        });
+                        if (bAdded)
+                        {
+                            if (i == 0) //Only apply to root Property
+                                OPCUATypeAttribute.ApplyUAPropertyAttributes(this, tP);
+                            if (!NoFireAdded)
+                            {
+                                FireEvent(eThingEvents.PropertyAdded, this, tP, true);
+                            }
+                        }
+
                         if (i < tPath.Length - 1)  
                             tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
                         tResBag = tP.cdePB;
@@ -2274,7 +2284,7 @@ namespace nsCDEngine.Engines.ThingService
 
         public TheHistoryParameters GetHistoryParameters(Guid historyToken)
         {
-            if (this.Historian != null)
+            if (Historian != null)
             {
                 return Historian.GetHistoryParameters(historyToken);
             }
@@ -2287,9 +2297,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="historyToken">The token returned by RegisterForUpdateHistory.</param>
         public void UnregisterUpdateHistory(Guid historyToken)
         {
-            if (this.Historian != null)
+            if (Historian != null)
             {
-                this.Historian.UnregisterConsumer(historyToken);
+                Historian.UnregisterConsumer(historyToken);
             }
         }
         /// <summary>
@@ -2299,9 +2309,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="keepHistoryStore">Preserves the history store if one was requested using TheHistoryParameters.MaintainHistoryStore</param>
         public void UnregisterUpdateHistory(Guid historyToken, bool keepHistoryStore)
         {
-            if (this.Historian != null)
+            if (Historian != null)
             {
-                this.Historian.UnregisterConsumer(historyToken, keepHistoryStore);
+                Historian.UnregisterConsumer(historyToken, keepHistoryStore);
             }
         }
 
@@ -2316,9 +2326,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         internal bool PauseAllUpdateHistory()
         {
-            if (this.Historian != null)
+            if (Historian != null)
             {
-                this.Historian.Disabled = false;
+                Historian.Disabled = false;
             }
             return true;
         }
@@ -2329,9 +2339,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         internal bool ResumeAllUpdateHistory()
         {
-            if (this.Historian != null)
+            if (Historian != null)
             {
-                this.Historian.Disabled = true;
+                Historian.Disabled = true;
             }
             return true;
         }
@@ -2343,9 +2353,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool ClearUpdateHistory(Guid historyToken)
         {
-            if (this.Historian != null)
+            if (Historian != null)
             {
-                this.Historian.ClearHistory(historyToken);
+                Historian.ClearHistory(historyToken);
             }
             return true;
         }
@@ -2381,9 +2391,9 @@ namespace nsCDEngine.Engines.ThingService
         public bool RestartUpdateHistory<T>(Guid historyToken, TheHistoryParameters historyParameters, TheStorageMirror<T> store) where T : TheDataBase, INotifyPropertyChanged, new()
         {
             TheStorageMirrorHistorian.RegisterThingWithHistorian(this, false); 
-            if (this.Historian != null)
+            if (Historian != null)
             {
-                return this.Historian.RestartHistory(historyToken, historyParameters, store);
+                return Historian.RestartHistory(historyToken, historyParameters, store);
             }
             return false;
         }
@@ -2629,7 +2639,7 @@ namespace nsCDEngine.Engines.ThingService
             ret.cdeT = (int)pType;
             ret = pThing.SetProperty(pName, pValue);
             if (UpdateThing)
-                TheThingRegistry.UpdateThing(pThing, true);
+                TheThingRegistry.UpdateThing(pThing, true, ret.IsHighSpeed);
             return ret;
         }
 
@@ -2648,7 +2658,7 @@ namespace nsCDEngine.Engines.ThingService
             if (pThing == null) return null;
             cdeP ret = pThing.SetProperty(pName, pValue, pType, ForceUpdate ? 0x20 : -1, null); //NEW3.1: 0x20 was 8
             if (UpdateThing)
-                TheThingRegistry.UpdateThing(pThing, true);
+                TheThingRegistry.UpdateThing(pThing, true, ret.IsHighSpeed);
             return ret;
         }
 
@@ -2970,59 +2980,7 @@ namespace nsCDEngine.Engines.ThingService
                     var thingTypeProps = pThingType.GetProperties();
                     foreach (var prop in thingTypeProps)
                     {
-                        try
-                        {
-                            OPCUAPropertyAttribute uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
-                            if (uaAttribute != null)
-                            {
-                                var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
-                                if (tProp != null)
-                                {
-                                    if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
-                                    if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UASourceType), uaAttribute.UASourceType);
-                                    if (!string.IsNullOrEmpty(uaAttribute?.UAUnits))
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUnits), uaAttribute.UAUnits);
-                                    if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
-                                    if (!string.IsNullOrEmpty(uaAttribute?.UANodeId))
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UANodeId), uaAttribute.UANodeId);
-                                    if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
-                                    if (uaAttribute.UARangeMin != 0)
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
-                                    if (uaAttribute.UARangeMax != 0)
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMax), uaAttribute.UARangeMax);
-                                    if (uaAttribute.UAWriteMask != 0)
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
-                                    if (uaAttribute.UAUserWriteMask != 0)
-                                        tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
-                                }
-                            }
-                            OPCUAVariableAttribute uaVariAttribute = prop.GetCustomAttributes(typeof(OPCUAVariableAttribute), true).FirstOrDefault() as OPCUAVariableAttribute;
-                            if (uaVariAttribute != null)
-                            {
-                                var tProp = pThing.GetProperty(prop.Name, false);
-                                tProp?.SetProperty(nameof(OPCUAVariableAttribute.IsVariable), uaVariAttribute.IsVariable);
-                            }
-                            OPCUAHAVariableAttribute uaHAVariAttribute = prop.GetCustomAttributes(typeof(OPCUAHAVariableAttribute), true).FirstOrDefault() as OPCUAHAVariableAttribute;
-                            if (uaHAVariAttribute != null)
-                            {
-                                var tProp = pThing.GetProperty(prop.Name, false);
-                                tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.Historizing), uaHAVariAttribute.Historizing);
-                                if (uaHAVariAttribute.MinimumSamplingInterval != 0)
-                                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MinimumSamplingInterval), uaHAVariAttribute.MinimumSamplingInterval);
-                                if (uaHAVariAttribute.MaximumSamplingInterval != 0)
-                                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MaximumSamplingInterval), uaHAVariAttribute.MaximumSamplingInterval);
-                                if (uaHAVariAttribute.ArchiveStart != DateTimeOffset.MinValue)
-                                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.ArchiveStart), uaHAVariAttribute.ArchiveStart);
-                            }
-                        }
-                        catch
-                        {
-                            //ignored
-                        }
+                        ApplyUAPropertyAttributes(pThing, prop);
                     }
 
                     bResult = true;
@@ -3033,6 +2991,74 @@ namespace nsCDEngine.Engines.ThingService
             }
 
             return bResult;
+        }
+
+        internal static void ApplyUAPropertyAttributes(TheThing pThing, cdeP pProperty)
+        {
+            if (string.IsNullOrEmpty(pProperty?.Name)) return;
+            var thingTypeProps = pThing.GetObject()?.GetType()?.GetProperty(pProperty.Name);
+            if (thingTypeProps != null)
+                ApplyUAPropertyAttributes(pThing, thingTypeProps);
+        }
+
+        private static void ApplyUAPropertyAttributes(TheThing pThing, PropertyInfo prop)
+        {
+            if (pThing == null)
+                return;
+            try
+            {
+                OPCUAPropertyAttribute uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
+                if (uaAttribute != null)
+                {
+                    var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
+                    if (tProp != null)
+                    {
+                        if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
+                        if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UASourceType), uaAttribute.UASourceType);
+                        if (!string.IsNullOrEmpty(uaAttribute?.UAUnits))
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUnits), uaAttribute.UAUnits);
+                        if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
+                        if (!string.IsNullOrEmpty(uaAttribute?.UANodeId))
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UANodeId), uaAttribute.UANodeId);
+                        if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
+                        if (uaAttribute.UARangeMin != 0)
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
+                        if (uaAttribute.UARangeMax != 0)
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMax), uaAttribute.UARangeMax);
+                        if (uaAttribute.UAWriteMask != 0)
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
+                        if (uaAttribute.UAUserWriteMask != 0)
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
+                    }
+                }
+                OPCUAVariableAttribute uaVariAttribute = prop.GetCustomAttributes(typeof(OPCUAVariableAttribute), true).FirstOrDefault() as OPCUAVariableAttribute;
+                if (uaVariAttribute != null)
+                {
+                    var tProp = pThing.GetProperty(prop.Name, false);
+                    tProp?.SetHighSpeed(true);
+                    tProp?.SetProperty(nameof(OPCUAVariableAttribute.IsVariable), uaVariAttribute.IsVariable);
+                }
+                OPCUAHAVariableAttribute uaHAVariAttribute = prop.GetCustomAttributes(typeof(OPCUAHAVariableAttribute), true).FirstOrDefault() as OPCUAHAVariableAttribute;
+                if (uaHAVariAttribute != null)
+                {
+                    var tProp = pThing.GetProperty(prop.Name, false);
+                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.Historizing), uaHAVariAttribute.Historizing);
+                    if (uaHAVariAttribute.MinimumSamplingInterval != 0)
+                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MinimumSamplingInterval), uaHAVariAttribute.MinimumSamplingInterval);
+                    if (uaHAVariAttribute.MaximumSamplingInterval != 0)
+                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MaximumSamplingInterval), uaHAVariAttribute.MaximumSamplingInterval);
+                    if (uaHAVariAttribute.ArchiveStart != DateTimeOffset.MinValue)
+                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.ArchiveStart), uaHAVariAttribute.ArchiveStart);
+                }
+            }
+            catch
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(7692, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingService", $"Failed to Apply UA Attribute to Property: {prop?.Name}", eMsgLevel.l1_Error));
+            }
         }
     }
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
