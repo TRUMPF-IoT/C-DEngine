@@ -714,7 +714,7 @@ namespace nsCDEngine.BaseClasses
                         {
                             kpiPropTotal ??= pThing.GetProperty($"{keyVal.Key}Total", true);
 
-                            var totalKpisJson = kpiPropTotal.GetProperty("LabeldKpis")?.GetValue() as string;
+                            var totalKpisJson = kpiPropTotal.GetProperty(labeledKpisPropertyName)?.GetValue() as string;
 
                             var totalKpis = !string.IsNullOrWhiteSpace(totalKpisJson)
                                 ? TheCommonUtils.DeserializeJSONStringToObject<List<LabeledKpi>>(totalKpisJson)
