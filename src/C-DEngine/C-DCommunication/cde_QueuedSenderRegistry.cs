@@ -1156,17 +1156,24 @@ namespace nsCDEngine.Communication
             {
                 if (pRequestData?.RequestUri?.PathAndQuery?.StartsWith("/ISB")!=true)
                     return;
+
                 TheCDEKPIs.IncrementKPI(eKPINames.KPI3);
                 tProcessor = new TheWSProcessor8(wsSocket);
                 tProcessor.SetRequest(pRequestData);
-                if (pRequestData?.StatusCode==200)
+                if (pRequestData.StatusCode == (int)eHttpStatusCode.OK)
+                {
                     await tProcessor.ProcessWS();
+                }
+                else
+                {
+                    TheCDEKPIs.IncrementKPI(eKPINames.WsClientConnectErrors);
+                }
             }
             catch (Exception ex)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2828, new TSM("ASHXHandler", "Processing Error", ex.ToString()));
                 if (tProcessor != null)
-                    tProcessor.Shutdown(true, "ASHX Handler encoutered Error");
+                    tProcessor.Shutdown(true, "ASHX Handler encountered Error");
             }
             TheCDEKPIs.DecrementKPI(eKPINames.KPI3);
         }
