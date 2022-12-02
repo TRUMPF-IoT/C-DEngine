@@ -260,7 +260,19 @@ namespace nsCDEngine.Communication
                     }
                     MyREST.PostRESTAsync(pData, sinkUploadDataCompleted, FireSenderProblem);
                     if (BinSendBuffer != null)
+                    {
                         TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, BinSendBuffer.Length);
+
+                        if (MyTargetNodeChannel != null)
+                        {
+                            var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
+                                            (MyTargetNodeChannel.RealScopeID == null
+                                                ? "unscoped"
+                                                : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                            TheCDEKPIs.IncrementKPI(eKPINames.QKBSent,
+                                new Dictionary<string, string> { { "scope", scopeHash } }, BinSendBuffer.Length);
+                        }
+                    }
 
                     IsInPost = false;
                 }
@@ -295,6 +307,15 @@ namespace nsCDEngine.Communication
                 {
                     TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
                     TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, eResult.ResponseBuffer.Length);
+                    if (MyTargetNodeChannel != null)
+                    {
+                        var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
+                                        (MyTargetNodeChannel.RealScopeID == null
+                                            ? "unscoped"
+                                            : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, new Dictionary<string, string> { { "scope", scopeHash } }, eResult.ResponseBuffer.Length);
+                    }
+
                     if (eResult.StatusCode != 200)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(243, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Server responded with not-ok ...Code: {eResult.StatusCode} error: {TheCommonUtils.CArray2UTF8String(eResult.ResponseBuffer)}", eMsgLevel.l2_Warning), true);

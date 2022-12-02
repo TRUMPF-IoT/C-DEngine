@@ -5,6 +5,7 @@
 using nsCDEngine.BaseClasses;
 using nsCDEngine.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using nsCDEngine.ISM;
 using System.Text;
@@ -241,10 +242,31 @@ namespace nsCDEngine.Communication
                     if (FinalCnt > 1)
                         TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("WSQueuedSender", $"Batched:{FinalCnt}", eMsgLevel.l3_ImportantMessage));
 
+                    var sendBufferByteLength = 0L;
                     if (cdeSenderType.CDE_JAVAJASON != MyTargetNodeChannel.SenderType)
+                    {
+                        var sendBuffer = TheCommonUtils.cdeCompressString(tSendBufferStr.ToString());
+                        sendBufferByteLength = sendBuffer.Length;
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.cdeCompressString(tSendBufferStr.ToString()), true, false);
+                    }
                     else
+                    {
+                        var sendBuffer = TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString());
+                        sendBufferByteLength = sendBuffer.Length;
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString()), false, false);
+                    }
+
+                    if (MyTargetNodeChannel != null)
+                    {
+                        var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
+                                        (MyTargetNodeChannel.RealScopeID == null
+                                            ? "unscoped"
+                                            : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBSent,
+                            new Dictionary<string, string> {{"scope", scopeHash}}, sendBufferByteLength);
+                    }
+
                     IsInWSPost = false;
 
                     tSendBufferStr.Clear();

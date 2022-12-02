@@ -156,6 +156,14 @@ namespace nsCDEngine.Communication
             {
                 tRequestData.PostDataLength = pPostDataLength > 0 ? pPostDataLength : pPostData.Length;
                 TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, tRequestData.PostDataLength);
+                if (MyQSender?.MyTargetNodeChannel != null)
+                {
+                    var scopeHash = MyQSender.MyTargetNodeChannel.ScopeIDHash ??
+                                    (MyQSender.MyTargetNodeChannel.RealScopeID == null
+                                        ? "unscoped"
+                                        : MyQSender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                    TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, new Dictionary<string, string> { { "scope", scopeHash } }, tRequestData.PostDataLength);
+                }
             }
 
             if (IsClient)

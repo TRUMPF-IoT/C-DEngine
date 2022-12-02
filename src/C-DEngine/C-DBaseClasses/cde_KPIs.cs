@@ -322,6 +322,15 @@ namespace nsCDEngine.BaseClasses
             => IncrementKPI(eKPI.ToString(), labels, 1);
 
         /// <summary>
+        /// Increments an existing KPI by a given amount using an eKPINames enum.
+        /// </summary>
+        /// <param name="eKPI">Enum that determines which KPI to increment</param>
+        /// <param name="labels">The labels to apply to the KPI</param>
+        /// <param name="value">The value to add to the KPI</param>
+        public static void IncrementKPI(eKPINames eKPI, IDictionary<string, string> labels, long value)
+            => IncrementKPI(eKPI.ToString(), labels, value);
+
+        /// <summary>
         /// Increments an existing KPI by name by a given amount.  If the KPI does not exist,
         /// a new one will be created with the given value.
         /// </summary>
