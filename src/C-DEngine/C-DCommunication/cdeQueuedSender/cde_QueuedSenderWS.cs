@@ -122,6 +122,13 @@ namespace nsCDEngine.Communication
                     int IsBatchOn = 0;
                     int FinalCnt = 0;
 
+                    var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
+                                    (MyTargetNodeChannel.RealScopeID == null
+                                        ? "unscoped"
+                                        : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                    var nodeId = MyTargetNodeChannel.cdeMID.ToString();
+                    var kpiLabels = new Dictionary<string, string> { { "scope", scopeHash }, { "device", nodeId } };
+
                     tSendBufferStr ??= new StringBuilder(TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
                     tSendBufferStr.Append("[");
                     do
@@ -192,6 +199,8 @@ namespace nsCDEngine.Communication
                             }
 
                             TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+
                             tDev.TOP = tQueued.Topic;
                             tDev.FID = tCurSessState.GetNextSerial().ToString();
                             if (TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //IDST-OK: Must create RSA for Devices
@@ -256,15 +265,9 @@ namespace nsCDEngine.Communication
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString()), false, false);
                     }
 
-                    if (MyTargetNodeChannel != null)
+                    if (kpiLabels is { Count: > 0 } && sendBufferByteLength > 0)
                     {
-                        var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
-                                        (MyTargetNodeChannel.RealScopeID == null
-                                            ? "unscoped"
-                                            : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-
-                        TheCDEKPIs.IncrementKPI(eKPINames.QKBSent,
-                            new Dictionary<string, string> {{"scope", scopeHash}}, sendBufferByteLength);
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, sendBufferByteLength);
                     }
 
                     IsInWSPost = false;

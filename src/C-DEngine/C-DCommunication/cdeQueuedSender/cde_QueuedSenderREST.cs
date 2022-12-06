@@ -103,6 +103,14 @@ namespace nsCDEngine.Communication
 #endif
                     tSendBufferStr.Append("[");
                     byte[] BinSendBuffer = null;
+
+                    var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
+                                    (MyTargetNodeChannel.RealScopeID == null
+                                        ? "unscoped"
+                                        : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                    var nodeId = MyTargetNodeChannel.cdeMID.ToString();
+                    var kpiLabels = new Dictionary<string, string> { { "scope", scopeHash }, { "device", nodeId } };
+
                     do
                     {
                         if (!IsConnected)
@@ -140,9 +148,14 @@ namespace nsCDEngine.Communication
                             }
                             tQueued = GetNextMessage(out MCQCount);
                         }
+
                         if (tQueued != null)
                         {
                             TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                            if (kpiLabels is { Count: > 0 })
+                            {
+                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+                            }
 
                             if (tQueued.OrgMessage == null && !IsConnecting)
                             {
@@ -259,18 +272,12 @@ namespace nsCDEngine.Communication
                         throw new Exception("Client Certificate could not be added");
                     }
                     MyREST.PostRESTAsync(pData, sinkUploadDataCompleted, FireSenderProblem);
-                    if (BinSendBuffer != null)
+                    if (BinSendBuffer is {Length: > 0})
                     {
                         TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, BinSendBuffer.Length);
-
-                        if (MyTargetNodeChannel != null)
+                        if (kpiLabels is {Count: > 0})
                         {
-                            var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
-                                            (MyTargetNodeChannel.RealScopeID == null
-                                                ? "unscoped"
-                                                : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-                            TheCDEKPIs.IncrementKPI(eKPINames.QKBSent,
-                                new Dictionary<string, string> { { "scope", scopeHash } }, BinSendBuffer.Length);
+                            TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, BinSendBuffer.Length);
                         }
                     }
 

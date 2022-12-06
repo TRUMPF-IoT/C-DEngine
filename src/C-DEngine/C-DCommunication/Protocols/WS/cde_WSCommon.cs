@@ -147,7 +147,21 @@ namespace nsCDEngine.Communication
                 return;
             }
             TheRequestData tRequestData = TheRequestData.CloneForWS(MySessionRequestData);
+
+            Dictionary<string, string> kpiLabels = null;
+            if (MyQSender?.MyTargetNodeChannel != null)
+            {
+                var scopeHash = MyQSender.MyTargetNodeChannel.ScopeIDHash ??
+                                (MyQSender.MyTargetNodeChannel.RealScopeID == null
+                                    ? "unscoped"
+                                    : MyQSender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                var nodeId = MyQSender.MyTargetNodeChannel.cdeMID.ToString();
+                kpiLabels = new Dictionary<string, string> { { "scope", scopeHash }, { "device", nodeId } };
+
+                TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM, kpiLabels);
+            }
             TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
+
             tRequestData.PostData = pPostData;
             tRequestData.PostDataIdx = 0;
             if (pPostData == null)
@@ -156,13 +170,9 @@ namespace nsCDEngine.Communication
             {
                 tRequestData.PostDataLength = pPostDataLength > 0 ? pPostDataLength : pPostData.Length;
                 TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, tRequestData.PostDataLength);
-                if (MyQSender?.MyTargetNodeChannel != null)
+                if (kpiLabels is {Count: > 0})
                 {
-                    var scopeHash = MyQSender.MyTargetNodeChannel.ScopeIDHash ??
-                                    (MyQSender.MyTargetNodeChannel.RealScopeID == null
-                                        ? "unscoped"
-                                        : MyQSender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-                    TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, new Dictionary<string, string> { { "scope", scopeHash } }, tRequestData.PostDataLength);
+                    TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, kpiLabels, tRequestData.PostDataLength);
                 }
             }
 
