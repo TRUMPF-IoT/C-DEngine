@@ -65,6 +65,7 @@ namespace nsCDEngine.Engines
 
             var kpiEn = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableKPIs"));
             TheThing.SetSafePropertyBool(MyBaseThing, "EnableKPIs", kpiEn);
+            TheCDEKPIs.EnableKpis = kpiEn;
             if (kpiEn)
             {
                 if (TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs)

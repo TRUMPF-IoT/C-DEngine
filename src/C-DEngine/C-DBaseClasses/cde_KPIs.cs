@@ -37,6 +37,8 @@ namespace nsCDEngine.BaseClasses
     /// </summary>
     public static class TheCDEKPIs
     {
+        internal static bool EnableKpis { get; set; }
+
         public class LabeledKpi
         {
             public IDictionary<string, string> Labels { get; set; }
@@ -448,6 +450,8 @@ namespace nsCDEngine.BaseClasses
         /// <returns>The value of the KPI</returns>
         public static long GetKPI(string name, IDictionary<string, string> labels)
         {
+            if (!EnableKpis) return 0;
+
             _syncKPIs.EnterReadLock();
             try
             {
@@ -533,6 +537,8 @@ namespace nsCDEngine.BaseClasses
 
         private static void AddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset)
         {
+            if (!EnableKpis) return;
+
             _syncKPIs.EnterWriteLock();
             try
             {
@@ -615,13 +621,24 @@ namespace nsCDEngine.BaseClasses
         public static string GetKPIs(bool doReset)
         {
             StringBuilder tRes = new ();
-            tRes.Append($"C-DEngine-KPIs: LR:{LastReset:MM/dd/yyyy hh:mm:ss.fff--tt} ");
-            List<string> orderedKeys = KPIs.Keys.OrderBy(s => s).ToList();
-            foreach (string key in orderedKeys)
+            tRes.Append("C-DEngine-KPIs: ");
+
+            if (EnableKpis)
             {
-                tRes.Append($"{key}:{GetKPI(key)} ");
+                tRes.Append($"LR:{LastReset:MM/dd/yyyy hh:mm:ss.fff--tt} ");
+                List<string> orderedKeys = KPIs.Keys.OrderBy(s => s).ToList();
+                foreach (string key in orderedKeys)
+                {
+                    tRes.Append($"{key}:{GetKPI(key)} ");
+                }
+
+                if (doReset) Reset();
             }
-            if (doReset) Reset();
+            else
+            {
+                tRes.Append("Disabled!");
+            }
+
             return tRes.ToString();
         }
 
@@ -629,7 +646,7 @@ namespace nsCDEngine.BaseClasses
         private static readonly object _thingHarvestLock = new ();
         internal static void ToThingProperties(TheThing pThing, bool bReset, bool force = true)
         {
-            if (pThing == null) return;
+            if (!EnableKpis || pThing == null) return;
 
             if(force) Monitor.Enter(_thingHarvestLock);
             else if (!Monitor.TryEnter(_thingHarvestLock)) return;
