@@ -57,7 +57,11 @@ namespace nsCDEngine.BaseClasses
         /// <summary>
         /// The blobs not found
         /// </summary>
-        BlobsNotFound, RejectedClientConnections, IISRejectedClientConnections, WsClientConnectErrors
+        BlobsNotFound,
+        /// <summary>
+        /// Connection issues
+        /// </summary>
+        RejectedClientConnections, IISRejectedClientConnections, WsClientConnectErrors
     }
 
     /// <summary>
