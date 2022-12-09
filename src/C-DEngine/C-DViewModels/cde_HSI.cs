@@ -2131,7 +2131,14 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Returns a hash of the scopeid for diagnostics purposes
         /// </summary>
-        public string ScopeIDHash { get; set; }
+        public string ScopeIDHash {
+            get => _scopeIdHash ??= RealScopeID != null
+                ? RealScopeID.Substring(0, 4).ToUpperInvariant()
+                : "unscoped";
+            set => _scopeIdHash = value;
+        }
+        private string _scopeIdHash;
+
         /// <summary>
         /// Tells if this Channel is for a Device (Phone, Device, HTML5/JS)
         /// </summary>
@@ -2333,6 +2340,8 @@ namespace nsCDEngine.ViewModels
         internal void SetRealScopeID(string pRealScopeID)
         {
             RealScopeID = pRealScopeID; //RScope-OK: Update Primary RScope
+            ScopeIDHash = null;
+
             if (string.IsNullOrEmpty(RealScopeID))
             {
                 TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "Illegal Connect by Unscoped Node Detected!", eMsgLevel.l1_Error, $"{this}");

@@ -122,12 +122,13 @@ namespace nsCDEngine.Communication
                     int IsBatchOn = 0;
                     int FinalCnt = 0;
 
-                    var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
-                                    (MyTargetNodeChannel.RealScopeID == null
-                                        ? "unscoped"
-                                        : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-                    var nodeId = MyTargetNodeChannel.cdeMID.ToString();
-                    var kpiLabels = new Dictionary<string, string> { { "scope", scopeHash }, { "device", nodeId } };
+                    Dictionary<string, string> kpiLabels = null;
+                    if (TheCDEKPIs.EnableKpis)
+                    {
+                        var scopeHash = MyTargetNodeChannel?.ScopeIDHash;
+                        var nodeId = TheCommonUtils.CStr(MyTargetNodeChannel?.cdeMID);
+                        kpiLabels = new Dictionary<string, string> {{"scope", scopeHash}, {"device", nodeId}};
+                    }
 
                     tSendBufferStr ??= new StringBuilder(TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
                     tSendBufferStr.Append("[");
@@ -198,8 +199,11 @@ namespace nsCDEngine.Communication
                                 }
                             }
 
-                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
-                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+                            if (TheCDEKPIs.EnableKpis)
+                            {
+                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+                            }
 
                             tDev.TOP = tQueued.Topic;
                             tDev.FID = tCurSessState.GetNextSerial().ToString();
@@ -265,7 +269,7 @@ namespace nsCDEngine.Communication
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString()), false, false);
                     }
 
-                    if (kpiLabels is { Count: > 0 } && sendBufferByteLength > 0)
+                    if (TheCDEKPIs.EnableKpis && kpiLabels is { Count: > 0 } && sendBufferByteLength > 0)
                     {
                         TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, sendBufferByteLength);
                     }

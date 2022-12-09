@@ -104,12 +104,13 @@ namespace nsCDEngine.Communication
                     tSendBufferStr.Append("[");
                     byte[] BinSendBuffer = null;
 
-                    var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
-                                    (MyTargetNodeChannel.RealScopeID == null
-                                        ? "unscoped"
-                                        : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-                    var nodeId = MyTargetNodeChannel.cdeMID.ToString();
-                    var kpiLabels = new Dictionary<string, string> { { "scope", scopeHash }, { "device", nodeId } };
+                    Dictionary<string, string> kpiLabels = null;
+                    if (TheCDEKPIs.EnableKpis)
+                    {
+                        var scopeHash = MyTargetNodeChannel?.ScopeIDHash;
+                        var nodeId = TheCommonUtils.CStr(MyTargetNodeChannel?.cdeMID);
+                        kpiLabels = new Dictionary<string, string> {{"scope", scopeHash}, {"device", nodeId}};
+                    }
 
                     do
                     {
@@ -151,10 +152,13 @@ namespace nsCDEngine.Communication
 
                         if (tQueued != null)
                         {
-                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
-                            if (kpiLabels is { Count: > 0 })
+                            if (TheCDEKPIs.EnableKpis)
                             {
-                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                                if (kpiLabels is {Count: > 0})
+                                {
+                                    TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+                                }
                             }
 
                             if (tQueued.OrgMessage == null && !IsConnecting)
@@ -272,7 +276,7 @@ namespace nsCDEngine.Communication
                         throw new Exception("Client Certificate could not be added");
                     }
                     MyREST.PostRESTAsync(pData, sinkUploadDataCompleted, FireSenderProblem);
-                    if (BinSendBuffer is {Length: > 0})
+                    if (TheCDEKPIs.EnableKpis && BinSendBuffer is {Length: > 0})
                     {
                         TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, BinSendBuffer.Length);
                         if (kpiLabels is {Count: > 0})
@@ -312,15 +316,15 @@ namespace nsCDEngine.Communication
             {
                 try
                 {
-                    TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
-                    TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, eResult.ResponseBuffer.Length);
-                    if (MyTargetNodeChannel != null)
+                    if (TheCDEKPIs.EnableKpis)
                     {
-                        var scopeHash = MyTargetNodeChannel.ScopeIDHash ??
-                                        (MyTargetNodeChannel.RealScopeID == null
-                                            ? "unscoped"
-                                            : MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
-                        TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, new Dictionary<string, string> { { "scope", scopeHash } }, eResult.ResponseBuffer.Length);
+                        TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, eResult.ResponseBuffer.Length);
+                        if (MyTargetNodeChannel != null)
+                        {
+                            var scopeHash = MyTargetNodeChannel.ScopeIDHash;
+                            TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, new Dictionary<string, string> {{"scope", scopeHash}}, eResult.ResponseBuffer.Length);
+                        }
                     }
 
                     if (eResult.StatusCode != 200)

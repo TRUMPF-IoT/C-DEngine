@@ -597,10 +597,7 @@ namespace nsCDEngine.Communication
                 if (MyQueuedSenderList.ContainsID(pSend.MyTargetNodeChannel.cdeMID)) return 1;
                 MyQueuedSenderList.AddOrUpdateItem(pSend.MyTargetNodeChannel.cdeMID, pSend, sender =>
                 {
-                    var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash ??
-                                    (sender.MyTargetNodeChannel.RealScopeID == null
-                                        ? "unscoped"
-                                        : sender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                    var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                     TheCDEKPIs.IncrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
                 });
                 return 2;
@@ -628,10 +625,7 @@ namespace nsCDEngine.Communication
 
                         MyQueuedSenderList.RemoveAnItemByID(pNodeChannel.cdeMID, sender =>
                         {
-                            var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash ??
-                                            (sender.MyTargetNodeChannel.RealScopeID == null
-                                                ? "unscoped"
-                                                : sender.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpperInvariant());
+                            var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                             TheCDEKPIs.DecrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
                         });
                         return true;
@@ -1111,7 +1105,7 @@ namespace nsCDEngine.Communication
                             meshInfoStatus.MeshInfo.TotalMeshSize = allQSInMesh.Count;
                             meshInfoStatus.MeshInfo.MeshSize = allQSInMesh.Count(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL);
                             meshInfoStatus.MeshInfo.ConnectedBrowsers = allQSInMesh.Count(sender => sender.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON);
-                            meshInfoStatus.MeshInfo.ScopeIDHash = qs.MyTargetNodeChannel.ScopeIDHash ?? (qs.MyTargetNodeChannel.RealScopeID == null ? "unscoped" : qs.MyTargetNodeChannel.RealScopeID.Substring(0, 4).ToUpper());
+                            meshInfoStatus.MeshInfo.ScopeIDHash = qs.MyTargetNodeChannel.ScopeIDHash;
                             meshInfoStatus.MeshInfo.NodeDiagInfo = qs.GetNodeDiagInfo();
                         }
                         catch(Exception)
