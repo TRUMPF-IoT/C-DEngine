@@ -29,7 +29,6 @@ namespace nsCDEngine.Communication
             MyJSKnownThings = new cdeConcurrentDictionary<Guid, byte>();
             MyJSKnownFields = new TheMirrorCache<TheMetaDataBase>();
             IsAlive = true;
-            EnableKPIs = TheCommonUtils.CBool(TheThingRegistry.GetHostProperty("EnableKPIs"));
         }
 
         public bool StartSender(TheChannelInfo pChannelInfo, string pInitialSubscriptions, bool IsIncoming)
@@ -326,7 +325,6 @@ namespace nsCDEngine.Communication
             }
         }
 
-        readonly bool EnableKPIs;
         private ManualResetEvent mre = null;
         internal TheISBConnect MyISBlock = null;
         internal volatile bool _IsConnected;
@@ -1222,7 +1220,7 @@ namespace nsCDEngine.Communication
                             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
                             //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: This is a logic lock. Consitency of the queue has to be maintained here but only between this function and the GetNextMessage function
                             {
-                                if (EnableKPIs)
+                                if (TheCDEKPIs.EnableKpis)
                                 {
                                     var spmax = MyCoreQueue.MyRecords.Values.Count(s => !s.IsSent && s.OrgMessage != null && s.OrgMessage.TXT != null && s.OrgMessage.TXT.StartsWith("SETP"));
                                     if (spmax > TheCDEKPIs.KPI7) TheCDEKPIs.SetKPI(eKPINames.KPI7, spmax);
@@ -1234,7 +1232,7 @@ namespace nsCDEngine.Communication
                                     tM.IsLocked = true;
                                     var tNP = TheCommonUtils.cdeSplit(pMessage.PLS, ":;:", false, false);
                                     var tSP = TheCommonUtils.cdeSplit(tM.OrgMessage.PLS, ":;:", false, false).ToList();
-                                    if (EnableKPIs && tSP.Count > TheCDEKPIs.KPI9) TheCDEKPIs.SetKPI(eKPINames.KPI9, tSP.Count);
+                                    if (TheCDEKPIs.EnableKpis && tSP.Count > TheCDEKPIs.KPI9) TheCDEKPIs.SetKPI(eKPINames.KPI9, tSP.Count);
                                     string tName = "";
                                     foreach (string tP in tNP)
                                     {
@@ -1256,7 +1254,7 @@ namespace nsCDEngine.Communication
                                 }
                                 else
                                 {
-                                    if (EnableKPIs) TheCDEKPIs.IncrementKPI(eKPINames.KPI10);
+                                    if (TheCDEKPIs.EnableKpis) TheCDEKPIs.IncrementKPI(eKPINames.KPI10);
                                 }
                             });
                             if (bExit)
@@ -1270,7 +1268,7 @@ namespace nsCDEngine.Communication
                             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
                             //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: This is a logic lock. Consitency of the queue has to be maintained here but only between this function and the GetNextMessage function
                             {
-                                if (EnableKPIs)
+                                if (TheCDEKPIs.EnableKpis)
                                 {
                                     var spnmax = MyCoreQueue.MyRecords.Values.Count(s => !s.IsSent && s.OrgMessage != null && s.OrgMessage.TXT != null && s.OrgMessage.TXT.StartsWith("SETNP"));
                                     if (spnmax > TheCDEKPIs.KPI8) TheCDEKPIs.SetKPI(eKPINames.KPI8, spnmax);
