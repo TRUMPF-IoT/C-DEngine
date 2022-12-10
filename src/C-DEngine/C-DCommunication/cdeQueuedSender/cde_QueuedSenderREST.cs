@@ -103,6 +103,15 @@ namespace nsCDEngine.Communication
 #endif
                     tSendBufferStr.Append("[");
                     byte[] BinSendBuffer = null;
+
+                    Dictionary<string, string> kpiLabels = null;
+                    if (TheCDEKPIs.EnableKpis)
+                    {
+                        var scopeHash = MyTargetNodeChannel?.ScopeIDHash;
+                        var nodeId = TheCommonUtils.CStr(MyTargetNodeChannel?.cdeMID);
+                        kpiLabels = new Dictionary<string, string> {{"scope", scopeHash}, {"device", nodeId}};
+                    }
+
                     do
                     {
                         if (!IsConnected)
@@ -140,9 +149,17 @@ namespace nsCDEngine.Communication
                             }
                             tQueued = GetNextMessage(out MCQCount);
                         }
+
                         if (tQueued != null)
                         {
-                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                            if (TheCDEKPIs.EnableKpis)
+                            {
+                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                                if (kpiLabels is {Count: > 0})
+                                {
+                                    TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+                                }
+                            }
 
                             if (tQueued.OrgMessage == null && !IsConnecting)
                             {
@@ -259,8 +276,14 @@ namespace nsCDEngine.Communication
                         throw new Exception("Client Certificate could not be added");
                     }
                     MyREST.PostRESTAsync(pData, sinkUploadDataCompleted, FireSenderProblem);
-                    if (BinSendBuffer != null)
+                    if (TheCDEKPIs.EnableKpis && BinSendBuffer is {Length: > 0})
+                    {
                         TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, BinSendBuffer.Length);
+                        if (kpiLabels is {Count: > 0})
+                        {
+                            TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, BinSendBuffer.Length);
+                        }
+                    }
 
                     IsInPost = false;
                 }
@@ -293,8 +316,17 @@ namespace nsCDEngine.Communication
             {
                 try
                 {
-                    TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
-                    TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, eResult.ResponseBuffer.Length);
+                    if (TheCDEKPIs.EnableKpis)
+                    {
+                        TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, eResult.ResponseBuffer.Length);
+                        if (MyTargetNodeChannel != null)
+                        {
+                            var scopeHash = MyTargetNodeChannel.ScopeIDHash;
+                            TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, new Dictionary<string, string> {{"scope", scopeHash}}, eResult.ResponseBuffer.Length);
+                        }
+                    }
+
                     if (eResult.StatusCode != 200)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(243, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Server responded with not-ok ...Code: {eResult.StatusCode} error: {TheCommonUtils.CArray2UTF8String(eResult.ResponseBuffer)}", eMsgLevel.l2_Warning), true);

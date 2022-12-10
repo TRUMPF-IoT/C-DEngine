@@ -5,6 +5,7 @@
 using nsCDEngine.BaseClasses;
 using nsCDEngine.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using nsCDEngine.ISM;
 using System.Text;
@@ -121,6 +122,14 @@ namespace nsCDEngine.Communication
                     int IsBatchOn = 0;
                     int FinalCnt = 0;
 
+                    Dictionary<string, string> kpiLabels = null;
+                    if (TheCDEKPIs.EnableKpis)
+                    {
+                        var scopeHash = MyTargetNodeChannel?.ScopeIDHash;
+                        var nodeId = TheCommonUtils.CStr(MyTargetNodeChannel?.cdeMID);
+                        kpiLabels = new Dictionary<string, string> {{"scope", scopeHash}, {"device", nodeId}};
+                    }
+
                     tSendBufferStr ??= new StringBuilder(TheBaseAssets.MyServiceHostInfo?.IsMemoryOptimized == true ? 1024 : TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType] * 2);
                     tSendBufferStr.Append("[");
                     do
@@ -190,7 +199,12 @@ namespace nsCDEngine.Communication
                                 }
                             }
 
-                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                            if (TheCDEKPIs.EnableKpis)
+                            {
+                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
+                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
+                            }
+
                             tDev.TOP = tQueued.Topic;
                             tDev.FID = tCurSessState.GetNextSerial().ToString();
                             if (TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //IDST-OK: Must create RSA for Devices
@@ -241,10 +255,25 @@ namespace nsCDEngine.Communication
                     if (FinalCnt > 1)
                         TheBaseAssets.MySYSLOG.WriteToLog(235, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("WSQueuedSender", $"Batched:{FinalCnt}", eMsgLevel.l3_ImportantMessage));
 
+                    var sendBufferByteLength = 0L;
                     if (cdeSenderType.CDE_JAVAJASON != MyTargetNodeChannel.SenderType)
+                    {
+                        var sendBuffer = TheCommonUtils.cdeCompressString(tSendBufferStr.ToString());
+                        sendBufferByteLength = sendBuffer.Length;
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.cdeCompressString(tSendBufferStr.ToString()), true, false);
+                    }
                     else
+                    {
+                        var sendBuffer = TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString());
+                        sendBufferByteLength = sendBuffer.Length;
                         MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString()), false, false);
+                    }
+
+                    if (TheCDEKPIs.EnableKpis && kpiLabels is { Count: > 0 } && sendBufferByteLength > 0)
+                    {
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, sendBufferByteLength);
+                    }
+
                     IsInWSPost = false;
 
                     tSendBufferStr.Clear();
