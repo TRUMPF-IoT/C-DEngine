@@ -147,7 +147,22 @@ namespace nsCDEngine.Communication
                 return;
             }
             TheRequestData tRequestData = TheRequestData.CloneForWS(MySessionRequestData);
-            TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
+
+            Dictionary<string, string> kpiLabels = null;
+            if (TheCDEKPIs.EnableKpis)
+            {
+                if (MyQSender?.MyTargetNodeChannel != null)
+                {
+                    var scopeHash = MyQSender?.MyTargetNodeChannel?.ScopeIDHash;
+                    var nodeId = TheCommonUtils.CStr(MyQSender?.MyTargetNodeChannel?.cdeMID);
+                    kpiLabels = new Dictionary<string, string> {{"scope", scopeHash}, {"device", nodeId}};
+
+                    TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM, kpiLabels);
+                }
+
+                TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
+            }
+
             tRequestData.PostData = pPostData;
             tRequestData.PostDataIdx = 0;
             if (pPostData == null)
@@ -155,7 +170,14 @@ namespace nsCDEngine.Communication
             else
             {
                 tRequestData.PostDataLength = pPostDataLength > 0 ? pPostDataLength : pPostData.Length;
-                TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, tRequestData.PostDataLength);
+                if (TheCDEKPIs.EnableKpis)
+                {
+                    TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, tRequestData.PostDataLength);
+                    if (kpiLabels is {Count: > 0})
+                    {
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, kpiLabels, tRequestData.PostDataLength);
+                    }
+                }
             }
 
             if (IsClient)

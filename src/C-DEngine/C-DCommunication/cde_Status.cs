@@ -166,7 +166,7 @@ namespace nsCDEngine.Communication
             string outText = AddHTMLHeader();
 
             outText += InfoHeader(true);
-            outText += "<br>" + TheCDEKPIs.GetKPIs(DoReset).Replace(" ", "</br>") + "</hr>";
+            outText += "<br>" + TheCDEKPIs.GetKPIs(DoReset).Replace(" ", "<br>");
             return outText;
         }
 

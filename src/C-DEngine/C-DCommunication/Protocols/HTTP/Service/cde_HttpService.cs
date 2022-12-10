@@ -412,9 +412,8 @@ namespace nsCDEngine.Communication.HttpService
                 {
                     if (!IsValidISB && pRequestData.StatusCode == 0)
                         GetAnyFile(pRequestData, true);
-                    else if (IsValidISB && pRequestData.WebSocket != null)
+                    else if (IsValidISB && pRequestData.WebSocket != null && pRequestData.StatusCode == 0)
                         pRequestData.StatusCode = (int)eHttpStatusCode.OK;
-
                 }
 
                 if (pRequestData.ResponseBuffer == null && pRequestData.StatusCode==0)

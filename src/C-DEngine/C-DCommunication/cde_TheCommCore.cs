@@ -492,13 +492,12 @@ namespace nsCDEngine.Communication
             {
                 pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(ErrorText);
                 pRequestData.ResponseMimeType = "text/html";
-                if (tCode != 0)
-                    pRequestData.StatusCode = (int)tCode;
-                else
-                    pRequestData.StatusCode = (int)eHttpStatusCode.ServerError;
-                pRequestData.AllowStatePush = false;
-                pRequestData.EndSessionOnResponse = true;
             }
+
+            pRequestData.StatusCode = tCode != 0 ? (int)tCode : (int)eHttpStatusCode.ServerError;
+            pRequestData.AllowStatePush = false;
+            pRequestData.EndSessionOnResponse = true;
+
             TheBaseAssets.MySYSLOG.WriteToLog(50562, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("HttpService", $"SendError: {ErrorText} from {TheCommonUtils.GetDeviceIDML(TheCommonUtils.CGuid(tDeviceID))}", eMsgLevel.l1_Error));
         }
 
@@ -511,7 +510,6 @@ namespace nsCDEngine.Communication
                 if (tRealPage.EndsWith(".ashx"))
                 {
                     tRealPage = tRealPage.Substring(0, tRealPage.Length - 5);
-                    IsValidISB = true;
                 }
                 if (TheBaseAssets.MyScopeManager.ParseISBPath(tRealPage, out Guid? tSessionID, out cdeSenderType tSenderType, out long tFID, out string tVersion))
                 {
@@ -770,7 +768,10 @@ namespace nsCDEngine.Communication
                     }
                 }
                 else
+                {
                     TheBaseAssets.MySYSLOG.WriteToLog(50510, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpService", "Illegal ISB attempt - License Key Violation"));
+                    SendError("1712:Illegal ISB connect attempt", pRequestData, eHttpStatusCode.NotAcceptable);
+                }
             }
             return IsValidISB;
         }
