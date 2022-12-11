@@ -1636,6 +1636,7 @@ namespace nsCDEngine.Engines
         public string DeviceType;
         public eThingCaps[] Capabilities;
         public string Description;
+        public string EngineName;
     }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true)]
