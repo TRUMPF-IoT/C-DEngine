@@ -323,6 +323,43 @@ namespace nsCDEngine.Engines.ThingService
         #endregion
     }
 
+    /// <summary>
+    /// Interface of OPC UA Connector Methods a Twin might call on an OPC UA Client Connector
+    /// </summary>
+    public interface ICDEUAConnector
+    {
+        bool UAReadSync(List<cdeP> pProps);
+        bool UAExecuteCommand(List<cdeP> pCommandProperties);
+    }
+
+    /// <summary>
+    /// Thing Base for an OPC UA Digital Twin
+    /// </summary>
+    public class TheUATwinBase : TheThingBase
+    {
+        ICDEUAConnector _MyBaseUAConnector;
+        public ICDEUAConnector MyBaseUAConnector
+        {
+            get { return _MyBaseUAConnector; }
+            set
+            {
+                _MyBaseUAConnector = value;
+                HasOPCConnection = true;
+            }
+        }
+        public TheUATwinBase(TheThing pThing, string pID)
+        {
+            MyBaseThing = pThing ?? new TheThing();
+            if (string.IsNullOrEmpty(MyBaseThing.ID))
+                MyBaseThing.ID = pID;
+            MyBaseThing.SetIThingObject(this);
+        }
+        public bool HasOPCConnection
+        {
+            get { return TheThing.MemberGetSafePropertyBool(MyBaseThing); }
+            set { TheThing.MemberSetSafePropertyBool(MyBaseThing, value); }
+        }
+    }
 
     internal class cdePjson
     {

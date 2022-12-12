@@ -776,7 +776,8 @@ namespace nsCDEngine.BaseClasses
             totalKpis.ForEach(totalKpi =>
             {
                 var currentKpi = FindLabeledKpi(currentKpis, totalKpi.Labels);
-                totalKpi.Value += currentKpi.Value;
+                if (currentKpi != null) 
+                    totalKpi.Value += currentKpi.Value;
             });
 
             // concat new kpi values
