@@ -337,6 +337,10 @@ namespace nsCDEngine.Engines.ThingService
     /// </summary>
     public class TheUATwinBase : TheThingBase
     {
+        public const string OPC_Method = "OPC-METHOD";
+        public const string OPC_Read_Now = "OPC-READ-NOW";
+        public const string OPC_Get_TimeSeries = "OPC-GET-TIMESERIES";
+
         ICDEUAConnector _MyBaseUAConnector;
         public ICDEUAConnector MyBaseUAConnector
         {
@@ -3023,7 +3027,8 @@ namespace nsCDEngine.Engines.ThingService
                     bResult = true;
                 }
             }
-            catch {
+            catch
+            {
                 //ignored
             }
 
@@ -3050,6 +3055,7 @@ namespace nsCDEngine.Engines.ThingService
                     var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
                     if (tProp != null)
                     {
+                        tProp.cdeM = OPCUAPropertyAttribute.Meta;
                         if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
                             tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
                         if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
@@ -3080,6 +3086,8 @@ namespace nsCDEngine.Engines.ThingService
                 if (uaVariAttribute != null)
                 {
                     var tProp = pThing.GetProperty(prop.Name, false);
+                    if (tProp != null)
+                        tProp.cdeM = OPCUAVariableAttribute.Meta;
                     tProp?.SetHighSpeed(true);
                     tProp?.SetProperty(nameof(OPCUAVariableAttribute.IsVariable), uaVariAttribute.IsVariable);
                 }
@@ -3087,6 +3095,8 @@ namespace nsCDEngine.Engines.ThingService
                 if (uaHAVariAttribute != null)
                 {
                     var tProp = pThing.GetProperty(prop.Name, false);
+                    if (tProp != null)
+                        tProp.cdeM = OPCUAHAVariableAttribute.Meta;
                     tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.Historizing), uaHAVariAttribute.Historizing);
                     if (uaHAVariAttribute.MinimumSamplingInterval != 0)
                         tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MinimumSamplingInterval), uaHAVariAttribute.MinimumSamplingInterval);
@@ -3105,6 +3115,7 @@ namespace nsCDEngine.Engines.ThingService
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
     public class OPCUAPropertyAttribute : Attribute
     {
+        public const string Meta = "UAProperty";
         public string UABrowseName;
 
         // Possible future enhancements. All these should be defined in the UA NodeSet referenced in the UATypeNodeId of TheThing
@@ -3125,15 +3136,23 @@ namespace nsCDEngine.Engines.ThingService
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
     public class OPCUAVariableAttribute: OPCUAPropertyAttribute
     {
+        public new const string Meta = "UAVariable";
         public bool IsVariable=true;
     }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
     public class OPCUAHAVariableAttribute : OPCUAVariableAttribute
     {
+        public new const string Meta = "UAHAVariable";
         public bool Historizing;
         public int MinimumSamplingInterval;
         public int MaximumSamplingInterval;
         public DateTimeOffset ArchiveStart;
+    }
+
+    [AttributeUsage(AttributeTargets.Method )]
+    public class OPCUAMethodAttribute : Attribute
+    {
+        public const string Meta = "UAMethodCommand";
     }
 }
