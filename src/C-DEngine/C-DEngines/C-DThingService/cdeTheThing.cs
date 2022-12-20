@@ -3070,6 +3070,10 @@ namespace nsCDEngine.Engines.ThingService
                             tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
                         if (uaAttribute.UAUserWriteMask != 0)
                             tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
+                        if (uaAttribute.AllowWrites)
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.AllowWrites), uaAttribute.AllowWrites);
+                        if (uaAttribute.HideFromAnonymous)
+                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.HideFromAnonymous), uaAttribute.HideFromAnonymous);
                     }
                 }
                 OPCUAVariableAttribute uaVariAttribute = prop.GetCustomAttributes(typeof(OPCUAVariableAttribute), true).FirstOrDefault() as OPCUAVariableAttribute;
@@ -3114,6 +3118,8 @@ namespace nsCDEngine.Engines.ThingService
         public int UAWriteMask;
         public int UAUserWriteMask;
         public bool UAMandatory;
+        public bool AllowWrites;
+        public bool HideFromAnonymous;
     }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
