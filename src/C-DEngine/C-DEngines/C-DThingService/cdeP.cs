@@ -131,6 +131,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Contains the value that was set before an update
         /// </summary>
+        [IgnoreDataMember]
         public object OldValue { get { return mOldValue; } }
         private object mValue;
 
