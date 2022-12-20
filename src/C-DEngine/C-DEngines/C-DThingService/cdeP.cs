@@ -127,7 +127,12 @@ namespace nsCDEngine.Engines.ThingService
         {
             get { return changedMask != 0; }
         }
-        private object OldValue;
+        private object mOldValue;
+        /// <summary>
+        /// Contains the value that was set before an update
+        /// </summary>
+        [IgnoreDataMember]
+        public object OldValue { get { return mOldValue; } }
         private object mValue;
 
         /// <summary>
@@ -223,7 +228,7 @@ namespace nsCDEngine.Engines.ThingService
                 if (ownerBase.IsOnLocalNode() && cdeN != ownerBase.cdeN)
                     cdeN = ownerBase.cdeN;  //REVIEW: Somewhere cdeN is changed in Isolated Scenarios
             }
-            OldValue = mValue;
+            mOldValue = mValue;
 
             object pVal = pValue;
 #if !CDE_STANDARD   //No System.Drawing
@@ -747,7 +752,7 @@ namespace nsCDEngine.Engines.ThingService
             this.cdeT = ToClone.cdeT;
             this.Name = ToClone.Name;
             this.mValue = ToClone.mValue;
-            this.OldValue = ToClone.OldValue;
+            this.mOldValue = ToClone.mOldValue;
             this.OwnerThing = ToClone.OwnerThing;
             ToClone.Clone(this);
         }
