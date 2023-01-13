@@ -67,18 +67,18 @@ namespace nsCDEngine.Communication
             return ret.ToString();
         }
 
-        internal static string GetScopeHashML(string hash, string AddToSpan = null)
+        internal static string GetScopeHashML(string hash, string addToSpan = null)
         {
             if (!TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog)
                 return hash;
-            return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(AddToSpan) ? "" : AddToSpan)}'>{hash}<svg width=\"20\" height=\"20\" data-jdenticon-value=\"{hash}\"></svg></span>";
+            return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(addToSpan) ? "" : addToSpan)}'>{hash}<svg width=\"20\" height=\"20\" data-jdenticon-value=\"{hash}\"></svg></span>";
         }
-        internal static string GetSScopeHashML(string sScope, string AddToSpan = null)
+        internal static string GetSScopeHashML(string sScope, string addToSpan = null)
         {
             var hash = TheBaseAssets.MyScopeManager.GetRealScopeID(sScope).Substring(0, 4).ToUpper();
             if (!TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog)
                 return hash;
-            return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(AddToSpan) ? "" : AddToSpan)}'>{hash}<svg width=\"20\" height=\"20\" data-jdenticon-value=\"{hash}\"></svg></span>";
+            return $"<span onclick=\"if (cdeCSOn) cdeCSOn=null; else cdeCSOn=true;\" onmouseenter=\"cdeColorSpan(this, 'red')\" onmouseleave=\"cdeColorSpan(null)\"  class=\"cdeRSHash\" style='color:orange; font-weight:bold; {(string.IsNullOrEmpty(addToSpan) ? "" : addToSpan)}'>{hash}<svg width=\"20\" height=\"20\" data-jdenticon-value=\"{hash}\"></svg></span>";
         }
 
         internal static TheNodeInfoHeader GetInfoHeaderJSON()
@@ -122,7 +122,7 @@ namespace nsCDEngine.Communication
             if (TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog)
                 ret2.Append($"<script>var cdeCSOn; function cdeColorSpan(pContent, pColor) {{ var x = document.getElementsByClassName(\"cdeRSHash\");var i;for (i = 0; i < x.length; i++){{ if (!pContent) {{ if (!cdeCSOn) x[i].style.backgroundColor = \"transparent\"; }} else {{ if (pContent.innerText==x[i].innerText && !cdeCSOn) x[i].style.backgroundColor = pColor; }}}}}}</script>");
             ret2.Append($"<div class=\"cdeInfoBlock\" style=\"width:750px;\"><div class=\"cdeInfoBlockHeader cdeInfoBlockHeaderText\" id=\"nodeInfo\">Node Info</div><table style=\"margin-left:2%\">");
-            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right; min-width:200px;\">Hosted at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.LocalHostQSender.MyTargetNodeChannel.ToMLString(true)}</td></tr>");
+            ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right; min-width:200px;\">Hosted at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.LocalHostQSender.MyTargetNodeChannel.ToMLString(true, false)}</td></tr>");
             ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node ID:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDeviceIDML(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID)}</td><tr>");
             ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.NodeName}</td><tr>");
             ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Station Name:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheBaseAssets.MyServiceHostInfo.MyStationName}</td><tr>");
@@ -321,7 +321,7 @@ namespace nsCDEngine.Communication
                         {
                             curScopesAndSubs.Append("<ul>");
                             foreach (TheChannelInfo tChan in tlst)
-                                curScopesAndSubs.Append("<li>" + tChan.ToMLString() + "</li>");
+                                curScopesAndSubs.Append("<li>" + tChan.ToMLString(false, false) + "</li>");
                             curScopesAndSubs.Append("</ul>");
                         }
                         c2++;

@@ -300,7 +300,7 @@ namespace nsCDEngine.Communication
                     Debug LogBufferToFile("wsinputbactchedlog.dat", tPostData, 0, tPostData.Length);
 #endif
                     TheCommonUtils.cdeRunAsync("ProcessFromWS", true,
-                        (o) => ProcessIncomingData(null, (byte[]) o, ((byte[]) o).Length), tPostData);
+                        o => ProcessIncomingData(null, (byte[]) o, ((byte[]) o).Length), tPostData);
                 }
             }
             catch (OperationCanceledException)
@@ -313,9 +313,9 @@ namespace nsCDEngine.Communication
                 if (TheBaseAssets.MasterSwitch)
                 {
                     if (eee.Source == "System")
-                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed because WebSocket was closed during ReceiveAsync.", eMsgLevel.l1_Error));
+                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", $"ProcessWS Loop has failed because WebSocket was closed during ReceiveAsync. {MyQSender?.MyTargetNodeChannel?.ToMLString()}", eMsgLevel.l1_Error));
                     else
-                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed.", eMsgLevel.l1_Error, eee.ToString()));
+                        TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", $"ProcessWS Loop has failed. {MyQSender?.MyTargetNodeChannel?.ToMLString()}", eMsgLevel.l1_Error, eee.ToString()));
                 }
             }
             TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ProcessWS", $"ProcessWS Loop for {OwnerNodeID} has ended. Faulted:{hasFaulted} HasWS:{websocket != null}", eMsgLevel.l3_ImportantMessage));
