@@ -188,7 +188,7 @@ namespace nsCDEngine.Communication
             }
 
             CloseFired = false;
-            bool HasFaulted = false;
+            bool hasFaulted = false;
             string tCause = "1604:Thread ended";
             try
             {
@@ -223,7 +223,7 @@ namespace nsCDEngine.Communication
 #endif
                     if (!receiveResult.EndOfMessage)
                     {
-                        List<byte[]> tTelList = new ();
+                        List<byte[]> tTelList = new();
                         byte[] tArray = null;
                         while (!receiveResult.EndOfMessage)
                         {
@@ -243,10 +243,16 @@ namespace nsCDEngine.Communication
                                 LogBufferToFile("wsinputlog.dat", arraySeg.Array, arraySeg.Offset, receiveResult.Count);
 #endif
                             }
+
                             if (receiveResult.Count == 0)
                             {
-                                if (receiveResult.Count+offset!=tMaxMsgSize)
-                                    TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", string.Format("WS Buffer count wrong: Max={0} Offset={1} Count={2}", tMaxMsgSize,offset,receiveResult.Count), eMsgLevel.l1_Error));
+                                if (receiveResult.Count + offset != tMaxMsgSize)
+                                    TheBaseAssets.MySYSLOG.WriteToLog(4369,
+                                        TSM.L(eDEBUG_LEVELS.OFF)
+                                            ? null
+                                            : new TSM("ProcessWS",
+                                                string.Format("WS Buffer count wrong: Max={0} Offset={1} Count={2}",
+                                                    tMaxMsgSize, offset, receiveResult.Count), eMsgLevel.l1_Error));
                                 tArray = new byte[tMaxMsgSize];
                                 if (!IsUsingTArray)
                                     tTelList.Add(receiveBuffer);
@@ -257,8 +263,9 @@ namespace nsCDEngine.Communication
                             else
                                 offset += receiveResult.Count;
                         }
-                        if (tTelList.Count>0)
-                            tPostData = new byte[((tTelList.Count-1) * tMaxMsgSize) + offset];
+
+                        if (tTelList.Count > 0)
+                            tPostData = new byte[((tTelList.Count - 1) * tMaxMsgSize) + offset];
 #if DEBUG_WS //better for Sonarcloud
                         Debug tPostDataLength = 0;
 #endif
@@ -267,9 +274,11 @@ namespace nsCDEngine.Communication
                             byte[] tb = tTelList[i];
                             TheCommonUtils.cdeBlockCopy(tb, 0, tPostData, i * tMaxMsgSize, tMaxMsgSize);
                         }
-                        if (IsUsingTArray && offset > 0 && tTelList.Count > 0 && tPostData!=null)
+
+                        if (IsUsingTArray && offset > 0 && tTelList.Count > 0 && tPostData != null)
                         {
-                            TheCommonUtils.cdeBlockCopy(tTelList[tTelList.Count - 1], 0, tPostData, (tTelList.Count - 1) * tMaxMsgSize, offset);
+                            TheCommonUtils.cdeBlockCopy(tTelList[tTelList.Count - 1], 0, tPostData,
+                                (tTelList.Count - 1) * tMaxMsgSize, offset);
 #if DEBUG_WS //better for Sonarcloud
                             Debug tPostDataLength = tPostData.Length;
 #endif
@@ -278,6 +287,7 @@ namespace nsCDEngine.Communication
                         tTelList.Clear();
 #endif
                     }
+
                     if (!IsUsingTArray)
                     {
                         tPostData = new byte[offset];
@@ -289,12 +299,17 @@ namespace nsCDEngine.Communication
 #if DEBUG_WS //better for Sonarcloud
                     Debug LogBufferToFile("wsinputbactchedlog.dat", tPostData, 0, tPostData.Length);
 #endif
-                    TheCommonUtils.cdeRunAsync("ProcessFromWS", true,(o)=> ProcessIncomingData(null,(byte [])o, ((byte[])o).Length),tPostData);
+                    TheCommonUtils.cdeRunAsync("ProcessFromWS", true,
+                        (o) => ProcessIncomingData(null, (byte[]) o, ((byte[]) o).Length), tPostData);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                hasFaulted = true;
             }
             catch (Exception eee)
             {
-                HasFaulted = true;
+                hasFaulted = true;
                 if (TheBaseAssets.MasterSwitch)
                 {
                     if (eee.Source == "System")
@@ -303,11 +318,11 @@ namespace nsCDEngine.Communication
                         TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", "ProcessWS Loop has failed.", eMsgLevel.l1_Error, eee.ToString()));
                 }
             }
-            TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ProcessWS", $"ProcessWS Loop for {OwnerNodeID} has ended. Faulted:{HasFaulted} HasWS:{websocket != null}", eMsgLevel.l3_ImportantMessage));
+            TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ProcessWS", $"ProcessWS Loop for {OwnerNodeID} has ended. Faulted:{hasFaulted} HasWS:{websocket != null}", eMsgLevel.l3_ImportantMessage));
             ConnectSuccess = false;
-            if (HasFaulted || (websocket != null && websocket.State != WebSocketState.Closed))
+            if (hasFaulted || (websocket != null && websocket.State != WebSocketState.Closed))
             {
-                tCause = string.Format("1607:WebSocket Faulted:{0} WS State:{1}",HasFaulted,websocket!=null?websocket.State.ToString():"is null");
+                tCause = $"1607:WebSocket Faulted:{hasFaulted} WS State:{(websocket != null ? websocket.State.ToString() : "is null")}";
             }
             Shutdown(true, tCause);
         }
