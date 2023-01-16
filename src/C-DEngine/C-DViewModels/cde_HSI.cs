@@ -2173,8 +2173,8 @@ namespace nsCDEngine.ViewModels
         /// Returns a Markup Version of ToString()
         /// </summary>
         /// <returns></returns>
-        public string ToMLString(bool brAll = false)
-            => ToMLString(brAll, true);
+        public string ToMLString(bool BrAll = false)
+            => ToMLString(BrAll, true);
 
         /// <summary>
         /// Returns a Markup Version of ToString()
