@@ -13,6 +13,8 @@ using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using nsCDEngine.Communication;
+
 #pragma warning disable 1591
 
 namespace nsCDEngine.ViewModels
@@ -2172,13 +2174,27 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         /// <returns></returns>
         public string ToMLString(bool BrAll = false)
+            => ToMLString(BrAll, true);
+
+        /// <summary>
+        /// Returns a Markup Version of ToString()
+        /// </summary>
+        /// <returns></returns>
+        public string ToMLString(bool brAll, bool includeScope)
         {
             if (!TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog)
-                BrAll = false;
+                brAll = false;
+
+            var br = brAll ? "<br>" : " ";
+            var deviceId = TheCommonUtils.GetDeviceIDML(cdeMID);
+
+            var scopes = GetScopes();
+            var scopeHash = !includeScope || string.IsNullOrEmpty(scopes) ? string.Empty : $"{br}[{cdeStatus.GetScopeHashML(scopes)}]";
+
             if (TargetUrl != null && TargetUrl.StartsWith("file"))
-                return $"{SenderType}{(BrAll ? "<br>" : " ")}{TheCommonUtils.GetDeviceIDML(cdeMID)}";
-            else
-                return $"{SenderType}{(BrAll ? "<br>" : " ")}{TheCommonUtils.GetDeviceIDML(cdeMID)}{(BrAll ? "<br>" : " ")}({TargetUrl}){(BrAll ? "<br>" : " ")}{(TruDID != Guid.Empty ? $"TruDID:{TheCommonUtils.GetDeviceIDML(TruDID)}" : "")}";
+                return $"{SenderType}{br}{deviceId}{scopeHash}";
+
+            return $"{SenderType}{br}{deviceId}{br}({TargetUrl}){scopeHash}{br}{(TruDID != Guid.Empty ? $"TruDID:{TheCommonUtils.GetDeviceIDML(TruDID)}" : "")}";
         }
 
         internal TheSessionState MySessionState { get; set; }

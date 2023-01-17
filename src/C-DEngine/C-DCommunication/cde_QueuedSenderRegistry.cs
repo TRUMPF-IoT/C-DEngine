@@ -1057,7 +1057,7 @@ namespace nsCDEngine.Communication
             {
                 if ((!bExcludeCloudRoutes || srv.MyTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL) && srv.MySubscriptionContains(pTopic?.Topic, pTopic?.RScopeID, false))
                 {
-                    retList.Add(srv.MyTargetNodeChannel?.ToMLString()); 
+                    retList.Add(srv.MyTargetNodeChannel?.ToMLString(false, false)); 
                 }
             }
             return retList;
