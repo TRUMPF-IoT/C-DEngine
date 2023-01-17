@@ -425,7 +425,7 @@ namespace nsCDEngine.Communication
         {
             if (MyTargetNodeChannel == null) return "No channel, yet";
             DateTimeOffset lastConnectTime = MyLastConnectTime;
-            StringBuilder ret = new ($"<tr><td class=\"cdeLogEntry\" style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);text-align:left \">{MyTargetNodeChannel.ToMLString(true)}</td>");
+            StringBuilder ret = new ($"<tr><td class=\"cdeLogEntry\" style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);text-align:left \">{MyTargetNodeChannel.ToMLString(true, false)}</td>");
             if (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(MyTargetNodeChannel.cdeMID))
                 ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\"><span style='color:blue; font-weight:bold'>Cloud2Cloud<br>{(TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly?"Diode Mode":"Bi-Directional")}</span></td>");
             else

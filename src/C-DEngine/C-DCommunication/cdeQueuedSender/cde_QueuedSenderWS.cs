@@ -56,15 +56,16 @@ namespace nsCDEngine.Communication
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(2371, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"Starting new WSSender Thread IsAlive:{IsAlive}", eMsgLevel.l4_Message));
                     MyWebSocketProcessor.IsActive = true;
+                    var targetNodeChannel = MyTargetNodeChannel;
                     TheCommonUtils.cdeRunTaskAsync($"WSQSender for ORG:{MyTargetNodeChannel}", o =>
                     {
                         if (IsSenderThreadRunning) return;  //In Case the Thread took longer to create and another one was successful in the meantime
                         TheWSSenderThread();
-                        TheBaseAssets.MySYSLOG.WriteToLog(2372, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSQSenderThread was closed (In RunAync) for {MyTargetNodeChannel?.ToMLString()}", eMsgLevel.l1_Error));
-                        if (MyTargetNodeChannel?.SenderType != cdeSenderType.CDE_CLOUDROUTE)
+                        TheBaseAssets.MySYSLOG.WriteToLog(2372, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("WSQueuedSender", $"WSQSenderThread was closed (In RunAync) for {targetNodeChannel?.ToMLString()}", eMsgLevel.l1_Error));
+                        if (targetNodeChannel?.SenderType != cdeSenderType.CDE_CLOUDROUTE)
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(236, new TSM("WSQueuedSender", $"WSQSender Thread {MyTargetNodeChannel?.ToMLString()} died", eMsgLevel.l1_Error));
-                            FireSenderProblem(new TheRequestData() { ErrorDescription = $"1309:WSQSender Thread {MyTargetNodeChannel?.ToMLString()} died" });
+                            TheBaseAssets.MySYSLOG.WriteToLog(236, new TSM("WSQueuedSender", $"WSQSender Thread {targetNodeChannel?.ToMLString()} died", eMsgLevel.l1_Error));
+                            FireSenderProblem(new TheRequestData() { ErrorDescription = $"1309:WSQSender Thread {targetNodeChannel?.ToMLString()} died" });
                             IsAlive = false;
                             IsInWSPost = false;
                         }
