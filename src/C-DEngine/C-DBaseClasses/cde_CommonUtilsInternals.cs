@@ -1340,7 +1340,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static string GetCurrentAppDomainBaseDirWithTrailingSlash()
         {
-            var baseDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
+            var baseDirectory = TheBaseAssets.MyServiceHostInfo?.BaseDirectory;
             if (string.IsNullOrEmpty(baseDirectory))
                 baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
 

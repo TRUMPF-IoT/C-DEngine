@@ -257,23 +257,7 @@ namespace nsCDEngine.ISM
                         {
                             if (!HiddenSettings.Contains(tObfKey))
                                 HiddenSettings.Add(tObfKey);
-                            MyPrivateSettings[tObfKey] = MyPrivateSettings.ContainsKey(tObfKey) ?
-                                new aCDESetting
-                                {
-                                    Value = t.Value,
-                                    Name = tObfKey,
-                                    IsHidden = t.IsHidden,
-                                    ValueType = MyPrivateSettings[tObfKey].ValueType,
-                                    cdeO = t.cdeO
-                                } :
-                                new aCDESetting
-                                {
-                                    Value = t.Value,
-                                    Name = tObfKey,
-                                    IsHidden = t.IsHidden,
-                                    ValueType = t.ValueType,
-                                    cdeO = t.cdeO
-                                };
+                            SetPrivateSetting(t, tObfKey);
                             if (MyPrivateSettings.ContainsKey(t.Name))
                                 MyPrivateSettings.Remove(t.Name);
                             if (TheBaseAssets.MyCmdArgs.ContainsKey(t.Name))
@@ -282,14 +266,17 @@ namespace nsCDEngine.ISM
                                 tSettings.Remove(t.Name);
                         }
                         else
+                        {
+                            SetPrivateSetting(t, t.Name);
                             TheBaseAssets.MyCmdArgs[t.Name] = t.Value;
+                        }
                     }
                 }
 
                 //step 5: Remove private keys from MyCmdArgs to disallow access via public TheBaseAssets.MyCmdArgs
                 foreach (var k in MyPrivateSettings.Keys)
                 {
-                    if (MyPrivateSettings[k].cdeO != null)
+                    if (MyPrivateSettings[k].cdeO != null || MyPrivateSettings[k].IsHidden)
                     {
                         if (TheBaseAssets.MyCmdArgs.ContainsKey(k))
                             TheBaseAssets.MyCmdArgs.Remove(k);
@@ -328,6 +315,27 @@ namespace nsCDEngine.ISM
                 TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Provisioning Infor Update failed", eMsgLevel.l1_Error, e.ToString()));
             }
             return false;
+        }
+
+        private static void SetPrivateSetting(aCDESetting t, string tObfKey)
+        {
+            MyPrivateSettings[tObfKey] = MyPrivateSettings.ContainsKey(tObfKey) ?
+                new aCDESetting
+                {
+                    Value = t.Value,
+                    Name = tObfKey,
+                    IsHidden = t.IsHidden,
+                    ValueType = MyPrivateSettings[tObfKey].ValueType,
+                    cdeO = t.cdeO
+                } :
+                new aCDESetting
+                {
+                    Value = t.Value,
+                    Name = tObfKey,
+                    IsHidden = t.IsHidden,
+                    ValueType = t.ValueType,
+                    cdeO = t.cdeO
+                };
         }
 
         /// <summary>
