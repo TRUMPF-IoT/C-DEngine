@@ -237,13 +237,14 @@ namespace nsCDEngine.Engines.NMIService
             return tso;
         }
 
-        internal static TheFormInfo GenerateForm(Guid FormId, TheClientInfo pClientInfo)
+        internal static TheFormInfo GenerateForm(Guid FormId, TheClientInfo pClientInfo, TSM pRequestor)
         {
             if (TheCDEngines.MyNMIService == null)
                 return null;
             TheFormInfo tDef = TheNMIEngine.GetFormById(FormId);
             if (tDef == null) return null;
 
+            tDef.FireEvent(eUXEvents.OnBeforeMeta, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message=pRequestor }, false);
             TheFormInfo tToSend = tDef.Clone(pClientInfo.WebPlatform);
             TheNMIEngine.CheckAddButtonPermission(pClientInfo, tToSend);
             tToSend.AssociatedClassName = FormId.ToString();
@@ -504,7 +505,7 @@ namespace nsCDEngine.Engines.NMIService
             }
         }
 
-        internal static TheScreenInfo GenerateScreen(Guid pScreenId, TheClientInfo pClientInfo)
+        internal static TheScreenInfo GenerateScreen(Guid pScreenId, TheClientInfo pClientInfo, TSM pRequestor)
         {
             if (TheCDEngines.MyNMIService == null)
                 return null;
@@ -586,7 +587,7 @@ namespace nsCDEngine.Engines.NMIService
                                         tDP.HtmlContent = tDP.HtmlSource.Replace("<%=CMP:ControlClass%>", "<div id=\"Inline_" + TheCommonUtils.cdeGuidToString(TheCommonUtils.CGuid(tParts[1])) + "\" class=\"" + tParts[0] + "\"></div>");
                                     if (AlreadyFound.Contains(tMG)) continue;
                                     AlreadyFound.Add(tMG);
-                                    TheFormInfo tI = GenerateForm(tMG, pClientInfo);
+                                    TheFormInfo tI = GenerateForm(tMG, pClientInfo, pRequestor);
                                     if (tI != null && (!tI.GetFromFirstNodeOnly || pClientInfo.IsFirstNode)) 
                                     {
                                         tI.TargetElement = tDP.cdeMID.ToString();
