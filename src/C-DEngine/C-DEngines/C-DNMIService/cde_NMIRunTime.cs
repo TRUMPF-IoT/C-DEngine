@@ -1466,7 +1466,7 @@ namespace nsCDEngine.Engines.NMIService
             if (ScreenID == eNMIPortalDashboard && TheCDEngines.MyNMIService.MyNMIModel.MainDashboardScreen != eNMIPortalDashboard)
                 ScreenID = TheCDEngines.MyNMIService.MyNMIModel.MainDashboardScreen;
 
-            var tInfo = TheFormsGenerator.GenerateScreen(ScreenID, pClientInfo);
+            var tInfo = TheFormsGenerator.GenerateScreen(ScreenID, pClientInfo, pMsg?.Message);
             if (tInfo == null)
                 return null;
             tInfo.ForceReload = pForceLoad;

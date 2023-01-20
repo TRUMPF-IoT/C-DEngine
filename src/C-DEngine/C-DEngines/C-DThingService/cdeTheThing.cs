@@ -577,6 +577,10 @@ namespace nsCDEngine.Engines.ThingService
         public const string OnShow = "OnShow";
 
         /// <summary>
+        /// Fires before Screen Meta is sent to a Browser
+        /// </summary>
+        public const string OnBeforeMeta = "OnBeforeMeta";
+        /// <summary>
         /// Fires before the data of a form is Retreived. Can be used to set new values before a form is displayed to a user
         /// </summary>
         public const string OnBeforeLoad = "OnBeforeLoad";

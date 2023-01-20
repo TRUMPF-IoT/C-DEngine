@@ -820,6 +820,11 @@ namespace nsCDEngine.Engines.NMIService
         /// Background color of the tile
         /// </summary>
         public string Background { get; set; }
+
+        /// <summary>
+        /// GUID of the FacePlate Owner - default is the BaseThing but can be overwritten to point at other things
+        /// </summary>
+        public string FaceOwner { get; set; }
     }
 
     /// <summary>
