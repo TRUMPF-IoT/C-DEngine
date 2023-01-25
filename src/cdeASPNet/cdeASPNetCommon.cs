@@ -31,7 +31,7 @@ namespace cdeASPNetMiddleware
                 var err = TheCommCore.MyHttpService.ValidateCertificateRoot(tReq);
                 if (TheBaseAssets.MyServiceHostInfo.DisableNMI && !string.IsNullOrEmpty(err))
                 {
-                    var terr = $"WebSocket Access with worng Client Certificate root - access is denied: {err}";
+                    var terr = $"WebSocket Access with wrong Client Certificate root - access is denied: {err}";
                     TheBaseAssets.MySYSLOG.WriteToLog(423, new TSM("TheCloudWSockets", terr, eMsgLevel.l1_Error));
                     pContext.Response.StatusCode = (int)eHttpStatusCode.AccessDenied;
                     return null;
