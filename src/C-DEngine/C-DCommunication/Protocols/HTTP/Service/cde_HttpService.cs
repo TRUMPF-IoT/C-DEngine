@@ -381,7 +381,11 @@ namespace nsCDEngine.Communication.HttpService
                         TheBaseAssets.MySession.EndSession(pRequestData);
                         pRequestData.AllowStatePush = false;
                         pRequestData.ResponseMimeType = "text/html";
-                        pRequestData.ResponseBufferStr = $"<html><head><meta http-equiv=\"Expires\" content=\"0\" /><meta http-equiv=\"Cache-Control\" content=\"no-cache\" /><meta http-equiv=\"Pragma\" content=\"no-cache\" /></html><body style=\"background-color: {TheBaseAssets.MyServiceHostInfo.BaseBackgroundColor};\">";
+                        string tRefsh = "";
+                        var ts = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetSetting("ReloadAfterLogout"));
+                        if (ts > 0)
+                            tRefsh = $"<meta http-equiv=\"refresh\" content=\"{ts};URL='{Query}'\" /> ";
+                        pRequestData.ResponseBufferStr = $"<html><head><meta http-equiv=\"Expires\" content=\"0\" />{tRefsh}<meta http-equiv=\"Cache-Control\" content=\"no-cache\" /><meta http-equiv=\"Pragma\" content=\"no-cache\" /></html><body style=\"background-color: {TheBaseAssets.MyServiceHostInfo.BaseBackgroundColor};\">";
                         pRequestData.ResponseBufferStr += $"<table width=\"100%\" style=\"height:100%;\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr><td style=\"text-align:center;\"><p style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor}; font-family: Arial; font-size: 36px\">Your Session has ended</p><p style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor}; font-family: Arial; font-size: 36px\">";
                         pRequestData.ResponseBufferStr += $"<a style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor};\" href=\"{Query}\">Touch here to get back to the Portal</a>";  //TODO: Make Customizable
                         pRequestData.ResponseBufferStr += "</p></td></tr></table></body></HTML>";

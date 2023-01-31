@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 
 using nsCDEngine.BaseClasses;
 using nsCDEngine.Communication;
+using nsCDEngine.Engines.NMIService;
 using nsCDEngine.Engines.StorageService;
 using nsCDEngine.Security;
 using nsCDEngine.ViewModels;
@@ -321,6 +322,11 @@ namespace nsCDEngine.Engines.ThingService
             }
         }
         #endregion
+
+        public virtual bool ShowDeviceFace(TheFormInfo MyLiveForm, int startFld, int pLeft, int pTop)
+        {
+            return false;
+        }
     }
 
     /// <summary>

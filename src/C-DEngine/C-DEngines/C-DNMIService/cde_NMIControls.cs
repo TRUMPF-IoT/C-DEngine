@@ -91,10 +91,7 @@ namespace nsCDEngine.Engines.NMIService
         /// Shows the form in fullscreen
         /// </summary>
         public bool? ShowFullScreen { get; set; }
-        /// <summary>
-        /// Allows to drag and drop a form
-        /// </summary>
-        public bool? AllowDrag { get; set; }
+
         /// <summary>
         /// Hides the caption of a form
         /// </summary>
@@ -197,6 +194,12 @@ namespace nsCDEngine.Engines.NMIService
     /// </summary>
     public class TheNMIBaseControl
     {
+        public bool? Draggable { get; set; }
+        /// <summary>
+        /// Allows to drag and drop a form
+        /// </summary>
+        public bool? AllowDrag { get; set; }
+
         public Guid? MID { get; set; }
         /// <summary>
         /// The meaning of "Value" is unique to each control.
@@ -1376,6 +1379,11 @@ namespace nsCDEngine.Engines.NMIService
 
     public class nmiDashboard : TheNMIBaseControl
     {
+        /// <summary>
+        /// This Screen will be used instead of the default Thing Dashboard
+        /// </summary>
+        public string DefaultPortal { get; set; }
+
         /// <summary>
         /// Sets the background of the button
         /// </summary>

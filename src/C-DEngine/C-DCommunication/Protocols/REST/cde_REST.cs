@@ -74,14 +74,14 @@ namespace nsCDEngine.Communication
                 request = null;
                 if (response != null)
                 {
-                    response.Close();
+                    response?.Close();
 #if !CDE_NET35 && ! CDE_NET4
-                    response.Dispose();
+                    response?.Dispose();
 #endif
                 }
                 if (streamResponse != null)
                 {
-                    streamResponse.Dispose();
+                    streamResponse?.Dispose();
                     streamResponse = null;
                 }
                 response = null;
