@@ -1380,6 +1380,11 @@ namespace nsCDEngine.Engines.NMIService
     public class nmiDashboard : TheNMIBaseControl
     {
         /// <summary>
+        /// This Screen will be used instead of the default Thing Dashboard
+        /// </summary>
+        public string DefaultPortal { get; set; }
+
+        /// <summary>
         /// Sets the background of the button
         /// </summary>
         public string Background { get; set; }
