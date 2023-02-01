@@ -740,6 +740,8 @@ namespace nsCDEngine.Security
                         tHomeScreen = TheCommonUtils.CGuid("{40AB04FA-BF1D-4EEE-CDE9-DF1E74CC69A7}").ToString();
                 }
             }
+            if (tHomeScreen == null)
+                tHomeScreen = TheCommonUtils.GenerateFinalStr("%MAINDASHBOARD%");
             return tHomeScreen;
         }
 
@@ -892,6 +894,17 @@ namespace nsCDEngine.Security
         }
 
         /// <summary>
+        /// Returns true if the User of the ID is coming from a trusted node
+        /// </summary>
+        /// <param name="pCurrentUserID"></param>
+        /// <returns></returns>
+        public static bool IsUserTrusted(Guid pCurrentUserID)
+        {
+            TheUserDetails tUser = GetUserByID(pCurrentUserID);
+            return tUser != null && TheBaseAssets.MySettings.IsNodeTrusted(TheCommonUtils.CGuid(tUser.HomeNode));
+        }
+
+        /// <summary>
         /// returns true of false pending if the user has access to a resource with the ACL provided
         /// </summary>
         /// <param name="pUID">Username</param>
@@ -917,17 +930,6 @@ namespace nsCDEngine.Security
         {
             TheUserDetails tCurrentUser = GetUserByID(pCurrentUserID);
             return ACL == 0 || (tCurrentUser != null && (GetUserAccessLevel(tCurrentUser) & ACL) != 0); //TheBaseAssets.MyServiceHostInfo.IsUsingUserMapper &&
-        }
-
-        /// <summary>
-        /// Returns true if the User of the ID is coming from a trusted node
-        /// </summary>
-        /// <param name="pCurrentUserID"></param>
-        /// <returns></returns>
-        public static bool IsUserTrusted(Guid pCurrentUserID)
-        {
-            TheUserDetails tUser = GetUserByID(pCurrentUserID);
-            return tUser != null && TheBaseAssets.MySettings.IsNodeTrusted(TheCommonUtils.CGuid(tUser.HomeNode));
         }
 
         /// <summary>
@@ -1604,6 +1606,8 @@ namespace nsCDEngine.Security
                                     ))
                         {
                             theUserDetails.SecToken = TheCommonUtils.cdeEncrypt(theUserDetails.Password + ";:;" + theUserDetails.AssignedEasyScope + ";:;" + theUserDetails.AccessMask, TheBaseAssets.MySecrets.GetAI()); //AES OK OW is Hash
+                            if (string.IsNullOrEmpty(theUserDetails.HomeScreen))
+                                theUserDetails.HomeScreen= TheCommonUtils.GenerateFinalStr("%MAINDASHBOARD%");
                             MyUserRegistry.AddAnItem(theUserDetails, null);
                         }
                         listAddUsersByRole.RemoveAt(i);

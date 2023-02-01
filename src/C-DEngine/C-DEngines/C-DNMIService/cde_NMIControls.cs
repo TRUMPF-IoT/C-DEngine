@@ -84,6 +84,10 @@ namespace nsCDEngine.Engines.NMIService
     public class nmiCtrlFormView : TheNMIBaseControl
     {
         /// <summary>
+        /// Sets the class for the inner part of a Form
+        /// </summary>
+        public string InnerClassName { get; set; }
+        /// <summary>
         /// sets the background color
         /// </summary>
         public string Background { get; set; }
@@ -194,6 +198,13 @@ namespace nsCDEngine.Engines.NMIService
     /// </summary>
     public class TheNMIBaseControl
     {
+        /// <summary>
+        /// If true, a form will be scaled to the width of the browser window - controls will not check for document width
+        /// </summary>
+        public bool? FitToScreen { get; set; }
+        /// <summary>
+        /// is true, the control can be dragged
+        /// </summary>
         public bool? Draggable { get; set; }
         /// <summary>
         /// Allows to drag and drop a form
@@ -1642,6 +1653,10 @@ namespace nsCDEngine.Engines.NMIService
     /// </summary>
     public class nmiCtrlCollapsibleGroup : nmiCtrlTileGroup
     {
+        /// <summary>
+        /// Background color of the Content of the group
+        /// </summary>
+        public string ContentBackground { get; set; }
         /// <summary>
         /// Background color of the Caption of the group
         /// </summary>
