@@ -84,6 +84,10 @@ namespace nsCDEngine.Engines.NMIService
     public class nmiCtrlFormView : TheNMIBaseControl
     {
         /// <summary>
+        /// Sets the class for the inner part of a Form
+        /// </summary>
+        public string InnerClassName { get; set; }
+        /// <summary>
         /// sets the background color
         /// </summary>
         public string Background { get; set; }
