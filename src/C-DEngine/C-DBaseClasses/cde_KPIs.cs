@@ -530,9 +530,8 @@ namespace nsCDEngine.BaseClasses
         private static LabeledKpi FindLabeledKpi(List<LabeledKpi> kpiList, IDictionary<string, string> labels)
         {
             return kpiList.Where(kpi => kpi.Labels?.Count == labels?.Count)
-                .Where(kpi => (kpi.Labels != null || labels == null) && (kpi.Labels == null || labels != null))
-                .FirstOrDefault(kpi => (kpi.Labels ?? new Dictionary<string, string>()).OrderBy(kvp => kvp.Key)
-                    .SequenceEqual((labels ?? new Dictionary<string, string>()).OrderBy(kvp => kvp.Key)));
+                .FirstOrDefault(kpi =>
+                    kpi.Labels?.Any(l => (labels?.TryGetValue(l.Key, out var value) ?? false) && value == l.Value) ?? false); ;
         }
 
         private static void AddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset)
@@ -776,7 +775,7 @@ namespace nsCDEngine.BaseClasses
             totalKpis.ForEach(totalKpi =>
             {
                 var currentKpi = FindLabeledKpi(currentKpis, totalKpi.Labels);
-                if (currentKpi != null) 
+                if (currentKpi != null)
                     totalKpi.Value += currentKpi.Value;
             });
 

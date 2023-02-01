@@ -96,6 +96,7 @@ namespace nsCDEngine.Communication
                     TheCoreQueueContent tQueued = null;
                     int MCQCount = 0;
                     int IsBatchOn = 0;
+                    var sendMsgCount = 0;
 #if CDE_NET35
                     tSendBufferStr = new StringBuilder(TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType]*2);
 #else
@@ -152,15 +153,8 @@ namespace nsCDEngine.Communication
 
                         if (tQueued != null)
                         {
-                            if (TheCDEKPIs.EnableKpis)
-                            {
-                                TheCDEKPIs.IncrementKPI(eKPINames.QSSent);
-                                if (kpiLabels is {Count: > 0})
-                                {
-                                    TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels);
-                                }
-                            }
-
+                            sendMsgCount++;
+                            
                             if (tQueued.OrgMessage == null && !IsConnecting)
                             {
                                 if (MySubscriptions.Count == 0 && IsBatchOn == 0)
@@ -234,6 +228,7 @@ namespace nsCDEngine.Communication
                         else
                             IsBatchOn = 0;
                     } while (IsBatchOn > 0 && IsInPost && TheBaseAssets.MasterSwitch);
+
                     if ((!IsInPost || tSendBufferStr.Length < 2) && BinSendBuffer == null)
                     {
                         IsInPost = false;
@@ -276,12 +271,22 @@ namespace nsCDEngine.Communication
                         throw new Exception("Client Certificate could not be added");
                     }
                     MyREST.PostRESTAsync(pData, sinkUploadDataCompleted, FireSenderProblem);
-                    if (TheCDEKPIs.EnableKpis && BinSendBuffer is {Length: > 0})
+
+                    if (TheCDEKPIs.EnableKpis)
                     {
-                        TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, BinSendBuffer.Length);
-                        if (kpiLabels is {Count: > 0})
+                        TheCDEKPIs.IncrementKPI(eKPINames.QSSent, sendMsgCount);
+                        if (kpiLabels is { Count: > 0 })
                         {
-                            TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, BinSendBuffer.Length);
+                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels, sendMsgCount);
+                        }
+
+                        if (BinSendBuffer is { Length: > 0 })
+                        {
+                            TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, BinSendBuffer.Length);
+                            if (kpiLabels is { Count: > 0 })
+                            {
+                                TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, BinSendBuffer.Length);
+                            }
                         }
                     }
 
