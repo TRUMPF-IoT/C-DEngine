@@ -532,39 +532,33 @@ namespace nsCDEngine.Engines.NMIService
             }
         }
 
+        private static List<string> FaceMacros = null;
         internal static string ParseFacePlateInternal(TheThing pBaseThing, string pHTML, Guid pRequestingNode)
         {
             //4.1: Only called from TheFormGenerator.GetPermittedFields
             if (pBaseThing == null || string.IsNullOrEmpty(pHTML)) return pHTML;
-            int posEnd = 0;
-            while (posEnd >= 0)
+            if (FaceMacros == null)
             {
-                string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, "<%C20:", "%>", false);
-                RegisterPublication(pBaseThing, tname, pRequestingNode);
+                var tFaceMacros = TheBaseAssets.MySettings.GetSetting("FaceMacros");
+                try
+                {
+                    FaceMacros = TheCommonUtils.CStringToList(tFaceMacros, ',');
+                }
+                catch (Exception)
+                {
+                    //intended
+                }
+                if (!(FaceMacros?.Count > 0))
+                    FaceMacros=new List<string> { "<%C20:", "<%C21:", "<%V:", "<%S:", "<%C:", "<%I:" };
             }
-            posEnd = 0;
-            while (posEnd >= 0)
+            foreach (var tM in FaceMacros)
             {
-                string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, "<%C21:", "%>", false);
-                RegisterPublication(pBaseThing, tname, pRequestingNode);
-            }
-            posEnd = 0;
-            while (posEnd >= 0)
-            {
-                string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, "<%V:", "%>", false);
-                RegisterPublication(pBaseThing, tname, pRequestingNode);
-            }
-            posEnd = 0;
-            while (posEnd >= 0)
-            {
-                string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, "<%S:", "%>", false);
-                RegisterPublication(pBaseThing, tname, pRequestingNode);
-            }
-            posEnd = 0;
-            while (posEnd >= 0)
-            {
-                string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, "<%I:", "%>", false);
-                RegisterPublication(pBaseThing, tname, pRequestingNode);
+                int posEnd = 0;
+                while (posEnd >= 0)
+                {
+                    string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, tM, "%>", false);
+                    RegisterPublication(pBaseThing, tname, pRequestingNode);
+                }
             }
             return pHTML;
         }
