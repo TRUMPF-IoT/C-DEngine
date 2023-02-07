@@ -531,7 +531,7 @@ namespace nsCDEngine.BaseClasses
         {
             return kpiList.Where(kpi => kpi.Labels?.Count == labels?.Count)
                 .FirstOrDefault(kpi =>
-                    kpi.Labels?.Any(l => (labels?.TryGetValue(l.Key, out var value) ?? false) && value == l.Value) ?? false); ;
+                    kpi.Labels?.All(l => (labels?.TryGetValue(l.Key, out var value) ?? false) && value == l.Value) ?? false); ;
         }
 
         private static void AddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset)
