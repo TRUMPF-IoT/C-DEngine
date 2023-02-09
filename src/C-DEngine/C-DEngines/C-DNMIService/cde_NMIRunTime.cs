@@ -416,7 +416,8 @@ namespace nsCDEngine.Engines.NMIService
                                 if (astream != null)
                                 {
                                     var tTopic = $"NMI_GLOBAL_{cmd[0].Substring(15)}:{pMsg.Message.PLS}";
-                                    TSM tTsm = new (eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
+                                    TSM tTsm = new(eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.CArray2UTF8String(astream) };
+                                    tBase.FireEvent(eEngineEvents.BeforeResourcePush, tTsm, false);
                                     TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                                     return;
                                 }
@@ -427,6 +428,7 @@ namespace nsCDEngine.Engines.NMIService
                         {
                             var tTopic = $"NMI_GLOBAL_{cmd[0].Substring(15)}:{pMsg.Message.PLS}";
                             TSM tTsm = new (eEngineName.NMIService, tTopic) { PLS = TheCommonUtils.CArray2UTF8String(bstream) };
+                            TheCDEngines.MyNMIService?.GetBaseEngine()?.FireEvent(eEngineEvents.BeforeResourcePush, tTsm, false);
                             TheCommCore.PublishToOriginator(pMsg.Message, tTsm);
                             return;
                         }
