@@ -10,13 +10,13 @@
     <RootNamespace>cdeUpdater</RootNamespace>
     <AssemblyName>cdeUpdater</AssemblyName>
     <PackageId>cdeUpdater</PackageId>
-    <Version>5.145.0$(cdeNugetSuffix)</Version>
+    <Version>5.161.0$(cdeNugetSuffix)</Version>
     <Authors>Chris Muench</Authors>
     <Company>C-Labs</Company>
 	  <LangVersion>preview</LangVersion>
     <Product>cdeUpdater for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
-    <Copyright>Copyright © 2017-2022 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <Copyright>Copyright © 2017-2023 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
