@@ -10,14 +10,14 @@
 		<AssemblyName>C-DEngine</AssemblyName>
 		<PackageId>C-DEngine</PackageId>
 		<PackageIcon>toplogo-128.png</PackageIcon>
-		<Version>5.147.0$(cdeNugetSuffix)</Version>
+		<Version>5.161.0$(cdeNugetSuffix)</Version>
 		<Authors>Chris Muench</Authors>
 		<Company>C-Labs</Company>
 		<Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>C-Labs Distributed Engine</Description>
 		<PackageDescription>C-Labs Distributed Engine</PackageDescription>
-		<Copyright>Copyright © 2017-2022 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+		<Copyright>Copyright © 2017-2023 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
 		<PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
@@ -137,7 +137,7 @@
 
 	<Import Project="..\Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems" Label="Shared" Condition="$(DefineConstants.Contains('CDE_INTNEWTON'))" />
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.JSON" Version="13.0.1" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))" />
+		<PackageReference Include="Newtonsoft.JSON" Version="13.0.2" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))" />
 		<PackageReference Include="System.Text.Json" Version="7.0.0" Condition="$(DefineConstants.Contains('CDE_MEADOW'))" />
 	</ItemGroup>
 

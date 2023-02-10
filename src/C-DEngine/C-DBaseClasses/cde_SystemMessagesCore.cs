@@ -101,6 +101,10 @@ namespace nsCDEngine.BaseClasses
     public static class eEngineEvents
     {
         /// <summary>
+        /// Fired sync before a resource is sent to the NMI. Can be used to manipulated the data sent to the NMI
+        /// </summary>
+        public const string BeforeResourcePush = "BeforeResourcePush";
+        /// <summary>
         /// C-DEngine is about to shutdown. The MyServiceHostInfo.PreShutDownDelay sets the delay time for the shutdown. By default this is zero and the event is not fired
         /// </summary>
         public const string PreShutdown = "PreShutdown";
