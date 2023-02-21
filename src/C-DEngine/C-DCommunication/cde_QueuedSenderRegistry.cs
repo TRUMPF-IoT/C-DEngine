@@ -1528,7 +1528,7 @@ namespace nsCDEngine.Communication
                     {
                         tRes.UNA = tUser.Name;
                         tRes.LCI = tUser.LCID;
-                        var tHomeScreen = tQ?.ContainsKey("HS") == true ? tQ["HS"] : TheUserManager.GetUserHomeScreen(pRequestData, tUser);
+                        var tHomeScreen = tQ?.ContainsKey("HS") == true ? tQ["HS"] : TheUserManager.GetUserHomeScreen(pRequestData?.SessionState, tUser);
                         if (!string.IsNullOrEmpty(tHomeScreen))
                         {
                             tRes.SSC = tHomeScreen.Split(';')[0];

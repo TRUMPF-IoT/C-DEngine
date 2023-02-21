@@ -473,7 +473,7 @@ namespace nsCDEngine.Engines.ContentService
                                     if (tUser != null)
                                     {
                                         TheUserManager.SetUserInSessionState(pRequestData, tUser);
-                                        tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+                                        tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData?.SessionState, tUser), tUser.Name, tUser.GetUserPrefString());
                                     }
                                 }
                             }
@@ -524,7 +524,7 @@ namespace nsCDEngine.Engines.ContentService
                                             if (tUsers.Count == 1)
                                             {
                                                 var tUser = tUsers[0];
-                                                tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+                                                tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData?.SessionState, tUser), tUser.Name, tUser.GetUserPrefString());
                                                 var rToken = TheUserManager.AddTokenToUser(tUser);
                                                 tPLB = TheCommonUtils.CUTF8String2Array(rToken);
                                             }
@@ -575,7 +575,7 @@ namespace nsCDEngine.Engines.ContentService
                                 if (tUser != null)
                                 {
                                     TheBaseAssets.MySession.WriteSession(pRequestData.SessionState);
-                                    tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+                                    tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData?.SessionState, tUser), tUser.Name, tUser.GetUserPrefString());
                                 }
                             }
                             catch (Exception)
