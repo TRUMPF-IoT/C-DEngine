@@ -323,10 +323,132 @@ namespace nsCDEngine.Engines.ThingService
         }
         #endregion
 
+        #region NMI FacePlates for Group-Screens
+        /// <summary>
+        /// Shows the Device Faceplate that can be used in Group Screens
+        /// </summary>
+        /// <param name="MyLiveForm">Target Form to show the FacePlate in</param>
+        /// <param name="startFld">Start Field Order</param>
+        /// <param name="pLeft">Left (in Pixels) to position the FacePlate</param>
+        /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
+        /// <returns></returns>
         public virtual bool ShowDeviceFace(TheFormInfo MyLiveForm, int startFld, int pLeft, int pTop)
         {
             return false;
         }
+        public TheNMIFaceModel MyNMIFaceModel { get; set; } = new TheNMIFaceModel();
+
+        /// <summary>
+        /// Sets the NMI Face PlateModel required by the Group Screen to set dimensions of the FacePlate
+        /// </summary>
+        /// <param name="pFaceUrl">URL Pointing at the Faceplate resource to use</param>
+        /// <param name="pModelCode">A Code for the faceplate used to tag the plat in the group</param>
+        /// <param name="xLen">Length of the FacePlate in pixels</param>
+        /// <param name="yLen">Height of the FacePlate in pixels</param>
+        /// <returns></returns>
+        public bool SetTwinNMI(string pFaceUrl = null, string pModelCode = null, int xLen = 0, int yLen = 0)
+        {
+            if (!string.IsNullOrEmpty(pModelCode) && !string.IsNullOrEmpty(pFaceUrl))
+                MyNMIFaceModel.SetNMIModel(xLen, yLen, pModelCode, pFaceUrl);
+            return true;
+        }
+        #endregion
+
+        #region Pin Management for Thing-Group Interactions
+
+        private cdeConcurrentDictionary<string, ThePin> MyPins { get; set; } = new cdeConcurrentDictionary<string, ThePin>();
+
+        /// <summary>
+        /// Adds Pins to TheThingBase
+        /// </summary>
+        /// <param name="pIns">List of Pins to add</param>
+        /// <returns></returns>
+        public bool AddPins(List<ThePin> pIns)
+        {
+            if (pIns?.Any() == true)
+            {
+                foreach (var pin in pIns)
+                    AddPin(pin);
+                UpdatePins();
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Adds one pin to TheThingBase
+        /// </summary>
+        /// <param name="pin">Pin to Add</param>
+        /// <returns></returns>
+        public bool AddPin(ThePin pin)
+        {
+            if (string.IsNullOrEmpty(pin?.PinName))
+                return false;
+            pin.cdeO = MyBaseThing.cdeMID;
+            MyPins[pin.PinName] = pin;
+            return true;
+        }
+
+        /// <summary>
+        /// Updates the pins with NMI changes
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool UpdatePins()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Updates the Values of an internal pin with the incoming Pin Values
+        /// </summary>
+        /// <param name="pPin"></param>
+        /// <returns></returns>
+        public virtual bool SetPin(ThePin pPin)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Returns all pins
+        /// </summary>
+        /// <returns></returns>
+        public List<ThePin> GetAllPins()
+        {
+            return MyPins.Values.ToList();
+        }
+
+        /// <summary>
+        /// Returns a Pin with a given ePinTypeName, a string defining the Pin Type
+        /// </summary>
+        /// <param name="pType"></param>
+        /// <param name="IsOutbound"></param>
+        /// <returns></returns>
+        public ThePin GetPinOfType(string pType, bool IsOutbound=false)
+        {
+            return MyPins.Values.FirstOrDefault(s => s?.PinType == pType && s?.IsOutbound == IsOutbound);
+        }
+
+        /// <summary>
+        /// Allows for a custom function to find a specific pin
+        /// </summary>
+        /// <param name="pType"></param>
+        /// <param name="mF"></param>
+        /// <returns></returns>
+        public ThePin GetPinOfTypeByFunc(string pType, Func<ThePin, bool> mF)
+        {
+            return MyPins.Values.FirstOrDefault(s => s?.PinType == pType && mF(s));
+        }
+
+        /// <summary>
+        /// Return a list of Pins by function
+        /// </summary>
+        /// <param name="mF"></param>
+        /// <returns></returns>
+        public List<ThePin> GetPinsByFunc(Func<ThePin, bool> mF)
+        {
+            return MyPins.Values.Where(s => mF(s)).ToList();
+        }
+        #endregion
     }
 
     /// <summary>
