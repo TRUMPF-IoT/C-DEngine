@@ -311,7 +311,7 @@ namespace nsCDEngine.Engines.ThingService
                 MyBaseThing.LastMessage = pMessage;
             if (LogID > 0)
             {
-                TSM toLog = new (MyBaseThing.EngineName, pMessage, pMsgLevel);
+                TSM toLog = new(MyBaseThing.EngineName, pMessage, pMsgLevel);
                 if (SetLastUpdate != null)
                     toLog.TIM = TheCommonUtils.CDate(SetLastUpdate);
                 TheBaseAssets.MySYSLOG?.WriteToLog(LogID, toLog);
@@ -390,6 +390,93 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
+        /// Updates an existing Pin
+        /// </summary>
+        /// <param name="pin"></param>
+        /// <returns></returns>
+        public virtual bool UpdatePin(ThePin pin)
+        {
+            if (string.IsNullOrEmpty(pin?.PinName))
+                return false;
+            if (!MyPins.ContainsKey(pin.PinName))
+            {
+                AddPin(pin);
+                return true;
+            }
+            if (!string.IsNullOrEmpty(pin.Units))
+                MyPins[pin.PinName].Units=pin.Units;
+            if (!string.IsNullOrEmpty(pin.PinName))
+                MyPins[pin.PinName].PinName = pin.PinName;
+            if (!string.IsNullOrEmpty(pin.PinType))
+                MyPins[pin.PinName].PinType = pin.PinType;
+            MyPins[pin.PinName].IsOutbound = pin.IsOutbound;
+            if (pin.IsConnectedTo?.Count > 0)
+                MyPins[pin.PinName].IsConnectedTo = pin.IsConnectedTo;
+            return true;
+        }
+
+        /// <summary>
+        /// Replaces the existing connection with new connections
+        /// </summary>
+        /// <param name="pPinName">Pin to Update</param>
+        /// <param name="pConnectedTo">List of Target Pins</param>
+        /// <returns></returns>
+        public virtual bool UpdatePinConnection(string pPinName, List<string> pConnectedTo)
+        {
+            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+                return false;
+            if (pConnectedTo?.Count > 0)
+            {
+                MyPins[pPinName].IsConnectedTo = pConnectedTo;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Adds new connections to a pin
+        /// </summary>
+        /// <param name="pPinName"></param>
+        /// <param name="pConnectedTo"></param>
+        /// <returns></returns>
+        public virtual bool AddPinConnections(string pPinName, List<string> pConnectedTo)
+        {
+            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+                return false;
+            if (pConnectedTo?.Count > 0)
+            {
+                if (MyPins[pPinName].IsConnectedTo==null)
+                    MyPins[pPinName].IsConnectedTo=new List<string>();
+                MyPins[pPinName].IsConnectedTo.AddRange(pConnectedTo);
+                return true;
+            }
+            return false;
+
+        }
+
+        /// <summary>
+        /// Removes existing pin connections
+        /// </summary>
+        /// <param name="pPinName"></param>
+        /// <param name="pConnectedTo"></param>
+        /// <returns></returns>
+        public virtual bool RemovePinConnections(string pPinName, List<string> pConnectedTo)
+        {
+            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+                return false;
+            if (MyPins[pPinName].IsConnectedTo?.Count == 0)
+                return false;
+            if (pConnectedTo?.Count > 0)
+            {
+                foreach (var t in pConnectedTo)
+                    MyPins[pPinName].IsConnectedTo.Remove(t);
+                return true;
+            }
+            return false;
+        }
+
+
+        /// <summary>Accp
         /// Updates the pins with NMI changes
         /// </summary>
         /// <returns></returns>

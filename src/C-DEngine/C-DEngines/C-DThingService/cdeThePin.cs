@@ -9,6 +9,9 @@ using System.Text;
 
 namespace nsCDEngine.Engines.ThingService
 {
+    /// <summary>
+    /// Default Pin Names - Derived to add new Pin Types
+    /// </summary>
     public class ePinTypeName
     {
         public const string Generic = "Generic Pin";
@@ -19,7 +22,7 @@ namespace nsCDEngine.Engines.ThingService
         public string PinName { get; set; }
         public string PinType { get; set; } = ePinTypeName.Generic;
         public bool IsOutbound { get; set; } = false;
-        public List<Guid> IsConnectedTo { get; set; } = new List<Guid>();
+        public List<string> IsConnectedTo { get; set; } = new List<string>();
         public List<string> CanConnectTo { get; set; } = new List<string>();
         public List<string> PinProperties { get; set; } = new List<string>();
 
@@ -70,5 +73,4 @@ namespace nsCDEngine.Engines.ThingService
 
         public string FacePlateUrl { get; set; }
     }
-
 }
