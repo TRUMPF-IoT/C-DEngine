@@ -113,7 +113,18 @@ namespace nsCDEngine.Communication
                         pSession.SiteName = pRequest.DeviceID.ToString();
                     pSession.MyDevice = pRequest.DeviceID;
                     if (string.IsNullOrEmpty(pSession.InitReferer) && pRequest.Header != null)
+                    {
                         pSession.InitReferer = pRequest.Header.cdeSafeGetValue("Referer");
+                        if (string.IsNullOrEmpty(pSession.TETO) && pSession.InitReferer?.Length>1)
+                        {
+                            string[] tP = pSession.InitReferer.Split('?');
+                            if (tP?.Length > 1 && tP[1].StartsWith("TETO="))
+                            {
+                                var qs = tP[1].Substring(5).Split('&');
+                                pSession.TETO = qs[0];
+                            }
+                        }
+                    }
                 }
                 pSession.EntryTime = DateTimeOffset.Now;
                 pSession.LastAccess = DateTimeOffset.Now;
