@@ -464,7 +464,7 @@ namespace nsCDEngine.Communication
             }
         }
 
-        internal static void SendError(string ErrorText, TheRequestData pRequestData, eHttpStatusCode tCode)
+        internal static void SendError(string errorText, TheRequestData pRequestData, eHttpStatusCode tCode)
         {
             string tDeviceID = "unkown";
             if (pRequestData.Header != null && pRequestData.Header.Count > 0)
@@ -478,7 +478,7 @@ namespace nsCDEngine.Communication
                     {
                         var tSend=TheQueuedSenderRegistry.GetSenderByGuid(tDID);
                         tSend?.DisposeSender(true);
-                        TheBaseAssets.MySYSLOG.WriteToLog(50561, new TSM("TheCommCore", $"Teardown of QSender for NodeID {tDID} after error {ErrorText}", eMsgLevel.l3_ImportantMessage), false);
+                        TheBaseAssets.MySYSLOG.WriteToLog(50561, new TSM("TheCommCore", $"Teardown of QSender for NodeID {tDID} after error {errorText}", eMsgLevel.l3_ImportantMessage), false);
                     }
                 }
             }
@@ -486,19 +486,20 @@ namespace nsCDEngine.Communication
             {
                 pRequestData.ResponseBuffer = null;
                 var t = pRequestData.WebSocket as TheWSProcessorBase;
-                t?.Shutdown(true, ErrorText);
+                t?.Shutdown(true, errorText);
             }
             else
             {
-                pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(ErrorText);
+                pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(errorText);
                 pRequestData.ResponseMimeType = "text/html";
             }
 
+            pRequestData.ErrorDescription = errorText;
             pRequestData.StatusCode = tCode != 0 ? (int)tCode : (int)eHttpStatusCode.ServerError;
             pRequestData.AllowStatePush = false;
             pRequestData.EndSessionOnResponse = true;
 
-            TheBaseAssets.MySYSLOG.WriteToLog(50562, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("HttpService", $"SendError: {ErrorText} from {TheCommonUtils.GetDeviceIDML(TheCommonUtils.CGuid(tDeviceID))}", eMsgLevel.l1_Error));
+            TheBaseAssets.MySYSLOG.WriteToLog(50562, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("HttpService", $"SendError: {errorText} from {TheCommonUtils.GetDeviceIDML(TheCommonUtils.CGuid(tDeviceID))}", eMsgLevel.l1_Error));
         }
 
         internal static bool ProcessISBRequest(TheRequestData pRequestData)
@@ -564,7 +565,7 @@ namespace nsCDEngine.Communication
                         }
                         if (pRequestData.WebSocket == null && pRequestData.SessionState.FID > tFID && tSenderType == cdeSenderType.CDE_JAVAJASON)
                         {
-                            SendError($"1704Illegal Post - Security Violation - SessionID:{tSessionID} has FID:{pRequestData.SessionState.FID} but incoming telegram has FID:{tFID}", pRequestData, eHttpStatusCode.AccessDenied);
+                            SendError($"1704:Illegal Post - Security Violation - SessionID:{tSessionID} has FID:{pRequestData.SessionState.FID} but incoming telegram has FID:{tFID}", pRequestData, eHttpStatusCode.AccessDenied);
                             return IsValidISB;
 
                         }
@@ -1089,7 +1090,7 @@ namespace nsCDEngine.Communication
                         TCI.OneWayTSMFilter = null;
                         TCI.IsTrustedSender = true;
                     }
-                    if (tSend.StartSender(TCI, isbConnect, true))  //Subscribing here is faster then below with StartEngineWithNewUrl
+                    if (tSend.StartSender(TCI, isbConnect, true, pRequestData))  //Subscribing here is faster then below with StartEngineWithNewUrl
                     {
 
                         if (pRequestData.SessionState != null)

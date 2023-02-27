@@ -26,13 +26,22 @@ namespace nsCDEngine.Communication
     public static class TheQueuedSenderRegistry
     {
         /// <summary>
-        /// This Event if fired when a CloudServiceRoute is established and up and running
+        /// This Event is fired when a CloudServiceRoute is established and up and running
         /// </summary>
         internal static Action<ICDEThing, TheChannelInfo> eventCloudIsBackUp;
         /// <summary>
-        /// This Event if fired when a CloudServiceRoute is disconnected or not available anymore that was active in the past.
+        /// This Event is fired when a CloudServiceRoute is disconnected or not available anymore that was active in the past.
         /// </summary>
         internal static Action<ICDEThing, TheChannelInfo> eventCloudIsDown;
+
+        /// <summary>
+        /// This event is fired when a node connection was added to the TheQueuedSenderRegistry.
+        /// </summary>
+        public static event Action<QsAddedEventArgs> QsAdded;
+        /// <summary>
+        /// This event is fired when a node connection was removed from the TheQueuedSenderRegistry.
+        /// </summary>
+        public static event Action<QsRemovedEventArgs> QsRemoved;
 
         internal static void Shutdown()
         {
@@ -584,12 +593,13 @@ namespace nsCDEngine.Communication
         ///
         /// </summary>
         /// <param name="pSend"></param>
+        /// <param name="requestData"></param>
         /// <returns>
         /// 0=False with error
         /// 1=Already exists
         /// 2=New Sender registered
         /// </returns>
-        internal static int AddQueuedSender(TheQueuedSender pSend)
+        internal static int AddQueuedSender(TheQueuedSender pSend, TheRequestData requestData)
         {
             if (pSend == null || pSend.MyTargetNodeChannel == null || pSend.MyTargetNodeChannel.cdeMID == Guid.Empty) return 0;
             try
@@ -599,6 +609,8 @@ namespace nsCDEngine.Communication
                 {
                     var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                     TheCDEKPIs.IncrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
+
+                    QsAdded?.Invoke(new QsAddedEventArgs(requestData, sender.MyTargetNodeChannel.ScopeIDHash, sender.MyTargetNodeChannel.cdeMID));
                 });
                 return 2;
             }
@@ -627,6 +639,8 @@ namespace nsCDEngine.Communication
                         {
                             var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                             TheCDEKPIs.DecrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
+
+                            QsRemoved?.Invoke(new QsRemovedEventArgs(sender.MyTargetNodeChannel.ScopeIDHash, sender.MyTargetNodeChannel.cdeMID));
                         });
                         return true;
                     }
@@ -1263,7 +1277,7 @@ namespace nsCDEngine.Communication
                             tSender.eventConnected -= sinkCloudUp;
                             tSender.eventConnected += sinkCloudUp;
                             tSender.StartSender(new TheChannelInfo(TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(cdeSenderType.CDE_CLOUDROUTE), TheBaseAssets.MyScopeManager.IsScopingEnabled ? TheBaseAssets.MyScopeManager.ScopeID : null, cdeSenderType.CDE_CLOUDROUTE,tCloudUrl),
-                                                TheBaseAssets.MyScopeManager.AddScopeID(TheBaseAssets.MyServiceHostInfo.MyLiveServices, false), false);  //ALLOWED   tSubs must be subscribed during StartSender otherwise a racing condition can happen
+                                                TheBaseAssets.MyScopeManager.AddScopeID(TheBaseAssets.MyServiceHostInfo.MyLiveServices, false), false, null);  //ALLOWED   tSubs must be subscribed during StartSender otherwise a racing condition can happen
                         });
                     }
                 }
@@ -1372,7 +1386,7 @@ namespace nsCDEngine.Communication
         {
             var channel = new TheChannelInfo(nodeId, cdeSenderType.CDE_SERVICE, targetUrl);
             TheQueuedSender tSend = new ();
-            if (tSend.StartSender(channel, null, false))    //CODEREVIEW: @Markus: you might have to subscribe to the MeshManager Topic?
+            if (tSend.StartSender(channel, null, false, null))    //CODEREVIEW: @Markus: you might have to subscribe to the MeshManager Topic?
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("MeshManager", $"Started Sender for node:{targetUrl} - {TheCommonUtils.GetDeviceIDML(nodeId)}"));
 
@@ -1491,7 +1505,7 @@ namespace nsCDEngine.Communication
             }
             pRequestData.SessionState.MyDevice = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(pSenderType);
             TheQueuedSender tSend = new ();
-            if (tSend.StartSender(new TheChannelInfo(pRequestData.SessionState.MyDevice, pSenderType, pRequestData.SessionState), null, true))
+            if (tSend.StartSender(new TheChannelInfo(pRequestData.SessionState.MyDevice, pSenderType, pRequestData.SessionState), null, true, pRequestData))
             {
                 tSend.eventErrorDuringUpload += TheCommCore.OnCommError;
                 tRes.NPA = TheBaseAssets.MyScopeManager.GetISBPath(TheBaseAssets.MyServiceHostInfo.RootDir, pSenderType, TheCommonUtils.GetOriginST(tSend.MyTargetNodeChannel), pRequestData.SessionState.GetNextSerial(), pRequestData.SessionState.cdeMID, pRequestData.WebSocket != null);
@@ -1543,6 +1557,66 @@ namespace nsCDEngine.Communication
                 TheBaseAssets.MySYSLOG.WriteToLog(299, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("CoreComm", $"GetMyISBConnect: QueuedSender could not be created for DeviceID:{TheCommonUtils.GetDeviceIDML(pRequestData.DeviceID)}", eMsgLevel.l7_HostDebugMessage));
             }
             return tRes;
+        }
+    }
+
+    /// <summary>
+    /// Event arguments for the TheQueuedSenderRegistry.QsAdded event which describes the
+    /// node connection added to the TheQueuedSenderRegistry.
+    /// </summary>
+    public class QsAddedEventArgs
+    {
+        /// <summary>
+        /// TheRequestData that causes adding the node connection.
+        /// </summary>
+        public TheRequestData RequestData { get; }
+        /// <summary>
+        /// The scope hash of the node connected.
+        /// </summary>
+        public string ScopeIdHash { get; }
+        /// <summary>
+        /// The device-id of the node connected.
+        /// </summary>
+        public Guid DeviceId { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the QsAddedEventArgs class.
+        /// </summary>
+        /// <param name="requestData">TheRequestData that causes adding the node connection.</param>
+        /// <param name="scopeIdHash">The scope hash of the node connected.</param>
+        /// <param name="deviceId">The device-id of the node connected.</param>
+        public QsAddedEventArgs(TheRequestData requestData, string scopeIdHash, Guid deviceId)
+        {
+            RequestData = requestData;
+            ScopeIdHash = scopeIdHash;
+            DeviceId = deviceId;
+        }
+    }
+
+    /// <summary>
+    /// Event arguments for the TheQueuedSenderRegistry.QsRemoved event which describes the
+    /// node connection removed from the TheQueuedSenderRegistry.
+    /// </summary>
+    public class QsRemovedEventArgs
+    {
+        /// <summary>
+        /// The scope hash of the node disconnected.
+        /// </summary>
+        public string ScopeIdHash { get; }
+        /// <summary>
+        /// The device-id of the node disconnected.
+        /// </summary>
+        public Guid DeviceId { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the QsRemovedEventArgs class.
+        /// </summary>
+        /// <param name="scopeIdHash">The scope hash of the node disconnected.</param>
+        /// <param name="deviceId">The device-id of the node disconnected.</param>
+        public QsRemovedEventArgs(string scopeIdHash, Guid deviceId)
+        {
+            ScopeIdHash = scopeIdHash;
+            DeviceId = deviceId;
         }
     }
 }

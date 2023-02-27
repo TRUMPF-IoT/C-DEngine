@@ -31,7 +31,7 @@ namespace nsCDEngine.Communication
             IsAlive = true;
         }
 
-        public bool StartSender(TheChannelInfo pChannelInfo, string pInitialSubscriptions, bool IsIncoming)
+        public bool StartSender(TheChannelInfo pChannelInfo, string pInitialSubscriptions, bool isIncoming, TheRequestData requestData)
         {
             if (!TheBaseAssets.MasterSwitch)
             {
@@ -76,7 +76,7 @@ namespace nsCDEngine.Communication
                 else
                     Subscribe(pInitialSubscriptions, true); //4.106: these are the only subscriptions "owned" by a QS
             }
-            switch (TheQueuedSenderRegistry.AddQueuedSender(this))
+            switch (TheQueuedSenderRegistry.AddQueuedSender(this, requestData))
             {
                 case 0: return false;
                 case 1:
@@ -105,7 +105,7 @@ namespace nsCDEngine.Communication
             else
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2302, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Created new QueuedSender {MyTargetNodeChannel.ToMLString()}", eMsgLevel.l3_ImportantMessage), true);
-                if (IsIncoming && TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //IDST-OK now: was Should Record Devices on incoming QS - but not on outgoing QS
+                if (isIncoming && TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //IDST-OK now: was Should Record Devices on incoming QS - but not on outgoing QS
                 {
                     if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
                     {
@@ -119,7 +119,7 @@ namespace nsCDEngine.Communication
                     if (TheBaseAssets.MyApplication.MyUserManager != null)
                         TheBaseAssets.MyApplication.MyUserManager.RegisterNewDevice(tDev);
                 }
-                if ((!TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType) || !IsIncoming) && MyTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL && MyWebSocketProcessor == null)   //NEW:RC3.7 Test if WS IsActive  IDST-OK Now was bug here: if this is on a device the sender threads are not created! but its required on nodes when the devices are connecting
+                if ((!TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType) || !isIncoming) && MyTargetNodeChannel.SenderType != cdeSenderType.CDE_BACKCHANNEL && MyWebSocketProcessor == null)   //NEW:RC3.7 Test if WS IsActive  IDST-OK Now was bug here: if this is on a device the sender threads are not created! but its required on nodes when the devices are connecting
                 {
                     if (eventSenderThreadRunning != null)
                         TheBaseAssets.MySYSLOG.WriteToLog(2302, new TSM("QueuedSender", $"Should not get here! {MyTargetNodeChannel.ToMLString()} - MyWebSocketProcessor={MyWebSocketProcessor} but no WS Required??", eMsgLevel.l3_ImportantMessage), true);
