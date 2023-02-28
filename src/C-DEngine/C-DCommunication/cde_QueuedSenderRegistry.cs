@@ -37,11 +37,11 @@ namespace nsCDEngine.Communication
         /// <summary>
         /// This event is fired when a node connection was added to the TheQueuedSenderRegistry.
         /// </summary>
-        public static event Action<QsAddedEventArgs> QsAdded;
+        private static event Action<QsAddedEventArgs> _eventSenderAdded;
         /// <summary>
         /// This event is fired when a node connection was removed from the TheQueuedSenderRegistry.
         /// </summary>
-        public static event Action<QsRemovedEventArgs> QsRemoved;
+        private static event Action<QsRemovedEventArgs> _eventSenderRemoved;
 
         internal static void Shutdown()
         {
@@ -52,6 +52,7 @@ namespace nsCDEngine.Communication
                 MyTSMHistorySetTimer.Dispose();
             MyTSMHistorySetTimer = null;
         }
+
         internal static void Startup()
         {
             if (MyQueuedSenderList == null)
@@ -610,7 +611,7 @@ namespace nsCDEngine.Communication
                     var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                     TheCDEKPIs.IncrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
 
-                    QsAdded?.Invoke(new QsAddedEventArgs(requestData, sender.MyTargetNodeChannel.ScopeIDHash, sender.MyTargetNodeChannel.cdeMID));
+                    _eventSenderAdded?.Invoke(new QsAddedEventArgs(requestData, sender.MyTargetNodeChannel));
                 });
                 return 2;
             }
@@ -640,7 +641,7 @@ namespace nsCDEngine.Communication
                             var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                             TheCDEKPIs.DecrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
 
-                            QsRemoved?.Invoke(new QsRemovedEventArgs(sender.MyTargetNodeChannel.ScopeIDHash, sender.MyTargetNodeChannel.cdeMID));
+                            _eventSenderRemoved?.Invoke(new QsRemovedEventArgs(sender.MyTargetNodeChannel));
                         });
                         return true;
                     }
@@ -1217,6 +1218,39 @@ namespace nsCDEngine.Communication
             if (psinkCloudUp != null)
                 eventCloudIsBackUp -= psinkCloudUp;   //fired when cloud route is back up
         }
+
+        /// <summary>
+        /// Register Events to determine if a node connection was added or removed.
+        /// </summary>
+        /// <param name="senderAddedHandler">Will be called when a node connection was added to the TheQueuedSenderRegistry.</param>
+        /// <param name="senderRemovedHandler">Will be called when a node connection was removed from the TheQueuedSenderRegistry.</param>
+        public static void RegisterQsEvents(Action<QsAddedEventArgs> senderAddedHandler, Action<QsRemovedEventArgs> senderRemovedHandler)
+        {
+            if (senderAddedHandler != null)
+            {
+                _eventSenderAdded -= senderAddedHandler;
+                _eventSenderAdded += senderAddedHandler;
+            }
+            if (senderRemovedHandler != null)
+            {
+                _eventSenderRemoved -= senderRemovedHandler;
+                _eventSenderRemoved += senderRemovedHandler;
+            }
+        }
+
+        /// <summary>
+        /// Unregisters node connection event handlers previously registered with RegisterQsEvents.
+        /// </summary>
+        /// <param name="senderAddedHandler">Node connection added event handler action used in a call to RegisterQsEvents.</param>
+        /// <param name="senderRemovedHandler">Node connection removed event handler action used in a call to RegisterQsEvents.</param>
+        public static void UnregisterQsEvents(Action<QsAddedEventArgs> senderAddedHandler, Action<QsRemovedEventArgs> senderRemovedHandler)
+        {
+            if (senderAddedHandler != null)
+                _eventSenderAdded -= senderAddedHandler;
+            if (senderRemovedHandler != null)
+                _eventSenderRemoved -= senderRemovedHandler;
+        }
+
         /// <summary>
         /// Updates the current cloud routes. If the parameter is zero all cloud connectivity will be discontinued
         /// </summary>
@@ -1571,25 +1605,19 @@ namespace nsCDEngine.Communication
         /// </summary>
         public TheRequestData RequestData { get; }
         /// <summary>
-        /// The scope hash of the node connected.
+        /// Information of the communication channel used to communicate with the added node.
         /// </summary>
-        public string ScopeIdHash { get; }
-        /// <summary>
-        /// The device-id of the node connected.
-        /// </summary>
-        public Guid DeviceId { get; }
+        public TheChannelInfo ChannelInfo { get; }
 
         /// <summary>
         /// Initializes a new instance of the QsAddedEventArgs class.
         /// </summary>
         /// <param name="requestData">TheRequestData that causes adding the node connection.</param>
-        /// <param name="scopeIdHash">The scope hash of the node connected.</param>
-        /// <param name="deviceId">The device-id of the node connected.</param>
-        public QsAddedEventArgs(TheRequestData requestData, string scopeIdHash, Guid deviceId)
+        /// <param name="channelInfo">The channelInfo of the node connected.</param>
+        public QsAddedEventArgs(TheRequestData requestData, TheChannelInfo channelInfo)
         {
             RequestData = requestData;
-            ScopeIdHash = scopeIdHash;
-            DeviceId = deviceId;
+            ChannelInfo = channelInfo;
         }
     }
 
@@ -1600,23 +1628,17 @@ namespace nsCDEngine.Communication
     public class QsRemovedEventArgs
     {
         /// <summary>
-        /// The scope hash of the node disconnected.
+        /// Information of the communication channel used to communicate with the removed node.
         /// </summary>
-        public string ScopeIdHash { get; }
-        /// <summary>
-        /// The device-id of the node disconnected.
-        /// </summary>
-        public Guid DeviceId { get; }
+        public TheChannelInfo ChannelInfo { get; }
 
         /// <summary>
         /// Initializes a new instance of the QsRemovedEventArgs class.
         /// </summary>
-        /// <param name="scopeIdHash">The scope hash of the node disconnected.</param>
-        /// <param name="deviceId">The device-id of the node disconnected.</param>
-        public QsRemovedEventArgs(string scopeIdHash, Guid deviceId)
+        /// <param name="channelInfo">The channel info of the node disconnected.</param>
+        public QsRemovedEventArgs(TheChannelInfo channelInfo)
         {
-            ScopeIdHash = scopeIdHash;
-            DeviceId = deviceId;
+            ChannelInfo = channelInfo;
         }
     }
 }
