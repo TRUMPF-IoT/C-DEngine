@@ -94,7 +94,7 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     try
                     {
-                        t.UpdatePins();
+                        t.UpdatePinNMI();
                     }
                     catch (Exception e)
                     {

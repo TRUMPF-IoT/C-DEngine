@@ -210,7 +210,10 @@ namespace nsCDEngine.Engines.NMIService
         /// Allows to drag and drop a form
         /// </summary>
         public bool? AllowDrag { get; set; }
-
+        /// <summary>
+        /// if True, the control allows Gesture Detection on a Control
+        /// </summary>
+        public bool? AllowGesture { get; set; }
         public Guid? MID { get; set; }
         /// <summary>
         /// The meaning of "Value" is unique to each control.
