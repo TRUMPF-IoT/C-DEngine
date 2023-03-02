@@ -82,7 +82,8 @@ namespace cdeASPNetMiddleware
             }
             tReq.PostDataLength = tReq.PostData.Length;
 
-            if (TheCommCore.MyHttpService != null && TheCommCore.MyHttpService.cdeProcessPost(tReq) && tReq.StatusCode != 0)
+            if (TheCommCore.MyHttpService != null && TheCommCore.MyHttpService.cdeProcessPost(tReq) &&
+                tReq.StatusCode != 0 && tReq.StatusCode != (int)eHttpStatusCode.NotFound)
             {
                 Response.StatusCode = tReq.StatusCode;
                 cdeASPNetCommon.AddCookiesToHeader(Response, tReq);
