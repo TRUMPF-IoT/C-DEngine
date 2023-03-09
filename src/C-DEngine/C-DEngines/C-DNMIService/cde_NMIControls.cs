@@ -211,9 +211,9 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public bool? AllowDrag { get; set; }
         /// <summary>
-        /// if True, the control allows Gesture Detection on a Control
+        /// if True, the control does not allow editing by a user
         /// </summary>
-        public bool? AllowGesture { get; set; }
+        public bool? DisallowEdit { get; set; } 
         public Guid? MID { get; set; }
         /// <summary>
         /// The meaning of "Value" is unique to each control.

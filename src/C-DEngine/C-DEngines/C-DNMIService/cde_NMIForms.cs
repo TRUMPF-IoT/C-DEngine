@@ -193,13 +193,17 @@ namespace nsCDEngine.Engines.NMIService
                 var tMods = pInfo.ModelID.Split(';');
                 foreach (string tM in tMods)
                 {
-                    string tPlS1 = TheCommonUtils.LoadStringFromDisk($"FormORs\\{tM}.cdeFOR", null);
-                    if (!string.IsNullOrEmpty(tPlS1))
+                    var tS = TheCommonUtils.GetSystemResource(null, $"FormORs\\{tM}.cdeFOR");
+                    if (tS != null)
                     {
-                        TheFOR Ttso = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS1);
-                        tso = SetTSO(tso, Ttso);
-                        if (!string.IsNullOrEmpty(Ttso?.StartGroup))
-                            pInfo.PropertyBag = new ThePropertyBag { $"StartGroup={Ttso.StartGroup}" };
+                        string tPlS1 = TheCommonUtils.CArray2UTF8String(tS); 
+                        if (!string.IsNullOrEmpty(tPlS1))
+                        {
+                            TheFOR Ttso = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS1);
+                            tso = SetTSO(tso, Ttso);
+                            if (!string.IsNullOrEmpty(Ttso?.StartGroup))
+                                pInfo.PropertyBag = new ThePropertyBag { $"StartGroup={Ttso.StartGroup}" };
+                        }
                     }
                 }
             }

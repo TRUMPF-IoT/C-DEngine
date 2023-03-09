@@ -659,6 +659,11 @@ namespace nsCDEngine.Engines.ThingService
         /// Fires before the data of a form is Retreived. Can be used to set new values before a form is displayed to a user
         /// </summary>
         public const string OnBeforeLoad = "OnBeforeLoad";
+
+        /// <summary>
+        /// Event fired when a user right clicks an NMI control in Edit Mode
+        /// </summary>
+        public const string OnShowEditor = "OnShowEditor";
     }
 
     /// <summary>

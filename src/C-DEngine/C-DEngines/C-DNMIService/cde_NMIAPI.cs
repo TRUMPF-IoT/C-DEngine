@@ -3157,10 +3157,21 @@ namespace nsCDEngine.Engines.NMIService
         /// <param name="tScene"></param>
         public static bool SaveScreenOptions(TheFOR tScene)
         {
-            if (tScene == null || string.IsNullOrEmpty(tScene.ID) || TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID || (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyScopeManager.IsScopingEnabled))
+            return SaveScreenOptions(tScene.ID, tScene);
+        }
+
+        /// <summary>
+        /// Saves the Screen Overides by ModelID (see TheFormInfo.ModelID)
+        /// </summary>
+        /// <param name="pModelID"></param>
+        /// <param name="tScene"></param>
+        /// <returns></returns>
+        public static bool SaveScreenOptions(string pModelID, TheFOR tScene)
+        {
+            if (tScene == null || string.IsNullOrEmpty(pModelID) || TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID || (TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyScopeManager.IsScopingEnabled))
                 return false;
-            string tTargetDir = $"FormORs\\{TheCommonUtils.CGuid(tScene.ID)}.cdeFOR";
-            TSM tTSM = new (eEngineName.NMIService, "", TheCommonUtils.SerializeObjectToJSONString<TheFOR>(tScene));
+            string tTargetDir = $"FormORs\\{TheCommonUtils.CGuid(pModelID)}.cdeFOR";
+            TSM tTSM = new(eEngineName.NMIService, "", TheCommonUtils.SerializeObjectToJSONString(tScene));
             TheCommonUtils.SaveBlobToDisk(tTSM, new[] { "", tTargetDir }, null);
             return true;
         }
