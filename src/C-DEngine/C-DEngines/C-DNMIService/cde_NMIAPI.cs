@@ -588,6 +588,30 @@ namespace nsCDEngine.Engines.NMIService
         }
 
         /// <summary>
+        /// Returns TheFormInfo of the NMI Editor if it does exist
+        /// </summary>
+        /// <returns></returns>
+        public static TheFormInfo GetNMIEditorForm()
+        {
+            var tFormID = TheCommonUtils.CGuid(TheCDEngines.MyNMIService?.GetProperty("NMIEditorFormID", false));
+            if (tFormID == Guid.Empty)
+                return null;
+            return GetFormById(tFormID);
+        }
+
+        /// <summary>
+        /// Reloads the content of the NMI Editor
+        /// </summary>
+        public static void ReloadNMIEditor()
+        {
+            var tFormID = TheCommonUtils.CGuid(TheCDEngines.MyNMIService?.GetProperty("NMIEditorFormID", false));
+            if (tFormID == Guid.Empty)
+                return;
+            TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:",
+    $"{TheCommonUtils.cdeGuidToString(tFormID)}:CMyForm:{TheCommonUtils.cdeGuidToString(tFormID)}:{TheCommonUtils.cdeGuidToString(TheNMIEngine.eNMIDashboard)}:true:true"));
+        }
+
+        /// <summary>
         /// Removes all Field Definitions of a Form
         /// </summary>
         /// <param name="tF"></param>

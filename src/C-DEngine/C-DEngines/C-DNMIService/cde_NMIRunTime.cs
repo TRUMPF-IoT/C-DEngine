@@ -62,6 +62,25 @@ namespace nsCDEngine.Engines.NMIService
                 case "NMI_GET_UIDACL":
                     TheUserManager.SendACLToNMISilent(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(pMsg.Message.PLS), tClientInfo);
                     break;
+                case "NMI_SHOW_EDITOR":
+                    if (!string.IsNullOrEmpty(pMsg.Message?.PLS))
+                    {
+                        try
+                        {
+                            var tLocParts = pMsg.Message?.PLS.Split(';');
+                            if (tLocParts?.Length > 1)
+                            {
+                                var tfld = GetFieldById(TheCommonUtils.CGuid(tLocParts[0]));
+                                if (tfld != null)
+                                    tfld.FireEvent("OnShowEditor", pMsg, true);
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            //ignored
+                        }
+                    }
+                    break;
                 case "NMI_SHOW_SCREEN":
                     {
                         if (string.IsNullOrEmpty(pMsg.Message?.PLS)) return;

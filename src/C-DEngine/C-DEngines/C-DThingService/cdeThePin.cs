@@ -7,7 +7,6 @@ using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace nsCDEngine.Engines.ThingService
 {
@@ -52,7 +51,7 @@ namespace nsCDEngine.Engines.ThingService
             }
         }
         public string Units { get; set; }
-        public UARange Range { get; set; } = new UARange();
+        public UARange EURange { get; set; } = new UARange();
         public string PinName { get; set; }
         public string PinType { get; set; } = ePinTypeName.Generic;
         public bool IsInbound { get; set; } = false;
@@ -65,6 +64,10 @@ namespace nsCDEngine.Engines.ThingService
         public string PinProperty { get; set; } = null;
         public bool NMIIsPinRight { get; set; } = false;
         public int NMIPinTopPosition { get; set; } = 0;
+        public int NMIPinWidth { get; set; } = 78;
+        public int NMIPinHeight { get; set; } = 39;
+        public int NMIxDelta { get; set; } = 0;
+        public int NMIyDelta { get; set; } = 0;
         public string NMIClass { get; set; } = "";
 
         public bool AddPin(ThePin pin)

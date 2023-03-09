@@ -30,7 +30,7 @@ namespace nsCDEngine.Engines.ThingService
         }
         private cdeConcurrentDictionary<Guid, TheThingBase> MyGroupThings { get; set; } = new cdeConcurrentDictionary<Guid, TheThingBase>();
         public Guid MyScreenGuid { get; protected set; }
-        protected Guid ModelGuid;
+        private Guid ModelGuid;
         protected TheFormInfo MyGroupForm;
         public bool IsGroupVisible { get; protected set; } = false;
 
@@ -144,7 +144,7 @@ namespace nsCDEngine.Engines.ThingService
             TheNMIEngine.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 4010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
             return true;
         }
-        public virtual void ReloadForm()
+        public void ReloadForm()
         {
             InitDynamicNMI();
             if (MyGroupForm != null)
