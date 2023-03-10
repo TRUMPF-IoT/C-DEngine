@@ -209,7 +209,7 @@ namespace nsCDEngine.Communication
             if (MyQSender.StartSender(new TheChannelInfo(Guid.Empty, RS, cdeSenderType.CDE_CUSTOMISB, pUrl)
             {
                 MySessionState = tSessionState
-            }, null, false))
+            }, null, false, null))
             {
                 FNI = MyQSender.MyTargetNodeChannel.cdeMID.ToString();
                 SID = tSessionState.SScopeID;

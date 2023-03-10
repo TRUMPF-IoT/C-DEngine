@@ -798,7 +798,7 @@ namespace nsCDEngine.BaseClasses
             #region step 9: Start Localhost QSender and SessionStateManager
             MySession = new TheSessionStateManager(MyServiceHostInfo);
             LocalHostQSender = new TheQueuedSender();   //NO connected or Error Event necessary
-            LocalHostQSender.StartSender(new TheChannelInfo(MyServiceHostInfo.MyDeviceInfo.DeviceID, MyScopeManager.ScopeID, MyServiceHostInfo.MyDeviceInfo.SenderType, MyServiceHostInfo.GetPrimaryStationURL(false)), null, false); //NEW:2.06 Setting Realscope here ///null correct - no subs on LocalhostQS in beginning //RScope-OK
+            LocalHostQSender.StartSender(new TheChannelInfo(MyServiceHostInfo.MyDeviceInfo.DeviceID, MyScopeManager.ScopeID, MyServiceHostInfo.MyDeviceInfo.SenderType, MyServiceHostInfo.GetPrimaryStationURL(false)), null, false, null); //NEW:2.06 Setting Realscope here ///null correct - no subs on LocalhostQS in beginning //RScope-OK
             if ((MyServiceHostInfo.DisableWebSockets || MyServiceHostInfo.MyStationWSPort == 0) && !TheCommonUtils.IsHostADevice())
             {
                 MySYSLOG.WriteToLog(4157, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseAssets", $"WebSockets Disabled - no WSPort specified {MyServiceHostInfo.MyStationWSPort} or DisableWebSocket={MyServiceHostInfo.DisableWebSockets}", eMsgLevel.l4_Message));
