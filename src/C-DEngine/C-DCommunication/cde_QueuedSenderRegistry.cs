@@ -26,13 +26,22 @@ namespace nsCDEngine.Communication
     public static class TheQueuedSenderRegistry
     {
         /// <summary>
-        /// This Event if fired when a CloudServiceRoute is established and up and running
+        /// This Event is fired when a CloudServiceRoute is established and up and running
         /// </summary>
         internal static Action<ICDEThing, TheChannelInfo> eventCloudIsBackUp;
         /// <summary>
-        /// This Event if fired when a CloudServiceRoute is disconnected or not available anymore that was active in the past.
+        /// This Event is fired when a CloudServiceRoute is disconnected or not available anymore that was active in the past.
         /// </summary>
         internal static Action<ICDEThing, TheChannelInfo> eventCloudIsDown;
+
+        /// <summary>
+        /// This event is fired when a node connection was added to the TheQueuedSenderRegistry.
+        /// </summary>
+        private static event Action<QsAddedEventArgs> _eventSenderAdded;
+        /// <summary>
+        /// This event is fired when a node connection was removed from the TheQueuedSenderRegistry.
+        /// </summary>
+        private static event Action<QsRemovedEventArgs> _eventSenderRemoved;
 
         internal static void Shutdown()
         {
@@ -43,6 +52,7 @@ namespace nsCDEngine.Communication
                 MyTSMHistorySetTimer.Dispose();
             MyTSMHistorySetTimer = null;
         }
+
         internal static void Startup()
         {
             if (MyQueuedSenderList == null)
@@ -584,12 +594,13 @@ namespace nsCDEngine.Communication
         ///
         /// </summary>
         /// <param name="pSend"></param>
+        /// <param name="requestData"></param>
         /// <returns>
         /// 0=False with error
         /// 1=Already exists
         /// 2=New Sender registered
         /// </returns>
-        internal static int AddQueuedSender(TheQueuedSender pSend)
+        internal static int AddQueuedSender(TheQueuedSender pSend, TheRequestData requestData)
         {
             if (pSend == null || pSend.MyTargetNodeChannel == null || pSend.MyTargetNodeChannel.cdeMID == Guid.Empty) return 0;
             try
@@ -599,6 +610,8 @@ namespace nsCDEngine.Communication
                 {
                     var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                     TheCDEKPIs.IncrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
+
+                    _eventSenderAdded?.Invoke(new QsAddedEventArgs(requestData, sender.MyTargetNodeChannel));
                 });
                 return 2;
             }
@@ -627,6 +640,8 @@ namespace nsCDEngine.Communication
                         {
                             var scopeHash = sender.MyTargetNodeChannel.ScopeIDHash;
                             TheCDEKPIs.DecrementKPI(eKPINames.QSenders, new Dictionary<string, string> { { "scope", scopeHash } });
+
+                            _eventSenderRemoved?.Invoke(new QsRemovedEventArgs(sender.MyTargetNodeChannel));
                         });
                         return true;
                     }
@@ -1203,6 +1218,39 @@ namespace nsCDEngine.Communication
             if (psinkCloudUp != null)
                 eventCloudIsBackUp -= psinkCloudUp;   //fired when cloud route is back up
         }
+
+        /// <summary>
+        /// Register Events to determine if a node connection was added or removed.
+        /// </summary>
+        /// <param name="senderAddedHandler">Will be called when a node connection was added to the TheQueuedSenderRegistry.</param>
+        /// <param name="senderRemovedHandler">Will be called when a node connection was removed from the TheQueuedSenderRegistry.</param>
+        public static void RegisterQsEvents(Action<QsAddedEventArgs> senderAddedHandler, Action<QsRemovedEventArgs> senderRemovedHandler)
+        {
+            if (senderAddedHandler != null)
+            {
+                _eventSenderAdded -= senderAddedHandler;
+                _eventSenderAdded += senderAddedHandler;
+            }
+            if (senderRemovedHandler != null)
+            {
+                _eventSenderRemoved -= senderRemovedHandler;
+                _eventSenderRemoved += senderRemovedHandler;
+            }
+        }
+
+        /// <summary>
+        /// Unregisters node connection event handlers previously registered with RegisterQsEvents.
+        /// </summary>
+        /// <param name="senderAddedHandler">Node connection added event handler action used in a call to RegisterQsEvents.</param>
+        /// <param name="senderRemovedHandler">Node connection removed event handler action used in a call to RegisterQsEvents.</param>
+        public static void UnregisterQsEvents(Action<QsAddedEventArgs> senderAddedHandler, Action<QsRemovedEventArgs> senderRemovedHandler)
+        {
+            if (senderAddedHandler != null)
+                _eventSenderAdded -= senderAddedHandler;
+            if (senderRemovedHandler != null)
+                _eventSenderRemoved -= senderRemovedHandler;
+        }
+
         /// <summary>
         /// Updates the current cloud routes. If the parameter is zero all cloud connectivity will be discontinued
         /// </summary>
@@ -1263,7 +1311,7 @@ namespace nsCDEngine.Communication
                             tSender.eventConnected -= sinkCloudUp;
                             tSender.eventConnected += sinkCloudUp;
                             tSender.StartSender(new TheChannelInfo(TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(cdeSenderType.CDE_CLOUDROUTE), TheBaseAssets.MyScopeManager.IsScopingEnabled ? TheBaseAssets.MyScopeManager.ScopeID : null, cdeSenderType.CDE_CLOUDROUTE,tCloudUrl),
-                                                TheBaseAssets.MyScopeManager.AddScopeID(TheBaseAssets.MyServiceHostInfo.MyLiveServices, false), false);  //ALLOWED   tSubs must be subscribed during StartSender otherwise a racing condition can happen
+                                                TheBaseAssets.MyScopeManager.AddScopeID(TheBaseAssets.MyServiceHostInfo.MyLiveServices, false), false, null);  //ALLOWED   tSubs must be subscribed during StartSender otherwise a racing condition can happen
                         });
                     }
                 }
@@ -1372,7 +1420,7 @@ namespace nsCDEngine.Communication
         {
             var channel = new TheChannelInfo(nodeId, cdeSenderType.CDE_SERVICE, targetUrl);
             TheQueuedSender tSend = new ();
-            if (tSend.StartSender(channel, null, false))    //CODEREVIEW: @Markus: you might have to subscribe to the MeshManager Topic?
+            if (tSend.StartSender(channel, null, false, null))    //CODEREVIEW: @Markus: you might have to subscribe to the MeshManager Topic?
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("MeshManager", $"Started Sender for node:{targetUrl} - {TheCommonUtils.GetDeviceIDML(nodeId)}"));
 
@@ -1491,7 +1539,7 @@ namespace nsCDEngine.Communication
             }
             pRequestData.SessionState.MyDevice = TheBaseAssets.MyScopeManager.GenerateNewAppDeviceID(pSenderType);
             TheQueuedSender tSend = new ();
-            if (tSend.StartSender(new TheChannelInfo(pRequestData.SessionState.MyDevice, pSenderType, pRequestData.SessionState), null, true))
+            if (tSend.StartSender(new TheChannelInfo(pRequestData.SessionState.MyDevice, pSenderType, pRequestData.SessionState), null, true, pRequestData))
             {
                 tSend.eventErrorDuringUpload += TheCommCore.OnCommError;
                 tRes.NPA = TheBaseAssets.MyScopeManager.GetISBPath(TheBaseAssets.MyServiceHostInfo.RootDir, pSenderType, TheCommonUtils.GetOriginST(tSend.MyTargetNodeChannel), pRequestData.SessionState.GetNextSerial(), pRequestData.SessionState.cdeMID, pRequestData.WebSocket != null);
@@ -1543,6 +1591,54 @@ namespace nsCDEngine.Communication
                 TheBaseAssets.MySYSLOG.WriteToLog(299, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("CoreComm", $"GetMyISBConnect: QueuedSender could not be created for DeviceID:{TheCommonUtils.GetDeviceIDML(pRequestData.DeviceID)}", eMsgLevel.l7_HostDebugMessage));
             }
             return tRes;
+        }
+    }
+
+    /// <summary>
+    /// Event arguments for the TheQueuedSenderRegistry.QsAdded event which describes the
+    /// node connection added to the TheQueuedSenderRegistry.
+    /// </summary>
+    public class QsAddedEventArgs
+    {
+        /// <summary>
+        /// TheRequestData that causes adding the node connection.
+        /// </summary>
+        public TheRequestData RequestData { get; }
+        /// <summary>
+        /// Information of the communication channel used to communicate with the added node.
+        /// </summary>
+        public TheChannelInfo ChannelInfo { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the QsAddedEventArgs class.
+        /// </summary>
+        /// <param name="requestData">TheRequestData that causes adding the node connection.</param>
+        /// <param name="channelInfo">The channelInfo of the node connected.</param>
+        public QsAddedEventArgs(TheRequestData requestData, TheChannelInfo channelInfo)
+        {
+            RequestData = requestData;
+            ChannelInfo = channelInfo;
+        }
+    }
+
+    /// <summary>
+    /// Event arguments for the TheQueuedSenderRegistry.QsRemoved event which describes the
+    /// node connection removed from the TheQueuedSenderRegistry.
+    /// </summary>
+    public class QsRemovedEventArgs
+    {
+        /// <summary>
+        /// Information of the communication channel used to communicate with the removed node.
+        /// </summary>
+        public TheChannelInfo ChannelInfo { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the QsRemovedEventArgs class.
+        /// </summary>
+        /// <param name="channelInfo">The channel info of the node disconnected.</param>
+        public QsRemovedEventArgs(TheChannelInfo channelInfo)
+        {
+            ChannelInfo = channelInfo;
         }
     }
 }
