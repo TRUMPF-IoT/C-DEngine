@@ -210,7 +210,10 @@ namespace nsCDEngine.Engines.NMIService
         /// Allows to drag and drop a form
         /// </summary>
         public bool? AllowDrag { get; set; }
-
+        /// <summary>
+        /// if True, the control does not allow editing by a user
+        /// </summary>
+        public bool? DisallowEdit { get; set; } 
         public Guid? MID { get; set; }
         /// <summary>
         /// The meaning of "Value" is unique to each control.

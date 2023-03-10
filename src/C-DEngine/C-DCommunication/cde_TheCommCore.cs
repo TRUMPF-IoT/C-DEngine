@@ -938,7 +938,7 @@ namespace nsCDEngine.Communication
                         if (LogOk)
                         {
                             TheBaseAssets.MySession.WriteSession(pRequestData?.SessionState);
-                            tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+                            tSidRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData?.SessionState, tUser), tUser.Name, tUser.GetUserPrefString());
                         }
                     }
                 }
@@ -959,7 +959,7 @@ namespace nsCDEngine.Communication
 
         private static string SendLoginSuccess(TheRequestData pRequestData, TheQueuedSender tSend, TheUserDetails tUser)
         {
-            string tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData, tUser), tUser.Name, tUser.GetUserPrefString());
+            string tLogRes = string.Format("LOGIN_SUCCESS:{0}:{1}:{2}", TheUserManager.GetUserHomeScreen(pRequestData?.SessionState, tUser), tUser.Name, tUser.GetUserPrefString());
             if (string.IsNullOrEmpty(tSend.MyTargetNodeChannel.RealScopeID))    //RScope-OK: Users only on primary scope
                 tSend.UpdateSubscriptionScope(TheBaseAssets.MyScopeManager.ScopeID);
             if (tSend.MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)

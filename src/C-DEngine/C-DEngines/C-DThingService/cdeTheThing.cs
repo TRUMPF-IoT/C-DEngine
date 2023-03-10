@@ -311,7 +311,7 @@ namespace nsCDEngine.Engines.ThingService
                 MyBaseThing.LastMessage = pMessage;
             if (LogID > 0)
             {
-                TSM toLog = new (MyBaseThing.EngineName, pMessage, pMsgLevel);
+                TSM toLog = new(MyBaseThing.EngineName, pMessage, pMsgLevel);
                 if (SetLastUpdate != null)
                     toLog.TIM = TheCommonUtils.CDate(SetLastUpdate);
                 TheBaseAssets.MySYSLOG?.WriteToLog(LogID, toLog);
@@ -323,10 +323,75 @@ namespace nsCDEngine.Engines.ThingService
         }
         #endregion
 
+        #region NMI FacePlates for Group-Screens
+        /// <summary>
+        /// Shows the Device Faceplate that can be used in Group Screens
+        /// </summary>
+        /// <param name="MyLiveForm">Target Form to show the FacePlate in</param>
+        /// <param name="startFld">Start Field Order</param>
+        /// <param name="pLeft">Left (in Pixels) to position the FacePlate</param>
+        /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
+        /// <returns></returns>
         public virtual bool ShowDeviceFace(TheFormInfo MyLiveForm, int startFld, int pLeft, int pTop)
+        {
+            if (MyNMIFaceModel != null)
+            {
+                MyNMIFaceModel.SetPos(startFld, pLeft, pTop);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Device Face Model - if null the Thing has no model
+        /// </summary>
+        public TheNMIFaceModel MyNMIFaceModel { get; private set; } = null;
+
+        /// <summary>
+        /// returns true if TheThingBase has a valid FaceModel
+        /// </summary>
+        public bool HasDeviceFace { get { return MyNMIFaceModel != null; } }
+
+        /// <summary>
+        /// Sets the NMI Face PlateModel required by the Group Screen to set dimensions of the FacePlate
+        /// This call has be called at least once before the FacNMIModel can be used
+        /// </summary>
+        /// <param name="pFaceUrl">URL Pointing at the Faceplate resource to use</param>
+        /// <param name="pModelCode">A Code for the faceplate used to tag the plat in the group</param>
+        /// <param name="xLen">Length of the FacePlate in pixels</param>
+        /// <param name="yLen">Height of the FacePlate in pixels</param>
+        /// <returns></returns>
+        public virtual bool InitNMIDeviceFaceModel(string pFaceUrl = null, string pModelCode = null, int xLen = 0, int yLen = 0)
+        {
+            if (!string.IsNullOrEmpty(pModelCode) && !string.IsNullOrEmpty(pFaceUrl))
+            {
+                MyNMIFaceModel ??= new TheNMIFaceModel();
+                MyNMIFaceModel.SetNMIModel(xLen, yLen, pModelCode, pFaceUrl);
+                return true;
+            }
+            return false;
+        }
+        #endregion
+
+        public virtual bool AddPinsAndUpdate(List<ThePin> pIns)
+        {
+            if (MyBaseThing?.AddPins(pIns)==true)
+            {
+                UpdatePinNMI();
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Accp
+        /// Updates the pins with NMI changes
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool UpdatePinNMI()
         {
             return false;
         }
+
     }
 
     /// <summary>
@@ -488,6 +553,10 @@ namespace nsCDEngine.Engines.ThingService
     public static class eThingEvents
     {
         /// <summary>
+        /// Fired when a Pin Value was updated
+        /// </summary>
+        public const string PinValueUpdated = "PinValueUpdated";
+        /// <summary>
         /// Fired when a property changes by a user entry in the NMI
         /// </summary>
         public const string PropertyChangedByUX = "PropertyChangedByUX";
@@ -590,6 +659,11 @@ namespace nsCDEngine.Engines.ThingService
         /// Fires before the data of a form is Retreived. Can be used to set new values before a form is displayed to a user
         /// </summary>
         public const string OnBeforeLoad = "OnBeforeLoad";
+
+        /// <summary>
+        /// Event fired when a user right clicks an NMI control in Edit Mode
+        /// </summary>
+        public const string OnShowEditor = "OnShowEditor";
     }
 
     /// <summary>
@@ -2508,6 +2582,196 @@ namespace nsCDEngine.Engines.ThingService
             return Historian?.GetHistoryStore<T>(historyToken);
         }
 
+        #endregion
+
+        #region Pin Management for Thing-Group Interactions
+
+        private cdeConcurrentDictionary<string, ThePin> MyPins { get; set; } = new cdeConcurrentDictionary<string, ThePin>();
+
+        /// <summary>
+        /// Adds Pins to TheThingBase
+        /// </summary>
+        /// <param name="pIns">List of Pins to add</param>
+        /// <returns></returns>
+        public bool AddPins(List<ThePin> pIns)
+        {
+            if (pIns?.Any() == true)
+            {
+                foreach (var pin in pIns)
+                    AddPin(pin);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Adds one pin to TheThingBase
+        /// </summary>
+        /// <param name="pin">Pin to Add</param>
+        /// <returns></returns>
+        public bool AddPin(ThePin pin)
+        {
+            if (string.IsNullOrEmpty(pin?.PinName))
+                return false;
+            pin.cdeO = this.cdeMID;
+            UpdatePinListOwner(pin);
+            MyPins[pin.PinName] = pin;
+            return true;
+        }
+
+        private void UpdatePinListOwner(ThePin pPin)
+        {
+            if (pPin?.MyPins?.Any() == true)
+            {
+                foreach (var p in pPin.MyPins)
+                {
+                    p.cdeO = pPin.cdeO;
+                    UpdatePinListOwner(p);
+                }
+            }
+        }
+
+        public ThePin GetPin(string pName)
+        {
+            if (string.IsNullOrEmpty(pName))
+                return null;
+            if (!MyPins.ContainsKey(pName))
+                return null;
+            return MyPins[pName];
+        }
+
+        /// <summary>
+        /// Updates an existing Pin
+        /// </summary>
+        /// <param name="pin"></param>
+        /// <returns></returns>
+        public bool UpdatePin(ThePin pin)
+        {
+            if (string.IsNullOrEmpty(pin?.PinName))
+                return false;
+            if (!MyPins.ContainsKey(pin.PinName))
+            {
+                AddPin(pin);
+                return true;
+            }
+            if (!string.IsNullOrEmpty(pin.Units))
+                MyPins[pin.PinName].Units = pin.Units;
+            if (!string.IsNullOrEmpty(pin.PinName))
+                MyPins[pin.PinName].PinName = pin.PinName;
+            if (!string.IsNullOrEmpty(pin.PinType))
+                MyPins[pin.PinName].PinType = pin.PinType;
+            if (!string.IsNullOrEmpty(pin.PinProperty))
+                MyPins[pin.PinName].PinProperty = pin.PinProperty;
+            MyPins[pin.PinName].IsInbound = pin.IsInbound;
+            if (pin.CanConnectTo?.Count > 0)
+                MyPins[pin.PinName].CanConnectTo = pin.CanConnectTo;
+            if (pin.IsConnectedTo?.Count > 0)
+                MyPins[pin.PinName].IsConnectedTo = pin.IsConnectedTo;
+            if (pin.MyPins?.Count > 0)
+                MyPins[pin.PinName].MyPins = pin.MyPins;
+            return true;
+        }
+
+        /// <summary>
+        /// Replaces the existing connection with new connections
+        /// </summary>
+        /// <param name="pPinName">Pin to Update</param>
+        /// <param name="pConnectedTo">List of Target Pins</param>
+        /// <returns></returns>
+        public bool UpdatePinConnection(string pPinName, List<string> pConnectedTo)
+        {
+            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+                return false;
+            if (pConnectedTo?.Count > 0)
+            {
+                MyPins[pPinName].IsConnectedTo = pConnectedTo;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Adds new connections to a pin
+        /// </summary>
+        /// <param name="pPinName"></param>
+        /// <param name="pConnectedTo"></param>
+        /// <returns></returns>
+        public bool AddPinConnections(string pPinName, List<string> pConnectedTo)
+        {
+            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+                return false;
+            if (pConnectedTo?.Count > 0)
+            {
+                if (MyPins[pPinName].IsConnectedTo == null)
+                    MyPins[pPinName].IsConnectedTo = new List<string>();
+                MyPins[pPinName].IsConnectedTo.AddRange(pConnectedTo);
+                return true;
+            }
+            return false;
+
+        }
+
+        /// <summary>
+        /// Removes existing pin connections
+        /// </summary>
+        /// <param name="pPinName"></param>
+        /// <param name="pConnectedTo"></param>
+        /// <returns></returns>
+        public bool RemovePinConnections(string pPinName, List<string> pConnectedTo)
+        {
+            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+                return false;
+            if (MyPins[pPinName].IsConnectedTo?.Count == 0)
+                return false;
+            if (pConnectedTo?.Count > 0)
+            {
+                foreach (var t in pConnectedTo)
+                    MyPins[pPinName].IsConnectedTo.Remove(t);
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Returns all pins
+        /// </summary>
+        /// <returns></returns>
+        public List<ThePin> GetAllPins()
+        {
+            return MyPins.Values.ToList();
+        }
+
+        /// <summary>
+        /// Returns a Pin with a given ePinTypeName, a string defining the Pin Type
+        /// </summary>
+        /// <param name="pType"></param>
+        /// <param name="bIsInbound"></param>
+        /// <returns></returns>
+        public ThePin GetPinOfType(string pType, bool bIsInbound = false)
+        {
+            return MyPins.Values.FirstOrDefault(s => s?.PinType == pType && s?.IsInbound == bIsInbound);
+        }
+
+        /// <summary>
+        /// Allows for a custom function to find a specific pin
+        /// </summary>
+        /// <param name="pType"></param>
+        /// <param name="mF"></param>
+        /// <returns></returns>
+        public ThePin GetPinOfTypeByFunc(string pType, Func<ThePin, bool> mF)
+        {
+            return MyPins.Values.FirstOrDefault(s => s?.PinType == pType && mF(s));
+        }
+
+        /// <summary>
+        /// Return a list of Pins by function
+        /// </summary>
+        /// <param name="mF"></param>
+        /// <returns></returns>
+        public List<ThePin> GetPinsByFunc(Func<ThePin, bool> mF)
+        {
+            return MyPins.Values.Where(s => mF(s)).ToList();
+        }
         #endregion
 
 

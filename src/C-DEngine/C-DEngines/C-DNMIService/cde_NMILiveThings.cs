@@ -292,6 +292,7 @@ namespace nsCDEngine.ViewModels
             MyBaseThing.DeclareNMIProperty("Label", ePropertyTypes.TString);
             MyBaseThing.DeclareNMIProperty("LabelClassName", ePropertyTypes.TString);
             MyBaseThing.DeclareNMIProperty("LabelForeground", ePropertyTypes.TString);
+            MyBaseThing.DeclareNMIProperty("DisallowEdit", ePropertyTypes.TBoolean);
             MyBaseThing.SetIThingObject(this);
         }
 

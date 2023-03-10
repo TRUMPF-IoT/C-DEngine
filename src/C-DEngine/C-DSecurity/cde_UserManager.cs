@@ -700,35 +700,35 @@ namespace nsCDEngine.Security
 
 
         #region UserManagement Helpers
-        internal static string GetUserHomeScreen(TheRequestData pRequestData, TheUserDetails tUser)
+        internal static string GetUserHomeScreen(TheSessionState pSessionState, TheUserDetails tUser)
         {
             if (tUser == null)
                 return "";
             string tHomeScreen = tUser.HomeScreen;
-            if (!string.IsNullOrEmpty(pRequestData?.SessionState?.HS))
-                tHomeScreen = pRequestData.SessionState.HS;
+            if (!string.IsNullOrEmpty(pSessionState?.HS))
+                tHomeScreen = pSessionState.HS;
             else
             {
                 bool HSSet = false;
-                TheThing tT = TheThingRegistry.GetThingByFunc(eEngineName.NMIService, s => s.UID == tUser.cdeMID && TheThing.GetSafePropertyBool(s, "IsHomeScene"));
-                if (tT != null)
+                if (!string.IsNullOrEmpty(pSessionState?.InitReferer))
                 {
-                    string tTargetDir = $"scenes\\{tUser.cdeMID}\\{tT.cdeMID}.cdescene";
-                    if (TheCommonUtils.LoadStringFromDisk(tTargetDir, null) != null)
+                    string[] tP = pSessionState.InitReferer.Split('?');
+                    if (tP.Length > 1 && tP[1].StartsWith("CDEDL"))
                     {
-                        tHomeScreen = tT.cdeMID.ToString();
+                        var qs = tP[1].Substring(6).Split('&');
+                        tHomeScreen = qs[0];
                         HSSet = true;
                     }
                 }
-                else
+                if (!HSSet)
                 {
-                    if (!string.IsNullOrEmpty(pRequestData?.SessionState?.InitReferer))
+                    TheThing tT = TheThingRegistry.GetThingByFunc(eEngineName.NMIService, s => s.UID == tUser.cdeMID && TheThing.GetSafePropertyBool(s, "IsHomeScene"));
+                    if (tT != null)
                     {
-                        string[] tP = pRequestData.SessionState.InitReferer.Split('?');
-                        if (tP.Length > 1 && tP[1].StartsWith("CDEDL"))
+                        string tTargetDir = $"scenes\\{tUser.cdeMID}\\{tT.cdeMID}.cdescene";
+                        if (TheCommonUtils.LoadStringFromDisk(tTargetDir, null) != null)
                         {
-                            var qs = tP[1].Substring(5).Split('&');
-                            tHomeScreen = qs[0]; 
+                            tHomeScreen = tT.cdeMID.ToString();
                             HSSet = true;
                         }
                     }
@@ -824,22 +824,22 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         public static TheISBConnect GetUserDataForNMI(TheSessionState pSession)
         {
-            if (pSession == null || pSession.CID==Guid.Empty) return null;
-            return GetUserDataForNMI(pSession.CID, false);
+            if (pSession == null) return null;
+            return GetUserDataForNMI(pSession, false);
         }
-        internal static TheISBConnect GetUserDataForNMI(Guid pUserID, bool IncludeSecrets)
+        internal static TheISBConnect GetUserDataForNMI(TheSessionState pSession, bool IncludeSecrets)
         {
-            if (pUserID == Guid.Empty)
+            if (pSession.CID == Guid.Empty)
                 return null;
 
             var tRes = new TheISBConnect();
-            TheUserDetails tUser = TheUserManager.GetUserByID(pUserID);
+            TheUserDetails tUser = TheUserManager.GetUserByID(pSession.CID);
             if (tUser != null)
             {
                 tRes.LCI = tUser.LCID;
                 tRes.UNA = tUser.Name;
                 tRes.UPRE = tUser.GetUserPrefString();
-                var tHomeScreen = GetUserHomeScreen(null, tUser);
+                var tHomeScreen = GetUserHomeScreen(pSession, tUser);
                 if (!string.IsNullOrEmpty(tHomeScreen))
                 {
                     tRes.SSC = tHomeScreen.Split(';')[0];

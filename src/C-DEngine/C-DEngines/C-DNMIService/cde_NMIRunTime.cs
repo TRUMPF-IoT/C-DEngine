@@ -57,10 +57,46 @@ namespace nsCDEngine.Engines.NMIService
                     TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_NODEPONG"));
                     break;
                 case "GET_CHARTDATA":
-                    nsCDEngine.Engines.StorageService.TheStorageUtilities.PushChartsData(TheCommonUtils.CGuid(pMsg.Message.PLS), pMsg.Message.GetOriginator());
+                    StorageService.TheStorageUtilities.PushChartsData(TheCommonUtils.CGuid(pMsg.Message.PLS), pMsg.Message.GetOriginator());
                     break;
                 case "NMI_GET_UIDACL":
                     TheUserManager.SendACLToNMISilent(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(pMsg.Message.PLS), tClientInfo);
+                    break;
+                case "NMI_SHOW_EDITOR":
+                    if (!string.IsNullOrEmpty(pMsg.Message?.PLS))
+                    {
+                        try
+                        {
+                            var tLocParts = pMsg.Message?.PLS.Split(';');
+                            if (tLocParts?.Length > 1)
+                            {
+                                var tfld = GetFieldById(TheCommonUtils.CGuid(tLocParts[0]));
+                                if (tfld != null)
+                                {
+                                    var tMyForm = GetNMIEditorForm();
+                                    if (tMyForm != null)
+                                    {
+                                        DeleteFieldsByRange(tMyForm, 10, 9999);
+                                        bool bDontShowDefault = false;
+                                        if (tfld.IsEventRegistered(eUXEvents.OnShowEditor))
+                                        {
+                                            tfld.FireEvent(eUXEvents.OnShowEditor, pMsg, false);
+                                            bDontShowDefault = TheCommonUtils.CBool(pMsg.Cookie);
+                                        }
+                                        if (!bDontShowDefault)
+                                        {
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2010, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new ThePropertyBag() { "NoTE=true", "TileHeight=8", "TileWidth=6" });
+                                        }
+                                        ReloadNMIEditor();
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            //ignored
+                        }
+                    }
                     break;
                 case "NMI_SHOW_SCREEN":
                     {
