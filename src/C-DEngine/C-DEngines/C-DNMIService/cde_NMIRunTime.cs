@@ -85,7 +85,7 @@ namespace nsCDEngine.Engines.NMIService
                                         }
                                         if (!bDontShowDefault)
                                         {
-                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2010, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new ThePropertyBag() { "NoTE=true", "TileHeight=5", "TileWidth=6" });
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2010, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new ThePropertyBag() { "NoTE=true", "TileHeight=8", "TileWidth=6" });
                                         }
                                         ReloadNMIEditor();
                                     }
