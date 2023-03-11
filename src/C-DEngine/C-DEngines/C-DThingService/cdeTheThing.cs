@@ -366,6 +366,7 @@ namespace nsCDEngine.Engines.ThingService
             if (!string.IsNullOrEmpty(pModelCode) && !string.IsNullOrEmpty(pFaceUrl))
             {
                 MyNMIFaceModel ??= new TheNMIFaceModel();
+                MyNMIFaceModel.MyBaseThing = MyBaseThing;
                 MyNMIFaceModel.SetNMIModel(xLen, yLen, pModelCode, pFaceUrl);
                 return true;
             }

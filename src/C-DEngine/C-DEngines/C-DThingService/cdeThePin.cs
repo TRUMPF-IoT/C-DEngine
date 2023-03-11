@@ -122,6 +122,7 @@ namespace nsCDEngine.Engines.ThingService
         public int YLen { get; set; } = 0;
         public string Prefix { get; set; } = "NOP";
         int mfldStart = 0;
+        internal TheThing MyBaseThing;
         public int FldStart
         {
             get { return mfldStart; }
@@ -138,6 +139,7 @@ namespace nsCDEngine.Engines.ThingService
             XPos = x;
             YPos = y;
         }
+
         public void SetNMIModel(int xl, int yl, string pFix, string pFaceUrl)
         {
             XLen = xl;
@@ -146,6 +148,12 @@ namespace nsCDEngine.Engines.ThingService
             FacePlateUrl = pFaceUrl;
         }
 
-        public string FacePlateUrl { get; set; }
+        public string FacePlateUrl 
+        {
+            get { return TheThing.MemberGetSafePropertyString(MyBaseThing); }
+            set { 
+                TheThing.MemberSetSafePropertyString(MyBaseThing, value); 
+            }
+        }
     }
 }
