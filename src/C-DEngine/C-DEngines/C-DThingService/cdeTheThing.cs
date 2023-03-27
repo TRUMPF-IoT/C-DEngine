@@ -326,19 +326,44 @@ namespace nsCDEngine.Engines.ThingService
         #region NMI FacePlates for Group-Screens
         /// <summary>
         /// Shows the Device Faceplate that can be used in Group Screens
+        /// THIS IS IN PREVIEW - API Can Change - use with caution!
         /// </summary>
         /// <param name="MyLiveForm">Target Form to show the FacePlate in</param>
-        /// <param name="startFld">Start Field Order</param>
         /// <param name="pLeft">Left (in Pixels) to position the FacePlate</param>
         /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
         /// <returns></returns>
-        public virtual bool ShowDeviceFace(TheFormInfo MyLiveForm, int startFld, int pLeft, int pTop)
+        public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, int startFld=-1)
         {
-            if (MyNMIFaceModel != null)
+            MyNMIFaceModel.SetPos(pLeft, pTop);
+            if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
-                MyNMIFaceModel.SetPos(startFld, pLeft, pTop);
-                return true;
+                if (startFld < 0)
+                    startFld = MyLiveForm.FldPos;
+                else
+                    MyLiveForm.FldStart = startFld;
+                var fld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
+                fld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, paramspMsg2) =>
+                {
+                    pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), "GROUP", pMsg);
+                });
+                foreach (var pin in MyBaseThing.GetAllPins())
+                {
+                    TheFieldInfo tfld = null;
+                    if (!pin.NMIIsPinRight)
+                        tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
+                    else
+                        tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = MyNMIFaceModel.XLen - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
+                    tfld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, paramspMsg2) =>
+                    {
+                        pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), $"PIN_{pin.PinType}", pMsg);
+                    });
+                }
             }
+            return startFld;
+        }
+
+        public virtual bool OnShowEditor(TheFormInfo pForm,string pTarget, TheProcessMessage pMsg)
+        {
             return false;
         }
 
@@ -348,26 +373,21 @@ namespace nsCDEngine.Engines.ThingService
         public TheNMIFaceModel MyNMIFaceModel { get; private set; } = null;
 
         /// <summary>
-        /// returns true if TheThingBase has a valid FaceModel
-        /// </summary>
-        public bool HasDeviceFace { get { return MyNMIFaceModel != null; } }
-
-        /// <summary>
         /// Sets the NMI Face PlateModel required by the Group Screen to set dimensions of the FacePlate
         /// This call has be called at least once before the FacNMIModel can be used
         /// </summary>
-        /// <param name="pFaceUrl">URL Pointing at the Faceplate resource to use</param>
         /// <param name="pModelCode">A Code for the faceplate used to tag the plat in the group</param>
         /// <param name="xLen">Length of the FacePlate in pixels</param>
         /// <param name="yLen">Height of the FacePlate in pixels</param>
         /// <returns></returns>
-        public virtual bool InitNMIDeviceFaceModel(string pFaceUrl = null, string pModelCode = null, int xLen = 0, int yLen = 0)
+        public virtual bool InitNMIDeviceFaceModel(string pModelCode = null, int xLen = 0, int yLen = 0)
         {
-            if (!string.IsNullOrEmpty(pModelCode) && !string.IsNullOrEmpty(pFaceUrl))
+            if (MyBaseThing!=null && MyBaseThing?.MyThingBase == null)
+                MyBaseThing.MyThingBase = this;
+            if (!string.IsNullOrEmpty(pModelCode))
             {
                 MyNMIFaceModel ??= new TheNMIFaceModel();
-                MyNMIFaceModel.MyBaseThing = MyBaseThing;
-                MyNMIFaceModel.SetNMIModel(xLen, yLen, pModelCode, pFaceUrl);
+                MyNMIFaceModel.SetNMIModel(xLen, yLen, pModelCode);
                 return true;
             }
             return false;
@@ -733,6 +753,11 @@ namespace nsCDEngine.Engines.ThingService
             MyBaseEngine = TheThingRegistry.GetBaseEngine(EngineName);
             return MyBaseEngine;
         }
+
+        /// <summary>
+        /// If this thing has a ThingBase, a reference will be stored here during creation of TheThingBase
+        /// </summary>
+        public TheThingBase MyThingBase { get; internal set; }
 
         /// <summary>
         /// Sets the BaseThing - only if the given pThing does not match "this"

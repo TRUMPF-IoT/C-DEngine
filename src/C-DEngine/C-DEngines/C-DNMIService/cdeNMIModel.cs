@@ -2125,6 +2125,30 @@ namespace nsCDEngine.Engines.NMIService
         public bool IsUsingAbsolute { get; set; }
 
         [IgnoreDataMember]
+        public object UpdateLock=new object();
+
+        int mfldStart = 0;
+
+        [IgnoreDataMember]
+        public int FldStart
+        {
+            get { return mfldStart; }
+            set { mfldStart = value; mFldPos = value; }
+        }
+        int mFldPos = 0;
+
+        [IgnoreDataMember]
+        public int FldPos
+        {
+            get { return ++mFldPos; }
+        }
+        [IgnoreDataMember]
+        public int CurFldPos
+        {
+            get { return mFldPos; }
+        }
+
+        [IgnoreDataMember]
         public int TileWidth
         {
             get

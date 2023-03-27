@@ -25,7 +25,7 @@ namespace nsCDEngine.Engines.ThingService
     }
     /// <summary>
     /// Default Pin Names - Derive to add new Pin Types. 
-    /// 
+    /// PREVIEW: This API might still change until it is finalized
     /// </summary>
     public class ePinTypeName
     {
@@ -113,6 +113,7 @@ namespace nsCDEngine.Engines.ThingService
 
     /// <summary>
     /// Extension for FacePlates of TheThingBase.
+    /// PREVIEW: This is still in preview and code could change!
     /// </summary>
     public class TheNMIFaceModel
     {
@@ -121,39 +122,18 @@ namespace nsCDEngine.Engines.ThingService
         public int XLen { get; set; } = 0;
         public int YLen { get; set; } = 0;
         public string Prefix { get; set; } = "NOP";
-        int mfldStart = 0;
-        internal TheThing MyBaseThing;
-        public int FldStart
+
+        public void SetPos(int x, int y)
         {
-            get { return mfldStart; }
-            set { mfldStart = value; mFldPos = value; }
-        }
-        int mFldPos = 0;
-        public int FldPos
-        {
-            get { return ++mFldPos; }
-        }
-        public void SetPos(int startFld, int x, int y)
-        {
-            FldStart = startFld;
             XPos = x;
             YPos = y;
         }
 
-        public void SetNMIModel(int xl, int yl, string pFix, string pFaceUrl)
+        public void SetNMIModel(int xl, int yl, string pFix)
         {
             XLen = xl;
             YLen = yl;
             Prefix = pFix;
-            FacePlateUrl = pFaceUrl;
-        }
-
-        public string FacePlateUrl 
-        {
-            get { return TheThing.MemberGetSafePropertyString(MyBaseThing); }
-            set { 
-                TheThing.MemberSetSafePropertyString(MyBaseThing, value); 
-            }
         }
     }
 }

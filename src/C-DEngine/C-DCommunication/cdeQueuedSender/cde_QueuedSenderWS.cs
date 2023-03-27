@@ -147,8 +147,8 @@ namespace nsCDEngine.Communication
                                 tQueued.OrgMessage.GetNextSerial(tQueued.SubMsgCnt);
                                 tDev.MSG = tQueued.OrgMessage;
                             }
-                            var tCurSessState = MyTargetNodeChannel.MySessionState;
-                            if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_JAVAJASON)
+                            var tCurSessState = MyTargetNodeChannel?.MySessionState;
+                            if (MyTargetNodeChannel?.SenderType == cdeSenderType.CDE_JAVAJASON)
                             {
                                 if (tDev.MSG == null)
                                 {

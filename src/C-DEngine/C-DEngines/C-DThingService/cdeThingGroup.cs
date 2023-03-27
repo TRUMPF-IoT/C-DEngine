@@ -14,6 +14,7 @@ namespace nsCDEngine.Engines.ThingService
 {
     /// <summary>
     /// Thing Groups are collections of Things that can be displayed together in a NMI Screen
+    /// PREVIEW: This new Class is still in Preview and might have changes in the API before release
     /// </summary>
     public class TheThingGroup : TheThingBase
     {
@@ -135,13 +136,13 @@ namespace nsCDEngine.Engines.ThingService
 
         public virtual bool DoCreateUX()
         {
-            var tBut = TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 1000, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, TileWidth = 1, TileHeight = 1, Left = 0, Top = 0, NoTE = true, ClassName = "enTransBut" });
+            var tBut = TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, TileWidth = 1, TileHeight = 1, Left = 0, Top = 0, NoTE = true, ClassName = "enTransBut" });
             tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, pmsg) =>
             {
                 ReloadForm();
             });
-            TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 4000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
-            TheNMIEngine.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 4010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
+            TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
+            TheNMIEngine.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 10010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
             return true;
         }
         public void ReloadForm()
