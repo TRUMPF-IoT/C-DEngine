@@ -662,8 +662,8 @@ namespace nsCDEngine.Engines.NMIService
                     }
                 }
             });
-            tFlds.Add("FORM", MyNMIForm);
-            tFlds.Add("DASHICON", AddFormToThingUX(pBaseThing, MyNMIForm, "CMyForm", pBaseThing.FriendlyName, 1, 3, 0, $"{pFormGuid}-HIDE", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" }));
+            tFlds.Add("Form", MyNMIForm);
+            tFlds.Add("DashIcon", AddFormToThingUX(pBaseThing, MyNMIForm, "CMyForm", $"{pBaseThing.FriendlyName}", 1, 3, 0, $"{pFormGuid}", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" }));
             return tFlds;
         }
 
