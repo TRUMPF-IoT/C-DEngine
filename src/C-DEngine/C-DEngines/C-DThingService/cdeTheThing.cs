@@ -332,28 +332,31 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pLeft">Left (in Pixels) to position the FacePlate</param>
         /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
         /// <returns></returns>
-        public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, int startFld=-1)
+        public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, int startFld = -1)
         {
             MyNMIFaceModel.SetPos(pLeft, pTop);
+            if (startFld < 0)
+                startFld = MyLiveForm.FldPos;
+            else
+                MyLiveForm.FldStart = startFld;
+            var fld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
             if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
-                if (startFld < 0)
-                    startFld = MyLiveForm.FldPos;
-                else
-                    MyLiveForm.FldStart = startFld;
-                var fld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
-                fld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, paramspMsg2) =>
+                fld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
                     pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), "GROUP", pMsg);
                 });
-                foreach (var pin in MyBaseThing.GetAllPins())
+            }
+            foreach (var pin in MyBaseThing.GetAllPins())
+            {
+                TheFieldInfo tfld = null;
+                if (!pin.NMIIsPinRight)
+                    tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
+                else
+                    tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = MyNMIFaceModel.XLen - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
+                if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
-                    TheFieldInfo tfld = null;
-                    if (!pin.NMIIsPinRight)
-                        tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
-                    else
-                        tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = MyNMIFaceModel.XLen - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
-                    tfld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, paramspMsg2) =>
+                    tfld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                     {
                         pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), $"PIN_{pin.PinType}", pMsg);
                     });
