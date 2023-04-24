@@ -754,7 +754,7 @@ namespace nsCDEngine.BaseClasses
                         var labeledKpisPropertyName = "LabeledKpis";
                         if (!perSecond)
                         {
-                            var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis);
+                            var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis.Values);
                             kpiProp.SetProperty(labeledKpisPropertyName, kpiJson);
                         }
                         else
