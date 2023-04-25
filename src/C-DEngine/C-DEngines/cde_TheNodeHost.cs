@@ -26,6 +26,7 @@ namespace nsCDEngine.Engines
             get { return (int)TheThing.MemberGetSafePropertyNumber(MyBaseThing); }
             set { TheThing.MemberSetSafePropertyNumber(MyBaseThing, value); }
         }
+
         public TheNodeHost()
         {
         }
@@ -65,7 +66,13 @@ namespace nsCDEngine.Engines
 
             var kpiEn = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableKPIs"));
             TheThing.SetSafePropertyBool(MyBaseThing, "EnableKPIs", kpiEn);
+
             TheCDEKPIs.EnableKpis = kpiEn;
+            TheCDEKPIs.KpiExpiration = TimeSpan.FromMinutes(TheCommonUtils.CInt(
+                TheBaseAssets.MySettings.GetAppSetting("KPIExpirationAfterMinutes", "1440", false, true)));
+            TheCDEKPIs.KpiExpirationCheckInterval = TimeSpan.FromMinutes(TheCommonUtils.CInt(
+                TheBaseAssets.MySettings.GetAppSetting("KPIExpirationCheckIntervalInMinutes", "1440", false, true)));
+            
             if (kpiEn)
             {
                 if (TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs)
@@ -83,20 +90,41 @@ namespace nsCDEngine.Engines
                     });
                     taskKpiThread.Start();
                 }
+
                 KPIHarvestInterval = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetAppSetting("KPIHarvestIntervalInSeconds", "5", false, true));
-                if (KPIHarvestInterval > 0)
+                if (KPIHarvestInterval > 0 || TheCDEKPIs.KpiExpirationCheckInterval > TimeSpan.Zero)
                     TheQueuedSenderRegistry.RegisterHealthTimer(SinkCyclic);
             }
             return true;
         }
 
+        private int _processingKpis;
+
         private void SinkCyclic(long timer)
         {
-            if (KPIHarvestInterval == 0) return;
-            if (timer % KPIHarvestInterval != 0) return;
-            if (TheThing.GetSafePropertyBool(MyBaseThing, "EnableKPIs"))
+            if (Interlocked.Exchange(ref _processingKpis, 1) != 0) return;
+            try
             {
-                TheCDEKPIs.ToThingProperties(MyBaseThing, true, false);
+                if (TheCDEKPIs.KpiExpirationCheckInterval > TimeSpan.Zero)
+                {
+                    var checkInterval = Convert.ToInt64(TheCDEKPIs.KpiExpirationCheckInterval.TotalSeconds);
+                    if (checkInterval > 0 && timer % checkInterval == 0)
+                    {
+                        TheCDEKPIs.RemoveExpiredKpis(MyBaseThing);
+                    }
+                }
+
+                if (KPIHarvestInterval != 0 && timer % KPIHarvestInterval == 0)
+                {
+                    if (TheThing.GetSafePropertyBool(MyBaseThing, "EnableKPIs"))
+                    {
+                        TheCDEKPIs.ToThingProperties(MyBaseThing, true, false);
+                    }
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _processingKpis, 0);
             }
         }
     }
