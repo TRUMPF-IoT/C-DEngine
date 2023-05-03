@@ -3416,24 +3416,36 @@ namespace nsCDEngine.Engines.ThingService
         }
     }
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
-    public class OPCUAPropertyAttribute : Attribute
+    public class OPCUABaseAttribute : Attribute
     {
-        public const string Meta = "UAProperty";
+        public const string Meta = "UATag";
         public string UABrowseName;
+
+        public string UADescription;
+        public string UADisplayName;
+        public string UANodeId;
+        public bool HideFromAnonymous;
+    }
+
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    public class OPCUAPropertyAttribute : OPCUABaseAttribute
+    {
+        public new const string Meta = "UAProperty";
 
         // Possible future enhancements. All these should be defined in the UA NodeSet referenced in the UATypeNodeId of TheThing
         public string UASourceType;
         public string UAUnits;
         public double UARangeMin;
         public double UARangeMax;
-        public string UADescription;
-        public string UADisplayName;
-        public string UANodeId;
         public int UAWriteMask;
         public int UAUserWriteMask;
         public bool UAMandatory;
         public bool AllowWrites;
-        public bool HideFromAnonymous;
+    }
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    public class OPCUAFolderAttribute : OPCUABaseAttribute
+    {
+        public new const string Meta = "UAFolder";
     }
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
@@ -3454,8 +3466,8 @@ namespace nsCDEngine.Engines.ThingService
     }
 
     [AttributeUsage(AttributeTargets.Method )]
-    public class OPCUAMethodAttribute : Attribute
+    public class OPCUAMethodAttribute : OPCUABaseAttribute
     {
-        public const string Meta = "UAMethodCommand";
+        public new const string Meta = "UAMethodCommand";
     }
 }
