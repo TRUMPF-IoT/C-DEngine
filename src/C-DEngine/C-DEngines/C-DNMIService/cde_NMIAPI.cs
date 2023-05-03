@@ -548,7 +548,7 @@ namespace nsCDEngine.Engines.NMIService
                     //intended
                 }
                 if (!(FaceMacros?.Count > 0))
-                    FaceMacros=new List<string> { "<%C20:", "<%C21:", "<%V:", "<%S:", "<%C:", "<%I:" };
+                    FaceMacros=new List<string> { "<%C20:", "<%C12:", "<%C21:", "<%V:", "<%S:", "<%C:", "<%I:" };
             }
             foreach (var tM in FaceMacros)
             {
@@ -556,6 +556,11 @@ namespace nsCDEngine.Engines.NMIService
                 while (posEnd >= 0)
                 {
                     string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, tM, "%>", false);
+                    if (tname == null)
+                        continue;
+                    var tParts=tname?.Split(':');
+                    if (tParts?.Length>1)
+                        tname = tParts[1];
                     RegisterPublication(pBaseThing, tname, pRequestingNode);
                 }
             }
