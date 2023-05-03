@@ -277,7 +277,7 @@ namespace nsCDEngine.Communication
                         TheCDEKPIs.IncrementKPI(eKPINames.QSSent, sendMsgCount);
                         if (kpiLabels is { Count: > 0 })
                         {
-                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels, sendMsgCount);
+                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent.ToString(), kpiLabels, sendMsgCount, false, TheCDEKPIs.KpiExpiration);
                         }
 
                         if (BinSendBuffer is { Length: > 0 })
@@ -285,7 +285,7 @@ namespace nsCDEngine.Communication
                             TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, BinSendBuffer.Length);
                             if (kpiLabels is { Count: > 0 })
                             {
-                                TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, BinSendBuffer.Length);
+                                TheCDEKPIs.IncrementKPI(eKPINames.QKBSent.ToString(), kpiLabels, BinSendBuffer.Length, false, TheCDEKPIs.KpiExpiration);
                             }
                         }
                     }
@@ -328,7 +328,8 @@ namespace nsCDEngine.Communication
                         if (MyTargetNodeChannel != null)
                         {
                             var scopeHash = MyTargetNodeChannel.ScopeIDHash;
-                            TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, new Dictionary<string, string> {{"scope", scopeHash}}, eResult.ResponseBuffer.Length);
+                            TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived.ToString(),
+                                new Dictionary<string, string> {{"scope", scopeHash}}, eResult.ResponseBuffer.Length);
                         }
                     }
 
