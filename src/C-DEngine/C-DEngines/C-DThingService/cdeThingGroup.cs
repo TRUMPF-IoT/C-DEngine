@@ -14,23 +14,29 @@ namespace nsCDEngine.Engines.ThingService
 {
     /// <summary>
     /// Thing Groups are collections of Things that can be displayed together in a NMI Screen
+    /// PREVIEW: This new Class is still in Preview and might have changes in the API before release
     /// </summary>
     public class TheThingGroup : TheThingBase
     {
-        public TheThingGroup(TheThing pThing, string pID, ICDEPlugin pConnector)
+        public TheThingGroup(TheThing pThing, string pID, IBaseEngine pConnector)
         {
             MyBaseThing = pThing ?? new TheThing();
             if (string.IsNullOrEmpty(MyBaseThing.ID))
                 MyBaseThing.ID = pID;
-            if (string.IsNullOrEmpty(MyBaseThing.EngineName))
-                MyBaseThing.EngineName = pConnector?.GetBaseEngine()?.GetEngineName();
             MyBaseThing.SetIThingObject(this);
             MyScreenGuid = TheThing.GetSafeThingGuid(MyBaseThing, "MyGroupMID");
-            ModelGuid = pConnector.GetBaseEngine().GetEngineID();
+            if (pConnector != null)
+            {
+                MyBaseEngine = pConnector;
+                if (string.IsNullOrEmpty(MyBaseThing.EngineName))
+                    MyBaseThing.EngineName = MyBaseEngine?.GetEngineName();
+                ModelGuid = MyBaseEngine.GetEngineID();
+            }
         }
         private cdeConcurrentDictionary<Guid, TheThingBase> MyGroupThings { get; set; } = new cdeConcurrentDictionary<Guid, TheThingBase>();
         public Guid MyScreenGuid { get; protected set; }
         private Guid ModelGuid;
+        protected IBaseEngine MyBaseEngine;
         protected TheFormInfo MyGroupForm;
         public bool IsGroupVisible { get; protected set; } = false;
 
@@ -128,20 +134,22 @@ namespace nsCDEngine.Engines.ThingService
                 });
                 block["Form"] = MyGroupForm;
                 block["DashIcon"] = TheNMIEngine.AddFormToThingUX(MyBaseThing, MyGroupForm, "CMyForm", MyBaseThing.FriendlyName, 1, 3, 0, "..Overview", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" });
-                mIsUXInitialized = DoCreateUX();
+                mIsUXInitialized = DoCreateUX(block);
             }
             return true;
         }
 
-        public virtual bool DoCreateUX()
+        public virtual bool DoCreateUX(cdeConcurrentDictionary<string, TheMetaDataBase> pUXFlds)
         {
-            var tBut = TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 1000, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, TileWidth = 1, TileHeight = 1, Left = 0, Top = 0, NoTE = true, ClassName = "enTransBut" });
+            var tBut = TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, TileWidth = 1, TileHeight = 1, Left = 0, Top = 0, NoTE = true, ClassName = "enTransBut" });
             tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, pmsg) =>
             {
                 ReloadForm();
             });
-            TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 4000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
-            TheNMIEngine.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 4010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
+            pUXFlds["RefreshButton"] = tBut;
+            pUXFlds["PropTableGroup"]= TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
+            pUXFlds["PropTable"] = TheNMIEngine.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.Table, 10010, 8, 0x80, null, "mypropertybag", new nmiCtrlTableView() { TileWidth=12, TileHeight=7, NoTE = true, ParentFld = 10000, ShowFilterField = true });
+//                TheNMIEngine.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 10010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
             return true;
         }
         public void ReloadForm()

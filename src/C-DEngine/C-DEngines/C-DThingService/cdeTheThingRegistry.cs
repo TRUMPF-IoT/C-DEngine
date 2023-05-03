@@ -1517,6 +1517,19 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
+        /// Return all Things that have an extended TheThingBase object
+        /// </summary>
+        /// <param name="pEngineName"></param>
+        /// <param name="AllowRemoteEngine"></param>
+        /// <returns></returns>
+        public static List<TheThing> GetThingBases(string pEngineName, bool AllowRemoteEngine = false)
+        {
+            List<TheThing> tList = GetThingsOfEngine(pEngineName, AllowRemoteEngine);
+            if (tList == null || tList.Count == 0) return tList;
+            return tList.Where(s => s.MyThingBase != null).ToList();
+        }
+
+        /// <summary>
         /// Returns all Things that have a UATypeNodeId attribute set
         /// </summary>
         /// <param name="pEngineName">Engine Name owning TheThings</param>

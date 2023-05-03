@@ -6,7 +6,6 @@ using nsCDEngine.BaseClasses;
 using nsCDEngine.Communication;
 using nsCDEngine.Engines.StorageService;
 using nsCDEngine.Engines.ThingService;
-using nsCDEngine.Security;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -549,7 +548,7 @@ namespace nsCDEngine.Engines.NMIService
                     //intended
                 }
                 if (!(FaceMacros?.Count > 0))
-                    FaceMacros=new List<string> { "<%C20:", "<%C21:", "<%V:", "<%S:", "<%C:", "<%I:" };
+                    FaceMacros=new List<string> { "<%C20:", "<%C12:", "<%C21:", "<%V:", "<%S:", "<%C:", "<%I:" };
             }
             foreach (var tM in FaceMacros)
             {
@@ -557,6 +556,11 @@ namespace nsCDEngine.Engines.NMIService
                 while (posEnd >= 0)
                 {
                     string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, tM, "%>", false);
+                    if (tname == null)
+                        continue;
+                    var tParts=tname?.Split(':');
+                    if (tParts?.Length>1)
+                        tname = tParts[1];
                     RegisterPublication(pBaseThing, tname, pRequestingNode);
                 }
             }
@@ -600,6 +604,19 @@ namespace nsCDEngine.Engines.NMIService
         }
 
         /// <summary>
+        /// Returns TheThing of the NMI Editor
+        /// </summary>
+        /// <returns></returns>
+        public static TheThing GetNMIEditorThing()
+        {
+            var tFormID = TheCommonUtils.CGuid(TheCDEngines.MyNMIService?.GetProperty("NMIEditorFormID", false));
+            if (tFormID == Guid.Empty)
+                return null;
+            var form=GetFormById(tFormID);
+            return TheThingRegistry.GetThingByMID(form.cdeO);
+        }
+
+        /// <summary>
         /// Reloads the content of the NMI Editor
         /// </summary>
         public static void ReloadNMIEditor()
@@ -609,6 +626,130 @@ namespace nsCDEngine.Engines.NMIService
                 return;
             TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:",
     $"{TheCommonUtils.cdeGuidToString(tFormID)}:CMyForm:{TheCommonUtils.cdeGuidToString(tFormID)}:{TheCommonUtils.cdeGuidToString(TheNMIEngine.eNMIDashboard)}:true:true"));
+        }
+
+
+        /// <summary>
+        /// Adds a new NMI Screen to a Thing that allows adding/removing and changing of FacePlates from other Things
+        /// PREVIEW! This API is still in Preview and could change until final publication
+        /// </summary>
+        /// <param name="pBaseThing">Owner Thing</param>
+        /// <param name="pFormGuid">Target Form MID</param>
+        /// <param name="XL">Width in Tiles</param>
+        /// <param name="FormModelID">ModelID for the Form</param>
+        /// <param name="beforeMetaLoad">Optional Event fired when the Form is loaded</param>
+        /// <param name="pBag">Optional PropertyBag</param>
+        /// <returns></returns>
+        public static Dictionary<string, TheMetaDataBase> AddFlexibleNMIScreen(TheThing pBaseThing, Guid pFormGuid, int XL, string FormModelID, Action<TheFormInfo> beforeMetaLoad = null, ThePropertyBag pBag = null)
+        {
+            Guid ModelGuid = pBaseThing.GetBaseEngine().GetEngineID();
+            var tFlds = new Dictionary<string, TheMetaDataBase>();
+            var MyNMIForm = new TheFormInfo(pFormGuid, eEngineName.NMIService, null, $"TheThing;:;0;:;True;:;cdeMID={pBaseThing.cdeMID}")
+            {
+                DefaultView = eDefaultView.Form,
+                PropertyBag = new nmiCtrlFormView { TileWidth = XL, FitToScreen = true, HideCaption = true, UseMargin = false },
+                ModelID = FormModelID
+            };
+            if (pBag != null)
+                MyNMIForm.PropertyBag = pBag;
+            TheThing.SetSafePropertyBool(pBaseThing, $"Form_{pFormGuid}_IsVisible", false);
+            MyNMIForm.RegisterEvent2(eUXEvents.OnBeforeMeta, (pmsg, sender) =>
+            {
+                if (!TheThing.GetSafePropertyBool(pBaseThing, $"Form_{pFormGuid}_IsVisible"))
+                {
+                    lock (MyNMIForm.UpdateLock)
+                    {
+                        AddFlexibleNMIControls(pBaseThing, pFormGuid, MyNMIForm);
+                        beforeMetaLoad?.Invoke(null);
+                        if (MyNMIForm != null)
+                            TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
+                        TheThing.SetSafePropertyBool(pBaseThing, $"Form_{pFormGuid}_IsVisible", true);
+                    }
+                }
+            });
+            tFlds.Add("Form", MyNMIForm);
+            tFlds.Add("DashIcon", AddFormToThingUX(pBaseThing, MyNMIForm, "CMyForm", $"{pBaseThing.FriendlyName}", 1, 3, 0, $"{pFormGuid}", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" }));
+            return tFlds;
+        }
+
+        /// <summary>
+        /// Adds a Canvas that allows dynamic add/remove/change of new controls and Faceplates
+        /// PREVIEW! This API is still in Preview and could change until final publication
+        /// </summary>
+        /// <param name="pBaseThing">Owner Thing</param>
+        /// <param name="MyNMIForm">Target Form</param>
+        /// <param name="pFormGuid">Form ID</param>
+        /// <param name="FldNo">FldOrder of the Canvas Control</param>
+        /// <param name="ACL">Access Permissions</param>
+        /// <param name="XL">Width of the Control in Tiles</param>
+        /// <param name="YL">Height of the Control in Tiles</param>
+        /// <param name="pBag">Optional Property Bag</param>
+        /// <returns></returns>
+        public static Dictionary<string, TheMetaDataBase> AddFlexibleNMICanvas(TheThing pBaseThing, TheFormInfo MyNMIForm, Guid pFormGuid, int FldNo, int ACL, int XL, int YL, ThePropertyBag pBag = null)
+        {
+            var tFlds = new Dictionary<string, TheMetaDataBase>();
+            Guid ModelGuid = pBaseThing.GetBaseEngine().GetEngineID();
+            var tFL = AddSmartControl(pBaseThing, MyNMIForm, eFieldType.TileGroup, FldNo, 0, ACL, null, null, new nmiCtrlTileGroup { NoTE = true, IsAbsolute = true, Top = 0, Left = 0, TileWidth = XL, TileHeight = YL });
+            if (pBag != null)
+                tFL.PropertyBag = pBag;
+            tFlds.Add("CANVAS", tFL);
+            tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
+            {
+                var tNMIEditorForm = GetNMIEditorForm();
+                if (tNMIEditorForm != null)
+                {
+                    var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FacePlateUrl", false)?.GetValue()}"));
+                    string tOpt = "";
+                    foreach (var tThing in tThings)
+                    {
+                        if (tOpt.Length > 0)
+                            tOpt += ";";
+                        tOpt += $"{tThing.FriendlyName}:{tThing.cdeMID}";
+                    }
+                    AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.SmartLabel, 2004, 0xA2, 0x80, null, null, new nmiCtrlSmartLabel() { NoTE = true, FontSize = 24, TileFactorY = 2, Text = "Select a Thing to Add", TileWidth = 5 });
+                    AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.ComboBox, 2005, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { NoTE = true, Options = tOpt, TileWidth = 5 });
+                    var ttt = AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
+                    ttt.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
+                    {
+                        var tMsg = para as TheProcessMessage;
+                        var tEdThing = GetNMIEditorThing();
+                        if (tMsg != null && tEdThing != null)
+                        {
+                            var tNewCtrl = $"{tEdThing?.GetProperty("newthing")}";
+                            if (!string.IsNullOrEmpty(tNewCtrl))
+                            {
+                                var tCtrlList = TheThing.GetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates");
+                                var tL = TheCommonUtils.CStringToList(tCtrlList, ',');
+                                tL ??= new List<string>();
+                                tL.Add(tNewCtrl);
+                                TheThing.SetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates", TheCommonUtils.CListToString(tL, ","));
+                                if (AddFlexibleNMIControls(pBaseThing, pFormGuid, MyNMIForm))
+                                {
+                                    TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
+                                }
+                            }
+                        }
+                    });
+                    pMsg.Cookie = true;
+                }
+            });
+            return tFlds;
+        }
+
+        private static bool AddFlexibleNMIControls(TheThing pBaseThing, Guid pFormGuid, TheFormInfo pNMIForm)
+        {
+            DeleteFieldsByRange(pNMIForm, 100, 9999);
+            var tCtrlList = TheThing.GetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates");
+            if (string.IsNullOrEmpty(tCtrlList))
+                return false;
+            var tL = TheCommonUtils.CStringToList(tCtrlList, ',');
+            pNMIForm.FldStart = 100;
+            foreach (var t in tL)
+            {
+                var tFaceThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(t));
+                tFaceThing?.MyThingBase?.ShowDeviceFace(pNMIForm, 78, 78);
+            }
+            return true;
         }
 
         /// <summary>

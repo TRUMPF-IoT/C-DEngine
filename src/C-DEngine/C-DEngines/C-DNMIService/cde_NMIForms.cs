@@ -247,16 +247,19 @@ namespace nsCDEngine.Engines.NMIService
                 return null;
             TheFormInfo tDef = TheNMIEngine.GetFormById(FormId);
             if (tDef == null) return null;
+            TheFormInfo tToSend = null;
+            lock (tDef.UpdateLock)
+            {
+                tDef.FireEvent(eUXEvents.OnBeforeMeta, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message = pRequestor }, false);
+                tToSend = tDef.Clone(pClientInfo.WebPlatform);
+                TheNMIEngine.CheckAddButtonPermission(pClientInfo, tToSend);
+                tToSend.AssociatedClassName = FormId.ToString();
+                var tso = GetScreenOptions(FormId, pClientInfo, tDef);
+                if (tso != null && tso.TileWidth > 0)
+                    tToSend.TileWidth = tso.TileWidth;
 
-            tDef.FireEvent(eUXEvents.OnBeforeMeta, new TheProcessMessage() { ClientInfo = pClientInfo, CurrentUserID = pClientInfo.UserID, Message=pRequestor }, false);
-            TheFormInfo tToSend = tDef.Clone(pClientInfo.WebPlatform);
-            TheNMIEngine.CheckAddButtonPermission(pClientInfo, tToSend);
-            tToSend.AssociatedClassName = FormId.ToString();
-            var tso = GetScreenOptions(FormId, pClientInfo, tDef);
-            if (tso != null && tso.TileWidth > 0)
-                tToSend.TileWidth = tso.TileWidth;
-
-            tToSend.FormFields = GetPermittedFields(FormId, pClientInfo, tso, true);
+                tToSend.FormFields = GetPermittedFields(FormId, pClientInfo, tso, true);
+            }
             return tToSend;
         }
 
