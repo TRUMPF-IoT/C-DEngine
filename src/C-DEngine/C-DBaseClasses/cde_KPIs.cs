@@ -54,17 +54,38 @@ namespace nsCDEngine.BaseClasses
                 if (reset) Value = 0;
                 return clonedKpi;
             }
+
+            internal string GenerateKey()
+                => GenerateKey(Labels);
+
+            internal static string GenerateKey(IDictionary<string, string> labels)
+            {
+                if (labels == null || labels.Count == 0)
+                    return string.Empty;
+
+                var sb = new StringBuilder(128);
+                foreach (var labelPair in labels.OrderBy(l => l.Key))
+                {
+                    sb.Append(labelPair.Key);
+                    sb.Append(labelPair.Value);
+                }
+
+                return sb.ToString();
+            }
         }
 
         private class Kpi
         {
-            public List<LabeledKpi> LabeledKpis { get; } = new();
+            public Dictionary<string, LabeledKpi> LabeledKpis { get; private set; } = new();
             public double? Value { get; set; }
 
             internal Kpi Harvest(bool reset)
             {
-                var clone = new Kpi {Value = Value};
-                clone.LabeledKpis.AddRange(LabeledKpis.Select(kpi => kpi.Harvest(reset)));
+                var clone = new Kpi
+                {
+                    Value = Value,
+                    LabeledKpis = LabeledKpis.ToDictionary(kpi => kpi.Key, kpi => kpi.Value.Harvest(reset))
+                };
                 if (reset && Value != null) Value = 0;
                 return clone;
             }
@@ -517,22 +538,19 @@ namespace nsCDEngine.BaseClasses
             }
             else
             {
-                kpi.LabeledKpis.Add(new LabeledKpi
+                var labeledKpi = new LabeledKpi
                 {
                     Labels = labels,
                     Value = value
-                });
+                };
+                kpi.LabeledKpis.Add(labeledKpi.GenerateKey(), labeledKpi);
             }
 
             return kpi;
         }
 
-        private static LabeledKpi FindLabeledKpi(List<LabeledKpi> kpiList, IDictionary<string, string> labels)
-        {
-            return kpiList.Where(kpi => kpi.Labels?.Count == labels?.Count)
-                .FirstOrDefault(kpi =>
-                    kpi.Labels?.All(l => (labels?.TryGetValue(l.Key, out var value) ?? false) && value == l.Value) ?? false); ;
-        }
+        private static LabeledKpi FindLabeledKpi(IDictionary<string, LabeledKpi> kpiDict, IDictionary<string, string> labels)
+            => kpiDict.TryGetValue(LabeledKpi.GenerateKey(labels), out var kpi) ? kpi : null;
 
         private static void AddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset)
         {
@@ -558,14 +576,25 @@ namespace nsCDEngine.BaseClasses
             else
             {
                 if (labels == null || labels.Count == 0)
+                {
                     kpi.Value = updateValueFunc(Convert.ToInt64(kpi.Value ?? 0));
+                }
                 else
                 {
                     var labeledKpi = FindLabeledKpi(kpi.LabeledKpis, labels);
                     if (labeledKpi == null)
-                        kpi.LabeledKpis.Add(new LabeledKpi { Labels = labels, Value = updateValueFunc(0) });
+                    {
+                        labeledKpi = new LabeledKpi
+                        {
+                            Labels = labels,
+                            Value = updateValueFunc(0)
+                        };
+                        kpi.LabeledKpis.Add(labeledKpi.GenerateKey(), labeledKpi);
+                    }
                     else
+                    {
                         labeledKpi.Value = updateValueFunc(Convert.ToInt64(labeledKpi.Value));
+                    }
                 }
             }
         }
@@ -725,7 +754,7 @@ namespace nsCDEngine.BaseClasses
                         var labeledKpisPropertyName = "LabeledKpis";
                         if (!perSecond)
                         {
-                            var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis);
+                            var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis.Values);
                             kpiProp.SetProperty(labeledKpisPropertyName, kpiJson);
                         }
                         else
@@ -769,26 +798,31 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        private static List<LabeledKpi> ComputeTotals(List<LabeledKpi> totalKpis, List<LabeledKpi> currentKpis)
+        private static List<LabeledKpi> ComputeTotals(List<LabeledKpi> totalKpis, IDictionary<string, LabeledKpi> currentKpis)
         {
             // increment existing kpi values
-            totalKpis.ForEach(totalKpi =>
-            {
-                var currentKpi = FindLabeledKpi(currentKpis, totalKpi.Labels);
-                if (currentKpi != null)
-                    totalKpi.Value += currentKpi.Value;
-            });
+            var totalKpiDict = totalKpis.ToDictionary(
+                totalKpi => totalKpi.GenerateKey(),
+                totalKpi =>
+                {
+                    var currentKpi = FindLabeledKpi(currentKpis, totalKpi.Labels);
+                    if (currentKpi != null)
+                        totalKpi.Value += currentKpi.Value;
+                    return totalKpi;
+                });
 
             // concat new kpi values
-            var resultingKpis =
-                totalKpis.Concat(currentKpis.Where(kpi => FindLabeledKpi(totalKpis, kpi.Labels) == null));
+            var newKpis = currentKpis
+                .Where(kpi => FindLabeledKpi(totalKpiDict, kpi.Value.Labels) == null)
+                .Select(kpi => kpi.Value);
+            var resultingKpis = totalKpis.Concat(newKpis);
 
             return resultingKpis.ToList();
         }
 
-        private static string CalculatePerSecondJson(List<LabeledKpi> currentKpis, double totalSeconds)
+        private static string CalculatePerSecondJson(IDictionary<string, LabeledKpi> currentKpis, double totalSeconds)
         {
-            var perSecondKpis = currentKpis
+            var perSecondKpis = currentKpis.Values
                 .Select(kpi =>
                 {
                     var perSecondKpi = new LabeledKpi
