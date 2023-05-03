@@ -157,7 +157,7 @@ namespace nsCDEngine.Communication
                     var nodeId = TheCommonUtils.CStr(MyQSender?.MyTargetNodeChannel?.cdeMID);
                     kpiLabels = new Dictionary<string, string> {{"scope", scopeHash}, {"device", nodeId}};
 
-                    TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM, kpiLabels);
+                    TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM.ToString(), kpiLabels, 1, false, TheCDEKPIs.KpiExpiration);
                 }
 
                 TheCDEKPIs.IncrementKPI(eKPINames.QSReceivedTSM);
@@ -175,7 +175,8 @@ namespace nsCDEngine.Communication
                     TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, tRequestData.PostDataLength);
                     if (kpiLabels is {Count: > 0})
                     {
-                        TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived, kpiLabels, tRequestData.PostDataLength);
+                        TheCDEKPIs.IncrementKPI(eKPINames.QKBReceived.ToString(), kpiLabels,
+                            tRequestData.PostDataLength, false, TheCDEKPIs.KpiExpiration);
                     }
                 }
             }

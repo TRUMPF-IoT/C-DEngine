@@ -37,12 +37,18 @@ namespace nsCDEngine.BaseClasses
     /// </summary>
     public static class TheCDEKPIs
     {
+        private const string LabeledKpisPropertyName = "LabeledKpis";
+
         internal static bool EnableKpis { get; set; }
+        internal static TimeSpan KpiExpiration { get; set; } = TimeSpan.FromDays(1);
+        internal static TimeSpan KpiExpirationCheckInterval { get; set; } = TimeSpan.FromDays(1);
 
         public class LabeledKpi
         {
             public IDictionary<string, string> Labels { get; set; }
             public double Value { get; set; }
+
+            internal DateTimeOffset? ExpiresAt { get; set; }
 
             internal LabeledKpi Harvest(bool reset)
             {
@@ -54,17 +60,38 @@ namespace nsCDEngine.BaseClasses
                 if (reset) Value = 0;
                 return clonedKpi;
             }
+
+            internal string GenerateKey()
+                => GenerateKey(Labels);
+
+            internal static string GenerateKey(IDictionary<string, string> labels)
+            {
+                if (labels == null || labels.Count == 0)
+                    return string.Empty;
+
+                var sb = new StringBuilder(128);
+                foreach (var labelPair in labels.OrderBy(l => l.Key))
+                {
+                    sb.Append(labelPair.Key);
+                    sb.Append(labelPair.Value);
+                }
+
+                return sb.ToString();
+            }
         }
 
         private class Kpi
         {
-            public List<LabeledKpi> LabeledKpis { get; } = new();
+            public Dictionary<string, LabeledKpi> LabeledKpis { get; private set; } = new();
             public double? Value { get; set; }
 
             internal Kpi Harvest(bool reset)
             {
-                var clone = new Kpi {Value = Value};
-                clone.LabeledKpis.AddRange(LabeledKpis.Select(kpi => kpi.Harvest(reset)));
+                var clone = new Kpi
+                {
+                    Value = Value,
+                    LabeledKpis = LabeledKpis.ToDictionary(kpi => kpi.Key, kpi => kpi.Value.Harvest(reset))
+                };
                 if (reset && Value != null) Value = 0;
                 return clone;
             }
@@ -309,6 +336,17 @@ namespace nsCDEngine.BaseClasses
             => IncrementKPI(name, 1, dontReset);
 
         /// <summary>
+        /// Increments an existing KPI by name by 1.  IF the KPI does not exist,
+        /// a new one will be created with a value of 1.
+        /// </summary>
+        /// <param name="name">Name (key) of the KPI to increment</param>
+        /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
+        /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
+        /// <param name="expiresAfter">The TimeSpan after which the KPI will expire.</param>
+        public static void IncrementKPI(string name, bool dontReset, TimeSpan? expiresAfter)
+            => IncrementKPI(name, null, 1, dontReset, expiresAfter);
+
+        /// <summary>
         /// Increments an existing KPI by 1 using an eKPINames enum.
         /// </summary>
         /// <param name="eKPI">Enum that determines which KPI to increment</param>
@@ -353,7 +391,20 @@ namespace nsCDEngine.BaseClasses
         /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
         /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void IncrementKPI(string name, IDictionary<string, string> labels, long value, bool dontReset = false)
-            => AddOrUpdateKpi(name, labels, oldValue => oldValue + value, dontReset);
+            => IncrementKPI(name, labels, value, dontReset, null);
+
+        /// <summary>
+        /// Increments an existing KPI by name by a given amount.  If the KPI does not exist,
+        /// a new one will be created with the given value.
+        /// </summary>
+        /// <param name="name">Name (key) of the KPI to increment</param>
+        /// <param name="labels">The labels to apply to the KPI</param>
+        /// <param name="value">The value to add to the KPI</param>
+        /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
+        /// This means that a separatae "Total" property will not be calculated when harvested by the NodeHost.</param>
+        /// <param name="expiresAfter">The TimeSpan after which the KPI will expire.</param>
+        public static void IncrementKPI(string name, IDictionary<string, string> labels, long value, bool dontReset, TimeSpan? expiresAfter)
+            => AddOrUpdateKpi(name, labels, oldValue => oldValue + value, dontReset, expiresAfter);
 
         /// <summary>
         /// Increments an existing KPI by a given amount using an eKPINames enum.
@@ -394,7 +445,20 @@ namespace nsCDEngine.BaseClasses
         /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
         /// This means that a separate "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void DecrementKPI(string name, IDictionary<string, string> labels, long value, bool dontReset = false)
-            => AddOrUpdateKpi(name, labels, oldValue => oldValue == 0 ? 0 : oldValue - value, dontReset);
+            => DecrementKPI(name, labels, value, dontReset, null);
+
+        /// <summary>
+        /// Decrements an existing KPI by name by 1.  If the KPI does not exist,
+        /// a new one will be created with a value of 0.
+        /// </summary>
+        /// <param name="name">Name (key) of the KPI to decrement</param>
+        /// <param name="labels">The labels to apply to the KPI</param>
+        /// <param name="value">The value to subtract from the KPI</param>
+        /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
+        /// This means that a separate "Total" property will not be calculated when harvested by the NodeHost.</param>
+        /// <param name="expiresAfter">The TimeSpan after which the KPI will expire.</param>
+        public static void DecrementKPI(string name, IDictionary<string, string> labels, long value, bool dontReset, TimeSpan? expiresAfter)
+            => AddOrUpdateKpi(name, labels, oldValue => oldValue == 0 ? 0 : oldValue - value, dontReset, expiresAfter);
 
         /// <summary>
         /// Decrements an existing KPI by 1 using an eKPINames enum.
@@ -412,7 +476,7 @@ namespace nsCDEngine.BaseClasses
             => DecrementKPI(eKPI.ToString(), labels);
 
         /// <summary>
-        /// Sets an existing KPI to a new value.  If the KPI does not exist,
+        /// Sets an existing KPI to a new value. If the KPI does not exist,
         /// a new one will be created with the given value.
         /// </summary>
         /// <param name="name">Name (key) of the KPI to set</param>
@@ -423,7 +487,7 @@ namespace nsCDEngine.BaseClasses
             => SetKPI(name, null, value, dontReset);
 
         /// <summary>
-        /// Sets an existing KPI to a new value.  If the KPI does not exist,
+        /// Sets an existing KPI to a new value. If the KPI does not exist,
         /// a new one will be created with the given value.
         /// </summary>
         /// <param name="name">Name (key) of the KPI to set</param>
@@ -432,7 +496,20 @@ namespace nsCDEngine.BaseClasses
         /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
         /// This means that a separate "Total" property will not be calculated when harvested by the NodeHost.</param>
         public static void SetKPI(string name, IDictionary<string, string> labels, long value, bool dontReset = false)
-            => AddOrUpdateKpi(name, labels, _ => value, dontReset);
+            => SetKPI(name, labels, value, dontReset, null);
+
+        /// <summary>
+        /// Sets an existing KPI to a new value. If the KPI does not exist,
+        /// a new one will be created with the given value.
+        /// </summary>
+        /// <param name="name">Name (key) of the KPI to set</param>
+        /// <param name="labels">The labels to apply to the KPI</param>
+        /// <param name="value">Value of the KPI to set</param>
+        /// <param name="dontReset">If true and the KPI does not exist, the new KPI created will never be reset to zero and always increase.
+        /// This means that a separate "Total" property will not be calculated when harvested by the NodeHost.</param>
+        /// <param name="expiresAfter">The TimeSpan after which the KPI will expire.</param>
+        public static void SetKPI(string name, IDictionary<string, string> labels, long value, bool dontReset, TimeSpan? expiresAfter)
+            => AddOrUpdateKpi(name, labels, _ => value, dontReset, expiresAfter);
 
         /// <summary>
         /// Sets an existing KPI to a new value using an eKPINames enum
@@ -517,31 +594,28 @@ namespace nsCDEngine.BaseClasses
             }
             else
             {
-                kpi.LabeledKpis.Add(new LabeledKpi
+                var labeledKpi = new LabeledKpi
                 {
                     Labels = labels,
                     Value = value
-                });
+                };
+                kpi.LabeledKpis.Add(labeledKpi.GenerateKey(), labeledKpi);
             }
 
             return kpi;
         }
 
-        private static LabeledKpi FindLabeledKpi(List<LabeledKpi> kpiList, IDictionary<string, string> labels)
-        {
-            return kpiList.Where(kpi => kpi.Labels?.Count == labels?.Count)
-                .FirstOrDefault(kpi =>
-                    kpi.Labels?.All(l => (labels?.TryGetValue(l.Key, out var value) ?? false) && value == l.Value) ?? false); ;
-        }
+        private static LabeledKpi FindLabeledKpi(IDictionary<string, LabeledKpi> kpiDict, IDictionary<string, string> labels)
+            => kpiDict.TryGetValue(LabeledKpi.GenerateKey(labels), out var kpi) ? kpi : null;
 
-        private static void AddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset)
+        private static void AddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset, TimeSpan? expiresAfter)
         {
             if (!EnableKpis) return;
 
             _syncKPIs.EnterWriteLock();
             try
             {
-                InternalAddOrUpdateKpi(name, labels, updateValueFunc, dontReset);
+                InternalAddOrUpdateKpi(name, labels, updateValueFunc, dontReset, expiresAfter);
             }
             finally
             {
@@ -549,7 +623,7 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        private static void InternalAddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset)
+        private static void InternalAddOrUpdateKpi(string name, IDictionary<string, string> labels, Func<long, long> updateValueFunc, bool dontReset, TimeSpan? expiresAfter)
         {
             if (!KPIs.TryGetValue(name, out var kpi))
             {
@@ -558,14 +632,27 @@ namespace nsCDEngine.BaseClasses
             else
             {
                 if (labels == null || labels.Count == 0)
+                {
                     kpi.Value = updateValueFunc(Convert.ToInt64(kpi.Value ?? 0));
+                }
                 else
                 {
                     var labeledKpi = FindLabeledKpi(kpi.LabeledKpis, labels);
                     if (labeledKpi == null)
-                        kpi.LabeledKpis.Add(new LabeledKpi { Labels = labels, Value = updateValueFunc(0) });
+                    {
+                        labeledKpi = new LabeledKpi
+                        {
+                            Labels = labels,
+                            Value = updateValueFunc(0),
+                            ExpiresAt = expiresAfter != null ? DateTimeOffset.Now + expiresAfter : null
+                        };
+                        kpi.LabeledKpis.Add(labeledKpi.GenerateKey(), labeledKpi);
+                    }
                     else
+                    {
                         labeledKpi.Value = updateValueFunc(Convert.ToInt64(labeledKpi.Value));
+                        labeledKpi.ExpiresAt = expiresAfter != null ? DateTimeOffset.Now + expiresAfter : null;
+                    }
                 }
             }
         }
@@ -722,24 +809,23 @@ namespace nsCDEngine.BaseClasses
                     {
                         kpiProp ??= pThing.GetProperty(keyVal.Key, true);
 
-                        var labeledKpisPropertyName = "LabeledKpis";
                         if (!perSecond)
                         {
-                            var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis);
-                            kpiProp.SetProperty(labeledKpisPropertyName, kpiJson);
+                            var kpiJson = TheCommonUtils.SerializeObjectToJSONString(kpi.LabeledKpis.Values);
+                            kpiProp.SetProperty(LabeledKpisPropertyName, kpiJson);
                         }
                         else
                         {
                             // Normalize values to "per second"
                             var perSecondKpisJson = CalculatePerSecondJson(kpi.LabeledKpis, timeSinceLastReset.TotalSeconds);
-                            kpiProp.SetProperty(labeledKpisPropertyName, perSecondKpisJson);
+                            kpiProp.SetProperty(LabeledKpisPropertyName, perSecondKpisJson);
                         }
 
                         if (!dontComputeTotals)
                         {
                             kpiPropTotal ??= pThing.GetProperty($"{keyVal.Key}Total", true);
 
-                            var totalKpisJson = kpiPropTotal.GetProperty(labeledKpisPropertyName)?.GetValue() as string;
+                            var totalKpisJson = kpiPropTotal.GetProperty(LabeledKpisPropertyName)?.GetValue() as string;
 
                             var totalKpis = !string.IsNullOrWhiteSpace(totalKpisJson)
                                 ? TheCommonUtils.DeserializeJSONStringToObject<List<LabeledKpi>>(totalKpisJson)
@@ -748,7 +834,7 @@ namespace nsCDEngine.BaseClasses
                             totalKpis = ComputeTotals(totalKpis, kpi.LabeledKpis);
                             totalKpisJson = TheCommonUtils.SerializeObjectToJSONString(totalKpis);
 
-                            kpiPropTotal.SetProperty(labeledKpisPropertyName, totalKpisJson);
+                            kpiPropTotal.SetProperty(LabeledKpisPropertyName, totalKpisJson);
                         }
                     }
                 }
@@ -769,26 +855,108 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        private static List<LabeledKpi> ComputeTotals(List<LabeledKpi> totalKpis, List<LabeledKpi> currentKpis)
+        internal static void RemoveExpiredKpis(TheThing thing)
+        {
+            lock (_thingHarvestLock)
+            {
+                var removedKpis = new Dictionary<string, List<LabeledKpi>>();
+                _syncKPIs.EnterUpgradeableReadLock();
+                try
+                {
+                    // We are now holding a global KPI lock which blocks all operations that report KPIs, for example message processing
+                    foreach (var kpiPair in KPIs)
+                    {
+                        if (kpiPair.Value.LabeledKpis.Count == 0) continue;
+
+                        var expiredKpis = kpiPair.Value.LabeledKpis
+                            .Where(lkpi => lkpi.Value.ExpiresAt != null && DateTimeOffset.Now >= lkpi.Value.ExpiresAt)
+                            .ToList();
+
+                        if (expiredKpis.Count == 0)
+                            continue;
+
+                        _syncKPIs.EnterWriteLock();
+                        try
+                        {
+                            expiredKpis.ForEach(e =>
+                            {
+                                kpiPair.Value.LabeledKpis.Remove(e.Key);
+
+                                if (!removedKpis.TryGetValue(kpiPair.Key, out var removedLabeledKpiList))
+                                {
+                                    removedLabeledKpiList = new List<LabeledKpi>();
+                                    removedKpis[kpiPair.Key] = removedLabeledKpiList;
+                                }
+                                removedLabeledKpiList.Add(e.Value);
+                            });
+                        }
+                        finally
+                        {
+                            _syncKPIs.ExitWriteLock();
+                        }
+                    }
+                }
+                finally
+                {
+                    // Resume global KPI processing
+                    _syncKPIs.ExitUpgradeableReadLock();
+                }
+
+                foreach (var removedPair in removedKpis)
+                {
+                    RemoveLabeledKpisFromThing(thing, removedPair.Key, removedPair.Value);
+                    RemoveLabeledKpisFromThing(thing, $"{removedPair.Key}Total", removedPair.Value);
+                }
+            }
+        }
+
+        private static void RemoveLabeledKpisFromThing(TheThing thing, string parentKpiName, List<LabeledKpi> kpisToRemove)
+        {
+            var parentKpiProp = thing.GetProperty(parentKpiName, false);
+            if (parentKpiProp == null) return;
+
+            var labeledKpisJson = parentKpiProp.GetProperty(LabeledKpisPropertyName)?.GetValue() as string;
+            if (string.IsNullOrWhiteSpace(labeledKpisJson)) return;
+
+            var kpiList = TheCommonUtils.DeserializeJSONStringToObject<List<LabeledKpi>>(labeledKpisJson);
+
+            var exceptBySet = new HashSet<string>(kpisToRemove.Select(k => k.GenerateKey()));
+            kpiList = kpiList.Where(tkpi => exceptBySet.Add(tkpi.GenerateKey())).ToList();
+            labeledKpisJson = TheCommonUtils.SerializeObjectToJSONString(kpiList);
+
+            parentKpiProp.SetProperty(LabeledKpisPropertyName, labeledKpisJson);
+        }
+
+        private static List<LabeledKpi> ComputeTotals(List<LabeledKpi> totalKpis, IDictionary<string, LabeledKpi> currentKpis)
         {
             // increment existing kpi values
-            totalKpis.ForEach(totalKpi =>
-            {
-                var currentKpi = FindLabeledKpi(currentKpis, totalKpi.Labels);
-                if (currentKpi != null)
-                    totalKpi.Value += currentKpi.Value;
-            });
+            var totalKpiDict = totalKpis
+                .ToDictionary(
+                    totalKpi => totalKpi.GenerateKey(),
+                    totalKpi =>
+                    {
+                        var currentKpi = FindLabeledKpi(currentKpis, totalKpi.Labels);
+                        if (currentKpi != null)
+                        {
+                            totalKpi.Value += currentKpi.Value;
+                            totalKpi.ExpiresAt = currentKpi.ExpiresAt;
+                        }
+
+                        return totalKpi;
+                    });
 
             // concat new kpi values
-            var resultingKpis =
-                totalKpis.Concat(currentKpis.Where(kpi => FindLabeledKpi(totalKpis, kpi.Labels) == null));
+            var newKpis = currentKpis
+                .Where(kpi => FindLabeledKpi(totalKpiDict, kpi.Value.Labels) == null)
+                .Select(kpi => kpi.Value);
+            var resultingKpis = totalKpis.Concat(newKpis);
 
             return resultingKpis.ToList();
         }
 
-        private static string CalculatePerSecondJson(List<LabeledKpi> currentKpis, double totalSeconds)
+        private static string CalculatePerSecondJson(IDictionary<string, LabeledKpi> currentKpis, double totalSeconds)
         {
-            var perSecondKpis = currentKpis
+            var perSecondKpis = currentKpis.Values
                 .Select(kpi =>
                 {
                     var perSecondKpi = new LabeledKpi

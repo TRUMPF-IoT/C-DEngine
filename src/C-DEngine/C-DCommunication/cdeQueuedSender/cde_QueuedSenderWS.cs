@@ -271,8 +271,12 @@ namespace nsCDEngine.Communication
                         TheCDEKPIs.IncrementKPI(eKPINames.QSSent, finalCnt);
                         if (kpiLabels is { Count: > 0 })
                         {
-                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent, kpiLabels, finalCnt);
-                            if(sendBufferByteLength > 0) TheCDEKPIs.IncrementKPI(eKPINames.QKBSent, kpiLabels, sendBufferByteLength);
+                            TheCDEKPIs.IncrementKPI(eKPINames.QSSent.ToString(), kpiLabels, finalCnt, false, TheCDEKPIs.KpiExpiration);
+                            if (sendBufferByteLength > 0)
+                            {
+                                TheCDEKPIs.IncrementKPI(eKPINames.QKBSent.ToString(), kpiLabels, sendBufferByteLength,
+                                    false, TheCDEKPIs.KpiExpiration);
+                            }
                         }
                     }
 
