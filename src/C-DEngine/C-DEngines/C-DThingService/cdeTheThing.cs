@@ -331,6 +331,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="MyLiveForm">Target Form to show the FacePlate in</param>
         /// <param name="pLeft">Left (in Pixels) to position the FacePlate</param>
         /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
+        /// <param name="startFld">Start Fld for DeviceFace in Target Screen</param>
         /// <returns></returns>
         public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, int startFld = -1)
         {
@@ -342,7 +343,7 @@ namespace nsCDEngine.Engines.ThingService
             var fld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
             if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
-                fld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
+                fld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
                     pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), "GROUP", pMsg);
                 });
@@ -356,7 +357,7 @@ namespace nsCDEngine.Engines.ThingService
                     tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = MyNMIFaceModel.XLen - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
                 if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
-                    tfld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
+                    tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                     {
                         pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), $"PIN_{pin.PinType}", pMsg);
                     });
