@@ -105,6 +105,26 @@ namespace nsCDEngine.Engines.NMIService
         }
 
         /// <summary>
+        /// Adds a Group for Controls
+        /// </summary>
+        /// <param name="pBaseThing">Owner Thing</param>
+        /// <param name="pForm">Form to insert the group in</param>
+        /// <param name="pFldOrder">ld Order of the group. Use this as the ParentFld for controls that need to go into the group</param>
+        /// <param name="width">Tilewidth of the Group</param>
+        /// <param name="height">TileHeight of the Group. If not set, the group has a dynamic height</param>
+        /// <param name="pParent">ParentFld for the Group. If not set, the group has no parent</param>
+        /// <returns></returns>
+        public static TheFieldInfo AddGroup(TheThing pBaseThing, TheFormInfo pForm,int pFldOrder,int width, int height=0, int pParent=0)
+        {
+            var tT = new nmiCtrlTileGroup { TileWidth = width, TileHeight = height };
+            if (pParent > 0)
+                tT.ParentFld = pParent;
+            if (height > 0)
+                tT.TileHeight = height;
+            return AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, pFldOrder, 0, 0, null, null, tT);
+        }
+
+        /// <summary>
         /// Adds a smart Icon to a Form
         /// </summary>
         /// <param name="pBaseThing">BaseThing</param>
