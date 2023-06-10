@@ -3322,6 +3322,40 @@ namespace nsCDEngine.Engines.ThingService
                         pThing.SetProperty(nameof(UANamespace), info?.UANamespace);
                     pThing.SetProperty(nameof(AllowWrites), info.AllowWrites);
 
+                    OPCUAPropertyAttribute [] psets = (OPCUAPropertyAttribute[])pThingType.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true);
+                    if (psets?.Any()==true)
+                    {
+                        foreach (var pset in psets )
+                        {
+                            if (!string.IsNullOrEmpty(pset?.cdePName))
+                            {
+                                SetUAProperty(pset, pThing.GetProperty(pset.cdePName, pset.UAMandatory));
+                            }
+                        }
+                    }
+                    OPCUAVariableAttribute[] psetsV = (OPCUAVariableAttribute[])pThingType.GetCustomAttributes(typeof(OPCUAVariableAttribute), true);
+                    if (psetsV?.Any() == true)
+                    {
+                        foreach (var pset in psetsV)
+                        {
+                            if (!string.IsNullOrEmpty(pset?.cdePName))
+                            {
+                                SetUAVariable(pset, pThing.GetProperty(pset.cdePName, pset.UAMandatory));
+                            }
+                        }
+                    }
+                    OPCUAHAVariableAttribute[] psetsHA = (OPCUAHAVariableAttribute[])pThingType.GetCustomAttributes(typeof(OPCUAHAVariableAttribute), true);
+                    if (psetsHA?.Any() == true)
+                    {
+                        foreach (var pset in psetsHA)
+                        {
+                            if (!string.IsNullOrEmpty(pset?.cdePName))
+                            {
+                                SetUAHAVariable(pset, pThing.GetProperty(pset.cdePName, pset.UAMandatory));
+                            }
+                        }
+                    }
+
                     var thingTypeProps = pThingType.GetProperties();
                     foreach (var prop in thingTypeProps)
                     {
@@ -3342,7 +3376,7 @@ namespace nsCDEngine.Engines.ThingService
         internal static void ApplyUAPropertyAttributes(TheThing pThing, cdeP pProperty)
         {
             if (string.IsNullOrEmpty(pProperty?.Name)) return;
-            var thingTypeProps = pThing.GetObject()?.GetType()?.GetProperty(pProperty.Name);
+            var thingTypeProps = pThing?.GetObject()?.GetType()?.GetProperty(pProperty.Name);
             if (thingTypeProps != null)
                 ApplyUAPropertyAttributes(pThing, thingTypeProps);
         }
@@ -3356,63 +3390,79 @@ namespace nsCDEngine.Engines.ThingService
                 OPCUAPropertyAttribute uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
                 if (uaAttribute != null)
                 {
-                    var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
-                    if (tProp != null)
-                    {
-                        tProp.cdeM = OPCUAPropertyAttribute.Meta;
-                        if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UASourceType), uaAttribute.UASourceType);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UAUnits))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUnits), uaAttribute.UAUnits);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UANodeId))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UANodeId), uaAttribute.UANodeId);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
-                        if (uaAttribute.UARangeMin != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
-                        if (uaAttribute.UARangeMax != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMax), uaAttribute.UARangeMax);
-                        if (uaAttribute.UAWriteMask != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
-                        if (uaAttribute.UAUserWriteMask != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
-                        if (uaAttribute.AllowWrites)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.AllowWrites), uaAttribute.AllowWrites);
-                        if (uaAttribute.HideFromAnonymous)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.HideFromAnonymous), uaAttribute.HideFromAnonymous);
-                    }
+                    SetUAProperty(uaAttribute, pThing.GetProperty(prop.Name, uaAttribute.UAMandatory));
                 }
                 OPCUAVariableAttribute uaVariAttribute = prop.GetCustomAttributes(typeof(OPCUAVariableAttribute), true).FirstOrDefault() as OPCUAVariableAttribute;
                 if (uaVariAttribute != null)
                 {
-                    var tProp = pThing.GetProperty(prop.Name, false);
-                    if (tProp != null)
-                        tProp.cdeM = OPCUAVariableAttribute.Meta;
-                    tProp?.SetHighSpeed(true);
-                    tProp?.SetProperty(nameof(OPCUAVariableAttribute.IsVariable), uaVariAttribute.IsVariable);
+                    SetUAVariable(uaVariAttribute, pThing.GetProperty(prop.Name, uaVariAttribute.UAMandatory));
                 }
                 OPCUAHAVariableAttribute uaHAVariAttribute = prop.GetCustomAttributes(typeof(OPCUAHAVariableAttribute), true).FirstOrDefault() as OPCUAHAVariableAttribute;
                 if (uaHAVariAttribute != null)
                 {
-                    var tProp = pThing.GetProperty(prop.Name, false);
-                    if (tProp != null)
-                        tProp.cdeM = OPCUAHAVariableAttribute.Meta;
-                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.Historizing), uaHAVariAttribute.Historizing);
-                    if (uaHAVariAttribute.MinimumSamplingInterval != 0)
-                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MinimumSamplingInterval), uaHAVariAttribute.MinimumSamplingInterval);
-                    if (uaHAVariAttribute.MaximumSamplingInterval != 0)
-                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MaximumSamplingInterval), uaHAVariAttribute.MaximumSamplingInterval);
-                    if (uaHAVariAttribute.ArchiveStart != DateTimeOffset.MinValue)
-                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.ArchiveStart), uaHAVariAttribute.ArchiveStart);
+                    SetUAHAVariable(uaHAVariAttribute, pThing.GetProperty(prop.Name, uaHAVariAttribute.UAMandatory));
                 }
             }
             catch
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(7692, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingService", $"Failed to Apply UA Attribute to Property: {prop?.Name}", eMsgLevel.l1_Error));
+            }
+        }
+
+        private static void SetUAHAVariable(OPCUAHAVariableAttribute uaHAVariAttribute, cdeP tProp)
+        {
+            if (tProp != null && uaHAVariAttribute != null)
+            {
+                tProp.cdeM = OPCUAHAVariableAttribute.Meta;
+                tProp.SetProperty(nameof(OPCUAHAVariableAttribute.Historizing), uaHAVariAttribute.Historizing);
+                if (uaHAVariAttribute.MinimumSamplingInterval != 0)
+                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MinimumSamplingInterval), uaHAVariAttribute.MinimumSamplingInterval);
+                if (uaHAVariAttribute.MaximumSamplingInterval != 0)
+                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MaximumSamplingInterval), uaHAVariAttribute.MaximumSamplingInterval);
+                if (uaHAVariAttribute.ArchiveStart != DateTimeOffset.MinValue)
+                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.ArchiveStart), uaHAVariAttribute.ArchiveStart);
+            }
+        }
+
+        private static void SetUAVariable(OPCUAVariableAttribute uaVariAttribute, cdeP tProp)
+        {
+            if (tProp != null && uaVariAttribute != null)
+            {
+                tProp.cdeM = OPCUAVariableAttribute.Meta;
+                tProp.SetHighSpeed(true);
+                tProp.SetProperty(nameof(OPCUAVariableAttribute.IsVariable), uaVariAttribute.IsVariable);
+            }
+        }
+
+        private static void SetUAProperty(OPCUAPropertyAttribute uaAttribute, cdeP tProp)
+        {
+            if (tProp != null && uaAttribute!=null)
+            {
+                tProp.cdeM = OPCUAPropertyAttribute.Meta;
+                if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
+                if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UASourceType), uaAttribute.UASourceType);
+                if (!string.IsNullOrEmpty(uaAttribute?.UAUnits))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUnits), uaAttribute.UAUnits);
+                if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
+                if (!string.IsNullOrEmpty(uaAttribute?.UATypeNodeId))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UATypeNodeId), uaAttribute.UATypeNodeId);
+                if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
+                if (uaAttribute.UARangeMin != 0)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
+                if (uaAttribute.UARangeMax != 0)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMax), uaAttribute.UARangeMax);
+                if (uaAttribute.UAWriteMask != 0)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
+                if (uaAttribute.UAUserWriteMask != 0)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
+                if (uaAttribute.AllowWrites)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.AllowWrites), uaAttribute.AllowWrites);
+                if (uaAttribute.HideFromAnonymous)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.HideFromAnonymous), uaAttribute.HideFromAnonymous);
             }
         }
     }
@@ -3421,14 +3471,15 @@ namespace nsCDEngine.Engines.ThingService
     {
         public const string Meta = "UATag";
         public string UABrowseName;
+        public string cdePName;
 
         public string UADescription;
         public string UADisplayName;
-        public string UANodeId;
+        public string UATypeNodeId;
         public bool HideFromAnonymous;
     }
 
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true)]
     public class OPCUAPropertyAttribute : OPCUABaseAttribute
     {
         public new const string Meta = "UAProperty";
@@ -3443,20 +3494,20 @@ namespace nsCDEngine.Engines.ThingService
         public bool UAMandatory;
         public bool AllowWrites;
     }
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true)]
     public class OPCUAFolderAttribute : OPCUABaseAttribute
     {
         public new const string Meta = "UAFolder";
     }
 
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true)]
     public class OPCUAVariableAttribute: OPCUAPropertyAttribute
     {
         public new const string Meta = "UAVariable";
         public bool IsVariable=true;
     }
 
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true)]
     public class OPCUAHAVariableAttribute : OPCUAVariableAttribute
     {
         public new const string Meta = "UAHAVariable";
