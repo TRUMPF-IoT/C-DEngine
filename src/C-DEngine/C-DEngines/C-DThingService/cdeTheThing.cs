@@ -23,6 +23,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
+using CU = nsCDEngine.BaseClasses.TheCommonUtils;
+using NMI = nsCDEngine.Engines.NMIService.TheNMIEngine;
+using TT = nsCDEngine.Engines.ThingService.TheThing;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
@@ -398,6 +401,51 @@ namespace nsCDEngine.Engines.ThingService
         }
         #endregion
 
+        #region NMI Log
+        public bool EnableNMILog
+        {
+            get { return TT.MemberGetSafePropertyBool(MyBaseThing); }
+            set { TT.MemberSetSafePropertyBool(MyBaseThing, value); }
+        }
+
+        public virtual Dictionary<string, TheFieldInfo> AddNMILog(TT pBaseThing, TheFormInfo pMyForm, int StartFld, int ParentFld,string pTitle=null, int pWidth = 6, int pHeight = 5)
+        {
+            var tFlds=new Dictionary<string, TheFieldInfo>();
+            SetProperty("NMILog", "Log Ready!");
+            EnableNMILog = false;
+            ClearNMILog();
+            tFlds["Group"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.CollapsibleGroup, StartFld, 2, 0,string.IsNullOrEmpty(pTitle)? "Debug Info":pTitle, null, new nmiCtrlCollapsibleGroup { ParentFld = ParentFld, TileWidth = pWidth, DoClose = true, IsSmall = true });
+            tFlds["Check"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.SingleCheck, StartFld + 10, 2, 0, "Enable Log", nameof(EnableNMILog), new nmiCtrlSingleCheck { ParentFld = StartFld, TileWidth = 3 });
+            tFlds["ClearButton"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileButton, StartFld + 20, 2, 0, "Clear Log", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 3, ParentFld = StartFld });
+            tFlds["ClearButton"].RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "clear", (a, b) => {
+                ClearNMILog();
+            });
+            tFlds["NMILog"]=NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TextArea, StartFld + 30, 0, 0, "Log", "NMILog", new nmiCtrlTextArea { ParentFld = StartFld, NoTE = true, TileHeight = pHeight, TileWidth = pWidth });
+            return tFlds;
+        }
+
+        public virtual void ClearNMILog()
+        {
+            MyNMILog.Clear();
+            TT.SetSafePropertyString(MyBaseThing, "NMILog", "");
+        }
+
+        private readonly StringBuilder MyNMILog = new();
+        public virtual void WriteToNMILog(string txt, bool AddToLog = false, string EventLogEntryName = null, int pStatusLevel = -1, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        {
+            if (EnableNMILog)
+            {
+                //Console.WriteLine($"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}");
+                if (MyNMILog.Length > 0)
+                    MyNMILog.Insert(0, $"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}\n");
+                else
+                    MyNMILog.Append($"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}\n");
+                TT.SetSafePropertyString(MyBaseThing, "NMILog", MyNMILog.ToString());
+            }
+            if (AddToLog)
+                SetMessage(txt, EventLogEntryName, pStatusLevel, SetLastUpdate, LogID, pMsgLevel);
+        }
+        #endregion
         public virtual bool AddPinsAndUpdate(List<ThePin> pIns)
         {
             if (MyBaseThing?.AddPins(pIns)==true)
@@ -3463,6 +3511,8 @@ namespace nsCDEngine.Engines.ThingService
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.AllowWrites), uaAttribute.AllowWrites);
                 if (uaAttribute.HideFromAnonymous)
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.HideFromAnonymous), uaAttribute.HideFromAnonymous);
+                if (uaAttribute.UAMandatory)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAMandatory), uaAttribute.UAMandatory);
             }
         }
     }

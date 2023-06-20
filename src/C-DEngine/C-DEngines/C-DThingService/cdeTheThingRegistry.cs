@@ -1955,21 +1955,21 @@ namespace nsCDEngine.Engines.ThingService
                 else
                     pBaseThing.SetProperty(finfo.Name, pNamePrefix + orgValue, ePropertyTypes.TBinary);
             }
-            else if (fType.Namespace == "System.Collections.Generic" && !NoCollectionRecursive)
+            else if (fType.Namespace == "System.Collections.Generic")
             {
-                if (orgValue is IEnumerable collection)
+                if (!NoCollectionRecursive && orgValue is IEnumerable collection)
                 {
                     int no = 0;
                     foreach (object o in collection)
                     {
-                        ClassPropertiesToThingProperties(pBaseThing, o, pBaseProperty == null ? $"{nest}{finfo.Name}[{no}]_" : "", pBaseProperty);
+                        ClassPropertiesToThingProperties(pBaseThing, o, NoCollectionRecursive, pBaseProperty == null ? $"{nest}{finfo.Name}[{no}]_" : "", pBaseProperty);
                         no++;
                     }
                 }
             }
             else if (fType.Namespace != "System")
             {
-                ClassPropertiesToThingProperties(pBaseThing, orgValue, pBaseProperty == null ? $"{nest}{finfo.Name}_" : "", pBaseProperty);
+                ClassPropertiesToThingProperties(pBaseThing, orgValue,NoCollectionRecursive, pBaseProperty == null ? $"{nest}{finfo.Name}_" : "", pBaseProperty);
             }
         }
 
