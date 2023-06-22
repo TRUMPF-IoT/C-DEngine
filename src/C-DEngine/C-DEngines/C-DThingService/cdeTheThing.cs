@@ -222,7 +222,7 @@ namespace nsCDEngine.Engines.ThingService
         { return mIsInitialized; }
 
         /// <summary>
-        /// Will be called if this thing is deleted fromt TheThingRegistry
+        /// Will be called if this thing is deleted from TheThingRegistry
         /// </summary>
         /// <returns></returns>
         public virtual bool Delete()
@@ -2151,10 +2151,10 @@ namespace nsCDEngine.Engines.ThingService
         [IgnoreDataMember]
         public int StatusLevel
         {
-            get { return TheCommonUtils.CInt(TheThing.GetSafePropertyNumber(this, "StatusLevel")); }
+            get { return CU.CInt(TT.GetSafePropertyNumber(this, "StatusLevel")); }
             set
             {
-                TheThing.SetSafePropertyNumber(this, "StatusLevel", value);
+                TT.SetSafePropertyNumber(this, "StatusLevel", value);
             }
         }
 

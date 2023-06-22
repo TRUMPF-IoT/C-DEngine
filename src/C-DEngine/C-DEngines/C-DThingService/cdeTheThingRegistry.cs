@@ -128,7 +128,7 @@ namespace nsCDEngine.Engines.ThingService
         /// Deletes the first TheThing found with the given Property Name and Value. I.e: DeleteThingByProperty("MyEngine",Guid.empty,"DeviceType","MyThingType"); will delete the first things of the MyEngine with the DeviceType "MyThingType"
         /// </summary>
         /// <param name="pEngineName">Engine that owns TheThing to be deleted</param>
-        /// <param name="pUID">UID of the user requesting the Deletion - if TheThing has a Acces Level, the user has to have the same access level in order to be allowed to delete TheThing</param>
+        /// <param name="pUID">UID of the user requesting the Deletion - if TheThing has a Access Level, the user has to have the same access level in order to be allowed to delete TheThing</param>
         /// <param name="pPropName">Name of the Property</param>
         /// <param name="pPropValue">Value of the Property</param>
         /// <returns>Return the deleted Thing</returns>
@@ -144,7 +144,7 @@ namespace nsCDEngine.Engines.ThingService
         /// Deletes all TheThings found with the given Property Name and Value. I.e: DeleteThingByProperty("MyEngine",Guid.empty,"DeviceType","MyThingType"); will delete all things of the MyEngine with the DeviceType "MyThingType"
         /// </summary>
         /// <param name="pEngineName">Engine that owns TheThing to be deleted</param>
-        /// <param name="pUID">UID of the user requesting the Deletion - if TheThing has a Acces Level, the user has to have the same access level in order to be allowed to delete TheThing</param>
+        /// <param name="pUID">UID of the user requesting the Deletion - if TheThing has a Access Level, the user has to have the same access level in order to be allowed to delete TheThing</param>
         /// <param name="pPropName">Name of the Property</param>
         /// <param name="pPropValue">Value of the Property</param>
         /// <returns>Returns true if successful and false if no Things matching the Prop/Val were found</returns>
@@ -161,7 +161,7 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
-        /// Delets the given thing from TheThingRegistry
+        /// Deletes the given thing from TheThingRegistry
         /// </summary>
         /// <param name="pThing">ICDEThing of the Thing to be deleted</param>
         /// <returns></returns>
@@ -175,7 +175,7 @@ namespace nsCDEngine.Engines.ThingService
 
         }
         /// <summary>
-        /// Delets the given thing from TheThingRegistry
+        /// Deletes the given thing from TheThingRegistry
         /// </summary>
         /// <param name="pThing">TheThing to be deleted</param>
         /// <returns></returns>
@@ -379,7 +379,7 @@ namespace nsCDEngine.Engines.ThingService
                     OPCUATypeAttribute.ApplyUAAttributes(tThing.GetObject()?.GetType(), tThing);
                 }
 
-                // Make sure the historin gets wired up before any updates are made to the thing: important for permanent consumers
+                // Make sure the historian gets wired up before any updates are made to the thing: important for permanent consumers
                 //bool NoSafeSave = TheThing.GetSafePropertyBool(tThing, "HistorianNoSafeSave"); //This Needs to be set on the target Thing...
                 TheStorageMirrorHistorian.RegisterThingWithHistorian(tThing, false/*, NoSafeSave*/); //CODE-REVIEW: at this point its not clear if a Historian has to use SafeSave! Can this be changed later on? It looks like at this point no store is created correct?
                 TheCDEngines.MyThingEngine.MyThingRegistry.MyThings.UpdateItem(tThing, null);
@@ -650,7 +650,7 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
-        /// NOT IMPLEMENTED YET: Will retreive a thing from a different node
+        /// NOT IMPLEMENTED YET: Will retrieve a thing from a different node
         /// </summary>
         /// <param name="thingAddress"></param>
         /// <param name="timeout"></param>
@@ -1196,7 +1196,7 @@ namespace nsCDEngine.Engines.ThingService
         /// This call is NOT cached if AllowRemoteEngine is true
         /// </summary>
         /// <param name="pThing">TheThing that needs its IBaseEngine</param>
-        /// <param name="AllowRemoteEngine">If set to true, the seach includes engine not hosted on the local node</param>
+        /// <param name="AllowRemoteEngine">If set to true, the search includes engine not hosted on the local node</param>
         /// <returns></returns>
         public static IBaseEngine GetBaseEngine(TheThing pThing, bool AllowRemoteEngine)
         {
@@ -1226,7 +1226,7 @@ namespace nsCDEngine.Engines.ThingService
         /// This call is quite expensive and the result should be cached if possible
         /// </summary>
         /// <param name="pEngineName">Name of the Engine to be found</param>
-        /// <param name="AllowRemoteEngine">If set to true, the seach includes engine not hosted on the local node</param>
+        /// <param name="AllowRemoteEngine">If set to true, the search includes engine not hosted on the local node</param>
         /// <returns></returns>
         public static IBaseEngine GetBaseEngine(string pEngineName, bool AllowRemoteEngine)
         {
@@ -1373,7 +1373,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Gets all Things of a given Engine
         /// </summary>
-        /// <param name="pEngineName">Engine Name to get Things of... wildcard "*" retreives all Things of all Engines</param>
+        /// <param name="pEngineName">Engine Name to get Things of... wildcard "*" retrieves all Things of all Engines</param>
         /// <param name="AllowRemoteEngine">If True, the list includes TheThings on remote Nodes</param>
         /// <returns></returns>
         public static List<TheThing> GetThingsOfEngine(string pEngineName, bool AllowRemoteEngine)
@@ -1384,7 +1384,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Gets all Things of a given Engine
         /// </summary>
-        /// <param name="pEngineName">Engine Name to get Things of... wildcard "*" retreives all Things of all Engines</param>
+        /// <param name="pEngineName">Engine Name to get Things of... wildcard "*" retrieves all Things of all Engines</param>
         /// <param name="IncludeEngine">Includes TheBaseEngine</param>
         /// <param name="AllowRemoteEngine">If True, the list includes TheThings on remote Nodes</param>
         /// <returns></returns>
@@ -1503,7 +1503,7 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
-        /// Returs a list of TheThings matching the Selector
+        /// Returns a list of TheThings matching the Selector
         /// </summary>
         /// <param name="pEngineName">Engine Name owning TheThings</param>
         /// <param name="pSelector">Selector function</param>
@@ -1556,7 +1556,7 @@ namespace nsCDEngine.Engines.ThingService
 
 
         /// <summary>
-        /// Returs TheThings matching the Selector
+        /// Returns TheThings matching the Selector
         /// </summary>
         /// <param name="pEngineName">Engine Name owning TheThing</param>
         /// <param name="pSelector">Selector function</param>
@@ -1766,13 +1766,13 @@ namespace nsCDEngine.Engines.ThingService
 
 
         /// <summary>
-        /// Direcly connects two properties of two things together
+        /// Directly connects two properties of two things together
         /// Use "UnmapProperty" to remove an existing connection
         /// </summary>
         /// <param name="pSourceThing">cdeMID of the Thing with the source property</param>
         /// <param name="pSourcePropertyName">Name of the Source Property</param>
         /// <param name="pTargetThing">cdeMID of the Target Thing</param>
-        /// <param name="pTargetPropertyName">Naqme of the Target property</param>
+        /// <param name="pTargetPropertyName">Name of the Target property</param>
         /// <param name="pIsBiDirectional">If set to true, changes on both sides are replicated to the other side</param>
         /// <returns></returns>
         public static Guid PropertyMapper(Guid pSourceThing, string pSourcePropertyName, Guid pTargetThing, string pTargetPropertyName, bool pIsBiDirectional)

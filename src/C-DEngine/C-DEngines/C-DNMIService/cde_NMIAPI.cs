@@ -1801,7 +1801,7 @@ namespace nsCDEngine.Engines.NMIService
             int blocksize = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pChartBag, "BlockSize", "="));
             if (blocksize == 0)
                 blocksize = 2000;
-            var MyChart = new TheChartDefinition(TheThing.GetSafeThingGuid(pMyBaseThing, $"SHIS{sensorHistory.StoreMID}"), pChartTitle, blocksize, tDefSource, true, "", "", "", tListCharts)
+            var MyChart = new TheChartDefinition(TheThing.GetSafeThingGuid(pMyBaseThing, $"SHIS{pFldOrder}"), pChartTitle, blocksize, tDefSource, true, "", "", "", tListCharts)
             {
                 SubTitleText = "",
                 PropertyBag = new ThePropertyBag { "LatestRight=true" }

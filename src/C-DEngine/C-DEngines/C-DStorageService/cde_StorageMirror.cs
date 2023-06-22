@@ -2114,6 +2114,7 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     Type MyType = typeof(T);
                     int tCnt = -1;
+                    List<string> dataItems= new List<string>();
                     foreach (TheFieldInfo tInfo in tFldList)
                     {
                         if (!TheUserManager.HasUserAccess(pClientInfo.UserID, tInfo.cdeA))
@@ -2132,6 +2133,9 @@ namespace nsCDEngine.Engines.StorageService
                                         for (int i = 2; i < tDataItemParts.Length - 1; i++)
                                             tPropName += $".{tDataItemParts[i]}";
                                     }
+                                    if (dataItems.Contains(tPropName))
+                                        continue;
+                                    dataItems.Add(tPropName);
                                     if (tNewItem is TheThing tNewThing)
                                     {
                                         cdeP tSourceP = null;
