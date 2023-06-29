@@ -1425,18 +1425,30 @@ namespace nsCDEngine.BaseClasses
             {
                 fileToReturn = Path.Combine(fileToReturn, "ClientBin");
             }
-            if (pFilePath.StartsWith("\\") || pFilePath.StartsWith("/"))
+            if (!pFilePath.StartsWith(fileToReturn, StringComparison.CurrentCultureIgnoreCase))
             {
-                pFilePath = pFilePath.Substring(1);
-            }
-            if (cdeIsFileSystemCaseSensitive()) // IsMono())
-            {
-                fileToReturn = Path.Combine(fileToReturn, pFilePath.ToLower());
-                fileToReturn = fileToReturn.Replace("clientbin", "ClientBin"); //Fixup for Mono being case sensitive and our ClientBin is now spelled with C and B
+                if (pFilePath.StartsWith("\\") || pFilePath.StartsWith("/"))
+                {
+                    pFilePath = pFilePath.Substring(1);
+                }
+                if (cdeIsFileSystemCaseSensitive()) 
+                {
+                    fileToReturn = Path.Combine(fileToReturn, pFilePath.ToLower());
+                    fileToReturn = fileToReturn.Replace("clientbin", "ClientBin"); //Fixup for Mono being case sensitive and our ClientBin is now spelled with C and B
+                }
+                else
+                {
+                    fileToReturn = Path.Combine(fileToReturn, pFilePath);
+                }
             }
             else
             {
-                fileToReturn = Path.Combine(fileToReturn, pFilePath);
+                //fixup ran already. dont add path again
+                fileToReturn = pFilePath;
+                if (cdeIsFileSystemCaseSensitive()) 
+                {
+                    fileToReturn = fileToReturn.Replace("clientbin", "ClientBin"); //Fixup for Mono being case sensitive and our ClientBin is now spelled with C and B
+                }
             }
             if (fileToReturn.StartsWith("/") || Path.DirectorySeparatorChar == '/')//IsMono())
             {
