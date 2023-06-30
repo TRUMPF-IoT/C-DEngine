@@ -775,7 +775,7 @@ namespace nsCDEngine.Engines.ThingService
     /// TheThing is the main control object of the C-DEngine. It is a virtual representation of physical objects, functions, services or storage locations
     /// All "Things" in the C-DEngine are managed as TheThings
     /// </summary>
-    public sealed partial class TheThing : TheMetaDataBase, ICDEThing
+    public sealed partial class TheThing : TheMetaDataBase, ICDEThing, ICDEProperty
     {
 
         internal IHistorian Historian { get; set; }

@@ -4,17 +4,138 @@
 
 ﻿using nsCDEngine.ViewModels;
 using System;
+using System.Collections.Generic;
 
 namespace nsCDEngine.Engines.ThingService
 {
     /// <summary>
     /// The main interface for Things in the C-DEngine. All Things the C-DEngine should know about has to have the ICDEThing Interface
     /// </summary>
-    public interface ICDEThing
+    public interface ICDEProperty
+    {
+        /// <summary>
+        /// Get a property of TheThing associated with this class
+        /// </summary>
+        /// <param name="pName">Name of the property to get</param>
+        /// <param name="CreateIfNotExist">The property will be created in TheThing if it does not exist</param>
+        /// <returns></returns>
+        cdeP GetProperty(string pName, bool CreateIfNotExist);
+
+        /// <summary>
+        /// Sets a property of TheThing associated with this class
+        /// </summary>
+        /// <param name="pName">Name of the property to set</param>
+        /// <param name="Value">The value to set in the property</param>
+        /// <returns></returns>
+        cdeP SetProperty(string pName, object Value);
+
+        /// <summary>
+        /// Returns all Properties of the object with the ICDEProperty interface
+        /// </summary>
+        /// <returns></returns>
+        List<cdeP> GetAllProperties();
+        /// <summary>
+        /// Returns all Properties starting with a prefix of the object with the ICDEProperty interface
+        /// </summary>
+        /// <param name="pName">Prefix of properties to look for</param>
+        /// <returns></returns>
+        List<cdeP> GetPropertiesStartingWith(string pName);
+        /// <summary>
+        /// Returns all Properties starting with a prefix in the cdeM field of the property to return of the object with the ICDEProperty interface
+        /// </summary>
+        /// <param name="pName">Prefix in the cdeM to return</param>
+        /// <returns></returns>
+        List<cdeP> GetPropertiesMetaStartingWith(string pName);
+
+        /// <summary>
+        /// Removes a property from TheThing at Runtime
+        /// </summary>
+        /// <param name="pName"></param>
+        /// <returns></returns>
+        cdeP RemoveProperty(string pName);
+
+        /// <summary>
+        /// Removes all properties with a given prefix from TheThing at Runtime
+        /// Only properties directly attached to a this Property will be deleted.
+        /// </summary>
+        /// <param name="pName"></param>
+        /// <returns></returns>
+        bool RemovePropertiesStartingWith(string pName);
+
+        /// <summary>
+        /// Registers a new property with TheThing at runtime
+        /// </summary>
+        /// <param name="pName">Name of the Property to be registered.</param>
+        /// <returns>The registered property</returns>
+        cdeP RegisterProperty(string pName);
+
+        /// <summary>
+        /// Sets a property
+        /// If the property does not exist, it will be created
+        /// All Events (Change and Set) will be fired - even if the property has not changed
+        /// The Property Type will be set as well
+        /// </summary>
+        /// <param name="pName">Property Name</param>
+        /// <param name="pValue">Value to be set</param>
+        /// <param name="pType">The Type of the Property</param>
+        /// <returns></returns>
+        cdeP SetProperty(string pName, object pValue, ePropertyTypes pType);
+        /// <summary>
+        /// Sets a property
+        /// If the property does not exist, it will be created
+        /// </summary>
+        /// <param name="pName">Property Name</param>
+        /// <param name="pValue">Value to be set</param>
+        /// <param name="EventAction">Defines what events should be fired</param>
+        /// <param name="pOnChangeEvent">a callback for a local (current node) onChangeEvent</param>
+        /// <returns></returns>
+        cdeP SetProperty(string pName, object pValue, int EventAction, Action<cdeP> pOnChangeEvent = null);
+
+        /// <summary>
+        /// Sets multiple properties at once. Use with the Historian feature for a consistent snapshot that has all these property changes.
+        /// If any of the properties do not exist, they will be created
+        /// All Events (Change and Set) will be fired - even if the property has not changed
+        /// The Property Type will be set as well
+        /// </summary>
+        /// <param name="nameValueDictionary"></param>
+        /// <param name="sourceTimestamp"></param>
+        /// <returns></returns>
+        bool SetProperties(IDictionary<string, object> nameValueDictionary, DateTimeOffset sourceTimestamp);
+
+        /// <summary>
+        /// Registers a new OnPropertyChange Event Callback
+        /// </summary>
+        /// <param name="OnUpdateName">Name of the property to monitor</param>
+        /// <param name="oOnChangeCallback">Callback to be called when the property changes</param>
+        /// <returns></returns>
+        bool RegisterOnChange(string OnUpdateName, Action<cdeP> oOnChangeCallback);
+
+        /// <summary>
+        /// This function allows to declare a secure Property
+        /// Secure Properties are stored encrypted and can only be decrypted on nodes with the same ApplicationID and SecurityID.
+        /// These properties are sent encrypted via the mesh. JavaScript clients CANNOT decrypt the value of the property!
+        /// </summary>
+        /// <param name="pName"></param>
+        /// <param name="pType">In V3.2 only STRING can be declared secure.</param>
+        /// <returns></returns>
+        cdeP DeclareSecureProperty(string pName, ePropertyTypes pType);
+
+        /// <summary>
+        /// Return the property type of a given property name. Returns ZERO if the property does not exist or the name is null/""
+        /// </summary>
+        /// <param name="pName"></param>
+        /// <returns></returns>
+        ePropertyTypes GetPropertyType(string pName);
+    }
+
+        /// <summary>
+        /// The main interface for Things in the C-DEngine. All Things the C-DEngine should know about has to have the ICDEThing Interface
+        /// </summary>
+    public interface ICDEThing 
     {
         /// <summary>
         /// Add a reference to TheThing, that will be used for serialization and communication.
-        /// Basically TheThing is all the Mesh and storage persistant data of the class with the ICDEThing interface
+        /// Basically TheThing is all the Mesh and storage persistent data of the class with the ICDEThing interface
         /// </summary>
         /// <param name="pThing"></param>
         void SetBaseThing(TheThing pThing);
@@ -43,7 +164,7 @@ namespace nsCDEngine.Engines.ThingService
 
         /// <summary>
         /// This function will be called by TheThingRegistry when "RegisterThing" is called
-        /// It is possible that TheThingRegistry calls this method multiple times. In fact when ever a new TheThing is registerd with TheThingRegistry, all Things that reply "IsInit()=false" will be called again.
+        /// It is possible that TheThingRegistry calls this method multiple times. In fact when ever a new TheThing is registered with TheThingRegistry, all Things that reply "IsInit()=false" will be called again.
         /// </summary>
         /// <returns>true if initialization has completed and the Thing is ready to be used.
         /// false if initialization is continuing asynchronously, in which case the Thing must fire the eThingEvents.Initialized or eEngineEvents.EngineIntialized for plug-ins) once initialization completes.</returns>
