@@ -2098,7 +2098,7 @@ namespace nsCDEngine.Engines.StorageService
             if (tFldList.Count > 0 && !string.IsNullOrEmpty(pDirtyMask) && !pDirtyMask.Equals("*"))
             {
                 T tToUpdate = MyMirrorCache.GetEntryByID(tNewItem.cdeMID);
-                TheThing tThing = tToUpdate as TheThing;
+                TheThing tFormOwnerThing = tToUpdate as TheThing;
                 bool FoundOne = false;
                 StringBuilder AuditLog = new();
                 if (tToUpdate == null)
@@ -2125,7 +2125,14 @@ namespace nsCDEngine.Engines.StorageService
                             string[] tDataItemParts = tInfo.DataItem.Split('.');
                             if (tDataItemParts.Length > 2 && "MyPropertyBag".Equals(tDataItemParts[0]))
                             {
-                                if (tThing != null)
+                                var thingToUpdate = tFormOwnerThing;
+                                if (tInfo.cdeO != thingToUpdate.cdeMID)
+                                {
+                                    var tFieldThing = TheThingRegistry.GetThingByMID(tInfo.cdeO);
+                                    if (tFieldThing != null)
+                                        thingToUpdate = tFieldThing;
+                                }
+                                if (thingToUpdate != null)
                                 {
                                     string tPropName = tDataItemParts[1];
                                     if (tDataItemParts.Length > 3)
@@ -2143,7 +2150,7 @@ namespace nsCDEngine.Engines.StorageService
                                             tNewThing.MyPropertyBag.TryGetValue(tPropName, out tSourceP);
                                         else
                                             tSourceP = tNewThing.GetProperty(tPropName);
-                                        cdeP tTargetP = tThing.GetProperty(tPropName);
+                                        cdeP tTargetP = thingToUpdate.GetProperty(tPropName);
 
                                         if (tSourceP != null && tTargetP != null)
                                         {
@@ -2172,7 +2179,7 @@ namespace nsCDEngine.Engines.StorageService
                                             {
                                                 PropertyInfo tP = typeof(cdeP).GetProperty(tDataItemParts[2]);
                                                 var tVal = tP.GetValue(tSourceP, null);
-                                                tThing.SetProperty(tPropName, tVal);
+                                                thingToUpdate.SetProperty(tPropName, tVal);
                                                 if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
                                                     AuditLog.Append($"New {tPropName}:({tVal}) ");
                                             }
@@ -2209,21 +2216,21 @@ namespace nsCDEngine.Engines.StorageService
                 if (FoundOne)
                 {
                     UpdateItem(tToUpdate, pResponse);
-                    if (tThing != null)
+                    if (tFormOwnerThing != null)
                     {
-                        tThing.FireEvent(eEngineEvents.ThingUpdated, tThing, tToUpdate, true);
-                        string tParent = TheThing.GetSafePropertyString(tThing, "Parent");
+                        tFormOwnerThing.FireEvent(eEngineEvents.ThingUpdated, tFormOwnerThing, tToUpdate, true);
+                        string tParent = TheThing.GetSafePropertyString(tFormOwnerThing, "Parent");
                         if (!string.IsNullOrEmpty(tParent))
                         {
                             TheThing PThing = TheThingRegistry.GetThingByID("*", tParent);
                             if (PThing != null)
                                 PThing.FireEvent(eEngineEvents.ThingUpdated, PThing, tToUpdate, true);
                         }
-                        if (!string.IsNullOrEmpty(tThing.EngineName))
+                        if (!string.IsNullOrEmpty(tFormOwnerThing.EngineName))
                         {
-                            IBaseEngine tBase = tThing.GetBaseEngine();
+                            IBaseEngine tBase = tFormOwnerThing.GetBaseEngine();
                             if (tBase != null)
-                                tBase.FireEvent(eEngineEvents.ThingUpdated, tThing, true);
+                                tBase.FireEvent(eEngineEvents.ThingUpdated, tFormOwnerThing, true);
                         }
                     }
                     tRes = TheCommonUtils.SerializeObjectToJSONString(pForm.IsAlwaysEmpty ? new T() : tToUpdate);
