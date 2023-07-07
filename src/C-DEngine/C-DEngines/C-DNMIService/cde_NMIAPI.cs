@@ -105,6 +105,26 @@ namespace nsCDEngine.Engines.NMIService
         }
 
         /// <summary>
+        /// Adds a Group for Controls
+        /// </summary>
+        /// <param name="pBaseThing">Owner Thing</param>
+        /// <param name="pForm">Form to insert the group in</param>
+        /// <param name="pFldOrder">ld Order of the group. Use this as the ParentFld for controls that need to go into the group</param>
+        /// <param name="width">Tilewidth of the Group</param>
+        /// <param name="height">TileHeight of the Group. If not set, the group has a dynamic height</param>
+        /// <param name="pParent">ParentFld for the Group. If not set, the group has no parent</param>
+        /// <returns></returns>
+        public static TheFieldInfo AddGroup(TheThing pBaseThing, TheFormInfo pForm,int pFldOrder,int width, int height=0, int pParent=0)
+        {
+            var tT = new nmiCtrlTileGroup { TileWidth = width, TileHeight = height };
+            if (pParent > 0)
+                tT.ParentFld = pParent;
+            if (height > 0)
+                tT.TileHeight = height;
+            return AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, pFldOrder, 0, 0, null, null, tT);
+        }
+
+        /// <summary>
         /// Adds a smart Icon to a Form
         /// </summary>
         /// <param name="pBaseThing">BaseThing</param>
@@ -642,7 +662,6 @@ namespace nsCDEngine.Engines.NMIService
         /// <returns></returns>
         public static Dictionary<string, TheMetaDataBase> AddFlexibleNMIScreen(TheThing pBaseThing, Guid pFormGuid, int XL, string FormModelID, Action<TheFormInfo> beforeMetaLoad = null, ThePropertyBag pBag = null)
         {
-            Guid ModelGuid = pBaseThing.GetBaseEngine().GetEngineID();
             var tFlds = new Dictionary<string, TheMetaDataBase>();
             var MyNMIForm = new TheFormInfo(pFormGuid, eEngineName.NMIService, null, $"TheThing;:;0;:;True;:;cdeMID={pBaseThing.cdeMID}")
             {
@@ -661,8 +680,7 @@ namespace nsCDEngine.Engines.NMIService
                     {
                         AddFlexibleNMIControls(pBaseThing, pFormGuid, MyNMIForm);
                         beforeMetaLoad?.Invoke(null);
-                        if (MyNMIForm != null)
-                            TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
+                        RefreshFlexibleNMIScreen(pBaseThing, MyNMIForm);
                         TheThing.SetSafePropertyBool(pBaseThing, $"Form_{pFormGuid}_IsVisible", true);
                     }
                 }
@@ -670,6 +688,22 @@ namespace nsCDEngine.Engines.NMIService
             tFlds.Add("Form", MyNMIForm);
             tFlds.Add("DashIcon", AddFormToThingUX(pBaseThing, MyNMIForm, "CMyForm", $"{pBaseThing.FriendlyName}", 1, 3, 0, $"{pFormGuid}", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" }));
             return tFlds;
+        }
+
+        /// <summary>
+        /// Requests a reload of the Flexible NMI Screen
+        /// </summary>
+        /// <param name="pBaseThing">Owner Thing</param>
+        /// <param name="MyNMIForm">The Flexible NMI Screen to refresh</param>
+        public static bool RefreshFlexibleNMIScreen(TheThing pBaseThing, TheFormInfo MyNMIForm)
+        {
+            if (MyNMIForm != null && pBaseThing!=null)
+            {
+                Guid ModelGuid = pBaseThing.GetBaseEngine().GetEngineID();
+                TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -1767,7 +1801,7 @@ namespace nsCDEngine.Engines.NMIService
             int blocksize = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pChartBag, "BlockSize", "="));
             if (blocksize == 0)
                 blocksize = 2000;
-            var MyChart = new TheChartDefinition(TheThing.GetSafeThingGuid(pMyBaseThing, $"SHIS{sensorHistory.StoreMID}"), pChartTitle, blocksize, tDefSource, true, "", "", "", tListCharts)
+            var MyChart = new TheChartDefinition(TheThing.GetSafeThingGuid(pMyBaseThing, $"SHIS{pFldOrder}"), pChartTitle, blocksize, tDefSource, true, "", "", "", tListCharts)
             {
                 SubTitleText = "",
                 PropertyBag = new ThePropertyBag { "LatestRight=true" }

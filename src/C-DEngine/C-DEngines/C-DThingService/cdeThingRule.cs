@@ -164,6 +164,12 @@ namespace nsCDEngine.Engines.ThingService
             set { TheThing.SetSafePropertyBool(MyBaseThing, "IsTriggerObjectAlive", value); }
         }
 
+        public string RuleOwner
+        {
+            get { return TheThing.GetSafePropertyString(MyBaseThing, "RuleOwner"); }
+            set { TheThing.SetSafePropertyString(MyBaseThing, "RuleOwner", value); }
+        }
+
         [ConfigProperty]
         public string TriggerObjectType
         {

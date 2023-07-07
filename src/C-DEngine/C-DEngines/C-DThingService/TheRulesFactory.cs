@@ -28,6 +28,22 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
+        /// Deletes a rule by its cdeMID 
+        /// </summary>
+        /// <param name="mid">cdeMID of the rule</param>
+        /// <param name="pBaseThing">Owner of the Rule</param>
+        /// <returns>true if it was deleted successfully</returns>
+        public static bool DeleteRuleByMID(Guid mid, TheThing pBaseThing)
+        {
+            var tR = TheThingRegistry.GetThingByMID(mid);
+            if (tR != null && tR.DeviceType == eKnownDeviceTypes.TheThingRule && $"{tR.GetProperty("RuleOwner", false)}" == $"{pBaseThing?.ID}")
+            {
+                return TheThingRegistry.DeleteThing(tR);
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Creates a new rule or updates an existing one
         /// </summary>
         /// <param name="pRule">Rule to be created or updated</param>

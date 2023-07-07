@@ -777,7 +777,7 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Lock Object that can be used to test if this class is in use by another thread
         /// </summary>
-        public object MyLock = new ();
+        public readonly object MyLock = new ();
 
         /// <summary>
         /// Removes the record with the corresponding key and does not care if it was successful

@@ -23,6 +23,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
+using CU = nsCDEngine.BaseClasses.TheCommonUtils;
+using NMI = nsCDEngine.Engines.NMIService.TheNMIEngine;
+using TT = nsCDEngine.Engines.ThingService.TheThing;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
@@ -219,7 +222,7 @@ namespace nsCDEngine.Engines.ThingService
         { return mIsInitialized; }
 
         /// <summary>
-        /// Will be called if this thing is deleted fromt TheThingRegistry
+        /// Will be called if this thing is deleted from TheThingRegistry
         /// </summary>
         /// <returns></returns>
         public virtual bool Delete()
@@ -331,6 +334,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="MyLiveForm">Target Form to show the FacePlate in</param>
         /// <param name="pLeft">Left (in Pixels) to position the FacePlate</param>
         /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
+        /// <param name="startFld">Start Fld for DeviceFace in Target Screen</param>
         /// <returns></returns>
         public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, int startFld = -1)
         {
@@ -342,7 +346,7 @@ namespace nsCDEngine.Engines.ThingService
             var fld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
             if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
-                fld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
+                fld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
                     pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), "GROUP", pMsg);
                 });
@@ -356,7 +360,7 @@ namespace nsCDEngine.Engines.ThingService
                     tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = MyNMIFaceModel.XLen - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
                 if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
-                    tfld.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
+                    tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                     {
                         pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), $"PIN_{pin.PinType}", pMsg);
                     });
@@ -397,6 +401,51 @@ namespace nsCDEngine.Engines.ThingService
         }
         #endregion
 
+        #region NMI Log
+        public bool EnableNMILog
+        {
+            get { return TT.MemberGetSafePropertyBool(MyBaseThing); }
+            set { TT.MemberSetSafePropertyBool(MyBaseThing, value); }
+        }
+
+        public virtual Dictionary<string, TheFieldInfo> AddNMILog(TT pBaseThing, TheFormInfo pMyForm, int StartFld, int ParentFld,string pTitle=null, int pWidth = 6, int pHeight = 5)
+        {
+            var tFlds=new Dictionary<string, TheFieldInfo>();
+            SetProperty("NMILog", "Log Ready!");
+            EnableNMILog = false;
+            ClearNMILog();
+            tFlds["Group"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.CollapsibleGroup, StartFld, 2, 0,string.IsNullOrEmpty(pTitle)? "Debug Info":pTitle, null, new nmiCtrlCollapsibleGroup { ParentFld = ParentFld, TileWidth = pWidth, DoClose = true, IsSmall = true });
+            tFlds["Check"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.SingleCheck, StartFld + 10, 2, 0, "Enable Log", nameof(EnableNMILog), new nmiCtrlSingleCheck { ParentFld = StartFld, TileWidth = 3 });
+            tFlds["ClearButton"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileButton, StartFld + 20, 2, 0, "Clear Log", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 3, ParentFld = StartFld });
+            tFlds["ClearButton"].RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "clear", (a, b) => {
+                ClearNMILog();
+            });
+            tFlds["NMILog"]=NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TextArea, StartFld + 30, 0, 0, "Log", "NMILog", new nmiCtrlTextArea { ParentFld = StartFld, NoTE = true, TileHeight = pHeight, TileWidth = pWidth });
+            return tFlds;
+        }
+
+        public virtual void ClearNMILog()
+        {
+            MyNMILog.Clear();
+            TT.SetSafePropertyString(MyBaseThing, "NMILog", "");
+        }
+
+        private readonly StringBuilder MyNMILog = new();
+        public virtual void WriteToNMILog(string txt, bool AddToLog = false, string EventLogEntryName = null, int pStatusLevel = -1, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        {
+            if (EnableNMILog)
+            {
+                //Console.WriteLine($"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}");
+                if (MyNMILog.Length > 0)
+                    MyNMILog.Insert(0, $"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}\n");
+                else
+                    MyNMILog.Append($"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}\n");
+                TT.SetSafePropertyString(MyBaseThing, "NMILog", MyNMILog.ToString());
+            }
+            if (AddToLog)
+                SetMessage(txt, EventLogEntryName, pStatusLevel, SetLastUpdate, LogID, pMsgLevel);
+        }
+        #endregion
         public virtual bool AddPinsAndUpdate(List<ThePin> pIns)
         {
             if (MyBaseThing?.AddPins(pIns)==true)
@@ -416,48 +465,6 @@ namespace nsCDEngine.Engines.ThingService
             return false;
         }
 
-    }
-
-    /// <summary>
-    /// Interface of OPC UA Connector Methods a Twin might call on an OPC UA Client Connector
-    /// </summary>
-    public interface ICDEUAConnector
-    {
-        bool UAReadSync(List<cdeP> pProps);
-        bool UAExecuteCommand(List<cdeP> pCommandProperties);
-    }
-
-    /// <summary>
-    /// Thing Base for an OPC UA Digital Twin
-    /// </summary>
-    public class TheUATwinBase : TheThingBase
-    {
-        public const string OPC_Method = "OPC-METHOD";
-        public const string OPC_Read_Now = "OPC-READ-NOW";
-        public const string OPC_Get_TimeSeries = "OPC-GET-TIMESERIES";
-
-        ICDEUAConnector _MyBaseUAConnector;
-        public ICDEUAConnector MyBaseUAConnector
-        {
-            get { return _MyBaseUAConnector; }
-            set
-            {
-                _MyBaseUAConnector = value;
-                HasOPCConnection = true;
-            }
-        }
-        public TheUATwinBase(TheThing pThing, string pID)
-        {
-            MyBaseThing = pThing ?? new TheThing();
-            if (string.IsNullOrEmpty(MyBaseThing.ID))
-                MyBaseThing.ID = pID;
-            MyBaseThing.SetIThingObject(this);
-        }
-        public bool HasOPCConnection
-        {
-            get { return TheThing.MemberGetSafePropertyBool(MyBaseThing); }
-            set { TheThing.MemberSetSafePropertyBool(MyBaseThing, value); }
-        }
     }
 
     internal class cdePjson
@@ -726,7 +733,7 @@ namespace nsCDEngine.Engines.ThingService
     /// TheThing is the main control object of the C-DEngine. It is a virtual representation of physical objects, functions, services or storage locations
     /// All "Things" in the C-DEngine are managed as TheThings
     /// </summary>
-    public sealed partial class TheThing : TheMetaDataBase, ICDEThing
+    public sealed partial class TheThing : TheMetaDataBase, ICDEThing, ICDEProperty
     {
 
         internal IHistorian Historian { get; set; }
@@ -2102,10 +2109,10 @@ namespace nsCDEngine.Engines.ThingService
         [IgnoreDataMember]
         public int StatusLevel
         {
-            get { return TheCommonUtils.CInt(TheThing.GetSafePropertyNumber(this, "StatusLevel")); }
+            get { return CU.CInt(TT.GetSafePropertyNumber(this, "StatusLevel")); }
             set
             {
-                TheThing.SetSafePropertyNumber(this, "StatusLevel", value);
+                TT.SetSafePropertyNumber(this, "StatusLevel", value);
             }
         }
 
@@ -3282,192 +3289,5 @@ namespace nsCDEngine.Engines.ThingService
         #endregion
 
         #endregion
-    }
-
-    [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class)]
-    public class OPCUATypeAttribute : Attribute
-    {
-        public string UATypeNodeId;
-        public string UANodeIdentifier;
-        public string UANamespace;
-        public bool AllowWrites;
-
-        public OPCUATypeAttribute(string pType, string pNamespace)
-        {
-            UANodeIdentifier = pType;
-            UANamespace = pNamespace;
-        }
-        public OPCUATypeAttribute() { }
-        public OPCUATypeAttribute(string pUATypeNodeId)
-        {
-            UATypeNodeId = pUATypeNodeId;
-        }
-
-        public static bool ApplyUAAttributes(Type pThingType, TheThing pThing)
-        {
-            if (pThing == null || pThingType == null)
-                return false;
-            bool bResult = false;
-            try
-            {
-                var info = (OPCUATypeAttribute)pThingType.GetCustomAttributes(typeof(OPCUATypeAttribute), true)?.FirstOrDefault();
-                if (info != null)
-                {
-                    if (!string.IsNullOrEmpty(info?.UATypeNodeId))
-                        pThing.SetProperty(nameof(UATypeNodeId), info?.UATypeNodeId);
-                    if (!string.IsNullOrEmpty(info?.UANodeIdentifier))
-                        pThing.SetProperty(nameof(UANodeIdentifier), info?.UANodeIdentifier);
-                    if (!string.IsNullOrEmpty(info?.UANamespace))
-                        pThing.SetProperty(nameof(UANamespace), info?.UANamespace);
-                    pThing.SetProperty(nameof(AllowWrites), info.AllowWrites);
-
-                    var thingTypeProps = pThingType.GetProperties();
-                    foreach (var prop in thingTypeProps)
-                    {
-                        ApplyUAPropertyAttributes(pThing, prop);
-                    }
-
-                    bResult = true;
-                }
-            }
-            catch
-            {
-                //ignored
-            }
-
-            return bResult;
-        }
-
-        internal static void ApplyUAPropertyAttributes(TheThing pThing, cdeP pProperty)
-        {
-            if (string.IsNullOrEmpty(pProperty?.Name)) return;
-            var thingTypeProps = pThing.GetObject()?.GetType()?.GetProperty(pProperty.Name);
-            if (thingTypeProps != null)
-                ApplyUAPropertyAttributes(pThing, thingTypeProps);
-        }
-
-        private static void ApplyUAPropertyAttributes(TheThing pThing, PropertyInfo prop)
-        {
-            if (pThing == null)
-                return;
-            try
-            {
-                OPCUAPropertyAttribute uaAttribute = prop.GetCustomAttributes(typeof(OPCUAPropertyAttribute), true).FirstOrDefault() as OPCUAPropertyAttribute;
-                if (uaAttribute != null)
-                {
-                    var tProp = pThing.GetProperty(prop.Name, uaAttribute.UAMandatory);
-                    if (tProp != null)
-                    {
-                        tProp.cdeM = OPCUAPropertyAttribute.Meta;
-                        if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UASourceType), uaAttribute.UASourceType);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UAUnits))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUnits), uaAttribute.UAUnits);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UANodeId))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UANodeId), uaAttribute.UANodeId);
-                        if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
-                        if (uaAttribute.UARangeMin != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
-                        if (uaAttribute.UARangeMax != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMax), uaAttribute.UARangeMax);
-                        if (uaAttribute.UAWriteMask != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAWriteMask), uaAttribute.UAWriteMask);
-                        if (uaAttribute.UAUserWriteMask != 0)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
-                        if (uaAttribute.AllowWrites)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.AllowWrites), uaAttribute.AllowWrites);
-                        if (uaAttribute.HideFromAnonymous)
-                            tProp?.SetProperty(nameof(OPCUAPropertyAttribute.HideFromAnonymous), uaAttribute.HideFromAnonymous);
-                    }
-                }
-                OPCUAVariableAttribute uaVariAttribute = prop.GetCustomAttributes(typeof(OPCUAVariableAttribute), true).FirstOrDefault() as OPCUAVariableAttribute;
-                if (uaVariAttribute != null)
-                {
-                    var tProp = pThing.GetProperty(prop.Name, false);
-                    if (tProp != null)
-                        tProp.cdeM = OPCUAVariableAttribute.Meta;
-                    tProp?.SetHighSpeed(true);
-                    tProp?.SetProperty(nameof(OPCUAVariableAttribute.IsVariable), uaVariAttribute.IsVariable);
-                }
-                OPCUAHAVariableAttribute uaHAVariAttribute = prop.GetCustomAttributes(typeof(OPCUAHAVariableAttribute), true).FirstOrDefault() as OPCUAHAVariableAttribute;
-                if (uaHAVariAttribute != null)
-                {
-                    var tProp = pThing.GetProperty(prop.Name, false);
-                    if (tProp != null)
-                        tProp.cdeM = OPCUAHAVariableAttribute.Meta;
-                    tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.Historizing), uaHAVariAttribute.Historizing);
-                    if (uaHAVariAttribute.MinimumSamplingInterval != 0)
-                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MinimumSamplingInterval), uaHAVariAttribute.MinimumSamplingInterval);
-                    if (uaHAVariAttribute.MaximumSamplingInterval != 0)
-                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.MaximumSamplingInterval), uaHAVariAttribute.MaximumSamplingInterval);
-                    if (uaHAVariAttribute.ArchiveStart != DateTimeOffset.MinValue)
-                        tProp?.SetProperty(nameof(OPCUAHAVariableAttribute.ArchiveStart), uaHAVariAttribute.ArchiveStart);
-                }
-            }
-            catch
-            {
-                TheBaseAssets.MySYSLOG.WriteToLog(7692, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingService", $"Failed to Apply UA Attribute to Property: {prop?.Name}", eMsgLevel.l1_Error));
-            }
-        }
-    }
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
-    public class OPCUABaseAttribute : Attribute
-    {
-        public const string Meta = "UATag";
-        public string UABrowseName;
-
-        public string UADescription;
-        public string UADisplayName;
-        public string UANodeId;
-        public bool HideFromAnonymous;
-    }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
-    public class OPCUAPropertyAttribute : OPCUABaseAttribute
-    {
-        public new const string Meta = "UAProperty";
-
-        // Possible future enhancements. All these should be defined in the UA NodeSet referenced in the UATypeNodeId of TheThing
-        public string UASourceType;
-        public string UAUnits;
-        public double UARangeMin;
-        public double UARangeMax;
-        public int UAWriteMask;
-        public int UAUserWriteMask;
-        public bool UAMandatory;
-        public bool AllowWrites;
-    }
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
-    public class OPCUAFolderAttribute : OPCUABaseAttribute
-    {
-        public new const string Meta = "UAFolder";
-    }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
-    public class OPCUAVariableAttribute: OPCUAPropertyAttribute
-    {
-        public new const string Meta = "UAVariable";
-        public bool IsVariable=true;
-    }
-
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
-    public class OPCUAHAVariableAttribute : OPCUAVariableAttribute
-    {
-        public new const string Meta = "UAHAVariable";
-        public bool Historizing;
-        public int MinimumSamplingInterval;
-        public int MaximumSamplingInterval;
-        public DateTimeOffset ArchiveStart;
-    }
-
-    [AttributeUsage(AttributeTargets.Method )]
-    public class OPCUAMethodAttribute : OPCUABaseAttribute
-    {
-        public new const string Meta = "UAMethodCommand";
     }
 }
