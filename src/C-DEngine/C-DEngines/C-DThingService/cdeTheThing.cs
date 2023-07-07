@@ -338,6 +338,10 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, int startFld = -1)
         {
+            if (MyNMIFaceModel == null)
+            {
+                return startFld;
+            }
             MyNMIFaceModel.SetPos(pLeft, pTop);
             if (startFld < 0)
                 startFld = MyLiveForm.FldPos;

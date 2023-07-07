@@ -144,6 +144,7 @@ namespace nsCDEngine.Engines.ThingService
             if (thingID.Value != Guid.Empty)
             {
                 MyGroupThings.RemoveNoCare(CU.CGuid(thingID));
+                TheThingRegistry.GetThingByMID(CU.CGuid(thingID))?.SetProperty("cdeGroupID", Guid.Empty);
                 return UpdateGTP();
             }
             return false;
@@ -251,22 +252,51 @@ namespace nsCDEngine.Engines.ThingService
                 block["Form"] = MyGroupForm;
                 block["DashIcon"] = NMI.AddFormToThingUX(MyBaseThing, MyGroupForm, "CMyForm", MyBaseThing.FriendlyName, 1, 3, 0, "..Overview", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" });
 
-                var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = 18, TileHeight = 9 });
+                mIsUXInitialized = DoCreateUX(block);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Allows to add new NMI controls to the Group NMI
+        /// </summary>
+        /// <param name="pUXFlds">Dictionary of Fields that have been added. Add your controls to the dictionary for best practice
+        /// If the group can adjust the following properties:
+        /// NMI_DisallowAdd: If true, the NMI Editor will not allow adding of new Things
+        /// NMI_ShowAllProperties: If true, the form will show all a table with all properties
+        /// NMI_AddRefresh: If true, a small refresh button is added to the top left of the Group
+        /// <returns>If true, the NMI assumes the Form NMI was completely initialized</returns>
+        public virtual bool DoCreateUX(cdeConcurrentDictionary<string, TheMetaDataBase> pUXFlds)
+        {
+            bool DisallowAdd = CU.CBool(MyBaseThing.GetProperty("NMI_DisallowAdd",false)?.GetValue());
+            bool ShowAllProperties = CU.CBool(MyBaseThing.GetProperty("NMI_ShowAllProperties", false)?.GetValue());
+            bool AddRefresh = CU.CBool(MyBaseThing.GetProperty("NMI_AddRefresh", false)?.GetValue());
+
+            var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = 18, TileHeight = 9 });
+            if (!DisallowAdd)
+            {
                 tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
                 {
                     var tMyForm = NMI.GetNMIEditorForm();
                     if (tMyForm != null)
                     {
                         var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FacePlateUrl", false)?.GetValue()}"));
-                        string tOpt = "";
+                        StringBuilder tOpt = new StringBuilder();
                         foreach (var tThing in tThings)
                         {
-                            if (tOpt.Length > 0)
-                                tOpt += ";";
-                            tOpt += $"{tThing.FriendlyName}:{tThing.cdeMID}";
+                            var tG = tThing.GetProperty("cdeGroupID", false);
+                            if (!MyGroupThings.Keys.Contains(tThing.cdeMID) && (tG==null || CU.CGuid(tG)==Guid.Empty))
+                            {
+                                if (tOpt.Length > 0) tOpt.Append(";");
+                                tOpt.Append($"{tThing.FriendlyName}:{tThing.cdeMID}");
+                            }
                         }
+                        if (tOpt.Length == 0)
+                            tOpt.Append($"No Thing Available:{Guid.Empty}");
                         NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.SmartLabel, 2005, 0xA2, 0x80, "Select Thing to Add", null, new nmiCtrlSmartLabel() { NoTE = true, TileWidth = 5 });
-                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.ComboBox, 2006, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { Options = tOpt, NoTE = true, TileWidth = 5 });
+                        NMI.GetNMIEditorThing()?.SetProperty("newthing", Guid.Empty);
+                        MyBaseThing.SetProperty("newthing", Guid.Empty);
+                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.ComboBox, 2006, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { Options = tOpt.ToString(), NoTE = true, TileWidth = 5 });
                         var ttt = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
                         ttt.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
                         {
@@ -274,7 +304,7 @@ namespace nsCDEngine.Engines.ThingService
                             if (tMsg != null)
                             {
                                 var tN = TheThingRegistry.GetThingByMID(CU.CGuid(MyBaseThing.GetProperty("newthing")));
-                                TheThingBase tB = tN.GetObject() as TheThingBase;
+                                TheThingBase tB = tN?.GetObject() as TheThingBase;
                                 if (tB != null && AddOrUpdateThingInGroup(tB))
                                 {
                                     ReloadForm();
@@ -285,28 +315,25 @@ namespace nsCDEngine.Engines.ThingService
                         pMsg.Cookie = true;
                     }
                 });
-                block["NMIEditor"] = tFL;
-                mIsUXInitialized = DoCreateUX(block);
             }
-            return true;
-        }
+            pUXFlds["NMIEditor"] = tFL;
 
-        /// <summary>
-        /// Allows to add new NMI controls to the Group NMI
-        /// </summary>
-        /// <param name="pUXFlds">Dictionary of Fields that have been added. Add your controls to the dictionary for best practice</param>
-        /// <returns>If true, the NMI assumes the Form NMI was completely initialized</returns>
-        public virtual bool DoCreateUX(cdeConcurrentDictionary<string, TheMetaDataBase> pUXFlds)
-        {
-            var tBut = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, TileWidth = 1, TileHeight = 1, Left = 0, Top = 0, NoTE = true, ClassName = "enTransBut" });
-            tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, pmsg) =>
+            if (AddRefresh)
             {
-                ReloadForm();
-            });
-            pUXFlds["RefreshButton"] = tBut;
-            pUXFlds["PropTableGroup"]= NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
-            pUXFlds["PropTable"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.Table, 10010, 8, 0x80, null, "mypropertybag", new nmiCtrlTableView() { TileWidth=12, TileHeight=7, NoTE = true, ParentFld = 10000, ShowFilterField = true });
-            //                NMI.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 10010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
+                var tBut = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, TileWidth = 1, TileHeight = 1, Left = 0, Top = 0, NoTE = true, ClassName = "enTransBut" });
+                tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, pmsg) =>
+                {
+                    ReloadForm();
+                });
+                pUXFlds["RefreshButton"] = tBut;
+            }
+
+            if (ShowAllProperties)
+            {
+                pUXFlds["PropTableGroup"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
+                pUXFlds["PropTable"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.Table, 10010, 8, 0x80, null, "mypropertybag", new nmiCtrlTableView() { TileWidth = 12, TileHeight = 7, NoTE = true, ParentFld = 10000, ShowFilterField = true });
+                //                NMI.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 10010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
+            }
             return true;
         }
 
@@ -327,9 +354,9 @@ namespace nsCDEngine.Engines.ThingService
         {
             InitGTP();
             NMI.DeleteFieldsByRange(MyGroupForm, 100, 9999);
+            MyGroupForm.FldStart = 100;
             if (MyGroupThings?.Any() == true)
             {
-                MyGroupForm.FldStart = 100;
                 int cnt = 0;
                 foreach (var t in MyGroupThings.Values) t?.ShowDeviceFace(MyGroupForm, 78 + (cnt++ * 234), 100);
             }
