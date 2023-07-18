@@ -2125,7 +2125,7 @@ namespace nsCDEngine.Engines.NMIService
         public bool IsUsingAbsolute { get; set; }
 
         [IgnoreDataMember]
-        public object UpdateLock=new object();
+        public readonly object UpdateLock=new object();
 
         int mfldStart = 0;
 

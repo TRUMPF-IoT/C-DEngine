@@ -711,7 +711,7 @@ namespace nsCDEngine.Engines
         {
             sinkInterceptHttp ??=sinkReturnEngineResource;
             GetEngineState().HasJSEngine = true;
-            TheCommCore.MyHttpService.RegisterHttpInterceptorB4(string.Format("{0}.js",GetEngineName()), sinkInterceptHttp);
+            TheCommCore.MyHttpService?.RegisterHttpInterceptorB4(string.Format("{0}.js",GetEngineName()), sinkInterceptHttp);
         }
 
         void sinkReturnEngineResource(TheRequestData pReq)

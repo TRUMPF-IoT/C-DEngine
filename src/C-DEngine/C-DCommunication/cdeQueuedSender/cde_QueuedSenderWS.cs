@@ -201,7 +201,7 @@ namespace nsCDEngine.Communication
                             }
 
                             tDev.TOP = tQueued.Topic;
-                            tDev.FID = tCurSessState.GetNextSerial().ToString();
+                            tDev.FID = $"{tCurSessState.GetNextSerial()}";
                             if (TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //IDST-OK: Must create RSA for Devices
                             {
                                 TheCommonUtils.CreateRSAKeys(tCurSessState);

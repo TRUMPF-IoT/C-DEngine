@@ -62,11 +62,35 @@ namespace nsCDEngine.Engines.NMIService
                 case "NMI_GET_UIDACL":
                     TheUserManager.SendACLToNMISilent(pMsg.Message.GetOriginator(), TheCommonUtils.CGuid(pMsg.Message.PLS), tClientInfo);
                     break;
-                case "NMI_SHOW_EDITOR":
-                    if (!string.IsNullOrEmpty(pMsg.Message?.PLS))
+                case "NMI_EDITOR_DELETE":
+                    if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
                     {
                         try
                         {
+                            if (!pMsg.Message.IsFirstNode() || !TheUserManager.CloudCheck(pMsg, 128, true, tClientInfo)) return;
+                            var tLocParts = pMsg.Message?.PLS.Split(';');
+                            if (tLocParts?.Length > 2)
+                            {
+                                var tForm = GetFormById(TheCommonUtils.CGuid(tLocParts[1]));
+                                if (tForm != null)
+                                {
+                                    var tGroupMThing = TheThingRegistry.GetThingByMID(tForm.cdeO);
+                                    var tGroupThing = tGroupMThing?.GetObject() as TheThingGroup;
+                                    if (tGroupThing?.RemoveThingMIDFromGroup(TheCommonUtils.CGuid(tLocParts[2]))==true)
+                                        tGroupThing.ReloadForm();                                }
+                            }
+                        }
+                        catch {
+                        // ignored
+                        }
+                    }
+                    break;
+                case "NMI_SHOW_EDITOR":
+                    if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
+                    {
+                        try
+                        {
+                            if (!pMsg.Message.IsFirstNode() || !TheUserManager.CloudCheck(pMsg, 128, true, tClientInfo)) return;
                             var tLocParts = pMsg.Message?.PLS.Split(';');
                             if (tLocParts?.Length > 1)
                             {

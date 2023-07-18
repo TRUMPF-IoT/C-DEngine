@@ -58,7 +58,7 @@ namespace nsCDEngine.Engines.ThingService
     /// Each Thing can have zero, one ore more cdeP Properties.
     /// They are normally stored in a "PropertyBag" that can be accessed via the plugins or in JavaScript on the Browser side
     /// </summary>
-    public partial class cdeP : TheMetaDataBase
+    public partial class cdeP : TheMetaDataBase, ICDEProperty 
     {
         /// <summary>
         /// Fire On Change Bits
@@ -82,7 +82,7 @@ namespace nsCDEngine.Engines.ThingService
         /// Bit 5(16) if Set to TRUE, the property will NOT be sent via initial NMI_SET_DATA to browsers, only updates are sent
         /// Bit 7(64) Property is NMI related
         /// Bit 8(128) Property change does not cause ThingRegistry to be written to disk (for High speed/real-time properties)
-        /// Bit 9(256) If set, property events are fired sychronously (default is async)
+        /// Bit 9(256) If set, property events are fired synchronously (default is async)
         /// </summary>
         public int cdeE { get; set; }
 
@@ -136,7 +136,7 @@ namespace nsCDEngine.Engines.ThingService
         private object mValue;
 
         /// <summary>
-        /// Set the PublisCentral bit on the cdeFOC. The requestor is the node requesting the PC
+        /// Set the PublishCentral bit on the cdeFOC. The requestor is the node requesting the PC
         /// </summary>
         /// <param name="bOnOff">if true the property will fire OnChange publications</param>
         /// <param name="pRequestor">Guid of the requestor (Future use)</param>

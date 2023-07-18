@@ -29,7 +29,7 @@ namespace nsCDEngine.Engines.ThingService
     /// </summary>
     public class ePinTypeName
     {
-        public const string Generic = "nsu=http://c-labs.com/UA/EnergyDevices;i=2001"; //OPC UA: once OPCF standardized Pins replace with Standard
+        public const string Generic = "nsu=http://c-labs.com/UA/Energy;i=2001"; //OPC UA: once OPCF standardized Pins replace with Standard
     }
     public class ThePin : TheMetaDataBase
     {
