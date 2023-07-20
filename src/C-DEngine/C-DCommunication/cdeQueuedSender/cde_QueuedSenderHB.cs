@@ -7,6 +7,8 @@ using nsCDEngine.Engines.StorageService;
 using nsCDEngine.ISM;
 using nsCDEngine.ViewModels;
 using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 
 namespace nsCDEngine.Communication
@@ -14,14 +16,26 @@ namespace nsCDEngine.Communication
     internal partial class TheQueuedSender
     {
         private readonly object lockStartLock = new ();
+        private Timer _tsmHistoryExpirationTimer = null;
+
         internal void StartHeartBeat()
         {
             if (IsQSenderReadyForHB || !TheBaseAssets.MasterSwitch)
                 return;
             IsQSenderReadyForHB = true;
+
             try
             {
-                MyTSMHistory ??= new TheMirrorCache<TheSentRegistryItem>(TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime);
+                lock (lockStartLock)
+                {
+                    MyTSMHistory ??= new ConcurrentDictionary<string, TheSentRegistryItem>();
+
+                    var qSenderDejaSentTime = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime <= 24 * 60 * 60
+                        ? TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime * 1000
+                        : 24 * 60 * 60 * 1000;
+
+                    _tsmHistoryExpirationTimer ??= new Timer(MyTsmHistoryRemoveExpired, null, qSenderDejaSentTime, qSenderDejaSentTime);
+                }
 
                 if (!TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
                 {
@@ -40,6 +54,19 @@ namespace nsCDEngine.Communication
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(247, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"StartHearbeat failed: {e}", eMsgLevel.l1_Error), true);
                 IsQSenderReadyForHB = false;
+            }
+        }
+
+        private void MyTsmHistoryRemoveExpired(object state)
+        {
+            var now = DateTimeOffset.Now;
+            var itemsToRemove = MyTSMHistory.Values.Where(item => item.cdeEXP > 0 && now.Subtract(item.cdeCTIM).TotalSeconds >= item.cdeEXP);
+            foreach (var item in itemsToRemove)
+            {
+                if (MyTSMHistory.TryRemove(item.Id, out _))
+                {
+                    if(MyTSMHistoryCount > 0) Interlocked.Decrement(ref MyTSMHistoryCount);
+                }
             }
         }
 
