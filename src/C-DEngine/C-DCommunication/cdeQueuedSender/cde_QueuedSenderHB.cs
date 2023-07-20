@@ -68,7 +68,7 @@ namespace nsCDEngine.Communication
         internal void ResetHeartbeatTimer(bool IsChangeRequest, TheSessionState pSession)
         {
             InitHeartbeatTimer();
-            if (MyTargetNodeChannel == null || MyTargetNodeChannel.SenderType == cdeSenderType.CDE_LOCALHOST) return;
+            if (MyTargetNodeChannel == null || MyTargetNodeChannel.SenderType == cdeSenderType.CDE_LOCALHOST || pSession == null) return;
             TheBaseAssets.MySession.WriteSession(pSession);
             if (string.IsNullOrEmpty(MyTargetNodeChannel.RealScopeID) && !string.IsNullOrEmpty(pSession.SScopeID) && MyISBlock == null) //RScope-OK: This should be super rare that a channel has no RScope but the SessionState has a Scope
                 UpdateSubscriptionScope(TheBaseAssets.MyScopeManager.GetRealScopeID(pSession.SScopeID));       //GRSI: rare
@@ -82,10 +82,11 @@ namespace nsCDEngine.Communication
 
         internal bool SetLastHeartbeat(TheSessionState pState)
         {
-            if (TheCommonUtils.IsLocalhost(MyTargetNodeChannel.cdeMID))
+            if (TheCommonUtils.IsLocalhost(MyTargetNodeChannel?.cdeMID ?? Guid.Empty))
                 return true;
-            MyTargetNodeChannel.MySessionState ??= pState;
-            ResetHeartbeatTimer(false, MyTargetNodeChannel.MySessionState);
+            if(MyTargetNodeChannel != null)
+                MyTargetNodeChannel.MySessionState ??= pState;
+            ResetHeartbeatTimer(false, pState);
             return true;
         }
 
@@ -170,8 +171,8 @@ namespace nsCDEngine.Communication
                 return; //New in 4.205: HB is not checked if QSender is in post (for example during a large telegram going to a browser)
             }
 
-            if (MyTargetNodeChannel.IsWebSocket && !IsConnecting && !TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))
-                TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel.MySessionState);
+            if (MyTargetNodeChannel is {IsWebSocket: true} && !IsConnecting && !TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel?.SenderType ?? cdeSenderType.NOTSET))
+                TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel?.MySessionState);
             mInHeartBeatTimer = true;
 
             try
@@ -212,7 +213,7 @@ namespace nsCDEngine.Communication
                     {
                         TSM tMsg = new ("QueuedSender", $"Too Many Heartbeats ({HeartBeatCnt}) missed - {MyTargetNodeChannel?.ToMLString()} might be down!", eMsgLevel.l2_Warning);
                         HeartBeatCnt = 0;
-                        tMsg.ORG = MyTargetNodeChannel.cdeMID.ToString();
+                        tMsg.ORG = MyTargetNodeChannel?.cdeMID.ToString();
                         TheBaseAssets.MySYSLOG.WriteToLog(248, tMsg, true);
                         FireSenderProblem(new TheRequestData() { ErrorDescription = "1306:Heartbeat failure!!" });
                     }

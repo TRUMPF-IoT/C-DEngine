@@ -855,11 +855,11 @@ namespace nsCDEngine.Communication
             //New in 5.108: Support for Unscoped CloudRelay to CloudRelay : Skip all Telegram Filters and just forward everything to the other cloud-relay
             if (TheBaseAssets.MyServiceHostInfo.IsCloudService && !TheBaseAssets.MyScopeManager.IsScopingEnabled &&
                 (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE ||
-                (!TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly && myTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(MyTargetNodeChannel.cdeMID))
+                (!TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly && myTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(myTargetNodeChannel.cdeMID))
                 ))
             {
                 //Still checking for circular telegrams
-                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(MyTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
+                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(myTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(2328, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("CoreComm", $"Target {myTargetNodeChannel.ToMLString()} found in Hubs ORG:{pMessage.ORG} - {pMessage.TXT} Will be ignored", eMsgLevel.l7_HostDebugMessage), true);//ORG-OK
                     return false;
@@ -1417,9 +1417,9 @@ namespace nsCDEngine.Communication
                     tQue.OrgMessage = tFinalTSM;
                     if (tQue.OrgMessage.ORG == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString())   //Performance Boost
                     {
-                        if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB)  //If ISB we need to use the cdeMID of the TNC instead of the DeviceID
+                        if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB)  //If ISB we need to use the cdeMID of the TNC instead of the DeviceID
                         {
-                            tQue.OrgMessage.ORG = MyTargetNodeChannel.cdeMID.ToString();
+                            tQue.OrgMessage.ORG = myTargetNodeChannel.cdeMID.ToString();
                             if (TheBaseAssets.MyServiceHostInfo.EnableCosting)
                                 TheCDEngines.updateCosting(tQue.OrgMessage);
                         }
