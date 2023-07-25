@@ -705,8 +705,7 @@ namespace nsCDEngine.Communication
             eventSenderThreadRunning = null;
             eventErrorDuringUpload = null;
 
-            var tsmHistoryTimer = Interlocked.Exchange(ref _tsmHistoryExpirationTimer, null);
-            tsmHistoryTimer?.Dispose();
+            TheQueuedSenderRegistry.UnregisterHBTimer(SinkHeartbeatTsmHistoryRemovedTimer);
 
             if (TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
             {

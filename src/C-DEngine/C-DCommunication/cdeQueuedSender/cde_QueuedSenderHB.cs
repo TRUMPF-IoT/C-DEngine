@@ -3,11 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 
 using nsCDEngine.BaseClasses;
-using nsCDEngine.Engines.StorageService;
 using nsCDEngine.ISM;
 using nsCDEngine.ViewModels;
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
 
@@ -15,8 +13,10 @@ namespace nsCDEngine.Communication
 {
     internal partial class TheQueuedSender
     {
-        private readonly object lockStartLock = new ();
-        private Timer _tsmHistoryExpirationTimer = null;
+        private readonly object _lockStartLock = new();
+        
+        private DateTimeOffset _lastTsmHistoryExpirationCheckTime = DateTimeOffset.Now;
+        private int _tsmHistoryExpirationCheckRunning;
 
         internal void StartHeartBeat()
         {
@@ -26,15 +26,13 @@ namespace nsCDEngine.Communication
 
             try
             {
-                lock (lockStartLock)
+                lock (_lockStartLock)
                 {
-                    MyTSMHistory ??= new ConcurrentDictionary<string, TheSentRegistryItem>();
-
-                    var qSenderDejaSentTime = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime <= 24 * 60 * 60
-                        ? TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime * 1000
-                        : 24 * 60 * 60 * 1000;
-
-                    _tsmHistoryExpirationTimer ??= new Timer(MyTsmHistoryRemoveExpired, null, qSenderDejaSentTime, qSenderDejaSentTime);
+                    if (MyTSMHistory == null)
+                    {
+                        MyTSMHistory = new cdeConcurrentDictionary<string, TheSentRegistryItem>();
+                        TheQueuedSenderRegistry.RegisterHBTimer(SinkHeartbeatTsmHistoryRemovedTimer);
+                    }
                 }
 
                 if (!TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
@@ -43,7 +41,7 @@ namespace nsCDEngine.Communication
                 }
                 else
                 {
-                    lock (lockStartLock)
+                    lock (_lockStartLock)
                     {
                         mMyHeartBeatTimer ??= new Timer(sinkHeartBeatTimerLocal, null, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
                     }
@@ -57,16 +55,35 @@ namespace nsCDEngine.Communication
             }
         }
 
-        private void MyTsmHistoryRemoveExpired(object state)
+        private void SinkHeartbeatTsmHistoryRemovedTimer(long beat)
         {
-            var now = DateTimeOffset.Now;
-            var itemsToRemove = MyTSMHistory.Values.Where(item => item.cdeEXP > 0 && now.Subtract(item.cdeCTIM).TotalSeconds >= item.cdeEXP);
-            foreach (var item in itemsToRemove)
+            if (Interlocked.Exchange(ref _tsmHistoryExpirationCheckRunning, 1) != 0)
+                return;
+
+            try
             {
-                if (MyTSMHistory.TryRemove(item.Id, out _))
+                var qSenderDejaSentTime = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime <= 24 * 60 * 60
+                    ? TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime * 1000
+                    : 24 * 60 * 60 * 1000;
+
+                var now = DateTimeOffset.Now;
+                if (now <= _lastTsmHistoryExpirationCheckTime + TimeSpan.FromMilliseconds(qSenderDejaSentTime))
+                    return;
+
+                var itemsToRemove = MyTSMHistory.Values.Where(item => item.cdeEXP > 0 && now.Subtract(item.cdeCTIM).TotalSeconds >= item.cdeEXP);
+                foreach (var item in itemsToRemove)
                 {
-                    if(MyTSMHistoryCount > 0) Interlocked.Decrement(ref MyTSMHistoryCount);
+                    if (MyTSMHistory.TryRemove(item.Id, out _))
+                    {
+                        if (MyTSMHistoryCount > 0) Interlocked.Decrement(ref MyTSMHistoryCount);
+                    }
                 }
+
+                _lastTsmHistoryExpirationCheckTime = now;
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _tsmHistoryExpirationCheckRunning, 0);
             }
         }
 

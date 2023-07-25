@@ -257,13 +257,13 @@ namespace nsCDEngine.Communication
                     {
                         var sendBuffer = TheCommonUtils.cdeCompressString(tSendBufferStr.ToString());
                         sendBufferByteLength = sendBuffer.Length;
-                        MyWebSocketProcessor?.PostToSocket(null, TheCommonUtils.cdeCompressString(tSendBufferStr.ToString()), true, false);
+                        MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.cdeCompressString(tSendBufferStr.ToString()), true, false);
                     }
                     else
                     {
                         var sendBuffer = TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString());
                         sendBufferByteLength = sendBuffer.Length;
-                        MyWebSocketProcessor?.PostToSocket(null, TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString()), false, false);
+                        MyWebSocketProcessor.PostToSocket(null, TheCommonUtils.CUTF8String2Array(tSendBufferStr.ToString()), false, false);
                     }
 
                     if (TheCDEKPIs.EnableKpis && sendBufferByteLength > 0)
