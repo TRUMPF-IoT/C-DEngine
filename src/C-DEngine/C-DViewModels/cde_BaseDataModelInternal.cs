@@ -458,6 +458,8 @@ namespace nsCDEngine.ViewModels
 		{
 			return $"ORG:{TheCommonUtils.GetDeviceIDML(ORG)},TH:{TopicHash}, FID:{FID}, OUT:{IsOutgoing}, TIM:{TheCommonUtils.GetDateTimeString(SentTime,-1)}, ENG:{Engine}";
 		}
+
+        public string Id => $"{IsOutgoing},{Engine},{SessionID:N},{FID},{ORG}";
     }
 
     internal class TheSentRegistryItemHS

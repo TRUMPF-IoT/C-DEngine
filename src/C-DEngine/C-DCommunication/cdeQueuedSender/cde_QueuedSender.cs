@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Text;
@@ -549,7 +550,7 @@ namespace nsCDEngine.Communication
                     StopHeartBeat();
                     IsConnected = false;
                     IsConnecting = false;
-                    MyTSMHistory?.Reset();
+                    MyTSMHistory?.Clear();
                     if (MyWebSocketProcessor != null && MyWebSocketProcessor.IsActive)
                         MyWebSocketProcessor.IsActive = false; //3-1.0.1 This was not set to false on certain conditions like HB failure.
                     TheBaseAssets.MySession.RemoveSessionsByDeviceID(MyTargetNodeChannel.cdeMID, Guid.Empty);
@@ -703,6 +704,9 @@ namespace nsCDEngine.Communication
             eventConnected = null;
             eventSenderThreadRunning = null;
             eventErrorDuringUpload = null;
+
+            TheQueuedSenderRegistry.UnregisterHBTimer(SinkHeartbeatTsmHistoryRemovedTimer);
+
             if (TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
             {
                 Timer timer = Interlocked.CompareExchange(ref mMyHeartBeatTimer, null, mMyHeartBeatTimer);
@@ -711,17 +715,10 @@ namespace nsCDEngine.Communication
                     mMyHeartBeatTimer = null;
                     try
                     {
-                        timer.Change(Timeout.Infinite, Timeout.Infinite);
-                    }
-                    catch { 
-                        //Ignored
-                    }
-                    try
-                    {
                         timer.Dispose();
                     }
                     catch { 
-                    //Ignored
+                        //Ignored
                     }
                 }
             }
@@ -737,7 +734,7 @@ namespace nsCDEngine.Communication
             IsAlive = false;
             try
             {
-                MyTSMHistory?.Dispose();
+                MyTSMHistory?.Clear();
                 if (MyTargetNodeChannel == null)
                     return;
                 TheLoggerFactory.LogEvent(eLoggerCategory.NodeConnect, "QSender Disposed", eMsgLevel.l4_Message, $"{MyTargetNodeChannel} ({MyTargetNodeChannel?.RealScopeID?.Substring(0, 4).ToUpper()})");
@@ -855,11 +852,11 @@ namespace nsCDEngine.Communication
             //New in 5.108: Support for Unscoped CloudRelay to CloudRelay : Skip all Telegram Filters and just forward everything to the other cloud-relay
             if (TheBaseAssets.MyServiceHostInfo.IsCloudService && !TheBaseAssets.MyScopeManager.IsScopingEnabled &&
                 (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CLOUDROUTE ||
-                (!TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly && myTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(MyTargetNodeChannel.cdeMID))
+                (!TheBaseAssets.MyServiceHostInfo.CloudToCloudUpstreamOnly && myTargetNodeChannel.SenderType == cdeSenderType.CDE_BACKCHANNEL && TheBaseAssets.MyServiceHostInfo.AllowedUnscopedNodes.Contains(myTargetNodeChannel.cdeMID))
                 ))
             {
                 //Still checking for circular telegrams
-                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(MyTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
+                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(myTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(2328, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("CoreComm", $"Target {myTargetNodeChannel.ToMLString()} found in Hubs ORG:{pMessage.ORG} - {pMessage.TXT} Will be ignored", eMsgLevel.l7_HostDebugMessage), true);//ORG-OK
                     return false;
@@ -1417,9 +1414,9 @@ namespace nsCDEngine.Communication
                     tQue.OrgMessage = tFinalTSM;
                     if (tQue.OrgMessage.ORG == TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString())   //Performance Boost
                     {
-                        if (MyTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB)  //If ISB we need to use the cdeMID of the TNC instead of the DeviceID
+                        if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB)  //If ISB we need to use the cdeMID of the TNC instead of the DeviceID
                         {
-                            tQue.OrgMessage.ORG = MyTargetNodeChannel.cdeMID.ToString();
+                            tQue.OrgMessage.ORG = myTargetNodeChannel.cdeMID.ToString();
                             if (TheBaseAssets.MyServiceHostInfo.EnableCosting)
                                 TheCDEngines.updateCosting(tQue.OrgMessage);
                         }
@@ -1641,7 +1638,7 @@ namespace nsCDEngine.Communication
 
 
 #region TSM History Management
-        internal TheMirrorCache<TheSentRegistryItem> MyTSMHistory = null;
+        internal ConcurrentDictionary<string, TheSentRegistryItem> MyTSMHistory = null;
         internal int MyTSMHistoryCount = 0;
 
         internal bool WasTSMSeenBefore(TSM pTSM, string pRealSID, bool pIsOutgoing)
@@ -1659,24 +1656,34 @@ namespace nsCDEngine.Communication
 
             try
             {
-                if (MyTSMHistory.TheValues.Any(s => s.IsOutgoing == pIsOutgoing && s.Engine == pTSM.ENG && tSessionID == s.SessionID && s.FID == cFID && s.ORG == tOrg))
+                var item = new TheSentRegistryItem
+                {
+                    ORG = tOrg,
+                    Engine = pTSM.ENG,
+                    SentTime = pTSM.TIM,
+                    FID = cFID,
+                    IsOutgoing = pIsOutgoing,
+                    SessionID = tSessionID,
+                    cdeEXP = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime
+                };
+
+                if (!MyTSMHistory.TryAdd(item.Id, item))
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QSRegistry", $"TSMSeenHistory Found Duplicate! Out:{pIsOutgoing} TXT:{pTSM.TXT} TIM:{pTSM.TIM} ENG:{pTSM.ENG} SEID:{tSessionID}  FID:{cFID} ORG:{tOrg}", eMsgLevel.l6_Debug)); // full  TSM: {pTSM.ToString()}
                     return true;
                 }
-                else
+
+                // counting queue size this way is not that reliable, but is much faster
+                // because the count is only used for diag output and overrun protection this should be ok
+                Interlocked.Increment(ref MyTSMHistoryCount);
+                TheCDEKPIs.IncTSMByEng(pTSM.ENG);
+
+                TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.ESSENTIALS) || MyTSMHistoryCount != 3000 ? null : new TSM("QSRegistry", $"TSMSeenHistory QS very full! Cnt:{MyTSMHistoryCount} Out:{pIsOutgoing} TXT:{pTSM.TXT} TIM:{pTSM.TIM} ENG:{pTSM.ENG} SEID:{tSessionID}  FID:{cFID} ORG:{tOrg}", eMsgLevel.l6_Debug)); // full  TSM: {pTSM.ToString()}
+                if (MyTSMHistoryCount > 6000)
                 {
-                    MyTSMHistory.AddAnItem(new TheSentRegistryItem() { ORG = tOrg, Engine = pTSM.ENG, SentTime = pTSM.TIM, FID = cFID, IsOutgoing = pIsOutgoing, SessionID = tSessionID, cdeEXP = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime }, null);
-                    MyTSMHistoryCount = MyTSMHistory.Count; // This is expensive (takes a global concurrentdictionary lock)
-                    TheCDEKPIs.IncTSMByEng(pTSM.ENG);
-
-                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.ESSENTIALS) || MyTSMHistoryCount != 3000 ? null : new TSM("QSRegistry", $"TSMSeenHistory QS very full! Cnt:{MyTSMHistoryCount} Out:{pIsOutgoing} TXT:{pTSM.TXT} TIM:{pTSM.TIM} ENG:{pTSM.ENG} SEID:{tSessionID}  FID:{cFID} ORG:{tOrg}", eMsgLevel.l6_Debug)); // full  TSM: {pTSM.ToString()}
-                    if (MyTSMHistoryCount > 6000)
-                    {
-                        MyTSMHistory.Reset();
-                    }
+                    Interlocked.Exchange(ref MyTSMHistoryCount, 0);
+                    MyTSMHistory.Clear();
                 }
-
             }
             catch (Exception e)
             {
