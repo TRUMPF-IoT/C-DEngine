@@ -3,25 +3,37 @@
 // SPDX-License-Identifier: MPL-2.0
 
 using nsCDEngine.BaseClasses;
-using nsCDEngine.Engines.StorageService;
 using nsCDEngine.ISM;
 using nsCDEngine.ViewModels;
 using System;
+using System.Linq;
 using System.Threading;
 
 namespace nsCDEngine.Communication
 {
     internal partial class TheQueuedSender
     {
-        private readonly object lockStartLock = new ();
+        private readonly object _lockStartLock = new();
+        
+        private DateTimeOffset _lastTsmHistoryExpirationCheckTime = DateTimeOffset.Now;
+        private int _tsmHistoryExpirationCheckRunning;
+
         internal void StartHeartBeat()
         {
             if (IsQSenderReadyForHB || !TheBaseAssets.MasterSwitch)
                 return;
             IsQSenderReadyForHB = true;
+
             try
             {
-                MyTSMHistory ??= new TheMirrorCache<TheSentRegistryItem>(TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime);
+                lock (_lockStartLock)
+                {
+                    if (MyTSMHistory == null)
+                    {
+                        MyTSMHistory = new cdeConcurrentDictionary<string, TheSentRegistryItem>();
+                        TheQueuedSenderRegistry.RegisterHBTimer(SinkHeartbeatTsmHistoryRemovedTimer);
+                    }
+                }
 
                 if (!TheBaseAssets.MyServiceHostInfo.UseHBTimerPerSender)
                 {
@@ -29,7 +41,7 @@ namespace nsCDEngine.Communication
                 }
                 else
                 {
-                    lock (lockStartLock)
+                    lock (_lockStartLock)
                     {
                         mMyHeartBeatTimer ??= new Timer(sinkHeartBeatTimerLocal, null, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime, TheBaseAssets.MyServiceHostInfo.TO.QSenderHealthTime);
                     }
@@ -40,6 +52,38 @@ namespace nsCDEngine.Communication
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(247, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("QueuedSender", $"StartHearbeat failed: {e}", eMsgLevel.l1_Error), true);
                 IsQSenderReadyForHB = false;
+            }
+        }
+
+        private void SinkHeartbeatTsmHistoryRemovedTimer(long beat)
+        {
+            if (Interlocked.Exchange(ref _tsmHistoryExpirationCheckRunning, 1) != 0)
+                return;
+
+            try
+            {
+                var qSenderDejaSentTime = TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime <= 24 * 60 * 60
+                    ? TheBaseAssets.MyServiceHostInfo.TO.QSenderDejaSentTime * 1000
+                    : 24 * 60 * 60 * 1000;
+
+                var now = DateTimeOffset.Now;
+                if (now <= _lastTsmHistoryExpirationCheckTime + TimeSpan.FromMilliseconds(qSenderDejaSentTime))
+                    return;
+
+                var itemsToRemove = MyTSMHistory.Values.Where(item => item.cdeEXP > 0 && now.Subtract(item.cdeCTIM).TotalSeconds >= item.cdeEXP);
+                foreach (var item in itemsToRemove)
+                {
+                    if (MyTSMHistory.TryRemove(item.Id, out _))
+                    {
+                        if (MyTSMHistoryCount > 0) Interlocked.Decrement(ref MyTSMHistoryCount);
+                    }
+                }
+
+                _lastTsmHistoryExpirationCheckTime = now;
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _tsmHistoryExpirationCheckRunning, 0);
             }
         }
 
@@ -68,7 +112,7 @@ namespace nsCDEngine.Communication
         internal void ResetHeartbeatTimer(bool IsChangeRequest, TheSessionState pSession)
         {
             InitHeartbeatTimer();
-            if (MyTargetNodeChannel == null || MyTargetNodeChannel.SenderType == cdeSenderType.CDE_LOCALHOST) return;
+            if (MyTargetNodeChannel == null || MyTargetNodeChannel.SenderType == cdeSenderType.CDE_LOCALHOST || pSession == null) return;
             TheBaseAssets.MySession.WriteSession(pSession);
             if (string.IsNullOrEmpty(MyTargetNodeChannel.RealScopeID) && !string.IsNullOrEmpty(pSession.SScopeID) && MyISBlock == null) //RScope-OK: This should be super rare that a channel has no RScope but the SessionState has a Scope
                 UpdateSubscriptionScope(TheBaseAssets.MyScopeManager.GetRealScopeID(pSession.SScopeID));       //GRSI: rare
@@ -82,10 +126,11 @@ namespace nsCDEngine.Communication
 
         internal bool SetLastHeartbeat(TheSessionState pState)
         {
-            if (TheCommonUtils.IsLocalhost(MyTargetNodeChannel.cdeMID))
+            if (TheCommonUtils.IsLocalhost(MyTargetNodeChannel?.cdeMID ?? Guid.Empty))
                 return true;
-            MyTargetNodeChannel.MySessionState ??= pState;
-            ResetHeartbeatTimer(false, MyTargetNodeChannel.MySessionState);
+            if(MyTargetNodeChannel != null)
+                MyTargetNodeChannel.MySessionState ??= pState;
+            ResetHeartbeatTimer(false, pState);
             return true;
         }
 
@@ -170,8 +215,8 @@ namespace nsCDEngine.Communication
                 return; //New in 4.205: HB is not checked if QSender is in post (for example during a large telegram going to a browser)
             }
 
-            if (MyTargetNodeChannel.IsWebSocket && !IsConnecting && !TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))
-                TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel.MySessionState);
+            if (MyTargetNodeChannel is {IsWebSocket: true} && !IsConnecting && !TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel?.SenderType ?? cdeSenderType.NOTSET))
+                TheBaseAssets.MySession.WriteSession(MyTargetNodeChannel?.MySessionState);
             mInHeartBeatTimer = true;
 
             try
@@ -212,7 +257,7 @@ namespace nsCDEngine.Communication
                     {
                         TSM tMsg = new ("QueuedSender", $"Too Many Heartbeats ({HeartBeatCnt}) missed - {MyTargetNodeChannel?.ToMLString()} might be down!", eMsgLevel.l2_Warning);
                         HeartBeatCnt = 0;
-                        tMsg.ORG = MyTargetNodeChannel.cdeMID.ToString();
+                        tMsg.ORG = MyTargetNodeChannel?.cdeMID.ToString();
                         TheBaseAssets.MySYSLOG.WriteToLog(248, tMsg, true);
                         FireSenderProblem(new TheRequestData() { ErrorDescription = "1306:Heartbeat failure!!" });
                     }
