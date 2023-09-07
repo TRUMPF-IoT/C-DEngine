@@ -348,7 +348,7 @@ namespace nsCDEngine.Engines.ThingService
             else
                 MyLiveForm.FldStart = startFld;
             var fld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
-            if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
+            if (CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
                 fld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
@@ -362,11 +362,11 @@ namespace nsCDEngine.Engines.ThingService
                     tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
                 else
                     tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = MyNMIFaceModel.XLen - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
-                if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
+                if (CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
                     tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                     {
-                        pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), $"PIN_{pin.PinType}", pMsg);
+                        pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), $"PIN_{pin.PinName}", pMsg);
                     });
                 }
             }
@@ -375,6 +375,31 @@ namespace nsCDEngine.Engines.ThingService
 
         public virtual bool OnShowEditor(TheFormInfo pForm,string pTarget, TheProcessMessage pMsg)
         {
+            if (pTarget.StartsWith("PIN_"))
+            {
+                var pinID = pTarget.Split('_')[1];
+                var pin=MyBaseThing.GetPin(pinID);
+                string tCompatPins = "";
+                foreach (var tC in pin.CompatiblePins)
+                {
+                    if (tCompatPins.Length > 0) tCompatPins += ";";
+                    tCompatPins += $"{tC.GetResolvedName()}:{tC}";
+                }
+                string tIC = "";
+                foreach (var tC in pin.GetConnectedPins())
+                {
+                    if (tIC.Length > 0) tIC += ";";
+                    tIC += tC.GetResolvedName();
+                }
+
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 10, 0, 0, "Pin Name", null,new nmiCtrlSingleEnded { NoTE=true, Value =pin.PinName, FontSize=20 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 11, 0, 0, "Pin Value", null, new nmiCtrlSingleEnded { NoTE = true, Value = $"{pin.PinValue} {pin.Units}", FontSize = 20 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 12, 0, 0, "Pin ID", null, new nmiCtrlSingleEnded { NoTE = true, Value = $"{pin.cdeMID}", FontSize = 20 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 13, 0, 0, "Pin Type", null, new nmiCtrlSingleEnded { NoTE = true, Value = $"{pin.PinType}", FontSize = 20 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TextArea, 14, 0, 0, "Is Connected to", null, new nmiCtrlTextArea { NoTE = true, Value = $"{tIC}", TileHeight =2, FontSize=12 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ComboBox, 15, 2, MyBaseThing.cdeA, "Add Connection", $"{pTarget}_NewConnection", new nmiCtrlComboBox { NoTE=true, Options=tCompatPins });
+                return true;
+            }
             return false;
         }
 
@@ -2671,13 +2696,11 @@ namespace nsCDEngine.Engines.ThingService
             }
         }
 
-        public ThePin GetPin(string pName)
+        public ThePin GetPin(string pID)
         {
-            if (string.IsNullOrEmpty(pName))
+            if (!MyPins.ContainsKey(pID))
                 return null;
-            if (!MyPins.ContainsKey(pName))
-                return null;
-            return MyPins[pName];
+            return MyPins[pID];
         }
 
         /// <summary>
@@ -2687,8 +2710,6 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool UpdatePin(ThePin pin)
         {
-            if (string.IsNullOrEmpty(pin?.PinName))
-                return false;
             if (!MyPins.ContainsKey(pin.PinName))
             {
                 AddPin(pin);
@@ -2702,11 +2723,12 @@ namespace nsCDEngine.Engines.ThingService
                 MyPins[pin.PinName].PinType = pin.PinType;
             if (!string.IsNullOrEmpty(pin.PinProperty))
                 MyPins[pin.PinName].PinProperty = pin.PinProperty;
+            MyPins[pin.PinName].MaxConnections = pin.MaxConnections;
             MyPins[pin.PinName].IsInbound = pin.IsInbound;
-            if (pin.CanConnectTo?.Count > 0)
-                MyPins[pin.PinName].CanConnectTo = pin.CanConnectTo;
-            if (pin.IsConnectedTo?.Count > 0)
-                MyPins[pin.PinName].IsConnectedTo = pin.IsConnectedTo;
+            if (pin.CanConnectToPinType?.Count > 0)
+                MyPins[pin.PinName].CanConnectToPinType = pin.CanConnectToPinType;
+            if (pin.HasConnectedPins())
+                MyPins[pin.PinName].AddPinConnections(pin.GetConnectedPins());
             if (pin.MyPins?.Count > 0)
                 MyPins[pin.PinName].MyPins = pin.MyPins;
             return true;
@@ -2715,58 +2737,66 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Replaces the existing connection with new connections
         /// </summary>
-        /// <param name="pPinName">Pin to Update</param>
+        /// <param name="pPinID">Pin to Update</param>
         /// <param name="pConnectedTo">List of Target Pins</param>
         /// <returns></returns>
-        public bool UpdatePinConnection(string pPinName, List<string> pConnectedTo)
+        public bool UpdatePinConnection(ThePin pPinID, List<ThePin> pConnectedTo)
         {
-            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID?.PinName))
                 return false;
-            if (pConnectedTo?.Count > 0)
+            if (pConnectedTo?.Count > 0 && MyPins[pPinID?.PinName].AddPinConnections(pConnectedTo, true))
             {
-                MyPins[pPinName].IsConnectedTo = pConnectedTo;
+                UpdatePinProperty(MyPins[pPinID?.PinName]);
                 return true;
             }
             return false;
+        }
+
+        private void UpdatePinProperty(ThePin pin)
+        {
+            StringBuilder tIC = new();
+            foreach (var tC in pin.GetConnectedPins())
+            {
+                if (tIC.Length > 0) tIC.Append(";");
+                tIC.Append(tC);
+            }
+            SetProperty($"PIN_{pin.PinName}_IsConnectedTo", tIC.ToString());
         }
 
         /// <summary>
         /// Adds new connections to a pin
         /// </summary>
-        /// <param name="pPinName"></param>
+        /// <param name="pPinID"></param>
         /// <param name="pConnectedTo"></param>
         /// <returns></returns>
-        public bool AddPinConnections(string pPinName, List<string> pConnectedTo)
+        public bool AddPinConnections(ThePin pPinID, List<ThePin> pConnectedTo)
         {
-            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID?.PinName))
                 return false;
-            if (pConnectedTo?.Count > 0)
+            if (pConnectedTo?.Count > 0 && MyPins[pPinID?.PinName].AddPinConnections(pConnectedTo))
             {
-                if (MyPins[pPinName].IsConnectedTo == null)
-                    MyPins[pPinName].IsConnectedTo = new List<string>();
-                MyPins[pPinName].IsConnectedTo.AddRange(pConnectedTo);
+                UpdatePinProperty(MyPins[pPinID?.PinName]);
                 return true;
             }
             return false;
-
         }
 
         /// <summary>
         /// Removes existing pin connections
         /// </summary>
-        /// <param name="pPinName"></param>
+        /// <param name="pPinID"></param>
         /// <param name="pConnectedTo"></param>
         /// <returns></returns>
-        public bool RemovePinConnections(string pPinName, List<string> pConnectedTo)
+        public bool RemovePinConnections(ThePin pPinID, List<ThePin> pConnectedTo)
         {
-            if (string.IsNullOrEmpty(pPinName) || !MyPins.ContainsKey(pPinName))
+            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID?.PinName))
                 return false;
-            if (MyPins[pPinName].IsConnectedTo?.Count == 0)
+            if (!MyPins[pPinID?.PinName].HasConnectedPins())
                 return false;
             if (pConnectedTo?.Count > 0)
             {
                 foreach (var t in pConnectedTo)
-                    MyPins[pPinName].IsConnectedTo.Remove(t);
+                    MyPins[pPinID?.PinName].RemoveConnection(t);
                 return true;
             }
             return false;

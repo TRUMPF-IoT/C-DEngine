@@ -1638,7 +1638,7 @@ namespace nsCDEngine.Communication
 
 
 #region TSM History Management
-        internal ConcurrentDictionary<string, TheSentRegistryItem> MyTSMHistory = null;
+        internal cdeConcurrentDictionary<string, TheSentRegistryItem> MyTSMHistory = null;
         internal int MyTSMHistoryCount = 0;
 
         internal bool WasTSMSeenBefore(TSM pTSM, string pRealSID, bool pIsOutgoing)

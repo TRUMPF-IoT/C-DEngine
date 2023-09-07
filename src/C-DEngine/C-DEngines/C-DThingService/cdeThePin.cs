@@ -57,8 +57,11 @@ namespace nsCDEngine.Engines.ThingService
         public bool IsInbound { get; set; } = false;
         public bool PollsFromPin { get; set; } = false;
         public bool AllowsPolling { get; set; } = false;
-        public List<string> IsConnectedTo { get; set; } = new List<string>();
-        public List<string> CanConnectTo { get; set; } = new List<string>();
+        public int MaxConnections { get; set; } = 1;
+        private List<ThePin> IsConnectedTo { get; set; } = new List<ThePin>();
+        public List<string> CanConnectToPinType { get; set; } = new List<string>();
+
+        public List<ThePin> CompatiblePins { get; set; }= new List<ThePin>();
 
         public List<ThePin> MyPins { get; set; } = new List<ThePin>();
         public string PinProperty { get; set; } = null;
@@ -93,7 +96,7 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         /// <param name="newValue">New Value to Set</param>
         /// <returns></returns>
-        public virtual bool UpdatePin(object newValue)
+        public virtual bool UpdatePinValue(object newValue)
         {
             if (!IsInbound)
                 return false;
@@ -108,6 +111,72 @@ namespace nsCDEngine.Engines.ThingService
         public virtual string NMIGetPinLineFace()
         {
             return "";
+        }
+
+
+        internal bool AddPinConnections(List<ThePin> pins, bool ResetFirst=false)
+        {
+            if (ResetFirst)
+                IsConnectedTo.Clear();
+            bool ret = true;
+            foreach (var pin in pins)
+            {
+                var t=AddPinConnection(pin);
+                if (!t) ret = t;
+            }
+            return ret;
+        }
+
+        private object lockPinConnection = new object();
+        internal bool AddPinConnection(ThePin pPin)
+        {
+            lock (lockPinConnection)
+            {
+                if (!IsConnectedTo.Contains(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections))
+                {
+                    IsConnectedTo.Add(pPin);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal bool RemoveConnection(ThePin pPin)
+        {
+            lock (lockPinConnection)
+            {
+                if (IsConnectedTo.Contains(pPin))
+                {
+                    IsConnectedTo.Remove(pPin);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool HasConnectedPins()
+        {
+            return IsConnectedTo.Any();
+        }
+
+        public int PinConnectionCnt()
+        {
+            return IsConnectedTo.Count;
+        }
+
+        public List<ThePin> GetConnectedPins()
+        {
+            return IsConnectedTo.ToList();
+        }
+
+        public override string ToString()
+        {
+            return $"{PinName}:{cdeO}";
+        }
+
+        public string GetResolvedName()
+        {
+            return $"{PinName} ({TheThingRegistry.GetThingByMID(cdeO)?.FriendlyName})";
         }
     }
 

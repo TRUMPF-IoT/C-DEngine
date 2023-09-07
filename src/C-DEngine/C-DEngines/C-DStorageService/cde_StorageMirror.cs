@@ -2126,7 +2126,7 @@ namespace nsCDEngine.Engines.StorageService
                             if (tDataItemParts.Length > 2 && "MyPropertyBag".Equals(tDataItemParts[0]))
                             {
                                 var thingToUpdate = tFormOwnerThing;
-                                if (tInfo.cdeO != thingToUpdate.cdeMID)
+                                if (tInfo.cdeO != thingToUpdate.cdeMID && pForm.DefaultView==eDefaultView.Form)
                                 {
                                     var tFieldThing = TheThingRegistry.GetThingByMID(tInfo.cdeO);
                                     if (tFieldThing != null)

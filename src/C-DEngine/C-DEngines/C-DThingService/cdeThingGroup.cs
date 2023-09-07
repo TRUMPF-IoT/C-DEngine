@@ -353,6 +353,7 @@ namespace nsCDEngine.Engines.ThingService
         public virtual void InitDynamicNMI()
         {
             InitGTP();
+            UpdatePinConnections(false);
             NMI.DeleteFieldsByRange(MyGroupForm, 100, 9999);
             MyGroupForm.FldStart = 100;
             if (MyGroupThings?.Any() == true)
@@ -361,7 +362,66 @@ namespace nsCDEngine.Engines.ThingService
                 foreach (var t in MyGroupThings.Values) t?.ShowDeviceFace(MyGroupForm, 78 + (cnt++ * 234), 100);
             }
         }
+
         #endregion
+
+        /// <summary>
+        /// Finds Compatible Pins of a given Pin in the current ThingGroup
+        /// </summary>
+        /// <param name="firstPin"></param>
+        /// <returns></returns>
+        public virtual List<ThePin> FindCompatiblePins(ThePin firstPin)
+        {
+            var ret = new List<ThePin>();
+            var AllDevs = GetAllGroupThings();
+            firstPin.CompatiblePins.Clear();
+            foreach (var secondRound in AllDevs)
+            {
+                if (firstPin.cdeO == secondRound.GetBaseThing().cdeMID)
+                    continue;
+                foreach (var secondPin in secondRound.GetBaseThing().GetAllPins())
+                {
+                    foreach (var firstPinType in firstPin.CanConnectToPinType)
+                    {
+                        if (secondPin.CanConnectToPinType.Contains(firstPinType))
+                        {
+                            if (firstPin.IsInbound != secondPin.IsInbound &&
+                                (firstPin.MaxConnections == 0 || firstPin.PinConnectionCnt() < firstPin.MaxConnections) &&
+                                (secondPin.MaxConnections == 0 || secondPin.PinConnectionCnt() < secondPin.MaxConnections))
+                            {
+                                firstPin.CompatiblePins.Add(secondPin);
+                                ret.Add(secondPin);
+                            }
+                        }
+                    }
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Calculates all Compatible Pin Connections
+        /// </summary>
+        /// <param name="AutoSetConnections"></param>
+        /// <returns></returns>
+        public virtual bool UpdatePinConnections(bool AutoSetConnections)
+        {
+            var AllDevs = GetAllGroupThings();
+            foreach (var firstRound in AllDevs)
+            {
+                foreach (var firstPin in firstRound.GetBaseThing().GetAllPins())
+                {
+                    var res = FindCompatiblePins(firstPin);
+                    if (res.Count == 1 && AutoSetConnections)
+                    {
+                        var secondPin = res[0];
+                        firstRound.GetBaseThing().AddPinConnections(firstPin, new List<ThePin> { secondPin });
+                        TheThingRegistry.GetThingByMID(secondPin.cdeO)?.AddPinConnections(secondPin, new List<ThePin> { firstPin });
+                    }
+                }
+            }
+            return true;
+        }
     }
 
 }

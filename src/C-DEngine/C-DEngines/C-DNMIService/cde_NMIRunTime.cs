@@ -97,6 +97,18 @@ namespace nsCDEngine.Engines.NMIService
                                 var tfld = GetFieldById(TheCommonUtils.CGuid(tLocParts[0]));
                                 if (tfld != null)
                                 {
+                                    if (!tfld.IsEventRegistered(eUXEvents.OnShowEditor))
+                                    {
+                                        var tParent = TheCommonUtils.CInt(tfld.PropBagGetValue("ParentFld"));
+                                        if (tParent > 0)
+                                        {
+                                            var tParentFld = GetFieldByFldOrder(GetFormById(tfld.FormID), tParent);
+                                            if (TheCommonUtils.CBool(tParentFld?.PropBagGetValue("DisallowEdit")))
+                                            {
+                                                tfld = tParentFld;
+                                            }
+                                        }
+                                    }
                                     var tMyForm = GetNMIEditorForm();
                                     if (tMyForm != null)
                                     {
