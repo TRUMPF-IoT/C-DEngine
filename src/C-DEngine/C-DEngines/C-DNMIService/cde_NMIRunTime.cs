@@ -960,10 +960,31 @@ namespace nsCDEngine.Engines.NMIService
                 case "NMI_SAVE_SCREEN":
                     if (cmd.Length > 1 && pMsg.CurrentUserID != Guid.Empty)
                     {
-                        TheFOR tScene = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(pMsg.Message.PLS);
-                        if (tScene == null) return;
-                        string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(tScene.ID)}.cdeFOR";
+                        TheFOR tNewScene = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(pMsg.Message.PLS);
+                        if (tNewScene == null) return;
+                        TheFOR tOldScene = null;
+                        string tPlS = TheCommonUtils.LoadStringFromDisk($"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(tNewScene.ID)}.cdeFOR", null);
+                        if (!string.IsNullOrEmpty(tPlS))
+                        {
+                            tOldScene = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS);
+                            foreach (var tNewField in tNewScene.Flds)
+                            {
+                                var tOldField = tOldScene.Flds.Find(f => f.FldOrder == tNewField.FldOrder);
+                                if (tOldField != null)
+                                    tOldField.PO.MergeBag(tNewField.PO);
+                                else
+                                    tOldScene.Flds.Add(tNewField);
+                            }
+                            pMsg.Message.PLS = TheCommonUtils.SerializeObjectToJSONString(tOldScene);
+                        }
+                        string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(tNewScene.ID)}.cdeFOR";
                         TheCommonUtils.SaveBlobToDisk(pMsg.Message, new[] { "", tTargetDir }, null);
+                        var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", TheCommonUtils.CGuid(tNewScene.ID).ToString());
+                        if (group != null)
+                        {
+                            var tGS = group.GetObject() as TheThingGroup;
+                            tGS?.UpdateFldPositions(tNewScene);
+                        }
                     }
                     break;
                 case "NMI_CLEAR_SCREEN":
@@ -971,6 +992,12 @@ namespace nsCDEngine.Engines.NMIService
                     {
                         string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(cmd[1])}.cdeFOR";
                         TheCommonUtils.DeleteFromDisk(tTargetDir, "");
+                        var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", TheCommonUtils.CGuid(cmd[1]).ToString());
+                        if (group != null)
+                        {
+                            var tGS = group.GetObject() as TheThingGroup;
+                            tGS?.DeleteAllFldPositions();
+                        }
                     }
                     break;
                 case "NMI_SAVE_HOMESCENE":

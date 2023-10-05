@@ -732,7 +732,7 @@ namespace nsCDEngine.Engines.NMIService
                 var tNMIEditorForm = GetNMIEditorForm();
                 if (tNMIEditorForm != null)
                 {
-                    var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FacePlateUrl", false)?.GetValue()}"));
+                    var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FaceTemplate", false)?.GetValue()}"));
                     string tOpt = "";
                     foreach (var tThing in tThings)
                     {

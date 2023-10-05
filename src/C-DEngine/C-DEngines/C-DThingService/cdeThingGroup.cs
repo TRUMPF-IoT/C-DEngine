@@ -128,7 +128,7 @@ namespace nsCDEngine.Engines.ThingService
             if (thing.GetBaseThing() != null)
             {
                 MyGroupThings[thing.GetBaseThing().cdeMID] = thing;
-                thing.SetProperty("cdeGroupID", MyBaseThing.cdeMID);
+                thing.SetProperty("cdeGroupID", MyScreenGuid);
                 return UpdateGTP();
             }
             return false;
@@ -246,7 +246,10 @@ namespace nsCDEngine.Engines.ThingService
                 MyGroupForm.RegisterEvent2(eUXEvents.OnBeforeMeta, (pmsg, sender) =>
                 {
                     if (!IsGroupVisible)
+                    {
+                        ScanThings();
                         InitDynamicNMI();
+                    }
                     IsGroupVisible = true;
                 });
                 block["Form"] = MyGroupForm;
@@ -280,12 +283,12 @@ namespace nsCDEngine.Engines.ThingService
                     var tMyForm = NMI.GetNMIEditorForm();
                     if (tMyForm != null)
                     {
-                        var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FacePlateUrl", false)?.GetValue()}"));
+                        var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FaceTemplate", false)?.GetValue()}"));
                         StringBuilder tOpt = new StringBuilder();
                         foreach (var tThing in tThings)
                         {
                             var tG = tThing.GetProperty("cdeGroupID", false);
-                            if (!MyGroupThings.Keys.Contains(tThing.cdeMID) && (tG==null || CU.CGuid(tG)==Guid.Empty))
+                            if (!MyGroupThings.Keys.Contains(tThing.cdeMID) && (tG==null || CU.CGuid(tG)==Guid.Empty) && tThing.StatusLevel<4)
                             {
                                 if (tOpt.Length > 0) tOpt.Append(";");
                                 tOpt.Append($"{tThing.FriendlyName}:{tThing.cdeMID}");
@@ -310,6 +313,17 @@ namespace nsCDEngine.Engines.ThingService
                                     ReloadForm();
                                     TheCommCore.PublishToOriginator(tMsg?.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Control added: {tN.FriendlyName}"));
                                 }
+                            }
+                        });
+                        var RemBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2011, 2, 0x80, "Remove All from Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5,AreYouSure="This removes all Controls, are you sure?",  ClassName = "cdeBadActionButton" });
+                        RemBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "remove", (sender, para) =>
+                        {
+                            var tMsg = para as TheProcessMessage;
+                            if (tMsg != null)
+                            {
+                                ResetAllThings();
+                                ReloadForm();
+                                TheCommCore.PublishToOriginator(tMsg?.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"All Controls Removed"));
                             }
                         });
                         pMsg.Cookie = true;
@@ -337,6 +351,30 @@ namespace nsCDEngine.Engines.ThingService
             return true;
         }
 
+        public virtual void UpdateFldPositions(TheFOR pScene)
+        {
+            foreach (var tf in pScene.Flds)
+            {
+                foreach (var t in MyGroupThings.Values)
+                {
+                    var tn = CU.CInt(t.GetBaseThing().GetProperty($"FldStart_{CU.CGuid(pScene.ID)}", false)?.GetValue());
+                    if (tn==tf.FldOrder)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        public virtual void DeleteAllFldPositions()
+        {
+            foreach (var t in MyGroupThings.Values)
+            {
+                t.GetBaseThing().SetProperty($"FldStart_{CU.CGuid(MyScreenGuid)}", "0");
+            }
+            ReloadForm();
+        }
+
         /// <summary>
         /// Reloads the Form with updated Dynamic Fields
         /// </summary>
@@ -358,8 +396,54 @@ namespace nsCDEngine.Engines.ThingService
             MyGroupForm.FldStart = 100;
             if (MyGroupThings?.Any() == true)
             {
-                int cnt = 0;
-                foreach (var t in MyGroupThings.Values) t?.ShowDeviceFace(MyGroupForm, 78 + (cnt++ * 234), 100);
+                foreach (var t in MyGroupThings.Values)
+                {
+                    t?.ShowDeviceFace(MyGroupForm, 78, 78);
+                }
+            }
+        }
+
+        private void ResetAllThings()
+        {
+            SetProperty("GroupFlds", ";");
+            var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid);
+            if (tThings?.Any() == false)
+                return;
+
+            foreach (var tT in tThings)
+                tT?.SetProperty("cdeGroupID", Guid.Empty);
+        }
+
+        private void ScanThings()
+        {
+            var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid);
+            if (tThings?.Any() == false)
+                return;
+            bool FoundOne = false;
+            var tGFP = CU.CStr(GetProperty("GroupFlds", false));
+            List<string> lFields= new List<string>();
+            if (!string.IsNullOrEmpty(tGFP))
+            {
+                lFields = tGFP.Split(';').ToList();
+            }
+            foreach (var tT in tThings)
+            {
+                if (!lFields.Contains($"{tT.cdeMID}"))
+                {
+                    lFields.Add($"{tT.cdeMID}");
+                    FoundOne = true;
+                }
+            }
+            if (FoundOne)
+            {
+                StringBuilder tRes = new StringBuilder();
+                foreach (var fID in lFields)
+                {
+                    if (tRes.Length > 0) tRes.Append(";");
+                    tRes.Append(fID);
+                }
+                SetProperty("GroupFlds", tRes.ToString());
+                InitGTP();
             }
         }
 

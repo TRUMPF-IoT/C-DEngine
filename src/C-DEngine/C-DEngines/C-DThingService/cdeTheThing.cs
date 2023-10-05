@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -334,41 +333,81 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="MyLiveForm">Target Form to show the FacePlate in</param>
         /// <param name="pLeft">Left (in Pixels) to position the FacePlate</param>
         /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
-        /// <param name="startFld">Start Fld for DeviceFace in Target Screen</param>
         /// <returns></returns>
-        public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, int startFld = -1)
+        public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop)
         {
             if (MyNMIFaceModel == null)
             {
-                return startFld;
+                return -1;
             }
             MyNMIFaceModel.SetPos(pLeft, pTop);
-            if (startFld < 0)
-                startFld = MyLiveForm.FldPos;
+            cdeP FldStartProp = MyBaseThing.GetProperty($"FldStart_{MyLiveForm.cdeMID}", false);
+            int startFld = 100;
+            if (FldStartProp == null || CU.CInt(FldStartProp.GetValue()) == 0)
+            {
+                var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", MyLiveForm.cdeMID.ToString());
+                if (group != null)
+                {
+                    var tGS = group.GetObject() as TheThingGroup;
+                    int max = 100;
+                    foreach (var t in tGS.GetAllGroupThings())
+                    {
+                        var tn = CU.CInt(t.GetBaseThing().GetProperty($"FldStart_{CU.CGuid(MyLiveForm.cdeMID)}", false)?.GetValue());
+                        if (tn > max)
+                        {
+                            max = tn;
+                        }
+                    }
+                    startFld = max + 25;// MyLiveForm.FldPos;
+                }
+            }
             else
-                MyLiveForm.FldStart = startFld;
-            var fld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
+                startFld = CU.CInt(FldStartProp.GetValue());
+            MyBaseThing.SetProperty($"FldStart_{MyLiveForm.cdeMID}", startFld);
+            MyLiveForm.FldStart = startFld;
+            var tPins = MyBaseThing.GetAllPins();
+            bool hasRightPin = tPins.Exists(p => p.NMIIsPinRight);
+            bool hasLeftPin = tPins.Exists(p => !p.NMIIsPinRight);
+            var tFaceWidth = (MyNMIFaceModel.XLen + (78 * ((hasLeftPin ? 1 : 0) + (hasRightPin ? 1 : 0))));
+            var fld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
             if (CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
                 fld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
-                    pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), "GROUP", pMsg);
+                    pMsg.Cookie = OnShowEditor(NMI.GetNMIEditorForm(), "GROUP", pMsg);
                 });
             }
+
             foreach (var pin in MyBaseThing.GetAllPins())
             {
                 TheFieldInfo tfld = null;
                 if (!pin.NMIIsPinRight)
-                    tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
+                    tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
+                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
                 else
-                    tfld = TheNMIEngine.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = MyNMIFaceModel.XLen - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
+                    tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
+                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - (78 - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace() });
                 if (CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
                     tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                     {
-                        pMsg.Cookie = OnShowEditor(TheNMIEngine.GetNMIEditorForm(), $"PIN_{pin.PinName}", pMsg);
+                        pMsg.Cookie = OnShowEditor(NMI.GetNMIEditorForm(), $"PIN_{pin.PinName}", pMsg);
                     });
                 }
+            }
+            var tg = new nmiCtrlTileGroup { ParentFld = startFld, NoTE = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, IsAbsolute = true, Left = hasLeftPin ? 78 : 0, Top = 0 };
+            startFld = MyLiveForm.FldPos;
+            NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, tg);
+            if (!string.IsNullOrEmpty(MyNMIFaceModel.FaceTemplate))
+            {
+                var tp = new nmiCtrlFacePlate { ParentFld = startFld, NoTE = true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen };
+                if (MyNMIFaceModel.FaceTemplate.StartsWith("/"))
+                    tp.HTMLUrl = MyNMIFaceModel.FaceTemplate;
+                else
+                    tp.HTML = $"<div class=\"{MyNMIFaceModel.FaceTemplate}\"></div>";
+                NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", tp);
+                if (MyNMIFaceModel.AddTTS)
+                    NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileButton, MyLiveForm.FldPos, 2, 0x0, null, null, new nmiCtrlTileButton() { ParentFld = startFld, OnClick = $"TTS:{MyBaseThing.cdeMID}", IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, NoTE = true, ClassName = "enTransBut" });
             }
             return startFld;
         }
@@ -415,14 +454,19 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pModelCode">A Code for the faceplate used to tag the plat in the group</param>
         /// <param name="xLen">Length of the FacePlate in pixels</param>
         /// <param name="yLen">Height of the FacePlate in pixels</param>
+        /// <param name="pFaceTemplate">Template for the FacePlate HTML</param>
+        /// <param name="bDisableTTS">No TTS button</param>
         /// <returns></returns>
-        public virtual bool InitNMIDeviceFaceModel(string pModelCode = null, int xLen = 0, int yLen = 0)
+        public virtual bool InitNMIDeviceFaceModel(string pModelCode = null, int xLen = 0, int yLen = 0, string pFaceTemplate=null, bool bDisableTTS=false)
         {
             if (MyBaseThing!=null && MyBaseThing?.MyThingBase == null)
                 MyBaseThing.MyThingBase = this;
             if (!string.IsNullOrEmpty(pModelCode))
             {
-                MyNMIFaceModel ??= new TheNMIFaceModel();
+                if (string.IsNullOrEmpty(pFaceTemplate))
+                    pFaceTemplate = "nmiFace";
+                MyBaseThing?.SetProperty("FaceTemplate", pFaceTemplate);
+                MyNMIFaceModel ??= new TheNMIFaceModel() { AddTTS = !bDisableTTS, FaceTemplate = pFaceTemplate };
                 MyNMIFaceModel.SetNMIModel(xLen, yLen, pModelCode);
                 return true;
             }

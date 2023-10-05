@@ -191,7 +191,9 @@ namespace nsCDEngine.Engines.ThingService
         public int XLen { get; set; } = 0;
         public int YLen { get; set; } = 0;
         public string Prefix { get; set; } = "NOP";
+        public bool AddTTS { get; set; } = false;
 
+        public string FaceTemplate { get; set; }
         public void SetPos(int x, int y)
         {
             XPos = x;
