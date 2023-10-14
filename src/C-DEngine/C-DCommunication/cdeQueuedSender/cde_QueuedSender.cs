@@ -1235,7 +1235,7 @@ namespace nsCDEngine.Communication
                                     {
                                         tName = tP.Split('=')[0];
                                         if (tName.Length == tP.Length) continue;
-                                        if (tSP.Any(s => s.StartsWith(tName)))
+                                        if (tSP.Exists(s => s.StartsWith(tName)))
                                         {
                                             tSP.RemoveAll(s => s.StartsWith(tName));
                                             tSP.Add(tP);
@@ -1285,7 +1285,7 @@ namespace nsCDEngine.Communication
                                         if (tName.Length == tP.Length)
                                             continue;
                                         var tVal = Parts.Length > 1 ? Parts[1] : null;
-                                        if (!tSP.Any(s => s.StartsWith(tName)) || tVal?.StartsWith("{")==true || tVal?.StartsWith("[")==true)
+                                        if (!tSP.Exists(s => s.StartsWith(tName)) || tVal?.StartsWith("{")==true || tVal?.StartsWith("[")==true)
                                             tSP.Add(tP);
                                         else
                                         {
@@ -1319,7 +1319,7 @@ namespace nsCDEngine.Communication
                     }
                     if (pMessage.NoDuplicates())
                     {
-                        var tQi = tQ.FirstOrDefault(s => s.HashID == tHash);
+                        var tQi = tQ.Find(s => s.HashID == tHash);
                         if (tQi != null)
                         {
                             tOldStamp = tQi.EntryTime;

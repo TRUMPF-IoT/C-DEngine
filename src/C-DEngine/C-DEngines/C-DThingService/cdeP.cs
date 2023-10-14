@@ -288,7 +288,7 @@ namespace nsCDEngine.Engines.ThingService
             // However, the receiver will still see the HasChanged property as not having changed (inherent race condition of the design). But callers will get the right indication for the time of the call/change
             // Only consumer of the return value seems to be the JSON Deserializer of property change messages: unclear if it behaves better with either race condition behavior?
 
-            if (hasChanged)
+            if (hasChanged || (cdeE & 8) != 0) //5.171.0: Always update was missing! Required for HMI-NMI screens
             {
                 if ((cdeE & 4) != 0)
                     cdeCTIM = DateTimeOffset.Now;

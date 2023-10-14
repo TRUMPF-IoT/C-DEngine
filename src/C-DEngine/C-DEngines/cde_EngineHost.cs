@@ -210,6 +210,10 @@ namespace nsCDEngine.Engines
         /// Fires when a new engine was installed and started
         /// </summary>
         public static Action<string> eventNewPluginInstalled;
+        /// <summary>
+        /// Fires when a new engine was installed and started
+        /// </summary>
+        public static Action<string> eventPluginStarted;
 
         /// <summary>
         /// Fires when All Engines have been started
@@ -832,6 +836,7 @@ namespace nsCDEngine.Engines
             tBase.GetEngineState().IsStarted = true;
             if (tThing != null && tThing.GetBaseThing().StatusLevel == 4)
                 tThing.GetBaseThing().StatusLevel = 0;
+            eventPluginStarted?.Invoke(tBase.GetEngineName());
         }
 
         private static readonly object lockStartEngine = new ();

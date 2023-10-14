@@ -201,8 +201,8 @@ namespace nsCDEngine.Communication
                             }
 
                             tDev.TOP = tQueued.Topic;
-                            tDev.FID = $"{tCurSessState.GetNextSerial()}";
-                            if (TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //IDST-OK: Must create RSA for Devices
+                            tDev.FID = $"{tCurSessState?.GetNextSerial()}";
+                            if (tCurSessState != null && TheCommonUtils.IsDeviceSenderType(MyTargetNodeChannel.SenderType))  //IDST-OK: Must create RSA for Devices
                             {
                                 TheCommonUtils.CreateRSAKeys(tCurSessState);
                                 if (TheBaseAssets.MyServiceHostInfo.SecurityLevel > 3)
@@ -212,7 +212,7 @@ namespace nsCDEngine.Communication
                                 ResetHeartbeatTimer(false, tCurSessState);
                             if (!cdeSenderType.CDE_JAVAJASON.Equals(MyTargetNodeChannel.SenderType))
                                 tDev.NPA = TheBaseAssets.MyScopeManager.GetISBPath(TheBaseAssets.MyServiceHostInfo.RootDir, MyTargetNodeChannel.SenderType, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType, tCurSessState.FID, tCurSessState.cdeMID, true);
-                            if (MyTargetNodeChannel.MySessionState == null || MyTargetNodeChannel.MySessionState.HasExpired)
+                            if (tCurSessState ==null || MyTargetNodeChannel.MySessionState == null || MyTargetNodeChannel.MySessionState.HasExpired)
                                 throw new Exception($"Session was deleted or has expired ({MyTargetNodeChannel?.MySessionState?.HasExpired})");
                             #region Batch Serialization
                             IsBatchOn++;

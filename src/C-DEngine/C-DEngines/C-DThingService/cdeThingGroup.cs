@@ -237,12 +237,15 @@ namespace nsCDEngine.Engines.ThingService
                 mIsUXInitCalled = true;
 
                 cdeConcurrentDictionary<string, TheMetaDataBase> block = new();
+                int gsx, gsy;
+                SetGroupSize(out gsx, out gsy);
                 MyGroupForm = new(MyScreenGuid, eEngineName.NMIService, null, $"TheThing;:;0;:;True;:;cdeMID={MyBaseThing.cdeMID}")
                 {
                     DefaultView = eDefaultView.Form,
-                    PropertyBag = new nmiCtrlFormView { TileWidth = 18, FitToScreen = true, HideCaption = true, UseMargin = false, InnerClassName = "enFormInner" },
+                    PropertyBag = new nmiCtrlFormView { TileWidth = gsx, FitToScreen = true, HideCaption = true, UseMargin = false, InnerClassName = "enFormInner" },
                     ModelID = "StandardForm"
                 };
+                MyGroupForm.PropertyBag = new nmiCtrlFormView { TileHeight = gsy };
                 MyGroupForm.RegisterEvent2(eUXEvents.OnBeforeMeta, (pmsg, sender) =>
                 {
                     if (!IsGroupVisible)
@@ -252,12 +255,32 @@ namespace nsCDEngine.Engines.ThingService
                     }
                     IsGroupVisible = true;
                 });
+                MyGroupForm.RegisterEvent2(eUXEvents.OnShow, (pmsg, sender) =>
+                {
+                    int gsx, gsy;
+                    SetGroupSize(out gsx, out gsy);
+                    MyGroupForm.PropertyBag = new nmiCtrlFormView { TileWidth = gsx };
+                    if (gsy > 0)
+                        MyGroupForm.PropertyBag = new nmiCtrlFormView { TileHeight = gsy };
+                });
                 block["Form"] = MyGroupForm;
                 block["DashIcon"] = NMI.AddFormToThingUX(MyBaseThing, MyGroupForm, "CMyForm", MyBaseThing.FriendlyName, 1, 3, 0, "..Overview", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" });
 
                 mIsUXInitialized = DoCreateUX(block);
             }
             return true;
+        }
+
+        private void SetGroupSize(out int gsx, out int gsy)
+        {
+            gsx = 18;
+            if (GetProperty("GroupSizeX", false) == null)
+                SetProperty("GroupSizeX", 18);
+            else
+                gsx = CU.CInt(GetProperty("GroupSizeX", true)?.GetValue());
+            gsy = 0;
+            if (GetProperty("GroupSizeY", false) != null)
+                gsy = CU.CInt(GetProperty("GroupSizeY", true)?.GetValue());
         }
 
         /// <summary>
@@ -268,6 +291,7 @@ namespace nsCDEngine.Engines.ThingService
         /// NMI_DisallowAdd: If true, the NMI Editor will not allow adding of new Things
         /// NMI_ShowAllProperties: If true, the form will show all a table with all properties
         /// NMI_AddRefresh: If true, a small refresh button is added to the top left of the Group
+        /// </param>
         /// <returns>If true, the NMI assumes the Form NMI was completely initialized</returns>
         public virtual bool DoCreateUX(cdeConcurrentDictionary<string, TheMetaDataBase> pUXFlds)
         {
@@ -275,7 +299,10 @@ namespace nsCDEngine.Engines.ThingService
             bool ShowAllProperties = CU.CBool(MyBaseThing.GetProperty("NMI_ShowAllProperties", false)?.GetValue());
             bool AddRefresh = CU.CBool(MyBaseThing.GetProperty("NMI_AddRefresh", false)?.GetValue());
 
-            var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = 18, TileHeight = 9 });
+            int gsx, gsy;
+            SetGroupSize(out gsx, out gsy);
+            if (gsy == 0) gsy = 9;
+            var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = gsx, TileHeight = gsy });
             if (!DisallowAdd)
             {
                 tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
@@ -315,8 +342,8 @@ namespace nsCDEngine.Engines.ThingService
                                 }
                             }
                         });
-                        var RemBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2011, 2, 0x80, "Remove All from Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5,AreYouSure="This removes all Controls, are you sure?",  ClassName = "cdeBadActionButton" });
-                        RemBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "remove", (sender, para) =>
+                        var RemBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2011, 2, 0x80, "Clear Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 2,AreYouSure="This removes all Controls, are you sure?",  ClassName = "cdeBadActionButton" });
+                        RemBut?.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "remove", (sender, para) =>
                         {
                             var tMsg = para as TheProcessMessage;
                             if (tMsg != null)
@@ -326,6 +353,16 @@ namespace nsCDEngine.Engines.ThingService
                                 TheCommCore.PublishToOriginator(tMsg?.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"All Controls Removed"));
                             }
                         });
+                        var RefreshBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2015, 2, 0x80, "Refresh", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 1, ClassName = "cdeGoodActionButton" });
+                        RefreshBut?.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, para) =>
+                        {
+                            var tMsg = para as TheProcessMessage;
+                            if (tMsg != null)
+                                ReloadForm();
+                        });
+                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2013, 0xA2, 0x80, "X", "GroupSizeX", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
+                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2014, 0xA2, 0x80, "Y", "GroupSizeY", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
+
                         pMsg.Cookie = true;
                     }
                 });
