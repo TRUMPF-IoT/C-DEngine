@@ -1255,6 +1255,11 @@ namespace nsCDEngine.Engines.NMIService
         /// Changes the default separator ; to anything else
         /// </summary>
         public string Separator { get; set; }
+
+        /// <summary>
+        /// Shows the search field on top of the options
+        /// </summary>
+        public bool EnableSearch { get; set; }
     }
 
     public class nmiCtrlComboLookup : TheNMIBaseControl
