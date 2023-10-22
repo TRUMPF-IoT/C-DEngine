@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -304,8 +304,8 @@ namespace nsCDEngine.Engines.ThingService
                 return;
             if (SetLastUpdate != null)
             {
-                MyBaseThing.LastUpdate = TheCommonUtils.CDate(SetLastUpdate);
-                pMessage = $"{TheCommonUtils.GetDateTimeString(MyBaseThing.LastUpdate, -1)} - {pMessage}";
+                MyBaseThing.LastUpdate = CU.CDate(SetLastUpdate);
+                pMessage = $"{CU.GetDateTimeString(MyBaseThing.LastUpdate, -1)} - {pMessage}";
             }
             if (pStatusLevel >= 0)
                 MyBaseThing.SetStatus(pStatusLevel, pMessage);
@@ -315,7 +315,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 TSM toLog = new(MyBaseThing.EngineName, pMessage, pMsgLevel);
                 if (SetLastUpdate != null)
-                    toLog.TIM = TheCommonUtils.CDate(SetLastUpdate);
+                    toLog.TIM = CU.CDate(SetLastUpdate);
                 TheBaseAssets.MySYSLOG?.WriteToLog(LogID, toLog);
             }
             if (!string.IsNullOrEmpty(EventLogEntryName))
@@ -371,7 +371,7 @@ namespace nsCDEngine.Engines.ThingService
             bool hasLeftPin = tPins.Exists(p => !p.NMIIsPinRight);
             var tFaceWidth = (MyNMIFaceModel.XLen + (78 * ((hasLeftPin ? 1 : 0) + (hasRightPin ? 1 : 0))));
             var fld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
-            if (CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
+            if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
                 fld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
@@ -388,7 +388,7 @@ namespace nsCDEngine.Engines.ThingService
                 else
                     tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
                         new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - ((78-(hideBorder?0:4)) - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15+pin.NMIyDelta, HTML = pin.NMIGetPinLineFace() });
-                if (CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
+                if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
                     tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                     {
@@ -462,7 +462,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public virtual bool InitNMIDeviceFaceModel(string pModelCode = null, int xLen = 0, int yLen = 0, string pFaceTemplate=null, bool bDisableTTS=false)
         {
-            if (MyBaseThing!=null && MyBaseThing?.MyThingBase == null)
+            if (MyBaseThing!=null && MyBaseThing.MyThingBase == null)
                 MyBaseThing.MyThingBase = this;
             if (!string.IsNullOrEmpty(pModelCode))
             {
@@ -1252,7 +1252,7 @@ namespace nsCDEngine.Engines.ThingService
         #region Property Change Throtteling
         private int PublishThrottle = 0;
         private eThrottleKind PublishThrottleKind = eThrottleKind.Last;
-        private DateTime PubLastSend = DateTime.MinValue;
+        private DateTimeOffset PubLastSend = DateTime.MinValue;
         private cdeConcurrentDictionary<string, cdeP> PubList = null;
 
         /// <summary>
@@ -1294,7 +1294,7 @@ namespace nsCDEngine.Engines.ThingService
                 return;
             if (PublishThrottle <= 0 || (pProperty.cdeE & 2) != 0 || pProperty.cdeO != cdeMID)    
             {
-                pProperty.PublishChange(TheCommonUtils.cdeGuidToString(pOriginator), Guid.Empty, null, eEngineName.NMIService, ForcePublish);
+                pProperty.PublishChange(CU.cdeGuidToString(pOriginator), Guid.Empty, null, eEngineName.NMIService, ForcePublish);
                 return;
             }
             switch (PublishThrottleKind)
@@ -1306,13 +1306,13 @@ namespace nsCDEngine.Engines.ThingService
                     }
                     break;
                 case eThrottleKind.MaxValue:
-                    if (!PubList.ContainsKey(cdeP.GetPropertyPath(pProperty)) || TheCommonUtils.CDbl(PubList[cdeP.GetPropertyPath(pProperty)].ToString()) < TheCommonUtils.CDbl(pProperty.ToString()))
+                    if (!PubList.ContainsKey(cdeP.GetPropertyPath(pProperty)) || CU.CDbl(PubList[cdeP.GetPropertyPath(pProperty)].ToString()) < CU.CDbl(pProperty.ToString()))
                     {
                         PubList[cdeP.GetPropertyPath(pProperty)] = new cdeP(pProperty);
                     }
                     break;
                 case eThrottleKind.MinValue:
-                    if (!PubList.ContainsKey(cdeP.GetPropertyPath(pProperty)) || TheCommonUtils.CDbl(PubList[cdeP.GetPropertyPath(pProperty)].ToString()) > TheCommonUtils.CDbl(pProperty.ToString()))
+                    if (!PubList.ContainsKey(cdeP.GetPropertyPath(pProperty)) || CU.CDbl(PubList[cdeP.GetPropertyPath(pProperty)].ToString()) > CU.CDbl(pProperty.ToString()))
                     {
                         PubList[cdeP.GetPropertyPath(pProperty)] = new cdeP(pProperty);
                     }
@@ -1321,9 +1321,9 @@ namespace nsCDEngine.Engines.ThingService
                     PubList[cdeP.GetPropertyPath(pProperty)] = pProperty;
                     break;
             }
-            if (DateTime.Now.Subtract(PubLastSend).TotalMilliseconds > PublishThrottle)
+            if (DateTimeOffset.Now.Subtract(PubLastSend).TotalMilliseconds > PublishThrottle)
             {
-                PubLastSend = DateTime.Now;
+                PubLastSend = DateTimeOffset.Now;
                 DoThrottlePub(null);
                 if (ThrottleTimer != null)
                     ThrottleTimer.Change(PublishThrottle, Timeout.Infinite);
@@ -1626,34 +1626,7 @@ namespace nsCDEngine.Engines.ThingService
             return SetProperty(pName, pValue, ePropertyTypes.NOCHANGE, DateTimeOffset.MinValue, 0x20, null, null);
         }
 
-        /// <summary>
-        /// Turns event on/off on a Property. If the property does not exist, it will be created
-        /// </summary>
-        /// <param name="pName">Name of the property</param>
-        /// <param name="TurnEventsOn">if true, events on the property will be turned on</param>
-        /// <returns></returns>
-        [Obsolete("Don't turn this on manually. The NMI Subscription system will know when a registration is needed")]
-        public cdeP SetPropertyEvents(string pName, bool TurnEventsOn)
-        {
-            cdeP tP = GetProperty(pName, true);
-            tP?.SetPublication(TurnEventsOn, Guid.Empty);
-            return tP;
-        }
 
-        /// <summary>
-        /// OBSOLETE: please dont use
-        /// </summary>
-        /// <param name="pName"></param>
-        /// <param name="TurnEventsOn"></param>
-        /// <param name="pRequestor"></param>
-        /// <returns></returns>
-        [Obsolete("Don't turn this on manually. The NMI Subscription system will know when a registration is needed")]
-        public cdeP SetPropertyEvents(string pName, bool TurnEventsOn, Guid pRequestor)
-        {
-            cdeP tP = GetProperty(pName, true);
-            tP?.SetPublication(TurnEventsOn, pRequestor);
-            return tP;
-        }
 
         /// <summary>
         /// Sets the type of a property
@@ -1966,7 +1939,7 @@ namespace nsCDEngine.Engines.ThingService
 
             cdeP tP = null;
             TheDataBase tParent = this;
-            var tPath = TheCommonUtils.cdeSplit(pName, "].[", false, false);
+            var tPath = CU.cdeSplit(pName, "].[", false, false);
             if (MyPropertyBag == null)
                 MyPropertyBag = new();
             var tResBag = MyPropertyBag;
@@ -2038,7 +2011,7 @@ namespace nsCDEngine.Engines.ThingService
                 tProp.cdeO = cdeMID;
             tProp.cdeE |= 0x1;
             tProp.cdeT = (int)pType;
-            if (!TheCommonUtils.IsNullOrWhiteSpace(tOldValue))
+            if (!CU.IsNullOrWhiteSpace(tOldValue))
                 tProp.Value = tOldValue;
             return tProp;
         }
@@ -2088,7 +2061,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 cdeP tP = null;
                 if (MyPropertyBag[key].Value != null)
-                    tP = OutThing.SetProperty(key, TheCommonUtils.CStr(MyPropertyBag[key].GetValue()), (ePropertyTypes)MyPropertyBag[key].cdeT, MyPropertyBag[key].cdeFOC, null);
+                    tP = OutThing.SetProperty(key, CU.CStr(MyPropertyBag[key].GetValue()), (ePropertyTypes)MyPropertyBag[key].cdeT, MyPropertyBag[key].cdeFOC, null);
                 else
                     tP = OutThing.SetProperty(key, "", (ePropertyTypes)MyPropertyBag[key].cdeT, MyPropertyBag[key].cdeFOC, null);
                 tP.cdeE = MyPropertyBag[key].cdeE;
@@ -2231,9 +2204,9 @@ namespace nsCDEngine.Engines.ThingService
                 }
                 else
                 {
-                    MyBaseEngine?.SetStatusLevel(statusLevel);
+                    MyBaseEngine.SetStatusLevel(statusLevel);
                 }
-                LastMessage = TheCommonUtils.GetDateTimeString(DateTimeOffset.Now, pSEID) + $" {lastMessage}";
+                LastMessage = CU.GetDateTimeString(DateTimeOffset.Now, pSEID) + $" {lastMessage}";
             }
             catch 
             { 
@@ -2331,7 +2304,7 @@ namespace nsCDEngine.Engines.ThingService
         // Code Review: Do we really need/want this as a manually maintained value, or should this be the highest modified time of any property?
         public DateTimeOffset LastUpdate
         {
-            get { return TheCommonUtils.CDate(GetSafePropertyString(this, "LastUpdate")); }
+            get { return CU.CDate(GetSafePropertyString(this, "LastUpdate")); }
             set { SetSafePropertyDate(this, "LastUpdate", value); }
         }
 
@@ -2351,7 +2324,7 @@ namespace nsCDEngine.Engines.ThingService
                     {
                         if (string.IsNullOrEmpty(c))
                             continue;
-                        t.Add((eThingCaps)TheCommonUtils.CInt(c));
+                        t.Add((eThingCaps)CU.CInt(c));
                     }
                 }
                 return t;
@@ -2398,7 +2371,7 @@ namespace nsCDEngine.Engines.ThingService
         }
         #region Event Handling
 
-        private readonly TheCommonUtils.RegisteredEventHelper<ICDEThing, object> MyRegisteredEvents = null;
+        private readonly CU.RegisteredEventHelper<ICDEThing, object> MyRegisteredEvents = null;
 
         /// <summary>
         /// Removes all Events from TheThing
@@ -2487,36 +2460,6 @@ namespace nsCDEngine.Engines.ThingService
             //return false;
             //}
             return token;
-        }
-
-
-        /// <summary>
-        /// Gathers history for property changes to the TheThing according to the filters specified in the parameters. Returns a token that can be used to retrieve history items for the filter.
-        /// Each independent consumer needs to obtain a token of their own.
-        /// Tokens can be reused across restarts if permanent=true is specified. Otherwise a new token must be obtained after a restart.
-        /// Tokens must be unregistered when the history filter is no longer needed in order to free up system resources, especially if the consumer was registered as permanent.
-        /// </summary>
-        /// <param name="maxCount">Indicates the maximum number of history items to store. Specify 0 to not limit the number of items.</param>
-        /// <param name="maxAge">Indicates how far back in time to retain history items. Specify TimeSpan.Zero for not time limit.</param>
-        /// <param name="properties">List of properties to include in history items. Set to null to include all properties.</param>
-        /// <param name="propertiesToExclude">List of properties to not include in history items. Use with properties = null. </param>
-        /// <param name="propertySnapshotWindow">Granularity for history items. The state of the item at the end of the time window is returned as a history item.</param>
-        /// <param name="reportUnchangedProperties">If set to true, also includes unchanged properties in the history item. If set to false (default), only changed properties are included.</param>
-        /// <param name="permanent">Set to true to keep the history across restarts. The history token remains valid across restarts.</param>
-        /// <returns></returns>
-        [Obsolete("Use RegisterForUpdateHistory(TheHistoryParameters registration) instead.", false)]
-        public Guid RegisterForUpdateHistory(int maxCount, TimeSpan maxAge, List<string> properties, List<string> propertiesToExclude, TimeSpan propertySnapshotWindow, bool reportUnchangedProperties = false, bool permanent = false)
-        {
-            return RegisterForUpdateHistory(new TheHistoryParameters
-            {
-                Persistent = permanent,
-                MaxCount = maxCount,
-                MaxAge = maxAge,
-                Properties = properties,
-                PropertiesToExclude = propertiesToExclude,
-                SamplingWindow = propertySnapshotWindow,
-                ReportUnchangedProperties = reportUnchangedProperties,
-            });
         }
 
         public TheHistoryParameters GetHistoryParameters(Guid historyToken)
@@ -2681,7 +2624,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 return Historian.GetHistoryAsync(token, maxCount, minCount, timeout, cancelToken, bClearHistory);
             }
-            return TheCommonUtils.TaskFromResult<TheHistoryResponse>(null);
+            return CU.TaskFromResult<TheHistoryResponse>(null);
         }
 
         public StorageService.TheStorageMirror<TheThingStore> GetHistoryStore(Guid historyToken)
@@ -2789,11 +2732,11 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool UpdatePinConnection(ThePin pPinID, List<ThePin> pConnectedTo)
         {
-            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID?.PinName))
+            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID.PinName))
                 return false;
-            if (pConnectedTo?.Count > 0 && MyPins[pPinID?.PinName].AddPinConnections(pConnectedTo, true))
+            if (pConnectedTo?.Count > 0 && MyPins[pPinID.PinName].AddPinConnections(pConnectedTo, true))
             {
-                UpdatePinProperty(MyPins[pPinID?.PinName]);
+                UpdatePinProperty(MyPins[pPinID.PinName]);
                 return true;
             }
             return false;
@@ -2818,11 +2761,11 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool AddPinConnections(ThePin pPinID, List<ThePin> pConnectedTo)
         {
-            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID?.PinName))
+            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID.PinName))
                 return false;
-            if (pConnectedTo?.Count > 0 && MyPins[pPinID?.PinName].AddPinConnections(pConnectedTo))
+            if (pConnectedTo?.Count > 0 && MyPins[pPinID.PinName].AddPinConnections(pConnectedTo))
             {
-                UpdatePinProperty(MyPins[pPinID?.PinName]);
+                UpdatePinProperty(MyPins[pPinID.PinName]);
                 return true;
             }
             return false;
@@ -2836,14 +2779,14 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public bool RemovePinConnections(ThePin pPinID, List<ThePin> pConnectedTo)
         {
-            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID?.PinName))
+            if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID.PinName))
                 return false;
-            if (!MyPins[pPinID?.PinName].HasConnectedPins())
+            if (!MyPins[pPinID.PinName].HasConnectedPins())
                 return false;
             if (pConnectedTo?.Count > 0)
             {
                 foreach (var t in pConnectedTo)
-                    MyPins[pPinID?.PinName].RemoveConnection(t);
+                    MyPins[pPinID.PinName].RemoveConnection(t);
                 return true;
             }
             return false;
@@ -2899,7 +2842,7 @@ namespace nsCDEngine.Engines.ThingService
         public TheThing()
         {
             MyPropertyBag = new cdeConcurrentDictionary<string, cdeP>();
-            MyRegisteredEvents = new TheCommonUtils.RegisteredEventHelper<ICDEThing, object>();
+            MyRegisteredEvents = new CU.RegisteredEventHelper<ICDEThing, object>();
             RegisterEvent(eThingEvents.ThingUpdated, null);
         }
 
@@ -2923,14 +2866,14 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pLocalCallback">A local callback that TheThing can call at the end of the message handling</param>
         public static void HandleByThing(TheThing tThing, string tTopic, TSM tSendMessage, Action<TSM> pLocalCallback)
         {
-            TheUserDetails tCurrentUser = TheUserManager.GetCurrentUser(TheCommonUtils.CGuid(tSendMessage.SEID));
+            TheUserDetails tCurrentUser = TheUserManager.GetCurrentUser(CU.CGuid(tSendMessage.SEID));
             if (tCurrentUser == null && !string.IsNullOrEmpty(tSendMessage.UID))
-                    tCurrentUser = TheUserManager.GetUserByID(TheCommonUtils.CSCDecrypt2GUID(tSendMessage.UID, TheBaseAssets.MySecrets.GetAI()));
+                    tCurrentUser = TheUserManager.GetUserByID(CU.CSCDecrypt2GUID(tSendMessage.UID, TheBaseAssets.MySecrets.GetAI()));
             var tProgMsg = new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback, CurrentUserID = ((tCurrentUser == null) ? Guid.Empty : tCurrentUser.cdeMID) };
-            tProgMsg.ClientInfo = TheCommonUtils.GetClientInfo(tProgMsg);
+            tProgMsg.ClientInfo = CU.GetClientInfo(tProgMsg);
             if (tThing.MyRegisteredEvents.HasRegisteredEvents(tSendMessage.TXT))
             {
-                if (tSendMessage.TXT.StartsWith(eUXEvents.OnClick)) TheCommonUtils.SleepOneEye(200, 200); //REVIEW: Bug#1098 this will make "TAP and HOLD" impossible...but that should be a different event anyway...shall we keep it here or force plugins to add this individually?
+                if (tSendMessage.TXT.StartsWith(eUXEvents.OnClick)) CU.SleepOneEye(200, 200); //REVIEW: Bug#1098 this will make "TAP and HOLD" impossible...but that should be a different event anyway...shall we keep it here or force plugins to add this individually?
                 tThing.MyRegisteredEvents.FireEvent(tSendMessage.TXT, tThing, tProgMsg, false); 
             }
             else
@@ -2982,7 +2925,7 @@ namespace nsCDEngine.Engines.ThingService
                 tGuid = Guid.NewGuid().ToString();
                 SetSafePropertyString(pThing, pGuidName, tGuid);
             }
-            return TheCommonUtils.CGuid(tGuid);
+            return CU.CGuid(tGuid);
         }
 
 
@@ -3206,7 +3149,7 @@ namespace nsCDEngine.Engines.ThingService
             var value = tProp.GetValue();
             //CODE REVIEW Markus: Should we force cloning here by converting to string? Otherwise the caller can modify the property directly, or future changes to the property will be seen by the caller
             //Should we move this into cdeP.GetValue() in the next bigger release?
-            //    value = TheCommonUtils.CStr(value);
+            //    value = CU.CStr(value);
             //if (!value.GetType().IsValueType)
             //{
             //    if (value is ICloneable)
@@ -3229,7 +3172,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             cdeP tProp;
             if (pThing == null || (tProp = pThing.GetProperty(pName, false)) == null || tProp.Value == null) return "";
-            return TheCommonUtils.CStr(tProp.GetValue());
+            return CU.CStr(tProp.GetValue());
         }
         /// <summary>
         /// Returns a (null) safe value of a given property as double
@@ -3241,7 +3184,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             cdeP tProp;
             if (pThing == null || (tProp = pThing.GetProperty(pName, false)) == null || tProp.Value == null) return 0;
-            return TheCommonUtils.CDbl(tProp.GetValue());
+            return CU.CDbl(tProp.GetValue());
         }
         /// <summary>
         /// Returns a (null) safe value of a given property as a boolean
@@ -3253,7 +3196,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             cdeP tProp;
             if (pThing == null || (tProp = pThing.GetProperty(pName, false)) == null || tProp.Value == null) return false;
-            return TheCommonUtils.CBool(tProp.GetValue());
+            return CU.CBool(tProp.GetValue());
         }
         /// <summary>
         /// Returns a (null) safe value of a given property as a Guid
@@ -3278,7 +3221,7 @@ namespace nsCDEngine.Engines.ThingService
             cdeP tProp;
             if (pThing == null || (tProp = pThing.GetProperty(pName, false)) == null || tProp.Value == null) return DateTimeOffset.MinValue;
             var dateObj = tProp.GetValue();
-            var date = TheCommonUtils.CDate(dateObj); // CODE REVIEW: Why did we convert to string here first? Only difference is CJSONDateToDateTime
+            var date = CU.CDate(dateObj); // CODE REVIEW: Why did we convert to string here first? Only difference is CJSONDateToDateTime
             return date;
         }
         /// <summary>
@@ -3289,11 +3232,11 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public static string GetSafePropertyStringObject(object pThing, string pName)
         {
-            if (pThing is not TheThing tThing) return "";
+            if (pThing is not TT tThing) return "";
             cdeP tProp;
             // CODE REVIEW Markus: Should we do GetProperty(pName, false) to avoid creating the property if it doesn't exist? Would technically be a breaking change, but consistent with all other GetSafe* functions
-            if (pThing == null || (tProp = tThing.GetProperty(pName)) == null || tProp.Value == null) return "";
-            return TheCommonUtils.CStr(tProp.GetValue());
+            if ((tProp = tThing.GetProperty(pName)) == null || tProp.Value == null) return "";
+            return CU.CStr(tProp.GetValue());
         }
 
         /// <summary>

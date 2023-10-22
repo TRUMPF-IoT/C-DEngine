@@ -38,7 +38,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 MyBaseEngine = pConnector;
                 if (string.IsNullOrEmpty(MyBaseThing.EngineName))
-                    MyBaseThing.EngineName = MyBaseEngine?.GetEngineName();
+                    MyBaseThing.EngineName = MyBaseEngine.GetEngineName();
                 ModelGuid = MyBaseEngine.GetEngineID();
             }
         }
@@ -303,7 +303,7 @@ namespace nsCDEngine.Engines.ThingService
             SetGroupSize(out gsx, out gsy);
             if (gsy == 0) gsy = 9;
             var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = gsx, TileHeight = gsy });
-            if (!DisallowAdd)
+            if (!DisallowAdd && !TheBaseAssets.MyServiceHostInfo.IsCloudService)
             {
                 tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
                 {
@@ -338,7 +338,7 @@ namespace nsCDEngine.Engines.ThingService
                                 if (tB != null && AddOrUpdateThingInGroup(tB))
                                 {
                                     ReloadForm();
-                                    TheCommCore.PublishToOriginator(tMsg?.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Control added: {tN.FriendlyName}"));
+                                    TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Control added: {tN.FriendlyName}"));
                                 }
                             }
                         });
@@ -350,7 +350,7 @@ namespace nsCDEngine.Engines.ThingService
                             {
                                 ResetAllThings();
                                 ReloadForm();
-                                TheCommCore.PublishToOriginator(tMsg?.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"All Controls Removed"));
+                                TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"All Controls Removed"));
                             }
                         });
                         var RefreshBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2015, 2, 0x80, "Refresh", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 1, ClassName = "cdeGoodActionButton" });
@@ -388,6 +388,10 @@ namespace nsCDEngine.Engines.ThingService
             return true;
         }
 
+        /// <summary>
+        /// Updates all Fld Positions
+        /// </summary>
+        /// <param name="pScene"></param>
         public virtual void UpdateFldPositions(TheFOR pScene)
         {
             foreach (var tf in pScene.Flds)
@@ -403,6 +407,9 @@ namespace nsCDEngine.Engines.ThingService
             }
         }
 
+        /// <summary>
+        /// Delets all Fld Positions
+        /// </summary>
         public virtual void DeleteAllFldPositions()
         {
             foreach (var t in MyGroupThings.Values)
@@ -444,43 +451,44 @@ namespace nsCDEngine.Engines.ThingService
         {
             SetProperty("GroupFlds", ";");
             var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid);
-            if (tThings?.Any() == false)
-                return;
-
-            foreach (var tT in tThings)
-                tT?.SetProperty("cdeGroupID", Guid.Empty);
+            if (tThings?.Any() == true)
+            {
+                foreach (var tT in tThings)
+                    tT?.SetProperty("cdeGroupID", Guid.Empty);
+            }
         }
 
         private void ScanThings()
         {
             var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid);
-            if (tThings?.Any() == false)
-                return;
-            bool FoundOne = false;
-            var tGFP = CU.CStr(GetProperty("GroupFlds", false));
-            List<string> lFields= new List<string>();
-            if (!string.IsNullOrEmpty(tGFP))
+            if (tThings?.Any() == true)
             {
-                lFields = tGFP.Split(';').ToList();
-            }
-            foreach (var tT in tThings)
-            {
-                if (!lFields.Contains($"{tT.cdeMID}"))
+                bool FoundOne = false;
+                var tGFP = CU.CStr(GetProperty("GroupFlds", false));
+                List<string> lFields = new List<string>();
+                if (!string.IsNullOrEmpty(tGFP))
                 {
-                    lFields.Add($"{tT.cdeMID}");
-                    FoundOne = true;
+                    lFields = tGFP.Split(';').ToList();
                 }
-            }
-            if (FoundOne)
-            {
-                StringBuilder tRes = new StringBuilder();
-                foreach (var fID in lFields)
+                foreach (var tTcdeMID in tThings.Select(t=>t.cdeMID))
                 {
-                    if (tRes.Length > 0) tRes.Append(";");
-                    tRes.Append(fID);
+                    if (!lFields.Contains($"{tTcdeMID}"))
+                    {
+                        lFields.Add($"{tTcdeMID}");
+                        FoundOne = true;
+                    }
                 }
-                SetProperty("GroupFlds", tRes.ToString());
-                InitGTP();
+                if (FoundOne)
+                {
+                    StringBuilder tRes = new StringBuilder();
+                    foreach (var fID in lFields)
+                    {
+                        if (tRes.Length > 0) tRes.Append(";");
+                        tRes.Append(fID);
+                    }
+                    SetProperty("GroupFlds", tRes.ToString());
+                    InitGTP();
+                }
             }
         }
 
