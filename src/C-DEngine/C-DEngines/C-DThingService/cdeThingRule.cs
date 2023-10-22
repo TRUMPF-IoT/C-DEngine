@@ -265,6 +265,22 @@ namespace nsCDEngine.Engines.ThingService
             set { TheThing.SetSafePropertyDate(MyBaseThing, "TriggerEndTime", value); }
         }
 
+        /// <summary>
+        /// Only Trigger this rule every xx seconds
+        /// </summary>
+        [ConfigProperty]
+        public int TriggerOnlyEvery
+        {
+            get { return TheCommonUtils.CInt(TheThing.MemberGetSafePropertyNumber(MyBaseThing)); }
+            set { TheThing.MemberSetSafePropertyNumber(MyBaseThing, value); }
+        }
+
+        public DateTimeOffset LastAction
+        {
+            get { return TheCommonUtils.CDate(TheThing.MemberGetSafePropertyDate(MyBaseThing)); }
+            set { TheThing.MemberSetSafePropertyDate(MyBaseThing, value); }
+        }
+
         [ConfigProperty]
         public bool IsRuleLogged
         {
@@ -299,9 +315,6 @@ namespace nsCDEngine.Engines.ThingService
         {
             pBaseThing ??= new TheThing();
             MyBaseThing = pBaseThing;
-
-            TriggerStartTime = DateTimeOffset.MinValue;
-            TriggerEndTime = DateTimeOffset.MaxValue;
 
             if (string.IsNullOrEmpty(MyBaseThing.EngineName))
                 MyBaseThing.EngineName = eEngineName.ThingService;
