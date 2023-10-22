@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -86,7 +86,7 @@ namespace nsCDEngine.Engines.NMIService
                     }
                     break;
                 case "NMI_SHOW_EDITOR":
-                    if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
+                    if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
                     {
                         try
                         {
@@ -736,7 +736,7 @@ namespace nsCDEngine.Engines.NMIService
                                             var tVal = $"{tT.cdeMID}";
                                             if (!string.IsNullOrEmpty(ValueProperty))
                                             {
-                                                var tpVal = TheCommonUtils.CStr(tT.GetAllProperties().FirstOrDefault(s => s.Name == ValueProperty)?.GetValue());
+                                                var tpVal = TheCommonUtils.CStr(tT.GetAllProperties().Find(s => s.Name == ValueProperty)?.GetValue());
                                                 if (tpVal != null)
                                                     tVal = tpVal;
                                             }
@@ -800,7 +800,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             if (string.IsNullOrEmpty(tT.DeviceType) && !tT.IsInit())
                                                 continue;
-                                            if (tLst.Any(s => s.N == tT.DeviceType))
+                                            if (tLst.Exists(s => s.N == tT.DeviceType))
                                                 continue;
                                             var tFN = tT.DeviceType;
                                             var tVal = tT.DeviceType;
@@ -926,8 +926,11 @@ namespace nsCDEngine.Engines.NMIService
                                     TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
                                     return;
                                 }
-                                TSM ErrTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Requested Scene, Dashboard or Form not found###"));
-                                TheCommCore.PublishToOriginator(pMsg.Message, ErrTsm);
+                                if (!TheBaseAssets.MyServiceHostInfo.IsCloudService)
+                                {
+                                    TSM ErrTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Requested Scene, Dashboard or Form not found###"));
+                                    TheCommCore.PublishToOriginator(pMsg.Message, ErrTsm);
+                                }
                                 return;
                             }
                         }
@@ -1038,7 +1041,7 @@ namespace nsCDEngine.Engines.NMIService
                                 if (!string.IsNullOrEmpty(tPls))
                                 {
                                     TheNMIScene tScene2 = TheCommonUtils.DeserializeJSONStringToObject<TheNMIScene>(tPls);
-                                    if (tScene2 != null && tScene2.Screens?.Count > 0 && !tScene2.Screens.Any(s => s.ID == tScene.Screens[0].ID))
+                                    if (tScene2 != null && tScene2.Screens?.Count > 0 && !tScene2.Screens.Exists(s => s.ID == tScene.Screens[0].ID))
                                     {
                                         tScene.Screens[0].FldOrder = tScene2.Screens.OrderByDescending(s => s.FldOrder).First().FldOrder + 10;
                                         tScene2.Screens.Add(tScene.Screens[0]);
@@ -1551,7 +1554,7 @@ namespace nsCDEngine.Engines.NMIService
                 if (tD == null || tD.Category?.EndsWith("-HIDE") == true || tD.PanelTitle?.EndsWith("-HIDE") == true) continue;
                 tMyDashPanels.Add(tD);
             }
-            return !tMyDashPanels.Any((s) => TheUserManager.HasUserAccess(pClientInfo.UserID, s.cdeA) &&
+            return !tMyDashPanels.Exists((s) => TheUserManager.HasUserAccess(pClientInfo.UserID, s.cdeA) &&
                                         (s.Flags == 0 ||
                                          (((s.Flags & 2) != 0 || !pClientInfo.IsOnCloud || pClientInfo.IsUserTrusted) &&
                                           ((s.Flags & 4) == 0 || !pClientInfo.IsMobile) &&

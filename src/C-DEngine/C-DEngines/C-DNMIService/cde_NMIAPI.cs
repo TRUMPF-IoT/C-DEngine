@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -515,29 +515,7 @@ namespace nsCDEngine.Engines.NMIService
             return false;
         }
 
-        /// <summary>
-        /// Parses a HTML5 FacePlate for Property References
-        /// </summary>
-        /// <param name="pBaseThing">TheThing that owns the FacePlace</param>
-        /// <param name="pHTML">HTML of the FacePlate</param>
-        [Obsolete("Will be called automatically by NMI when the UX is requested by a client")]
-        public static string ParseFacePlate(TheThing pBaseThing, string pHTML)
-        {
-            return pHTML;
-        }
-        /// <summary>
-        /// Parses a HTML5 FacePlate for Property References, this hsas Moved to Late Binding in TheFormGenerator.GetPermittedFields and is no longer required as a public call
-        /// </summary>
-        /// <param name="pBaseThing">TheThing that owns the FacePlace</param>
-        /// <param name="pHTML">HTML of the FacePlate</param>
-        /// <param name="pRequestingNode">Node that requested the FacePlate</param>
-        /// <returns></returns>
-        [Obsolete("Will be called automatically by NMI when the UX is requested by a client")]
-        public static string ParseFacePlate(TheThing pBaseThing, string pHTML, Guid pRequestingNode)
-        {
-            //4.1: Moved to Late Binding in TheFormGenerator.GetPermittedFields
-            return pHTML;
-        }
+
 
         private static void RegisterPublication(TheThing tThing, string pDataItem, Guid pRequestingNode)
         {
@@ -727,46 +705,49 @@ namespace nsCDEngine.Engines.NMIService
             if (pBag != null)
                 tFL.PropertyBag = pBag;
             tFlds.Add("CANVAS", tFL);
-            tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
+            if (!TheBaseAssets.MyServiceHostInfo.IsCloudService)
             {
-                var tNMIEditorForm = GetNMIEditorForm();
-                if (tNMIEditorForm != null)
+                tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
                 {
-                    var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FaceTemplate", false)?.GetValue()}"));
-                    string tOpt = "";
-                    foreach (var tThing in tThings)
+                    var tNMIEditorForm = GetNMIEditorForm();
+                    if (tNMIEditorForm != null)
                     {
-                        if (tOpt.Length > 0)
-                            tOpt += ";";
-                        tOpt += $"{tThing.FriendlyName}:{tThing.cdeMID}";
-                    }
-                    AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.SmartLabel, 2004, 0xA2, 0x80, null, null, new nmiCtrlSmartLabel() { NoTE = true, FontSize = 24, TileFactorY = 2, Text = "Select a Thing to Add", TileWidth = 5 });
-                    AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.ComboBox, 2005, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { NoTE = true, Options = tOpt, TileWidth = 5 });
-                    var ttt = AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
-                    ttt.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
-                    {
-                        var tMsg = para as TheProcessMessage;
-                        var tEdThing = GetNMIEditorThing();
-                        if (tMsg != null && tEdThing != null)
+                        var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FaceTemplate", false)?.GetValue()}"));
+                        string tOpt = "";
+                        foreach (var tThing in tThings)
                         {
-                            var tNewCtrl = $"{tEdThing?.GetProperty("newthing")}";
-                            if (!string.IsNullOrEmpty(tNewCtrl))
+                            if (tOpt.Length > 0)
+                                tOpt += ";";
+                            tOpt += $"{tThing.FriendlyName}:{tThing.cdeMID}";
+                        }
+                        AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.SmartLabel, 2004, 0xA2, 0x80, null, null, new nmiCtrlSmartLabel() { NoTE = true, FontSize = 24, TileFactorY = 2, Text = "Select a Thing to Add", TileWidth = 5 });
+                        AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.ComboBox, 2005, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { NoTE = true, Options = tOpt, TileWidth = 5 });
+                        var ttt = AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
+                        ttt.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
+                        {
+                            var tMsg = para as TheProcessMessage;
+                            var tEdThing = GetNMIEditorThing();
+                            if (tMsg != null && tEdThing != null)
                             {
-                                var tCtrlList = TheThing.GetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates");
-                                var tL = TheCommonUtils.CStringToList(tCtrlList, ',');
-                                tL ??= new List<string>();
-                                tL.Add(tNewCtrl);
-                                TheThing.SetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates", TheCommonUtils.CListToString(tL, ","));
-                                if (AddFlexibleNMIControls(pBaseThing, pFormGuid, MyNMIForm))
+                                var tNewCtrl = $"{tEdThing?.GetProperty("newthing")}";
+                                if (!string.IsNullOrEmpty(tNewCtrl))
                                 {
-                                    TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
+                                    var tCtrlList = TheThing.GetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates");
+                                    var tL = TheCommonUtils.CStringToList(tCtrlList, ',');
+                                    tL ??= new List<string>();
+                                    tL.Add(tNewCtrl);
+                                    TheThing.SetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates", TheCommonUtils.CListToString(tL, ","));
+                                    if (AddFlexibleNMIControls(pBaseThing, pFormGuid, MyNMIForm))
+                                    {
+                                        TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyNMIForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
+                                    }
                                 }
                             }
-                        }
-                    });
-                    pMsg.Cookie = true;
-                }
-            });
+                        });
+                        pMsg.Cookie = true;
+                    }
+                });
+            }
             return tFlds;
         }
 
@@ -1323,7 +1304,7 @@ namespace nsCDEngine.Engines.NMIService
         public static List<ThePageContent> GetPageContentByID(Guid pID)
         {
             if (!IsPageStoreReady()) return new List<ThePageContent>();
-            return TheCDEngines.MyNMIService.MyNMIModel.MyPageContentStore.MyMirrorCache.TheValues.OrderBy(s => s.SortOrder).Where(s => s.ContentID == pID).ToList();
+            return TheCDEngines.MyNMIService.MyNMIModel.MyPageContentStore.MyMirrorCache.TheValues.Where(s => s.ContentID == pID).OrderBy(s => s.SortOrder).ToList();
         }
 
         /// <summary>
@@ -1334,7 +1315,7 @@ namespace nsCDEngine.Engines.NMIService
         public static ThePageDefinition GetPageByRealPage(string pRealPage)
         {
             if (!IsPageStoreReady()) return null;
-            return TheCDEngines.MyNMIService.MyNMIModel?.MyPageDefinitionsStore?.MyMirrorCache?.TheValues?.FirstOrDefault(s => !string.IsNullOrEmpty(s.PageName) && s.PageName.ToUpperInvariant().Contains(pRealPage.ToUpperInvariant()));
+            return TheCDEngines.MyNMIService.MyNMIModel?.MyPageDefinitionsStore?.MyMirrorCache?.TheValues?.Find(s => !string.IsNullOrEmpty(s.PageName) && s.PageName.ToUpperInvariant().Contains(pRealPage.ToUpperInvariant()));
         }
 
         /// <summary>
@@ -1958,19 +1939,19 @@ namespace nsCDEngine.Engines.NMIService
             }
             if (pB4InsertCallback != null)
             {
-                SM?.RegisterEvent(eStoreEvents.InsertRequested, (args) =>
+                SM.RegisterEvent(eStoreEvents.InsertRequested, (args) =>
                 {
                     if (args?.ClientInfo?.FormID == pTemplateGuid)
                     {
-                        pB4InsertCallback(args?.Para as T, args?.ClientInfo);
+                        pB4InsertCallback(args.Para as T, args.ClientInfo);
                     }
                 });
             }
-            SM?.RegisterEvent(eStoreEvents.Inserted, (args) =>
+            SM.RegisterEvent(eStoreEvents.Inserted, (args) =>
             {
                 if (args?.ClientInfo?.FormID == pTemplateGuid)
                 {
-                    pAfterInsertCallback?.Invoke(args?.Para as T, args?.ClientInfo);
+                    pAfterInsertCallback?.Invoke(args.Para as T, args.ClientInfo);
                 }
             });
 
@@ -2010,8 +1991,7 @@ namespace nsCDEngine.Engines.NMIService
                 Description = ThePropertyBag.PropBagGetValue(pPropertyBag, "Description", "="),
                 ControlClass = $"CMyForm:{{{tForm.cdeMID}}}",
             };
-            if (pPropertyBag != null)
-                MyDashPanelInfo.PropertyBag = pPropertyBag;
+            MyDashPanelInfo.PropertyBag = pPropertyBag;
 
             ThePropertyBag.PropBagUpdateValue(MyDashPanelInfo.PropertyBag, "UXID", "=", MyDashPanelInfo.cdeMID.ToString());
             AddDashPanel(tDash, MyDashPanelInfo);
@@ -2158,7 +2138,7 @@ namespace nsCDEngine.Engines.NMIService
                         int tPage = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(tForm.PropertyBag, "ProcessingPage", "="));
                         if (tPage > 0)
                             tForm.SetUXProperty(args.ClientInfo.NodeID, $"SetGroup=GRP:WizarePage:{tPage}");
-                        pB4InsertCallback(args?.Para as T, args?.ClientInfo);
+                        pB4InsertCallback(args.Para as T, args.ClientInfo);
                         tPage = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(tForm.PropertyBag, "FinishPage", "="));
                         if (tPage>0)
                             tForm.SetUXProperty(args.ClientInfo.NodeID, $"SetGroup=GRP:WizarePage:{tPage}");
@@ -2169,8 +2149,8 @@ namespace nsCDEngine.Engines.NMIService
             {
                 if (args?.ClientInfo?.FormID == pWizGuid)
                 {
-                    pAfterInsertCallback?.Invoke(args?.Para as T, args?.ClientInfo);
-                    if (((T)args?.Para)?.cdeMID != Guid.Empty && args.ClientInfo != null)
+                    pAfterInsertCallback?.Invoke(args.Para as T, args.ClientInfo);
+                    if (((T)args.Para)?.cdeMID != Guid.Empty && args.ClientInfo != null)
                         TheCommCore.PublishToNode(args.ClientInfo.NodeID, new TSM(eEngineName.NMIService, "NMI_TTS", $"{pDashboardID}"));
                 }
             });
@@ -3285,16 +3265,16 @@ namespace nsCDEngine.Engines.NMIService
                 int fldCnt = StartFldOrder;
                 List<string> tProtectedEntries = new ();
                 tProtectedEntries.AddRange(TheCommonUtils.cdeSplit(ThePropertyBag.PropBagGetValue(pProperties, "SecureOptions", "="), ";", true, true));
-                foreach (var p in props)
+                foreach (var name in props.Select(p=>p.Name))
                 {
                     int flags = IsLocked ? 0 : 2;
-                    if (tProtectedEntries.Contains(p.Name))
+                    if (tProtectedEntries.Contains(name))
                         flags |= 1;
-                    AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, fldCnt++, flags, 0, p.Name, p.Name, new nmiCtrlSingleEnded() { TileWidth = 5, ParentFld = pParentFld, TileFactorY = 2 });
+                    AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, fldCnt++, flags, 0, name, name, new nmiCtrlSingleEnded() { TileWidth = 5, ParentFld = pParentFld, TileFactorY = 2 });
                     if (!bNoPropAddDelete)
                     {
-                        var tDelBut = AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, fldCnt++, IsLocked ? 0 : 2, 0, "", null, new nmiCtrlTileButton() { Thumbnail = "FA5:f2ed", Cookie = p.Name, TileWidth = 1, TileFactorX = 1, TileFactorY = 1, ClassName = "cdeBadActionButton", TileHeight = 1, ParentFld = pParentFld });
-                        tDelBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, p.Name, (sender, pObj) =>
+                        var tDelBut = AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, fldCnt++, IsLocked ? 0 : 2, 0, "", null, new nmiCtrlTileButton() { Thumbnail = "FA5:f2ed", Cookie = name, TileWidth = 1, TileFactorX = 1, TileFactorY = 1, ClassName = "cdeBadActionButton", TileHeight = 1, ParentFld = pParentFld });
+                        tDelBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, name, (sender, pObj) =>
                         {
                             TheProcessMessage pMsg = pObj as TheProcessMessage;
                             if (pMsg?.Message == null) return;
@@ -3569,27 +3549,7 @@ namespace nsCDEngine.Engines.NMIService
             get { return TheCommonUtils.CBool(TheCDEngines.MyNMIService?.MyNMIModel?.IsModelReady()); }
         }
 
-        [Obsolete("Do not use! This function is not doing anything starting 4.110")]
-        public static bool SendThingRegistry(Guid pOriginator)
-        {
-            return false;
-        }
 
-        /// <summary>
-        /// Returns a Property of the Engine of a given Thing
-        /// </summary>
-        /// <param name="pThing">ICDEThing to look for its engines property</param>
-        /// <param name="pName">Name of the property to look for</param>
-        /// <returns></returns>
-        [Obsolete("Don't use this function, use the corresponding function on TheThingRegistry")]
-        public static string GetEnginePropertyByThing(ICDEThing pThing, string pName)
-        {
-            if (pThing == null || pThing.GetBaseThing() == null) return null;
-            IBaseEngine tBase = pThing.GetBaseThing().GetBaseEngine();
-            if (tBase != null)
-                return TheThing.GetSafePropertyString(tBase.GetBaseThing(), pName);
-            return null;
-        }
 
         /// <summary>
         /// Register a new Transform File for a given user. If pUserID is Guid.Empty
