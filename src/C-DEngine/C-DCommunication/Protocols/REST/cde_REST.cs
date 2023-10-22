@@ -639,7 +639,8 @@ namespace nsCDEngine.Communication
                 if (!string.IsNullOrEmpty(myRequestState.MyRequestData.ResponseMimeType))
                     myRequestState.request.ContentType = myRequestState.MyRequestData.ResponseMimeType;
                 else
-                    myRequestState.request.ContentType = "application/x-gzip";
+                    if (string.IsNullOrEmpty(myRequestState.request.ContentType))
+                        myRequestState.request.ContentType = "application/x-gzip";
 
                 myRequestState.request.ContentLength = myRequestState.MyRequestData.GetContentLength();
 
