@@ -1,11 +1,11 @@
 <!--
- SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net60-windows</TargetFrameworks>
+    <TargetFrameworks>net48;net60-windows;net7.0-windows</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>cdeUpdater</RootNamespace>
     <AssemblyName>cdeUpdater</AssemblyName>
