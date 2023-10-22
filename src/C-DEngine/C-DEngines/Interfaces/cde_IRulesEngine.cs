@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -25,19 +25,5 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         /// <returns></returns>
         TheThing GetBaseThing();
-
-        /// <summary>
-        /// Retired as of 5.142.0: Please use ICDELoggerEngine interface instead
-        /// </summary>
-        /// <param name="pEventName"></param>
-        /// <param name="pTrigger"></param>
-        /// <param name="pAction"></param>
-        bool LogEvent(string pEventName, string pTrigger, string pAction);
-
-        /// <summary>
-        /// Retired as of 5.142.0: Please use ICDELoggerEngine interface instead
-        /// </summary>
-        /// <param name="pItem"></param>
-        bool LogEvent(TheEventLogData pItem);
     }
 }
