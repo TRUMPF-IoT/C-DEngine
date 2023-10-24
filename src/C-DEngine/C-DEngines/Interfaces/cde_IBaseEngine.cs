@@ -45,7 +45,7 @@ namespace nsCDEngine.Engines
         /// Be aware: MultiChannels in a Mesh Based environment with many nodes can cause a lot of traffic between the nodes
         /// </summary>
         /// <param name="pIsMultiChannel">Set to true is you want to designate this plugin-service to have multi-channel</param>
-        void SetMultiChannel(bool pIsMultiChannel);
+        //void SetMultiChannel(bool pIsMultiChannel);
         /// <summary>
         /// 	<para>Setting this flag to true tells the C-DEngine that this plugin does not
         /// contain any code and only relays properly scoped telegrams between nodes. This

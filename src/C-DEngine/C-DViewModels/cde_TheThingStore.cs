@@ -41,11 +41,11 @@ namespace nsCDEngine.ViewModels
         /// <param name="propertiesToExclude">Properties to not include in the clone.</param>
         /// <param name="forExternalConsumption">Set a flag that is used by the Historian mechanism internally.</param>
         /// <returns>The copy of the baseItem TheThingStore</returns>
-        [Obsolete("Use the overload with ThePropertyFilter instead.")]
-        public TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, IEnumerable<string> propertiesToInclude, List<string> propertiesToExclude, bool forExternalConsumption)
-        {
-            return CloneForThingSnapshot(null, baseItem, ResetBase, new TheHistoryParameters(new ThePropertyFilter { Properties = propertiesToInclude?.ToList(), PropertiesToExclude = propertiesToExclude?.ToList() }), forExternalConsumption, out _);
-        }
+        //[Obsolete("Use the overload with ThePropertyFilter instead.")]
+        //public TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, IEnumerable<string> propertiesToInclude, List<string> propertiesToExclude, bool forExternalConsumption)
+        //{
+        //    return CloneForThingSnapshot(null, baseItem, ResetBase, new TheHistoryParameters(new ThePropertyFilter { Properties = propertiesToInclude?.ToList(), PropertiesToExclude = propertiesToExclude?.ToList() }), forExternalConsumption, out _);
+        //}
         /// <summary>
         /// Creates a copy of a TheThingStore with a selectable subset of properties.
         /// </summary>

@@ -1512,8 +1512,8 @@ namespace nsCDEngine.Engines.NMIService
         /// <summary>
         /// displays an image as Thumbnail on the button
         /// </summary>
-        [Obsolete("Please use Thumbnail instead - this option will be removed")]
-        public string ThumbNail { get; set; }
+        //[Obsolete("Please use Thumbnail instead - this option will be removed")]
+        //public string ThumbNail { get; set; }
 
         /// <summary>
         /// Describes the screen for the ScreenPicker

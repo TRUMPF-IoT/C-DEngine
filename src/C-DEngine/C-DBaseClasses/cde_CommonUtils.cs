@@ -2634,7 +2634,7 @@ namespace nsCDEngine.BaseClasses
 
 
         #region obsolete function - remove b4 OOS
-
+        /*
         /// <summary>
         /// Returns a setting either known in the current Settings array or set as an environment variable or in App.Config
         /// First it looks into App.config and if this does not contain the setting it falls back to the existing MySettings and if that does not have the entry it looks in the environment variables.
@@ -2707,6 +2707,7 @@ namespace nsCDEngine.BaseClasses
         {
             return TheBaseAssets.MySettings.GetSetting(pKey);
         }
+        */
         #endregion
     }
 }

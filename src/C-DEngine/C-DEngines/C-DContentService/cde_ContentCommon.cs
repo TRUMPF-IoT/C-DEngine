@@ -42,7 +42,6 @@ namespace nsCDEngine.Engines.ContentService
 
             MyBaseEngine.GetEngineState().IsAcceptingFilePush = true;
             MyBaseEngine.GetEngineState().IsAllowedUnscopedProcessing = TheBaseAssets.MyServiceHostInfo.IsCloudService;
-            MyBaseEngine.SetMultiChannel(!TheBaseAssets.MyServiceHostInfo.IsConnectedToCloud);
 
             MyBaseEngine.SetVersion(TheBaseAssets.BuildVersion);
         }

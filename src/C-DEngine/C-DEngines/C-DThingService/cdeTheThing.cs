@@ -359,7 +359,7 @@ namespace nsCDEngine.Engines.ThingService
                             max = tn;
                         }
                     }
-                    startFld = max + 25;// MyLiveForm.FldPos;
+                    startFld = (int)((max / 25.0 + 0.5) * 25) + 25;// MyLiveForm.FldPos;
                 }
             }
             else
@@ -396,21 +396,21 @@ namespace nsCDEngine.Engines.ThingService
                     });
                 }
             }
-            var tg = new nmiCtrlTileGroup { ParentFld = startFld, NoTE = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, IsAbsolute = true, Left = hasLeftPin ? 78 : 0, Top = 0 };
+            var tg = new nmiCtrlTileGroup { ParentFld = startFld, NoTE = true, PixelWidth = MyNMIFaceModel.XLen, DisallowEdit = true, PixelHeight = MyNMIFaceModel.YLen, IsAbsolute = true, Left = hasLeftPin ? 78 : 0, Top = 0 };
             startFld = MyLiveForm.FldPos;
             var gfld=NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, tg);
             if (!hideBorder)
                 gfld.PropertyBag = new nmiCtrlTileGroup { Style= "border: outset;" };
             if (!string.IsNullOrEmpty(MyNMIFaceModel.FaceTemplate))
             {
-                var tp = new nmiCtrlFacePlate { ParentFld = startFld, NoTE = true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen };
+                var tp = new nmiCtrlFacePlate { ParentFld = startFld, NoTE = true,DisallowEdit=true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen };
                 if (MyNMIFaceModel.FaceTemplate.StartsWith("/"))
                     tp.HTMLUrl = MyNMIFaceModel.FaceTemplate;
                 else
                     tp.HTML = $"<div class=\"{MyNMIFaceModel.FaceTemplate}\"></div>";
                 NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", tp);
                 if (MyNMIFaceModel.AddTTS)
-                    NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileButton, MyLiveForm.FldPos, 2, 0x0, null, null, new nmiCtrlTileButton() { ParentFld = startFld, OnClick = $"TTS:{MyBaseThing.cdeMID}", IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, NoTE = true, ClassName = "enTransBut" });
+                    NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileButton, MyLiveForm.FldPos, 2, 0x0, null, null, new nmiCtrlTileButton() { ParentFld = startFld, OnClick = $"TTS:{MyBaseThing.cdeMID}", DisallowEdit=true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, NoTE = true, ClassName = "enTransBut" });
             }
             return startFld;
         }
@@ -2971,7 +2971,18 @@ namespace nsCDEngine.Engines.ThingService
         {
             return SetSafeProperty(pThing, pName, pValue, ePropertyTypes.TDate, UpdateThing);
         }
-
+        /// <summary>
+        /// A type/null save helper to Store a Numeric value in a given property. The target property type  will be set to "TDate"
+        /// </summary>
+        /// <param name="pThing">Target TheThing</param>
+        /// <param name="pName">Property Name</param>
+        /// <param name="pValue">Timespan Property Value</param>
+        /// <param name="UpdateThing">If set to true, TheThing's UpdateThing function will be called and TheThing is updated in TheThingRegistry and TheThingRegistry is flushed to Disk</param>
+        /// <returns></returns>
+        public static cdeP SetSafePropertyTime(ICDEThing pThing, string pName, TimeSpan pValue, bool UpdateThing = false)
+        {
+            return SetSafeProperty(pThing, pName, pValue, ePropertyTypes.TDate, UpdateThing);
+        }
         /// <summary>
         /// A type/null save helper to Store a Numeric value in a given property. The target property type  will be set to "TGuid"
         /// </summary>
@@ -3068,6 +3079,18 @@ namespace nsCDEngine.Engines.ThingService
         public static cdeP MemberSetSafePropertyBool(ICDEThing pThing, bool pValue, bool UpdateThing = false, [CallerMemberName] string pName = null)
         {
             return SetSafePropertyBool(pThing, pName, pValue, UpdateThing);
+        }
+        /// <summary>
+        /// See <see cref="MemberSetSafePropertyNumber"/>
+        /// </summary>
+        /// <param name="pThing"></param>
+        /// <param name="pValue"></param>
+        /// <param name="UpdateThing"></param>
+        /// <param name="pName"></param>
+        /// <returns></returns>
+        public static cdeP MemberSetSafePropertyTime(ICDEThing pThing, TimeSpan pValue, bool UpdateThing = false, [CallerMemberName] string pName = null)
+        {
+            return SetSafePropertyTime(pThing, pName, pValue, UpdateThing);
         }
         /// <summary>
         /// See <see cref="MemberSetSafePropertyNumber"/>
@@ -3216,6 +3239,20 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pThing">TheThing to get the value of</param>
         /// <param name="pName">Property Name</param>
         /// <returns></returns>
+        public static TimeSpan GetSafePropertyTime(ICDEThing pThing, string pName)
+        {
+            cdeP tProp;
+            if (pThing == null || (tProp = pThing.GetProperty(pName, false)) == null || tProp.Value == null) return TimeSpan.Zero;
+            var dateObj = tProp.GetValue();
+            var date = CU.CTimeSpan(dateObj); 
+            return date;
+        }
+        /// <summary>
+        /// Returns a (null) safe value of a given property as DateTimeOffset
+        /// </summary>
+        /// <param name="pThing">TheThing to get the value of</param>
+        /// <param name="pName">Property Name</param>
+        /// <returns></returns>
         public static DateTimeOffset GetSafePropertyDate(ICDEThing pThing, string pName)
         {
             cdeP tProp;
@@ -3288,6 +3325,16 @@ namespace nsCDEngine.Engines.ThingService
         public static DateTimeOffset MemberGetSafePropertyDate(ICDEThing pThing, [CallerMemberName] string pName = null)
         {
             return GetSafePropertyDate(pThing, pName);
+        }
+        /// <summary>
+        /// See <see cref="MemberSetSafePropertyNumber"/>
+        /// </summary>
+        /// <param name="pThing"></param>
+        /// <param name="pName"></param>
+        /// <returns></returns>
+        public static TimeSpan MemberGetSafePropertyTime(ICDEThing pThing, [CallerMemberName] string pName = null)
+        {
+            return GetSafePropertyTime(pThing, pName);
         }
         /// <summary>
         /// See <see cref="MemberSetSafePropertyNumber"/>

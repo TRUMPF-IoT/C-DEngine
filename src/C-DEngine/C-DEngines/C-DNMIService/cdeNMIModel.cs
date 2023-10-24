@@ -1632,7 +1632,6 @@ namespace nsCDEngine.Engines.NMIService
             eventPropertyChanged += pEventPropertyChanged;
         }
 
-        [Obsolete("Use with MyBaseThing")]
         public TheDashPanelInfo()
         {
             Reset();
@@ -1649,14 +1648,14 @@ namespace nsCDEngine.Engines.NMIService
             cdeO = pOwnerMID;
         }
 
-        [Obsolete("Use with MyBaseThing")]
-        public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass)
-        {
-            Reset();
-            cdeMID = pKey;
-            PanelTitle = pPanelTitle;
-            ControlClass = pControlClass;
-        }
+        //[Obsolete("Use with MyBaseThing")]
+        //public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass)
+        //{
+        //    Reset();
+        //    cdeMID = pKey;
+        //    PanelTitle = pPanelTitle;
+        //    ControlClass = pControlClass;
+        //}
         public TheDashPanelInfo(TheThing pBaseThing, Guid pKey, string pPanelTitle, string pControlClass)
         {
             Reset();
@@ -1667,36 +1666,36 @@ namespace nsCDEngine.Engines.NMIService
         }
 
 
-        [Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only used internally/by only two of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
-        public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool bIsFullscreen, bool bIsControl)
-        {
-            PropertyBag = new ThePropertyBag();
-            cdeMID = pKey;
-            PanelTitle = pPanelTitle;
-            ControlClass = pControlClass;
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundSmall", "=", pSmallBackground);
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundMedium", "=", pMediumBackground);
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundFull", "=", pFullscreenBackground);
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "PanelColor", "=", pPanelColor.ToString());
-            IsFullSceen = bIsFullscreen;
-            IsControl = bIsControl;
-        }
-        [Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only not be used in any of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
-        public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, bool pIsPinned, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool pMTBlocked, bool bIsFullscreen, bool bIsControl)
-        {
-            PropertyBag = new ThePropertyBag();
-            cdeMID = pKey;
-            PanelTitle = pPanelTitle;
-            ControlClass = pControlClass;
-            IsPinned = pIsPinned;
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundSmall", "=", pSmallBackground);
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundMedium", "=", pMediumBackground);
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundFull", "=", pFullscreenBackground);
-            ThePropertyBag.PropBagUpdateValue(PropertyBag, "PanelColor", pPanelColor.ToString(), "=");
-            IsMTBlocked = pMTBlocked;
-            IsFullSceen = bIsFullscreen;
-            IsControl = bIsControl;
-        }
+        //[Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only used internally/by only two of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
+        //public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool bIsFullscreen, bool bIsControl)
+        //{
+        //    PropertyBag = new ThePropertyBag();
+        //    cdeMID = pKey;
+        //    PanelTitle = pPanelTitle;
+        //    ControlClass = pControlClass;
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundSmall", "=", pSmallBackground);
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundMedium", "=", pMediumBackground);
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundFull", "=", pFullscreenBackground);
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "PanelColor", "=", pPanelColor.ToString());
+        //    IsFullSceen = bIsFullscreen;
+        //    IsControl = bIsControl;
+        //}
+        //[Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only not be used in any of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
+        //public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, bool pIsPinned, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool pMTBlocked, bool bIsFullscreen, bool bIsControl)
+        //{
+        //    PropertyBag = new ThePropertyBag();
+        //    cdeMID = pKey;
+        //    PanelTitle = pPanelTitle;
+        //    ControlClass = pControlClass;
+        //    IsPinned = pIsPinned;
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundSmall", "=", pSmallBackground);
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundMedium", "=", pMediumBackground);
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundFull", "=", pFullscreenBackground);
+        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "PanelColor", pPanelColor.ToString(), "=");
+        //    IsMTBlocked = pMTBlocked;
+        //    IsFullSceen = bIsFullscreen;
+        //    IsControl = bIsControl;
+        //}
 
         internal void FireUpdate()
         {
@@ -1904,22 +1903,23 @@ namespace nsCDEngine.Engines.NMIService
                 ThePropertyBag.PropBagUpdateValue(pDash.PropertyBag, "OnPropertyChanged", "=", $"SEV:{OnChangeName}");
             }
             ThePropertyBag.PropBagUpdateValue(pDash.PropertyBag, "UXID", "=", pDash.cdeMID.ToString());
+            if (pMsg!=null && pMsg.Cookie==null)
+                pMsg.Cookie = pDash;
             FireEvent(eUXEvents.OnLoad, pMsg, true);
-            eventOnLoad?.Invoke(pDash);
+            //eventOnLoad?.Invoke(pDash);
         }
 
-        private Action<TheDashPanelInfo> eventOnLoad;
-
+        //private Action<TheDashPanelInfo> eventOnLoad;
         /// <summary>
         /// RETIRED IN V4: please use ".RegisterEvent(eUXEvents.OnLoad,...)
         /// Registers a callback that will be called when this Dashboard is loaded in the NMI
         /// </summary>
         /// <param name="pReloadCallback">Callback receiving TheDashPanelInfo</param>
-        [Obsolete("Please use .RegisterEvent(eUXEvents.OnLoad, ...)")]
-        public void RegisterOnLoad(Action<TheDashPanelInfo> pReloadCallback)
-        {
-            eventOnLoad += pReloadCallback;
-        }
+        //[Obsolete("Please use .RegisterEvent(eUXEvents.OnLoad, ...)")]
+        //public void RegisterOnLoad(Action<TheDashPanelInfo> pReloadCallback)
+        //{
+        //    eventOnLoad += pReloadCallback;
+        //}
     }
 
     /// <summary>

@@ -433,8 +433,8 @@ namespace nsCDEngine.Engines.StorageService
         internal DateTimeOffset mLastStore = DateTimeOffset.MinValue;
 
 #pragma warning disable 67
-        [Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later version.")]
-        public event PropertyChangedEventHandler PropertyChanged;
+        //[Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later version.")]
+        //public event PropertyChangedEventHandler PropertyChanged;
 #pragma warning restore 67
 
         public bool BlockWriteIfIsolated
@@ -2119,29 +2119,29 @@ namespace nsCDEngine.Engines.StorageService
                 SaveCacheToDisk(false, true);
         }
 
-        /// <summary>
-        /// Gets the first item.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <returns>T.</returns>
-        [Obsolete("There is no notion of a first item in a storage mirror cache.")]
-        public T GetFirstItem(out Guid key)
-        {
-            //CODE-REVIEW: This function assumes that the key is a GUID which is NOT garanteed!
-            T tRes = default;
-            var keyLocal = Guid.Empty;
-            MyRecordsRWLock.RunUnderReadLock(() =>
-            {
-                if (MyRecords.Values.Any())
-                {
-                    var t = MyRecords.First();
-                    tRes = t.Value;
-                    keyLocal = TheCommonUtils.CGuid(t.Key);
-                }
-            });
-            key = keyLocal;
-            return tRes;
-        }
+        ///// <summary>
+        ///// Gets the first item.
+        ///// </summary>
+        ///// <param name="key">The key.</param>
+        ///// <returns>T.</returns>
+        //[Obsolete("There is no notion of a first item in a storage mirror cache.")]
+        //public T GetFirstItem(out Guid key)
+        //{
+        //    //CODE-REVIEW: This function assumes that the key is a GUID which is NOT garanteed!
+        //    T tRes = default;
+        //    var keyLocal = Guid.Empty;
+        //    MyRecordsRWLock.RunUnderReadLock(() =>
+        //    {
+        //        if (MyRecords.Values.Any())
+        //        {
+        //            var t = MyRecords.First();
+        //            tRes = t.Value;
+        //            keyLocal = TheCommonUtils.CGuid(t.Key);
+        //        }
+        //    });
+        //    key = keyLocal;
+        //    return tRes;
+        //}
 
         /// <summary>
         /// Gets the entry by identifier.

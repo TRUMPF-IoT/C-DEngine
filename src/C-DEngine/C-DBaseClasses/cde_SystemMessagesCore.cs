@@ -25,13 +25,13 @@ namespace nsCDEngine.BaseClasses
         /// <summary>
         /// RETIRED IN V4: ClassName of the StorageService responsible for all Storage related communications
         /// </summary>
-        [Obsolete("Retired in V4 - now a loadable plugin")]
-        public const string StorageService = "StorageService";
+        //[Obsolete("Retired in V4 - now a loadable plugin")]
+        //public const string StorageService = "StorageService";
         /// <summary>
         /// RETIRED IN V4: ClassName of the WebRelayService resposible for all HTML5 and Web Relay communication
         /// </summary>
-        [Obsolete("Retired in V4 - now a loadable plugin")]
-        public const string WebRelayService = "WebRelayService"; // CODE REVIEW: must keep, as it's a breaking change otherwise
+        //[Obsolete("Retired in V4 - now a loadable plugin")]
+        //public const string WebRelayService = "WebRelayService"; // CODE REVIEW: must keep, as it's a breaking change otherwise
         /// <summary>
         /// Classname of the NMI Engine
         /// </summary>

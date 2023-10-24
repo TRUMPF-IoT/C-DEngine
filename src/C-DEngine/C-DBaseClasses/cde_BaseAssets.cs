@@ -811,16 +811,16 @@ namespace nsCDEngine.BaseClasses
             MySettings.UpdateLocalSettings();
         }
 
-
+        
         /// <summary>
         /// All public Parameter/Settings handed to the C-DEngine during Startup
         /// These settings are visible, unencrypted AND changable by plugins.
         /// Please use TheBaseAssets.MySettings.Set|GetSetting("settingname") to access the content
         /// In future versions of the CDE this dictionary might be read only or even internal only
         /// </summary>
-        /// Soon [Obsolete("Please do not use anymore as this will become hidden in the future. Use TheBaseAssets.MySettings.GetSetting() instead")]
-        public static IDictionary<string, string> MyCmdArgs;
+        internal static IDictionary<string, string> MyCmdArgs;
 
+        /*
         /// <summary>
         /// RETIRED: please use TheCDESettingsFactory.GetSetting()
         /// </summary>
@@ -852,5 +852,6 @@ namespace nsCDEngine.BaseClasses
         {
             MySettings.UpdateLocalSettings();
         }
+        */
     }
 }

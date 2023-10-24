@@ -123,42 +123,42 @@ namespace nsCDEngine.Engines.ThingService
             return false;
         }
 
-        /// <summary>
-        /// RETIRED IN V5: Use override!
-        /// </summary>
-        /// <param name="pEventName"></param>
-        /// <param name="tTrigger"></param>
-        /// <param name="tAction"></param>
-        [Obsolete("Retired in 5.142: Please use TheLoggerFactory")]
-        public static void LogEvent(string pEventName, string tTrigger, string tAction)
-        {
-            LogEvent(pEventName,eMsgLevel.l4_Message,null, tTrigger, tAction);
-        }
+        ///// <summary>
+        ///// RETIRED IN V5: Use override!
+        ///// </summary>
+        ///// <param name="pEventName"></param>
+        ///// <param name="tTrigger"></param>
+        ///// <param name="tAction"></param>
+        //[Obsolete("Retired in 5.142: Please use TheLoggerFactory")]
+        //public static void LogEvent(string pEventName, string tTrigger, string tAction)
+        //{
+        //    LogEvent(pEventName,eMsgLevel.l4_Message,null, tTrigger, tAction);
+        //}
 
-        /// <summary>
-        /// Log any aribrary event to the EventLog
-        /// </summary>
-        /// <param name="pEventName">Short Title of the Event</param>
-        /// <param name="pEventLevel">Severity of the Event</param>
-        /// <param name="pEventText">Optional: Long text of the event</param>
-        /// <param name="pEventTrigger">Optional: Who/What triggered the Event</param>
-        /// <param name="pEventAction">Optional: What action was triggered by the Event</param>
-        [Obsolete("Retired in 5.142: Please use TheLoggerFactory")]
-        public static void LogEvent(string pEventName, eMsgLevel pEventLevel, string pEventText = null, string pEventTrigger = null, string pEventAction = null)
-        {
-            TheEventLogData tSec = new ()
-            {
-                EventCategory=eLoggerCategory.RuleEvent,
-                EventTime = DateTimeOffset.Now,
-                StationName = TheBaseAssets.MyServiceHostInfo?.GetPrimaryStationURL(false),
-                EventName = pEventName,
-                EventString = pEventText,
-                EventTrigger = pEventTrigger,
-                EventLevel = pEventLevel,
-                ActionObject = pEventAction
-            };
-            TheLoggerFactory.LogEvent(tSec);
-        }
+        ///// <summary>
+        ///// Log any aribrary event to the EventLog
+        ///// </summary>
+        ///// <param name="pEventName">Short Title of the Event</param>
+        ///// <param name="pEventLevel">Severity of the Event</param>
+        ///// <param name="pEventText">Optional: Long text of the event</param>
+        ///// <param name="pEventTrigger">Optional: Who/What triggered the Event</param>
+        ///// <param name="pEventAction">Optional: What action was triggered by the Event</param>
+        //[Obsolete("Retired in 5.142: Please use TheLoggerFactory")]
+        //public static void LogEvent(string pEventName, eMsgLevel pEventLevel, string pEventText = null, string pEventTrigger = null, string pEventAction = null)
+        //{
+        //    TheEventLogData tSec = new ()
+        //    {
+        //        EventCategory=eLoggerCategory.RuleEvent,
+        //        EventTime = DateTimeOffset.Now,
+        //        StationName = TheBaseAssets.MyServiceHostInfo?.GetPrimaryStationURL(false),
+        //        EventName = pEventName,
+        //        EventString = pEventText,
+        //        EventTrigger = pEventTrigger,
+        //        EventLevel = pEventLevel,
+        //        ActionObject = pEventAction
+        //    };
+        //    TheLoggerFactory.LogEvent(tSec);
+        //}
 
         /// <summary>
         /// Returns true if a RulesRegistry

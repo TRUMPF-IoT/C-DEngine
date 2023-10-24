@@ -390,8 +390,8 @@ namespace nsCDEngine.ViewModels
             TokenLifeTime = 3; //By default Token Lifetime is only 3 seconds
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            StationRoles = new List<string>();
-            ApplicationRoles = new List<string>();
+            //StationRoles = new List<string>();
+            //ApplicationRoles = new List<string>();
 #pragma warning restore CS0618 // Type or member is obsolete
             StartupEngines = new List<string>();
             IgnoredEngines = new List<string>();
@@ -1485,22 +1485,22 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// A list of Plugins that will be running as services on the current node
         /// </summary>
-        [Obsolete("No Longer used in V4 - Will be removed in V5")]
-        public List<string> StationRoles
-        {
-            get;
-            internal set;
-        }
+        //[Obsolete("No Longer used in V4 - Will be removed in V5")]
+        //public List<string> StationRoles
+        //{
+        //    get;
+        //    internal set;
+        //}
 
         /// <summary>
         /// A list of known plugins to this node. Any plugin found in the BaseDirectory will be added to this list automatically
         /// </summary>
-        [Obsolete("No Longer used in V4 - will be removed in V5")]
-        public List<string> ApplicationRoles
-        {
-            get;
-            internal set;
-        }
+        //[Obsolete("No Longer used in V4 - will be removed in V5")]
+        //public List<string> ApplicationRoles
+        //{
+        //    get;
+        //    internal set;
+        //}
         /// <summary>
         /// retired
         /// </summary>
@@ -1712,8 +1712,8 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// If this is not set, the node will not start if it was not launched with Administrator Previledges
         /// </summary>
-        [Obsolete("This flag was never used and has been replaced by FailOnAdminCheck")]
-        public bool IgnoreAdminCheck { get; set; }
+        //[Obsolete("This flag was never used and has been replaced by FailOnAdminCheck")]
+        //public bool IgnoreAdminCheck { get; set; }
 
         /// <summary>
         /// If true, the host will exit if the HttpLIstener (that requires Admin Rights) could not be started and "DontFallbackToDevice" is true. If DontFallbackToDevice is true, the WebServer of the CDE will be disable and the node runs as a "Device"
@@ -1865,8 +1865,8 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// If set to False, the UPnP discovery system was disabled
         /// </summary>
-        [Obsolete("UPnP has been moved into a plugin")]
-        public bool IsUsingUPnP { get; set; }
+        //[Obsolete("UPnP has been moved into a plugin")]
+        //public bool IsUsingUPnP { get; set; }
 
         /// <summary>
         /// This defines the "StandardDeviceType" for UPnP. Default is "InternetGatewayDevice"
@@ -2613,8 +2613,8 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         /// <seealso cref="M:nsCDEngine.Engines.IBaseEngine.SetMultiChannel(System.Boolean)">Setting
         /// Multi-Channel Mode</seealso>
-        [Obsolete("No Longer used in V4 - will be removed in V5")]
-        public bool IsMultiChannel { get; set; }
+        //[Obsolete("No Longer used in V4 - will be removed in V5")]
+        //public bool IsMultiChannel { get; set; }
 
         /// <summary>
         /// Is true if the plugin is running in an isolated host process
@@ -2777,14 +2777,14 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// List of all known current endpoints. Requires "UpdateEngineState()" to be filled in
         /// </summary>
-        [Obsolete("Retired in V4 - will be removed in V5")]
-        public List<TheChannelInfo> CurrentEndpoints { get; set; }
+        //[Obsolete("Retired in V4 - will be removed in V5")]
+        //public List<TheChannelInfo> CurrentEndpoints { get; set; }
 
         /// <summary>
         /// RETIRED IN V4: No more channels
         /// </summary>
-        [Obsolete("Retired in V4 - will be removed in V5")]
-        public TheChannelInfo ActiveChannelInfo { get; set; }
+        //[Obsolete("Retired in V4 - will be removed in V5")]
+        //public TheChannelInfo ActiveChannelInfo { get; set; }
 
         /// <summary>
         /// Amount of credits for usage of this Service accumulated so far

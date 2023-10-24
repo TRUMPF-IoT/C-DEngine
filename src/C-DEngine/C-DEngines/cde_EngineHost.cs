@@ -34,8 +34,8 @@ namespace nsCDEngine.Engines
         /// Interface to the Current StorageService
         /// NOTE: This will be replace by MyIStorageService in V5- please migrate your code to use MyIStorageService
         /// </summary>
-        [Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
-        public static IStorageService MyStorageService;
+        //[Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
+        //public static IStorageService MyStorageService;
 
         private static IStorageService _MyIStorageService = null;
         /// <summary>
@@ -55,7 +55,7 @@ namespace nsCDEngine.Engines
             if (pService == null)
                 return false;
 #pragma warning disable CS0618 // Type or member is obsolete
-            MyStorageService = pService;
+            //MyStorageService = pService;
 #pragma warning restore CS0618 // Type or member is obsolete
             if (MyIStorageService == null)
             {
@@ -66,7 +66,7 @@ namespace nsCDEngine.Engines
                     TheBaseAssets.MySYSLOG.WriteToLog(4138, new TSM("TheCDEngines", "Distributed StorageService could not be started. Node falls back to local storage only", eMsgLevel.l2_Warning));
                     _MyIStorageService = null;
 #pragma warning disable CS0618 // Type or member is obsolete
-                    MyStorageService = null;
+                    //MyStorageService = null;
 #pragma warning restore CS0618 // Type or member is obsolete
                 }
                 return Succes;

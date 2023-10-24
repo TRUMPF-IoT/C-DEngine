@@ -79,8 +79,8 @@ namespace nsCDEngine.Engines.StorageService
     public class TheStorageMirror<T> : IDisposable where T : TheDataBase, INotifyPropertyChanged, new()
     {
 #pragma warning disable 67
-        [Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later Version")]
-        public event PropertyChangedEventHandler PropertyChanged;
+        //[Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later Version")]
+        //public event PropertyChangedEventHandler PropertyChanged;
 #pragma warning restore 67
         /// <summary>
         /// Identifies a response from a store after a query or other operation (read, write, update, delete, etc.) has been executed.
