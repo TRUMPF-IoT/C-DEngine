@@ -442,7 +442,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 foreach (var t in MyGroupThings.Values)
                 {
-                    t?.ShowDeviceFace(MyGroupForm, 78, 78);
+                    t?.ShowDeviceFace(MyGroupForm, 0, 0);
                 }
             }
         }
@@ -450,11 +450,14 @@ namespace nsCDEngine.Engines.ThingService
         private void ResetAllThings()
         {
             SetProperty("GroupFlds", ";");
-            var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid);
+            var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid || CU.CInt(s.GetProperty($"FldStart_{MyScreenGuid}", false)?.GetValue())>0);
             if (tThings?.Any() == true)
             {
                 foreach (var tT in tThings)
+                {
+                    tT?.SetProperty($"FldStart_{MyScreenGuid}", 0);
                     tT?.SetProperty("cdeGroupID", Guid.Empty);
+                }
             }
         }
 

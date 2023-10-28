@@ -359,7 +359,7 @@ namespace nsCDEngine.Engines.ThingService
                             max = tn;
                         }
                     }
-                    startFld = (int)((max / 25.0 + 0.5) * 25) + 25;// MyLiveForm.FldPos;
+                    startFld = 25 * (int)Math.Round((max+13) / 25.0);
                 }
             }
             else

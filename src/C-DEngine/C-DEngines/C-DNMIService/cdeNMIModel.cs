@@ -3233,7 +3233,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 string toInser = pName.Trim() + Seperator;
                 string retStr = "";
-                if (!AllowDuplicates && (retStr = pQ.FirstOrDefault(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
+                if (!AllowDuplicates && (retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
                 {
                     pQ.Remove(retStr);
                     if (pQ._FastCache != null)

@@ -762,7 +762,7 @@ namespace nsCDEngine.Engines.NMIService
             foreach (var t in tL)
             {
                 var tFaceThing = TheThingRegistry.GetThingByMID(TheCommonUtils.CGuid(t));
-                tFaceThing?.MyThingBase?.ShowDeviceFace(pNMIForm, 78, 78);
+                tFaceThing?.MyThingBase?.ShowDeviceFace(pNMIForm, 0, 0);
             }
             return true;
         }
