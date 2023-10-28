@@ -7,7 +7,6 @@ using nsCDEngine.Communication;
 using nsCDEngine.Engines;
 using nsCDEngine.Engines.ThingService;
 using nsCDEngine.PluginManagement;
-using nsCDEngine.Security;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -1378,7 +1377,6 @@ namespace nsCDEngine.ISM
             try
             {
                 FileToReturn1 = TheCommonUtils.cdeFixupFileName("backups\\" + pTitle + ".CDEB");
-#if !CDE_NET35 && !CDE_NET4
                 TheCommonUtils.CreateDirectories(FileToReturn1);
                 var SourceDir = TheCommonUtils.cdeFixupFileName("cache", true);
                 TheCommonUtils.CreateDirectories(SourceDir, true);
@@ -1439,7 +1437,6 @@ namespace nsCDEngine.ISM
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(466, new TSM("ISMManager", $"Repeated Backup Creation for {pTitle} failed - giving up now, trying again at next interval", eMsgLevel.l2_Warning));
                 }
-#endif
                 return FileToReturn1;
             }
             catch (Exception e)
@@ -1459,7 +1456,6 @@ namespace nsCDEngine.ISM
         {
             try
             {
-#if CDE_NET45
                 string tRestoreFile = TheCommonUtils.cdeFixupFileName("backups\\" + pTitle);
                 string SourceDir = TheCommonUtils.cdeFixupFileName("__CacheToRestore"); // Write to separate location, then put in place during startup do avoid overwrite
                 TheCommonUtils.CreateDirectories(SourceDir, true);
@@ -1468,7 +1464,6 @@ namespace nsCDEngine.ISM
                     file.Delete();
                 ZipFile.ExtractToDirectory(tRestoreFile, SourceDir);
                 TheBaseAssets.MyApplication.MyISMRoot.Restart(true);
-#endif
                 return true;
             }
             catch (Exception)
