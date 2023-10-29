@@ -38,15 +38,6 @@ namespace nsCDEngine.Engines
         /// </summary>
         void SetIsInitializing();
         /// <summary>
-        /// If a Plugin-Service sets this to true, it can establish one-to-many connection.
-        /// This allows for mutliple data-provider to talk to one data consumer and one data-provider can have multiple data consumers connected at the same time.
-        /// If set to false, the connection will always be a one-to-one connection and additional provider or consumer will be put in a redundancy list.
-        /// If the current connection fails, the service will automatically connect to the next service in the redundancy list.
-        /// Be aware: MultiChannels in a Mesh Based environment with many nodes can cause a lot of traffic between the nodes
-        /// </summary>
-        /// <param name="pIsMultiChannel">Set to true is you want to designate this plugin-service to have multi-channel</param>
-        //void SetMultiChannel(bool pIsMultiChannel);
-        /// <summary>
         /// 	<para>Setting this flag to true tells the C-DEngine that this plugin does not
         /// contain any code and only relays properly scoped telegrams between nodes. This
         /// is very useful in scenarios where you have multiple relays on-premise that need

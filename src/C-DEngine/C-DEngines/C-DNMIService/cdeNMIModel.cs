@@ -1906,20 +1906,7 @@ namespace nsCDEngine.Engines.NMIService
             if (pMsg!=null && pMsg.Cookie==null)
                 pMsg.Cookie = pDash;
             FireEvent(eUXEvents.OnLoad, pMsg, true);
-            //eventOnLoad?.Invoke(pDash);
         }
-
-        //private Action<TheDashPanelInfo> eventOnLoad;
-        /// <summary>
-        /// RETIRED IN V4: please use ".RegisterEvent(eUXEvents.OnLoad,...)
-        /// Registers a callback that will be called when this Dashboard is loaded in the NMI
-        /// </summary>
-        /// <param name="pReloadCallback">Callback receiving TheDashPanelInfo</param>
-        //[Obsolete("Please use .RegisterEvent(eUXEvents.OnLoad, ...)")]
-        //public void RegisterOnLoad(Action<TheDashPanelInfo> pReloadCallback)
-        //{
-        //    eventOnLoad += pReloadCallback;
-        //}
     }
 
     /// <summary>

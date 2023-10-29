@@ -26,6 +26,7 @@
 		<PackageOutputPath>$(OutDir)</PackageOutputPath>
 		<DefineConstants>TRACE;CDE_SYSLOG;$(DefineConstants)</DefineConstants>
 		<LangVersion>preview</LangVersion>
+		<TreatWarningsAsErrors>True</TreatWarningsAsErrors>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -108,6 +109,10 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(NewtonsoftSharedInSolution)' == 'True'">
 		<DefineConstants>CDE_INTNEWTON;$(DefineConstants)</DefineConstants>
+	</PropertyGroup>
+	<PropertyGroup>
+	  <NoWarn>1701;1702;CS1591</NoWarn>
+	  <NoWarn>1701;1702;CS1591</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(UpdaterInSolution)' == 'True'">

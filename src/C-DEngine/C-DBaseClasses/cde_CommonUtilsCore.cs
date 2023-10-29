@@ -1476,7 +1476,9 @@ namespace nsCDEngine.BaseClasses
             if (IsFeather() && longRunning)
             {
                 Console.WriteLine($"Starting Thread: {pThreadName}");
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
                 task = Task.Run(async () => callBack);
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
             }
             else
             {

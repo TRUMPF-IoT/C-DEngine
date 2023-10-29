@@ -1018,7 +1018,7 @@ namespace nsCDEngine.Engines.StorageService
                             }
                             else
                             {
-                                storeData = MyRecords.Values; //LOCK-REVIEW: staring here, internal store and list can diviate, but no lock required
+                                storeData = MyRecords.Values; //LOCK-REVIEW: starting here, internal store and list can diviate, but no lock required
                             }
 
                             if ((IsReady && recordsBySequenceNumber != null) || MyRecords.Count > 0)

@@ -374,25 +374,6 @@ namespace nsCDEngine.ISM
         }
 
         /// <summary>
-        /// Asks the ISM to check for updates in the given file
-        /// </summary>
-        /// <param name="PFile"></param>
-        /// <returns></returns>
-        //[Obsolete("Retired")]
-        //public static string CheckForUpdates(string PFile)
-        //{
-        //    string tClientBinUpdateAt = "";
-        //    //clientbin Update Check
-        //    if (File.Exists(TheCommonUtils.GetTargetFolder(true, true) + Path.DirectorySeparatorChar + PFile))
-        //        tClientBinUpdateAt = TheCommonUtils.GetTargetFolder(true, true) + Path.DirectorySeparatorChar + PFile;
-        //    if (tClientBinUpdateAt == "" && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory) && File.Exists(TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory + Path.DirectorySeparatorChar + PFile))
-        //        tClientBinUpdateAt = TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory + Path.DirectorySeparatorChar + PFile;
-        //    if (tClientBinUpdateAt == "" && File.Exists(TheBaseAssets.MyServiceHostInfo.BaseDirectory + PFile))
-        //        tClientBinUpdateAt = TheBaseAssets.MyServiceHostInfo.BaseDirectory + PFile;
-        //    return tClientBinUpdateAt;
-        //}
-
-        /// <summary>
         /// Asks the ISM to scan for updates in the local clienbin/updates folder
         /// </summary>
         /// <param name="pFallback">if true, it also scans the MyDocuments folder</param>

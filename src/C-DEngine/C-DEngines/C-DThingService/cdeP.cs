@@ -551,21 +551,6 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         /// <summary>
-        /// Turns event on/off on a Property.
-        /// </summary>
-        /// <param name="TurnEventsOn">if true, events on the property will be turned on</param>
-        /// <returns></returns>
-        //[Obsolete("Don't turn this on manually. The NMI Subscription system will know when a registration is needed")]
-        //public cdeP SetPropertyEvents(bool TurnEventsOn)
-        //{
-        //    if (TurnEventsOn)
-        //        cdeFOC |= 0x1;
-        //    else
-        //        cdeFOC &= 0xFFFE;
-        //    return this;
-        //}
-
-        /// <summary>
         /// Allows to request synchronous firing of OnChange events. BEWARE: If you stay too long in the OnChange callback you can stall the system!
         /// </summary>
         /// <param name="SyncOn"></param>
