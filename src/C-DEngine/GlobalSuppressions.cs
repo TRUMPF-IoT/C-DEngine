@@ -18,4 +18,7 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Critical Code Smell", "S2696:Instance members should not write to \"static\" fields", Justification = "API of C - DEngine is published", Scope = "namespaceanddescendants", Target = "~N:nsCDEngine)")]
 [assembly: SuppressMessage("Critical Code Smell", "S2223:Change the visibility of 'xxx' or make it 'const' or 'readonly'.", Justification = "API of C - DEngine is published", Scope = "namespaceanddescendants", Target = "~N:nsCDEngine)")]
 [assembly: SuppressMessage("Critical Code Smell", "S3776:Refactor this method to reduce its Cognitive Complexity from...to...'.", Justification = "Performance over Beauty", Scope = "namespaceanddescendants", Target = "~N:nsCDEngine)")]
-
+[assembly: SuppressMessage("Minor Code Smell", "S1643:Strings should not be concatenated using '+' in a loop", Justification = "Coming soon", Scope = "namespaceanddescendants", Target = "~N:nsCDEngine")]
+[assembly: SuppressMessage("Info Code Smell", "S1135:Track uses of \"TODO\" tags", Justification = "<Pending>", Scope = "namespaceanddescendants", Target = "~N:nsCDEngine")]
+[assembly: SuppressMessage("Minor Code Smell", "S6608:Prefer indexing instead of \"Enumerable\" methods on types implementing \"IList\"", Justification = "This does not exists in .NET Standard 2.0", Scope = "namespaceanddescendants", Target = "~N:nsCDEngine")]
+[assembly: SuppressMessage("Major Code Smell", "S2589:Boolean expressions should not be gratuitous", Justification = "Sonar is not handling locks correctly", Scope = "namespaceanddescendants", Target = "~N:nsCDEngine")]

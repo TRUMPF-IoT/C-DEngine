@@ -511,7 +511,6 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (EnableNMILog)
             {
-                //Console.WriteLine($"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}");
                 if (MyNMILog.Length > 0)
                     MyNMILog.Insert(0, $"{CU.GetDateTimeString(DateTimeOffset.Now, Guid.Empty)}: {txt}\n");
                 else
@@ -843,6 +842,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// If this thing has a ThingBase, a reference will be stored here during creation of TheThingBase
         /// </summary>
+        [IgnoreDataMember]
         public TheThingBase MyThingBase { get; internal set; }
 
         /// <summary>
@@ -1881,20 +1881,17 @@ namespace nsCDEngine.Engines.ThingService
             {
                 if (DoCreate)
                 {
-                    bool bAdded = false;
+#pragma warning disable S6612 // The lambda parameter should be used instead of capturing arguments in "ConcurrentDictionary" methods
                     tProp = MyPropertyBag.GetOrAdd(pName, name =>
                     {
-                        bAdded = true; return new cdeP(this) { Name = pName, cdeO = cdeMID };
+                        return new cdeP(this) { Name = pName, cdeO = cdeMID };
                     });
-                    if (bAdded)
+#pragma warning restore S6612 // The lambda parameter should be used instead of capturing arguments in "ConcurrentDictionary" methods
+                    OPCUATypeAttribute.ApplyUAPropertyAttributes(this, tProp);
+                    if (!NoFireAdded)
                     {
-                        OPCUATypeAttribute.ApplyUAPropertyAttributes(this, tProp);
-                        if (!NoFireAdded)
-                        {
-                            FireEvent(eThingEvents.PropertyAdded, this, tProp, true);
-                        }
+                        FireEvent(eThingEvents.PropertyAdded, this, tProp, true);
                     }
-                    //else { }
                     NoFireAdded = false;
                 }
             }
@@ -1955,22 +1952,18 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     if (DoCreate)
                     {
-                        bool bAdded = false;
-                        tP = tResBag.GetOrAdd(tName, name =>
+                        tP = tResBag.GetOrAdd(tName, tName =>
                         {
-                            bAdded = true; return new cdeP(this) { Name = tName, cdeO = tParent.cdeMID };
+                            return new cdeP(this) { Name = tName, cdeO = tParent.cdeMID };
                         });
-                        if (bAdded)
+                        if (i == 0) //Only apply to root Property
+                            OPCUATypeAttribute.ApplyUAPropertyAttributes(this, tP);
+                        if (!NoFireAdded)
                         {
-                            if (i == 0) //Only apply to root Property
-                                OPCUATypeAttribute.ApplyUAPropertyAttributes(this, tP);
-                            if (!NoFireAdded)
-                            {
-                                FireEvent(eThingEvents.PropertyAdded, this, tP, true);
-                            }
+                            FireEvent(eThingEvents.PropertyAdded, this, tP, true);
                         }
 
-                        if (i < tPath.Length - 1)  
+                        if (i < tPath.Length - 1)
                             tP.cdePB = new cdeConcurrentDictionary<string, cdeP>();
                         tResBag = tP.cdePB;
                     }
@@ -2445,20 +2438,20 @@ namespace nsCDEngine.Engines.ThingService
             Guid token = this.Historian.RegisterConsumer<T>(this, registration, store);
             // TODO Determine if we want history things to be auto created
             //if (createHistoryThing)
-            //{
-            //    var historyThing = new TheThing();
-            //    historyThing.EngineName = eEngineName.ThingService;
-            //    historyThing.DeviceType = "ThingHistory";
-            //    historyThing.SetIThingObject(this.Historian);
-            //    historyThing.FriendlyName = "History of " + this.FriendlyName;
-            //    TheThingRegistry.RegisterThing(historyThing);
-            //}
-            //return true;
-            //}
+            //
+            //    var historyThing = new TheThing()
+            //    historyThing.EngineName = eEngineName.ThingService
+            //    historyThing.DeviceType = "ThingHistory"
+            //    historyThing.SetIThingObject(this.Historian)
+            //    historyThing.FriendlyName = "History of " + this.FriendlyName
+            //    TheThingRegistry.RegisterThing(historyThing)
+            //
+            //return true
+            //
             //else
-            //{
-            //return false;
-            //}
+            //
+            //return false
+            //
             return token;
         }
 
@@ -3172,17 +3165,12 @@ namespace nsCDEngine.Engines.ThingService
             var value = tProp.GetValue();
             //CODE REVIEW Markus: Should we force cloning here by converting to string? Otherwise the caller can modify the property directly, or future changes to the property will be seen by the caller
             //Should we move this into cdeP.GetValue() in the next bigger release?
-            //    value = CU.CStr(value);
+            //    value = CU.CStr(value)
             //if (!value.GetType().IsValueType)
-            //{
+            //
             //    if (value is ICloneable)
-            //    {
-            //        value = ((ICloneable)value).Clone();
-            //    }
-            //    else
-            //    {
-            //    }
-            //}
+            //    
+            //        value = ((ICloneable)value).Clone()
             return value;
         }
         /// <summary>

@@ -509,13 +509,10 @@ namespace nsCDEngine.Engines.NMIService
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 if (TheCDEngines.MyCustomTypes?.Count > 0)
                 {
-                    foreach (var tType in TheCDEngines.MyCustomTypes)
+                    foreach (var tType in TheCDEngines.MyCustomTypes.Where(tType => tType is ICDEPlugin))
                     {
-                        if (tType is ICDEPlugin)
-                        {
-                            string tTempType = tType.FullName;
-                            MyCDEPluginUXTypes.Add(tTempType, tType);
-                        }
+                        string tTempType = tType.FullName;
+                        MyCDEPluginUXTypes.Add(tTempType, tType);
                     }
                 }
 
@@ -1648,14 +1645,6 @@ namespace nsCDEngine.Engines.NMIService
             cdeO = pOwnerMID;
         }
 
-        //[Obsolete("Use with MyBaseThing")]
-        //public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass)
-        //{
-        //    Reset();
-        //    cdeMID = pKey;
-        //    PanelTitle = pPanelTitle;
-        //    ControlClass = pControlClass;
-        //}
         public TheDashPanelInfo(TheThing pBaseThing, Guid pKey, string pPanelTitle, string pControlClass)
         {
             Reset();
@@ -1664,38 +1653,6 @@ namespace nsCDEngine.Engines.NMIService
             PanelTitle = pPanelTitle;
             ControlClass = pControlClass;
         }
-
-
-        //[Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only used internally/by only two of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
-        //public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool bIsFullscreen, bool bIsControl)
-        //{
-        //    PropertyBag = new ThePropertyBag();
-        //    cdeMID = pKey;
-        //    PanelTitle = pPanelTitle;
-        //    ControlClass = pControlClass;
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundSmall", "=", pSmallBackground);
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundMedium", "=", pMediumBackground);
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundFull", "=", pFullscreenBackground);
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "PanelColor", "=", pPanelColor.ToString());
-        //    IsFullSceen = bIsFullscreen;
-        //    IsControl = bIsControl;
-        //}
-        //[Obsolete("Not used anymore")] // CODE REVIEW: This seems to be only not be used in any of our plug-ins: Problem is that it doesn't set the cdeO by default, which can break loc string lookup. Can we just remove it?
-        //public TheDashPanelInfo(Guid pKey, string pPanelTitle, string pControlClass, bool pIsPinned, int pPanelColor, string pSmallBackground, string pMediumBackground, string pFullscreenBackground, bool pMTBlocked, bool bIsFullscreen, bool bIsControl)
-        //{
-        //    PropertyBag = new ThePropertyBag();
-        //    cdeMID = pKey;
-        //    PanelTitle = pPanelTitle;
-        //    ControlClass = pControlClass;
-        //    IsPinned = pIsPinned;
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundSmall", "=", pSmallBackground);
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundMedium", "=", pMediumBackground);
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "BackgroundFull", "=", pFullscreenBackground);
-        //    ThePropertyBag.PropBagUpdateValue(PropertyBag, "PanelColor", pPanelColor.ToString(), "=");
-        //    IsMTBlocked = pMTBlocked;
-        //    IsFullSceen = bIsFullscreen;
-        //    IsControl = bIsControl;
-        //}
 
         internal void FireUpdate()
         {
@@ -2827,7 +2784,7 @@ namespace nsCDEngine.Engines.NMIService
                 string tName = tEnt.Split('=')[0];  //NMI-REDO: Tune with IndexOf - see: https://docs.microsoft.com/en-us/visualstudio/profiling/da0013-high-usage-of-string-split-or-string-substring
                 if (bIgnoreNodeSettings && (tName == "EngineName" || TheCommonUtils.IsPropertyOfClass(tName, typeof(nmiPlatBag))))
                     continue;
-                if (this.Any(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)))
+                if (this.Exists(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)))
                 {
                     if (CreateFastCache)
                         _FastCache.RemoveNoCare(tName);
@@ -2993,7 +2950,7 @@ namespace nsCDEngine.Engines.NMIService
                 string toInser = pName.Trim() + Seperator;
                 try
                 {
-                    if (pQ.Any(s => s.StartsWith(toInser)))
+                    if (pQ.Exists(s => s.StartsWith(toInser)))
                         return true;
                 }
                 catch
@@ -3012,7 +2969,7 @@ namespace nsCDEngine.Engines.NMIService
                 string toInser = pName.Trim() + Seperator;
                 try
                 {
-                    if ((retStr = pQ.FirstOrDefault(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) == null)
+                    if ((retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) == null)
                         retStr = "";
                 }
                 catch
@@ -3032,7 +2989,7 @@ namespace nsCDEngine.Engines.NMIService
             if (pQ.HasFastCache())
             {
                 string tOut = "";
-                if (pQ?._FastCache?.TryGetValue(pName, out tOut) == false)
+                if (pQ._FastCache?.TryGetValue(pName, out tOut) == false)
                     return "";
                 return tOut; 
             }
@@ -3042,7 +2999,7 @@ namespace nsCDEngine.Engines.NMIService
                 try
                 {
                     string toInser = pName.Trim() + Seperator;
-                    if ((retStr = pQ.FirstOrDefault(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
+                    if ((retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
                     {
                         retStr = PropBagGetValue(retStr, Seperator);
                     }
@@ -3258,7 +3215,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 string toInser = pName.Trim() + Seperator;
                 string retStr = "";
-                if ((retStr = pQ.FirstOrDefault(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
+                if ((retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
                 {
                     pQ.Remove(retStr);
                     if (pQ._FastCache != null)
@@ -3288,7 +3245,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 string toInser = pName.Trim() + Seperator;
                 string retStr = "";
-                if ((retStr = pQ.FirstOrDefault(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
+                if ((retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
                 {
                     pQ.Remove(retStr);
                     if (pQ._FastCache != null)

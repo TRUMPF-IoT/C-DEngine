@@ -35,11 +35,11 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (!IsInitialized() || pFieldInfos == null || pForm == null || pForm.cdeMID == Guid.Empty) return false;
             bool bSuccess = false;
-            foreach (TheFieldInfo pInfo in pFieldInfos)
+            foreach (var _ in pFieldInfos.Where(pInfo => AddField(pForm, pInfo)).Select(pInfo => new { }))
             {
-                if (AddField(pForm, pInfo))
-                    bSuccess = true;
+                bSuccess = true;
             }
+
             return bSuccess;
         }
 
@@ -343,7 +343,7 @@ namespace nsCDEngine.Engines.NMIService
                         {
                             if (p != null)
                             {
-                                var pSafe = p?.ToString();
+                                var pSafe = p.ToString();
                                 if ((flags & 256) == 0)
                                     pSafe = TheCommonUtils.cdeStripHTML(pSafe);
                                 tFldInfo.SetUXProperty(Guid.Empty, $"{ts[0]}={pSafe}");
@@ -556,7 +556,7 @@ namespace nsCDEngine.Engines.NMIService
                     string tname = TheCommonUtils.GetStringSection(pHTML, ref posEnd, tM, "%>", false);
                     if (tname == null)
                         continue;
-                    var tParts=tname?.Split(':');
+                    var tParts=tname.Split(':');
                     if (tParts?.Length>1)
                         tname = tParts[1];
                     RegisterPublication(pBaseThing, tname, pRequestingNode);
@@ -729,7 +729,7 @@ namespace nsCDEngine.Engines.NMIService
                             var tEdThing = GetNMIEditorThing();
                             if (tMsg != null && tEdThing != null)
                             {
-                                var tNewCtrl = $"{tEdThing?.GetProperty("newthing")}";
+                                var tNewCtrl = $"{tEdThing.GetProperty("newthing")}";
                                 if (!string.IsNullOrEmpty(tNewCtrl))
                                 {
                                     var tCtrlList = TheThing.GetSafePropertyString(pBaseThing, $"Form_{pFormGuid}_Plates");
@@ -2824,7 +2824,7 @@ namespace nsCDEngine.Engines.NMIService
                 if (tBase == null) return new cdeConcurrentDictionary<string, TheMetaDataBase>();
                 ThePluginInfo tInfo = tBase.GetPluginInfo();
 
-                string homeUrl = TheBaseAssets.MyServiceHostInfo.SiteName + "/" + tInfo.ServiceName;
+                string homeUrl = $"{TheBaseAssets.MyServiceHostInfo.SiteName}/{tInfo.ServiceName}";
                 if (!string.IsNullOrEmpty(tInfo.HomeUrl))
                     homeUrl = tInfo.HomeUrl;
 
@@ -2857,7 +2857,8 @@ namespace nsCDEngine.Engines.NMIService
                 TheDashPanelInfo tAboutDPInfo = AddFormToThingUX(pDash, pBaseThing, tAboutForm, "CMyForm", tTitle, 1000, 0x0B, 0, pCate ?? ".###Status###", null, new ThePropertyBag() { $"SubTitle={TheCommonUtils.GetMyNodeName()}", "TileThumbnail=FA3:F05a", "TileWidth=2", "TileHeight=2", "ClassName=cde1PM cdeGlassButton", "Background=grey", "Foreground=white" });
                 tFld["DashIcon"] = tAboutDPInfo;
 
-                TheFieldInfo tInfoButInStatus = AddSmartControl(pBaseThing, GetFormById(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID), eFieldType.TileButton, StatusFldOrder += 10, 2, 0, null, null,
+                StatusFldOrder += 10;
+                TheFieldInfo tInfoButInStatus = AddSmartControl(pBaseThing, GetFormById(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID), eFieldType.TileButton, StatusFldOrder, 2, 0, null, null,
                     new nmiCtrlTileButton { OnClick = $"TTS:{tAboutForm.cdeMID}", Thumbnail="FA5:f05a",Caption= tTitle, TileHeight = 2, TileWidth = 2, Foreground = "white", Background = "gray", ClassName = "cdeGlassButton" });
                 tFld["InfoButton"] = tInfoButInStatus;
 
@@ -3596,7 +3597,7 @@ namespace nsCDEngine.Engines.NMIService
         public static TSM LocNMI(int LCID, TSM pOrg)
         {
             if (pOrg == null || string.IsNullOrEmpty(pOrg.PLS) || !pOrg.PLS.StartsWith("###")) return pOrg;
-            pOrg.PLS = TheBaseAssets.MyLoc.GetLocalizedStringByKey(LCID, pOrg?.ENG == null ? "cdeEngine" : pOrg.ENG, pOrg.PLS);
+            pOrg.PLS = TheBaseAssets.MyLoc.GetLocalizedStringByKey(LCID, pOrg.ENG == null ? "cdeEngine" : pOrg.ENG, pOrg.PLS);
             return pOrg;
         }
         /// <summary>

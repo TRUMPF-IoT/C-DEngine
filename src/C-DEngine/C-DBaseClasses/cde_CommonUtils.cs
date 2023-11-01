@@ -2280,16 +2280,9 @@ namespace nsCDEngine.BaseClasses
         /// <typeparam name="T">Type of the completed task to return.</typeparam>
         /// <param name="result">Result for the completed task.</param>
         /// <returns>Completed task with Task.Result == result.</returns>
-        public static System.Threading.Tasks.Task<T> TaskFromResult<T>(T result)
+        public static Task<T> TaskFromResult<T>(T result)
         {
-#if !(CDE_NET35 || CDE_NET4)
-            return System.Threading.Tasks.Task.FromResult<T>(result);
-#elif CDE_NET35
-            // No Task.Delay in Net4: Use Async Target package (Microsoft.Bcl.Async)
-            return System.Threading.Tasks.TaskEx.FromResult<T>(result);;
-#else
-            return System.Threading.Tasks.Task.Factory.StartNew( () => result );
-#endif
+            return Task.FromResult<T>(result);
         }
 
         /// <summary>
@@ -2299,13 +2292,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A task.</returns>
         public static Task TaskFromException(Exception e)
         {
-#if !(CDE_NET35 || CDE_NET4 || CDE_NET45)
             return Task.FromException(e);
-#else
-            var taskCS = new TaskCompletionSource<bool>();
-            taskCS.SetException(e);
-            return taskCS.Task;
-#endif
         }
 
 

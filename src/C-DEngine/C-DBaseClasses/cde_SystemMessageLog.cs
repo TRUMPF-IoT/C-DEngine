@@ -588,11 +588,7 @@ namespace nsCDEngine.BaseClasses
                         version = "1.1",
                         host = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false),
                         level = (int)MyText?.LVL,
-#if CDE_NET45 || CDE_NET4 || CDE_NET35
-                                        timestamp = TheCommonUtils.CDbl($"{(MyText.TIM.Subtract(new DateTime(1970, 1, 1))).TotalSeconds}.{MyText.TIM.Millisecond}"),
-#else
                         timestamp = TheCommonUtils.CDbl($"{MyText.TIM.ToUnixTimeSeconds()}.{MyText.TIM.Millisecond}"),
-#endif
                         full_message = TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog ? TheCommonUtils.cdeStripHTML(MyText?.PLS) : MyText?.PLS,
                         short_message = TheBaseAssets.MyServiceHostInfo.ShowMarkupInLog? TheCommonUtils.cdeStripHTML(MyText?.TXT):MyText?.TXT,
                         _serial_no = tLogSerial,

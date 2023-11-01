@@ -78,10 +78,6 @@ namespace nsCDEngine.Engines.StorageService
     /// <typeparam name="T"></typeparam>
     public class TheStorageMirror<T> : IDisposable where T : TheDataBase, INotifyPropertyChanged, new()
     {
-#pragma warning disable 67
-        //[Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later Version")]
-        //public event PropertyChangedEventHandler PropertyChanged;
-#pragma warning restore 67
         /// <summary>
         /// Identifies a response from a store after a query or other operation (read, write, update, delete, etc.) has been executed.
         /// </summary>
@@ -437,7 +433,7 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         try
                         {
-                            newHealthTimer?.Dispose();
+                            newHealthTimer.Dispose();
                         }
                         catch 
                         { 
@@ -449,7 +445,7 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     try
                     {
-                        mMyHealthTimer?.Change(0, expireTimer);
+                        mMyHealthTimer.Change(0, expireTimer);
                     }
                     catch 
                     {
@@ -1692,7 +1688,7 @@ namespace nsCDEngine.Engines.StorageService
                                 if (reccnt < tRecords.Count)
                                 {
                                     int fact = (tRecords.Count / reccnt) + 1;
-                                    tResponse.MyRecords = "cdeCTIM desc".Equals(SQLOrder) ? tRecords.OrderByDescending(s => s.cdeCTIM).Where((x, i) => i % fact == 0).ToList() : tRecords.Where((x, i) => i % fact == 0).ToList();
+                                    tResponse.MyRecords = "cdeCTIM desc".Equals(SQLOrder) ? tRecords.Where((x, i) => i % fact == 0).OrderByDescending(s => s.cdeCTIM).ToList() : tRecords.Where((x, i) => i % fact == 0).ToList();
                                 }
                                 else
                                 {
@@ -2008,7 +2004,6 @@ namespace nsCDEngine.Engines.StorageService
             }
             else
             {
-                var tRec2 = tRec;
                 Task<TheDataRetrievalRecord> tTask = RetrieveEdgeStorageProperties(tRec);
                 if (tTask != null)
                 {
@@ -2018,7 +2013,7 @@ namespace nsCDEngine.Engines.StorageService
                 if (tRec == null)
                 {
                     tResponse.HasErrors = true;
-                    tResponse.ErrorMsg = $"EdgeStore Properties could not be retrieved for {tRec2?.UID}";
+                    tResponse.ErrorMsg = $"EdgeStore Properties could not be retrieved";
                 }
                 else
                 {
@@ -2051,7 +2046,9 @@ namespace nsCDEngine.Engines.StorageService
         {
             if (typeof(T).Equals(typeof(TheThingStore)) && pRec!=null)
             {
+#pragma warning disable S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
                 List<TFD> pbDefinitions = pRec.FLDs.Where(fld => !typeof(TheThingStore).GetProperties().Any(prop => prop.Name.Equals(fld.N)) && !TheStorageUtilities.defaultRows.Contains(fld.N)).ToList();
+#pragma warning restore S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
                 Dictionary<string, object> PB = new ();
                 foreach (TFD tDef in pbDefinitions)
                 {
@@ -2064,7 +2061,7 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         PB[tfd.N] = TheStorageUtilities.GetValueByCol(record, tfd.C);
                     }
-                    record.RemoveAll(val => pbDefinitions.Any(def => TheCommonUtils.CInt(val.Substring(0, 3)).Equals(def.C)));
+                    record.RemoveAll(val => pbDefinitions.Exists(def => TheCommonUtils.CInt(val.Substring(0, 3)).Equals(def.C)));
                     int LastColumn = TheCommonUtils.CInt(record[record.Count - 1].Substring(0, 3));
                     record.Add(string.Format("{0:000}{1}", LastColumn + 1, TheCommonUtils.SerializeObjectToJSONString(PB)));
                 }
@@ -2205,7 +2202,7 @@ namespace nsCDEngine.Engines.StorageService
                                 if (tP != null && tP.GetValue(tNewItem, null) != tP.GetValue(tToUpdate, null) && tP.CanWrite)
                                 {
                                     if (TheBaseAssets.MyServiceHostInfo.AuditNMIChanges)
-                                        AuditLog.Append($"{tI.Name}:({tI.GetValue(tNewItem)})-({tI.GetValue(tToUpdate)}) ");
+                                        AuditLog.Append($"{tI?.Name}:({tI.GetValue(tNewItem)})-({tI.GetValue(tToUpdate)}) ");
                                     tP.SetValue(tToUpdate, tP.GetValue(tNewItem, null), null);
                                     FoundOne = true;
                                 }
@@ -2319,8 +2316,10 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     if (IsFirst)
                     {
+#pragma warning disable S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
                         if (!tProps.Any(s => s.Name == pName)) return "";
                         if (!string.IsNullOrEmpty(pItem) && !tProps.Any(s => s.Name == pItem)) return "";
+#pragma warning restore S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
                     }
                     tStr.Append(tProps.First(s => s.Name == pName).GetValue(item, null));
                     if (!string.IsNullOrEmpty(pItem))
@@ -2669,7 +2668,9 @@ namespace nsCDEngine.Engines.StorageService
                                     var allProps = theThing.GetAllProperties();
                                     foreach (var pR in allProps)
                                     {
+#pragma warning disable S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
                                         if (tJSON?.FieldInfo?.Any(fi => fi.DataItem?.Contains(pR.Name) == true) == true && TheCommonUtils.CStr(pR.GetValue()).IndexOf(tSqlParts[1], StringComparison.OrdinalIgnoreCase) >= 0)
+#pragma warning restore S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
                                             return true;
                                     }
                                     return false;
@@ -2783,7 +2784,7 @@ namespace nsCDEngine.Engines.StorageService
                 }
 
                 string tColumns = "";
-                if (tChartDef?.ValueDefinitions?.Count > 0)
+                if (tChartDef.ValueDefinitions?.Count > 0)
                 {
                     foreach (var tValDef in tChartDef.ValueDefinitions)
                     {
@@ -2822,7 +2823,7 @@ namespace nsCDEngine.Engines.StorageService
 
             if (tCookie.ChartFactory == null)
             {
-                if (!string.IsNullOrEmpty(tCookie?.ChartDefinition?.IChartFactoryType))
+                if (!string.IsNullOrEmpty(tCookie.ChartDefinition?.IChartFactoryType))
                 {
                     try
                     {
@@ -2842,9 +2843,9 @@ namespace nsCDEngine.Engines.StorageService
             {
                 if (tCookie.ValueDefinitions != null)
                 {
-                    foreach (TheChartValueDefinition tVal in tCookie.ValueDefinitions)
+                    foreach (var tValName in tCookie.ValueDefinitions.Select(s=>s.ValueName))
                     {
-                        tCookie.ChartFactory.AddPointToSeries(tVal.ValueName,null, TheCommonUtils.CDbl(TheCommonUtils.GetPropValue(tRec, tVal?.ValueName)));
+                        tCookie.ChartFactory.AddPointToSeries(tValName,null, TheCommonUtils.CDbl(TheCommonUtils.GetPropValue(tRec, tValName)));
                     }
                 }
                 else
@@ -2905,7 +2906,7 @@ namespace nsCDEngine.Engines.StorageService
                 if (tCookie.ChartDefinition.IntervalInMS == 0 || tt.cdeCTIM.Subtract(tLastStamp).TotalMilliseconds > tCookie.ChartDefinition.IntervalInMS)
                 {
                     if (tChart != null)
-                        UpdateChart(tCookie, tChart, (tChart.TimeStamp.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
+                        UpdateChart(tCookie, tChart, (tChart.TimeStamp.Subtract(DateTimeOffset.FromUnixTimeMilliseconds(0)).ToString()));
                     tLastStamp = tt.cdeCTIM;
                     tChart = new TheChartData(tCookie.ValueDefinitions.Count) {BlockNo = tRes.PageNumber};
                     if (tRes.PageNumber > tCookie.HighestBlock) tCookie.HighestBlock = tRes.PageNumber;
@@ -2939,7 +2940,7 @@ namespace nsCDEngine.Engines.StorageService
                 }
             }
             if (tChart != null)
-                UpdateChart(tCookie, tChart, (tChart.TimeStamp.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
+                UpdateChart(tCookie, tChart, (tChart.TimeStamp.Subtract(DateTimeOffset.FromUnixTimeSeconds(0)).ToString()));
             SendChartData(tCookie);
         }
 

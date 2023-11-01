@@ -27,7 +27,9 @@ namespace nsCDEngine.Engines.ThingService
     /// Default Pin Names - Derive to add new Pin Types. 
     /// PREVIEW: This API might still change until it is finalized
     /// </summary>
+#pragma warning disable S1118 // Utility classes should not have public constructors
     public class ePinTypeName
+#pragma warning restore S1118 // Utility classes should not have public constructors
     {
         public const string Generic = "nsu=http://c-labs.com/UA/Energy;i=2001"; //OPC UA: once OPCF standardized Pins replace with Standard
     }
@@ -127,7 +129,7 @@ namespace nsCDEngine.Engines.ThingService
             return ret;
         }
 
-        private object lockPinConnection = new object();
+        private readonly object lockPinConnection = new object();
         internal bool AddPinConnection(ThePin pPin)
         {
             lock (lockPinConnection)

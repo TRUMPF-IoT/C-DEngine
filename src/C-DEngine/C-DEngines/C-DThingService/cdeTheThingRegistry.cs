@@ -324,7 +324,7 @@ namespace nsCDEngine.Engines.ThingService
                 if (tBase == null)
                 {
                     // CODE REVIEW: tBase == null can allow callers to bypass license checks, but is required for scratch things (in NMI?)
-                    TheBaseAssets.MySYSLOG.WriteToLog(13424, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, string.Format("No IBaseEngine set for {0} - {1} - {2}", tThing, tThing.EngineName, tThing.DeviceType), eMsgLevel.l2_Warning, String.Format("{0}, {1}, {2}, {3}", tThing?.cdeMID, tThing?.Address, tThing?.FriendlyName, tThing?.ID)));
+                    TheBaseAssets.MySYSLOG.WriteToLog(13424, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(eEngineName.ThingService, string.Format("No IBaseEngine set for {0} - {1} - {2}", tThing, tThing.EngineName, tThing.DeviceType), eMsgLevel.l2_Warning, String.Format("{0}, {1}, {2}, {3}", tThing.cdeMID, tThing.Address, tThing.FriendlyName, tThing.ID)));
                 }
                 else
                 {
@@ -332,13 +332,13 @@ namespace nsCDEngine.Engines.ThingService
                     {
                         if (tBase is not TheBaseEngine baseEngine)
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("No base engine found for {0} - {1} - {2}", tThing, tThing.EngineName, tThing.DeviceType), eMsgLevel.l1_Error, String.Format("{0}, {1}, {2}, {3}", tThing?.cdeMID, tThing?.Address, tThing?.FriendlyName, tThing?.ID)));
+                            TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("No base engine found for {0} - {1} - {2}", tThing, tThing.EngineName, tThing.DeviceType), eMsgLevel.l1_Error, String.Format("{0}, {1}, {2}, {3}", tThing.cdeMID, tThing.Address, tThing.FriendlyName, tThing.ID)));
                             tThingToReturn = null;
                             return;
                         }
                         if (!string.IsNullOrEmpty(tThing.EngineName) && baseEngine.GetEngineName() != tThing.EngineName)
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("Engine name mismatch found for {0} - {1} - {2}", tThing, tThing.EngineName, baseEngine.GetEngineName()), eMsgLevel.l1_Error, String.Format("{0}, {1}, {2}, {3}", tThing?.cdeMID, tThing?.Address, tThing?.FriendlyName, tThing?.ID)));
+                            TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("Engine name mismatch found for {0} - {1} - {2}", tThing, tThing.EngineName, baseEngine.GetEngineName()), eMsgLevel.l1_Error, String.Format("{0}, {1}, {2}, {3}", tThing.cdeMID, tThing.Address, tThing.FriendlyName, tThing.ID)));
                             tThingToReturn = null;
                             return;
                         }
@@ -346,15 +346,15 @@ namespace nsCDEngine.Engines.ThingService
                         // perform licensing check
                         if (!baseEngine.CheckAndAcquireLicense(tThing)) // CODE REVIEW: Should we add this to IBaseEngine? Define a better way to get at TheBaseEngine?
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("No valid license or thing entitlement for {0} - {1}", tBase.GetEngineName(), tThing.DeviceType), eMsgLevel.l1_Error, String.Format("{0}, {1}, {2}, {3}", tThing?.cdeMID, tThing?.Address, tThing?.FriendlyName, tThing?.ID)));
+                            TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("No valid license or thing entitlement for {0} - {1}", tBase.GetEngineName(), tThing.DeviceType), eMsgLevel.l1_Error, String.Format("{0}, {1}, {2}, {3}", tThing.cdeMID, tThing.Address, tThing.FriendlyName, tThing.ID)));
                             tThingToReturn = null;
                             return;
                         }
                     }
 
                     // Declare any config properties specified via the ConfigPropertyAttribute
-                    var deviceTypes = tBase?.GetDeviceTypes();
-                    var deviceTypeInfo = deviceTypes?.FirstOrDefault(dt => dt.DeviceType == tThing.DeviceType);
+                    var deviceTypes = tBase.GetDeviceTypes();
+                    var deviceTypeInfo = deviceTypes?.Find(dt => dt.DeviceType == tThing.DeviceType);
                     if (deviceTypeInfo?.ConfigProperties?.Count > 0)
                     {
                         foreach (var configProperty in deviceTypeInfo.ConfigProperties)
@@ -386,52 +386,49 @@ namespace nsCDEngine.Engines.ThingService
                 _thingByIdCache = null;
             });
 
-            if (tThingToReturn != null)
+            if (TheCDEngines.MyThingEngine != null)
             {
-                if (TheCDEngines.MyThingEngine != null)
+                try
                 {
-                    try
+                    if ((pThing.GetBaseThing()?.IsDisabled != true) && !pThing.IsInit())
                     {
-                        if ((pThing.GetBaseThing()?.IsDisabled != true) && !pThing.IsInit())
-                        {
-                            DateTime tStart = DateTime.Now;
-                            tThing.Init(); // Must call TheThing.Init() as locking is done there
-                            if (tThing.IsOnLocalNode()) //Must not be set and send back to remote node
-                                TheThing.SetSafePropertyNumber(tThing, "cdeStartupTime", Math.Round(DateTime.Now.Subtract(tStart).TotalSeconds, 2));
-                        }
-                        tBase?.FireEvent(eEngineEvents.ThingInitCalled, tThing, true);
+                        DateTimeOffset tStart = DateTimeOffset.Now;
+                        tThing.Init(); // Must call TheThing.Init() as locking is done there
+                        if (tThing.IsOnLocalNode()) //Must not be set and send back to remote node
+                            TheThing.SetSafePropertyNumber(tThing, "cdeStartupTime", Math.Round(DateTimeOffset.Now.Subtract(tStart).TotalSeconds, 2));
                     }
-                    catch (Exception e)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("ThingInit for {0} Failed", pThing), eMsgLevel.l1_Error, e.ToString()));
-                    }
+                    tBase?.FireEvent(eEngineEvents.ThingInitCalled, tThing, true);
                 }
-                if (TheNMIEngine.IsInitialized() && (pThing.GetBaseThing()?.IsDisabled != true) && !pThing.IsUXInit())
+                catch (Exception e)
                 {
-                    try
-                    {
-                        tThing.CreateUX(); // Must call through TheThing.CreateUx() because that's where locking occurs
-                    }
-                    catch (Exception e)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("ThingUXInit for {0} Failed", pThing), eMsgLevel.l1_Error, e.ToString()));
-                    }
+                    TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("ThingInit for {0} Failed", pThing), eMsgLevel.l1_Error, e.ToString()));
                 }
-                if (RegisterGlobally || (tThing.IsOnLocalNode() && TheThing.GetSafePropertyBool(tThing, "IsRegisteredGlobally")))
-                    RegisterThingGlobally(tThing);
+            }
+            if (TheNMIEngine.IsInitialized() && (pThing.GetBaseThing()?.IsDisabled != true) && !pThing.IsUXInit())
+            {
+                try
+                {
+                    tThing.CreateUX(); // Must call through TheThing.CreateUx() because that's where locking occurs
+                }
+                catch (Exception e)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, string.Format("ThingUXInit for {0} Failed", pThing), eMsgLevel.l1_Error, e.ToString()));
+                }
+            }
+            if (RegisterGlobally || (tThing.IsOnLocalNode() && TheThing.GetSafePropertyBool(tThing, "IsRegisteredGlobally")))
+                RegisterThingGlobally(tThing);
 
-                if (IsNewThing)
-                {
-                    tBase?.FireEvent(eEngineEvents.ThingRegistered, tThing, true);
+            if (IsNewThing)
+            {
+                tBase?.FireEvent(eEngineEvents.ThingRegistered, tThing, true);
 
-                    if (TheBaseAssets.MyServiceHostInfo.IsIsolated && !TheThing.GetSafePropertyBool(pThing, "IsRegisteredGlobally") && tThing.DeviceType != "IBaseEngine")
-                        RegisterThingWithMaster(tThing);
-                }
-                else
-                {
-                    TheCDEngines.MyThingEngine.FireEvent(eThingEvents.ThingUpdated, tThing, null, true);
-                    tBase?.FireEvent(eEngineEvents.ThingUpdated, tThing, true);
-                }
+                if (TheBaseAssets.MyServiceHostInfo.IsIsolated && !TheThing.GetSafePropertyBool(pThing, "IsRegisteredGlobally") && tThing.DeviceType != "IBaseEngine")
+                    RegisterThingWithMaster(tThing);
+            }
+            else
+            {
+                TheCDEngines.MyThingEngine.FireEvent(eThingEvents.ThingUpdated, tThing, null, true);
+                tBase?.FireEvent(eEngineEvents.ThingUpdated, tThing, true);
             }
             return tThingToReturn;
         }
@@ -515,7 +512,7 @@ namespace nsCDEngine.Engines.ThingService
             if (things == null || nodeId == TheBaseAssets.MyServiceHostInfo?.MyDeviceInfo?.DeviceID || TheCDEngines.MyThingEngine?.MyThingRegistry?.MyThings == null)
                 return false;
 
-            if (things.Any((t) => t.cdeN != nodeId)) // Don't take things from nodes that are not the originator: assume malicious sender and reject entire list
+            if (things.Exists((t) => t.cdeN != nodeId)) // Don't take things from nodes that are not the originator: assume malicious sender and reject entire list
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, $"Received invalid global thing list for node {nodeId}. Rejecting list.", eMsgLevel.l1_Error, ""));
                 return false;
@@ -853,17 +850,17 @@ namespace nsCDEngine.Engines.ThingService
 
                     if (!string.IsNullOrEmpty(createParams.InstanceId))
                     {
-                        ownedThing = ownedThings.FirstOrDefault(t => TheThing.GetSafePropertyString(t, eOwnerProperties.cdeOwnerInstance) == createParams.InstanceId);
+                        ownedThing = ownedThings.Find(t => TheThing.GetSafePropertyString(t, eOwnerProperties.cdeOwnerInstance) == createParams.InstanceId);
                     }
                     else
                     {
                         if (!string.IsNullOrEmpty(createParams.ID))
                         {
-                            ownedThing = ownedThings.FirstOrDefault(t => t.ID == createParams.ID);
+                            ownedThing = ownedThings.Find(t => t.ID == createParams.ID);
                         }
                         else
                         {
-                            ownedThing ??= ownedThings.FirstOrDefault(t => t.Address == createParams.Address || (string.IsNullOrEmpty(t.Address) && string.IsNullOrEmpty(createParams.Address)));
+                            ownedThing ??= ownedThings.Find(t => t.Address == createParams.Address || (string.IsNullOrEmpty(t.Address) && string.IsNullOrEmpty(createParams.Address)));
                             if (ownedThing == null)
                             {
                                 var matchingThings = GetThingsOfEngine(createParams.EngineName, true, true)
@@ -1069,7 +1066,9 @@ namespace nsCDEngine.Engines.ThingService
         {
             List<TheThing> tList = GetThingsOfEngine(pEngineName);
             if (tList == null) return false;
+#pragma warning disable S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
             return tList.Any(pSelector);
+#pragma warning restore S6605 // Collection-specific "Exists" method should be used instead of the "Any" extension
         }
 
         /// <summary>
@@ -1600,7 +1599,7 @@ namespace nsCDEngine.Engines.ThingService
             List<TheThing> tList = GetThingsOfEngine(pEngineName, allowRemoteEngine);
             var tThing = tList?.Find(s => TheThing.GetSafePropertyString(s, "ID") == pID);
             _thingByIdCache ??= new cdeConcurrentDictionary<string, TheThing>();
-            _thingByIdCache?.TryAdd(cacheKey, tThing);
+            _thingByIdCache.TryAdd(cacheKey, tThing);
             return tThing;
         }
         static cdeConcurrentDictionary<string, TheThing> _thingByIdCache;

@@ -105,13 +105,6 @@ namespace nsCDEngine.Communication.HttpService
 
                 if (mContext.Request.InputStream != null)
                 {
-#if CDE_NET4 || CDE_NET45
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        mContext.Request.InputStream.CopyTo(ms);
-                        tRequestData.PostData = ms.ToArray();
-                    }
-#else
                     byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
                     using (MemoryStream ms = new ())
                     {
@@ -122,8 +115,6 @@ namespace nsCDEngine.Communication.HttpService
                         }
                         tRequestData.PostData = ms.ToArray();
                     }
-#endif
-
                     tRequestData.PostDataLength = tRequestData.PostData.Length;
                 }
 

@@ -159,7 +159,7 @@ namespace nsCDEngine.Engines.StorageService
             if (recordsBySequenceNumber == null)
             {
                 firstSequenceNumberReturned = 0;
-                return null;
+                return new List<T>();
             }
 
             int index = GetIndexForSequenceNumber(previousSequenceNumber, out firstSequenceNumberReturned);
@@ -273,10 +273,12 @@ namespace nsCDEngine.Engines.StorageService
                     });
                 }
             });
+#pragma warning disable S2583 // Conditionally executed code should be reachable
             if (doSave && IsCachePersistent)
             {
                 SaveCacheToDisk(false, false);
             }
+#pragma warning restore S2583 // Conditionally executed code should be reachable
             if (itemsToRemove != null)
             {
                 NotifyOfUpdate(itemsToRemove);
@@ -431,11 +433,6 @@ namespace nsCDEngine.Engines.StorageService
         /// </summary>
         internal long mTotalCacheCounter;
         internal DateTimeOffset mLastStore = DateTimeOffset.MinValue;
-
-#pragma warning disable 67
-        //[Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later version.")]
-        //public event PropertyChangedEventHandler PropertyChanged;
-#pragma warning restore 67
 
         public bool BlockWriteIfIsolated
         {
@@ -640,6 +637,7 @@ namespace nsCDEngine.Engines.StorageService
             return false;
         }
 
+        private readonly object MyRecordsLock=new object();
         /// <summary>
         /// Does the load from cache.
         /// </summary>
@@ -649,7 +647,7 @@ namespace nsCDEngine.Engines.StorageService
             bool bLoaded = false;
             MyRecordsRWLock.RunUnderWriteLock(() => //LOCK-REVIEW: Here we need both locks: Write AND MyRecordsLock that no reading and Saving happens until this is done
             {
-                //lock (MyRecordsLock)                //LOCK-REVIEW: Here we need both locks: Write AND MyRecordsLock that no reading and Saving happens until this is done
+                lock (MyRecordsLock)                //LOCK-REVIEW: Here we need both locks: Write AND MyRecordsLock that no reading and Saving happens until this is done
                 {
                     // In case records are split among many files
                     List<string> filesToReturn = new ();
@@ -1418,20 +1416,6 @@ namespace nsCDEngine.Engines.StorageService
         }
 
         /// <summary>
-        /// Deletes all cache files for this MirrorCache.
-        /// Used for AppendOnly StorageMirrors that are broken up into multiple files.
-        /// </summary>
-        private void DeleteAllCacheFiles()
-        {
-            string directoryPath = TheCommonUtils.cdeFixupFileName(cacheFileFolder, true);
-            string[] files = Directory.GetFiles(directoryPath, $"{MyStoreID.Replace('&', 'n')}*");
-            foreach (string file in files)
-            {
-                File.Delete(file);
-            }
-        }
-
-        /// <summary>
         /// Flushes the cache.
         /// </summary>
         /// <param name="BackupFirst">if set to <c>true</c> backup the existing cache first.</param>
@@ -1749,13 +1733,13 @@ namespace nsCDEngine.Engines.StorageService
         {
             if (pDetails?.Count > 0)
             {
-                MyRecordsRWLock.RunUnderWriteLock(() => // lock (MyRecordsLock)
+                MyRecordsRWLock.RunUnderWriteLock(() => 
                 {
-                    foreach (T detail in pDetails)
+                    foreach (var detailMID in pDetails.Select(s=>s.cdeMID))
                     {
-                        if (detail.cdeMID != Guid.Empty)
+                        if (detailMID != Guid.Empty)
                         {
-                            TryRemoveItemInternal(detail.cdeMID.ToString(), out _);
+                            TryRemoveItemInternal(detailMID.ToString(), out _);
                         }
                     }
                 });
@@ -1841,7 +1825,7 @@ namespace nsCDEngine.Engines.StorageService
         public void AddOrUpdateItemKey(string pStrKey, T pDetails, Action<T> CallBack)
         {
             bool success = false;
-            MyRecordsRWLock.RunUnderWriteLock(() =>  //  lock (MyRecordsLock)
+            MyRecordsRWLock.RunUnderWriteLock(() =>  
             {
                 success = TryUpdateItemInternal(pStrKey, pDetails);
                 if (!success)
@@ -1849,6 +1833,7 @@ namespace nsCDEngine.Engines.StorageService
                     success = DoAddItem(pStrKey, pDetails, true);
                 }
             });
+#pragma warning disable S2583 // Conditionally executed code should be reachable
             if (success)
             {
                 if (IsCachePersistent)
@@ -1856,6 +1841,7 @@ namespace nsCDEngine.Engines.StorageService
                 CallBack?.Invoke(pDetails);
                 NotifyOfUpdate(new List<T> { pDetails });
             }
+#pragma warning restore S2583 // Conditionally executed code should be reachable
         }
 
 
@@ -2055,7 +2041,7 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         foreach (var s in tList)
                         {
-                            eventRecordExpired?.Invoke(s.Value);
+                            eventRecordExpired.Invoke(s.Value);
                         }
                     }
                     TheCommonUtils.cdeRunAsync("ExpireRecords", true, (o) => RemoveItemsByKeyList(tList.Select(x => x.Key).ToList(), null));
@@ -2118,30 +2104,6 @@ namespace nsCDEngine.Engines.StorageService
             if (IsCachePersistent)
                 SaveCacheToDisk(false, true);
         }
-
-        ///// <summary>
-        ///// Gets the first item.
-        ///// </summary>
-        ///// <param name="key">The key.</param>
-        ///// <returns>T.</returns>
-        //[Obsolete("There is no notion of a first item in a storage mirror cache.")]
-        //public T GetFirstItem(out Guid key)
-        //{
-        //    //CODE-REVIEW: This function assumes that the key is a GUID which is NOT garanteed!
-        //    T tRes = default;
-        //    var keyLocal = Guid.Empty;
-        //    MyRecordsRWLock.RunUnderReadLock(() =>
-        //    {
-        //        if (MyRecords.Values.Any())
-        //        {
-        //            var t = MyRecords.First();
-        //            tRes = t.Value;
-        //            keyLocal = TheCommonUtils.CGuid(t.Key);
-        //        }
-        //    });
-        //    key = keyLocal;
-        //    return tRes;
-        //}
 
         /// <summary>
         /// Gets the entry by identifier.
@@ -2388,7 +2350,6 @@ namespace nsCDEngine.Engines.StorageService
 
     internal class TheMirrorCacheReaderWriterLock<T> : IReaderWriterLock where T : TheDataBase, INotifyPropertyChanged, new()
     {
-        public static readonly TimeSpan defaultTimeout = new (0, 0, 30);
         readonly ReaderWriterLockSlim _rwLock;
         readonly TheMirrorCache<T> _cache;
         TimeSpan _timeout;
@@ -2398,7 +2359,7 @@ namespace nsCDEngine.Engines.StorageService
         {
             _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
             _cache = cache;
-            _timeout = defaultTimeout;
+            _timeout = new(0, 0, 30);
             DoLog = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableReaderWriterLockLog"));
             Log("Created RWLock");
         }
@@ -2542,11 +2503,13 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return false;
             }
+#pragma warning disable S2222 // Locks should be released on all paths
             if (_rwLock.TryEnterUpgradeableReadLock(0)) //NOSONAR There is no code here that could throw, so no need to add a try/finally around the ExitUpgradeableReadLock call
             {
                 _rwLock.ExitUpgradeableReadLock();
                 return false;
             }
+#pragma warning restore S2222 // Locks should be released on all paths
             return true;
         }
         public bool IsWriteLocked()
@@ -2555,11 +2518,13 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return false; // This thread is holding the write lock
             }
+#pragma warning disable S2222 // Locks should be released on all paths
             if (_rwLock.TryEnterWriteLock(0))  //NOSONAR There is no code here that could throw, so no need to add a try/finally around the ExitWriteLock call
             {
                 _rwLock.ExitWriteLock();
                 return false;
             }
+#pragma warning restore S2222 // Locks should be released on all paths
             return true;
         }
     }
