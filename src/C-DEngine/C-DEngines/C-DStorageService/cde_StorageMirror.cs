@@ -1014,7 +1014,6 @@ namespace nsCDEngine.Engines.StorageService
                 }
                 return;
             }
-            //lock (MyMirrorCache.MyRecordsLock) //LOCK-REVIEW: There is a deeper lock in MirrorCache.RemoveAnItemByID...is this lock really necessary?
             if (!IsRAMStore || IsCached)
             {
                 string Magix = "";

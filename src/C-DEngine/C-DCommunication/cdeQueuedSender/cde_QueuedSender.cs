@@ -1215,7 +1215,6 @@ namespace nsCDEngine.Communication
                         {
                             bool bExit = false;
                             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
-                            //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: This is a logic lock. Consitency of the queue has to be maintained here but only between this function and the GetNextMessage function
                             {
                                 if (TheCDEKPIs.EnableKpis)
                                 {
@@ -1263,7 +1262,6 @@ namespace nsCDEngine.Communication
                         {
                             bool bExit = false;
                             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
-                            //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: This is a logic lock. Consitency of the queue has to be maintained here but only between this function and the GetNextMessage function
                             {
                                 if (TheCDEKPIs.EnableKpis)
                                 {
@@ -1467,7 +1465,6 @@ namespace nsCDEngine.Communication
             TheCoreQueueContent tMsg = null;
             int pQCountRet = 0;
             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
-            //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: Must remain main lock - this is a Logic Lock - not a database lock
             {
                 var tQKV = MyCoreQueue.MyRecords.GetDynamicEnumerable(); // MH: .Values; also too expensive - makes a copy //.TheValues.ToList();  //CM: To expensive: Lock already on the block
                 if (tQKV.Any())
