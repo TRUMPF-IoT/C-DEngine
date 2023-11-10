@@ -884,7 +884,7 @@ namespace nsCDEngine.ISM
                         foreach (var told in OldCDEX)
                         {
                             var tOP = Path.GetFileName(told).Split(' ');
-                            if (!tList.Any(s => Path.GetFileName(s).Split(' ')[0] == tOP[0]))
+                            if (!tList.Exists(s => Path.GetFileName(s).Split(' ')[0] == tOP[0]))
                             {
                                 tList.Add(told);
                             }
@@ -1168,7 +1168,7 @@ namespace nsCDEngine.ISM
                 var tFounds = FoundUpdatesToPluginInfo();
                 foreach (var tF in tFounds)
                 {
-                    var tP = mList.FirstOrDefault(s => CompareServiceNames(s.ServiceName, tF.ServiceName));
+                    var tP = mList.Find(s => CompareServiceNames(s.ServiceName, tF.ServiceName));
                     if (tP != null)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(4010, new TSM(eEngineName.ContentService, $"Found updated plugin {tF.ServiceName} with Version {tF.CurrentVersion} higher then installed {tP.CurrentVersion}", eMsgLevel.l3_ImportantMessage));
@@ -1216,7 +1216,8 @@ namespace nsCDEngine.ISM
             MyRoute.RegisterEvent2("TSMReceived", sinkTSMReceived);
             MyRoute.RegisterEvent2("Connected", sinkConnected);
             MyRoute.RegisterEvent2("Disconnected", sinkDisconnected);
-            MyRoute.Connect(TheBaseAssets.MyServiceHostInfo.ProvisioningService, TheBaseAssets.MyServiceHostInfo.ProvisioningScope, true);
+            var ret=MyRoute.Connect(TheBaseAssets.MyServiceHostInfo.ProvisioningService, TheBaseAssets.MyServiceHostInfo.ProvisioningScope, true);
+            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ISMManager", $"Connection to Provision Service {(string.IsNullOrEmpty(ret)? "created" : $"failed: {ret}")}.", eMsgLevel.l3_ImportantMessage));
             return true;
         }
 
@@ -1255,15 +1256,18 @@ namespace nsCDEngine.ISM
             return TheBaseAssets.MyApplication?.MyISMRoot?.SendToProSe(pToSend) == true;
         }
 
+        bool IsReconnecting = false;
         private void sinkDisconnected(TheProcessMessage pMsg, object sender)
         {
             MyRoute = null;
-            if (TheBaseAssets.MasterSwitch)
+            if (TheBaseAssets.MasterSwitch && !IsReconnecting)
             {
+                IsReconnecting = true;
                 TheCommonUtils.TaskDelayOneEye(10000, 100).ContinueWith(t =>
                 {
                     if (TheBaseAssets.MasterSwitch)
                         ConnectToProvisioningService();
+                    IsReconnecting = false;
                 });
             }
         }
@@ -1275,7 +1279,7 @@ namespace nsCDEngine.ISM
 
         private void sinkTSMReceived(TheProcessMessage pMsg, object sender)
         {
-            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("ISMManager", $"Provisioning Message Received ENG={pMsg?.Message?.ENG} TXT={pMsg?.Message?.TXT}", eMsgLevel.l5_HostMessage));
+            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ISMManager", $"Provisioning Message Received ENG={pMsg?.Message?.ENG} TXT={pMsg?.Message?.TXT}", eMsgLevel.l5_HostMessage));
             if (pMsg?.Message?.ENG == eEngineName.ContentService)
             {
                 var tCmd = pMsg?.Message?.TXT?.Split(':');
@@ -1283,7 +1287,6 @@ namespace nsCDEngine.ISM
                 {
                     switch (tCmd[0])
                     {
-                        //Any setting that must only go via ISM Provisioning sErvice
                         default:
                             if (TheCDEngines.MyContentEngine == null)
                                 TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("ISMManager", $"ContentService Not ready! This should not happen!", eMsgLevel.l2_Warning));

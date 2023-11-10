@@ -1047,7 +1047,7 @@ namespace nsCDEngine.Engines
                         }
                         break;
                     case "CDE_PING":
-                        TheCommCore.PublishToOriginator(pMessage.Message, new TSM(GetEngineName(), $"CDE_PONG{(Command.Length>1?$":{Command[1]}":"")}",$"{pMessage.Message?.PLS}:{MyBaseThing?.GetBaseThing()?.LastMessage}"),true);
+                        TheCommCore.PublishToOriginator(pMessage.Message, new TSM(GetEngineName(), $"CDE_PONG{(Command.Length > 1 ? $":{Command[1]}" : "")}", $"{pMessage.Message?.PLS}:{TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID}:{TheBaseAssets.MySettings.GetSetting("ProseNodeID")}:{MyBaseThing?.GetBaseThing()?.LastMessage}"),true);
                         break;
                     case "CDE_UPDPUSH":
                     case "CDE_FILEPUSH":

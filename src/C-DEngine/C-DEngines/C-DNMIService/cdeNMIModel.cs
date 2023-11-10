@@ -3177,16 +3177,16 @@ namespace nsCDEngine.Engines.NMIService
             {
                 string toInser = pName.Trim() + Seperator;
                 string retStr = "";
-                if (!AllowDuplicates && (retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
-                {
-                    pQ.Remove(retStr);
-                    if (pQ._FastCache != null)
-                        pQ._FastCache.TryRemove(pName.Trim(), out string tOldValue);
-                }
-                else
-                    WasInserted = true;
                 try
                 {
+                    if (!AllowDuplicates && (retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
+                    {
+                        pQ.Remove(retStr);
+                        if (pQ._FastCache != null)
+                            pQ._FastCache?.TryRemove(pName.Trim(), out string tOldValue);
+                    }
+                    else
+                        WasInserted = true;
                     pQ.Add(toInser + TheCommonUtils.GenerateFinalStr(pValue));
                     if (pQ._FastCache != null)
                         pQ._FastCache.TryAdd(pName.Trim(), TheCommonUtils.GenerateFinalStr(pValue));

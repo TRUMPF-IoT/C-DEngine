@@ -383,7 +383,6 @@ namespace nsCDEngine.Engines.ThingService
             {
                 pUXFlds["PropTableGroup"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
                 pUXFlds["PropTable"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.Table, 10010, 8, 0x80, null, "mypropertybag", new nmiCtrlTableView() { TileWidth = 12, TileHeight = 7, NoTE = true, ParentFld = 10000, ShowFilterField = true });
-                //                NMI.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 10010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
             }
             return true;
         }
@@ -442,7 +441,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 foreach (var t in MyGroupThings.Values)
                 {
-                    t?.ShowDeviceFace(MyGroupForm, 0, 0);
+                    t?.AddDeviceFace(MyGroupForm, 0, 0);
                 }
             }
         }
@@ -515,15 +514,12 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     foreach (var firstPinType in firstPin.CanConnectToPinType)
                     {
-                        if (secondPin.CanConnectToPinType.Contains(firstPinType))
-                        {
-                            if (firstPin.IsInbound != secondPin.IsInbound &&
+                        if (secondPin.CanConnectToPinType.Contains(firstPinType) && firstPin.IsInbound != secondPin.IsInbound &&
                                 (firstPin.MaxConnections == 0 || firstPin.PinConnectionCnt() < firstPin.MaxConnections) &&
                                 (secondPin.MaxConnections == 0 || secondPin.PinConnectionCnt() < secondPin.MaxConnections))
-                            {
-                                firstPin.CompatiblePins.Add(secondPin);
-                                ret.Add(secondPin);
-                            }
+                        {
+                            firstPin.CompatiblePins.Add(secondPin);
+                            ret.Add(secondPin);
                         }
                     }
                 }

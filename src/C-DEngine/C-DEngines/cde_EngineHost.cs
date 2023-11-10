@@ -703,8 +703,10 @@ namespace nsCDEngine.Engines
         /// <returns>Return TheBaseEngine of the new Topic</returns>
         public static TheBaseEngine RegisterPubSubTopic(string pTopicName)
         {
-            if (string.IsNullOrEmpty(pTopicName) || TheThingRegistry.IsEngineStarted(pTopicName, false))
+            if (string.IsNullOrEmpty(pTopicName))
                 return null;
+            if (TheThingRegistry.IsEngineStarted(pTopicName, false))
+                return TheThingRegistry.GetBaseEngine(pTopicName)?.GetBaseEngine();
             if (TheBaseAssets.MyServiceHostInfo.RelayEngines.Contains(pTopicName)) return null;
             TheBaseAssets.MyServiceHostInfo.RelayEngines.Add(pTopicName);
             var tRes = InitMiniRelay(pTopicName, false);

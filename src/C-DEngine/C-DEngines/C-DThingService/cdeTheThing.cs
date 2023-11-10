@@ -326,6 +326,21 @@ namespace nsCDEngine.Engines.ThingService
         #endregion
 
         #region NMI FacePlates for Group-Screens
+        public virtual int AddDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, ThePropertyBag pProperties = null)
+        {
+            if (!IsUXInit())
+            {
+                if (!MyBaseThing.IsDisabled && !HasRegisteredEvents(eUXEvents.OnUXCreated))
+                {
+                    RegisterEvent(eUXEvents.OnUXCreated, (sender, obj) =>
+                    {
+                        ShowDeviceFace(MyLiveForm, pLeft, pTop, pProperties);
+                    });
+                }
+                return -1;
+            }
+            return ShowDeviceFace(MyLiveForm, pLeft, pTop, pProperties);
+        }
         /// <summary>
         /// Shows the Device Faceplate that can be used in Group Screens
         /// THIS IS IN PREVIEW - API Can Change - use with caution!
@@ -335,7 +350,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
         /// <param name="pProperties">Set Properties on the DeviceFace</param>
         /// <returns></returns>
-        public virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, ThePropertyBag pProperties=null)
+        protected virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, ThePropertyBag pProperties=null)
         {
             if (MyNMIFaceModel == null)
             {
@@ -484,19 +499,22 @@ namespace nsCDEngine.Engines.ThingService
             set { TT.MemberSetSafePropertyBool(MyBaseThing, value); }
         }
 
-        public virtual Dictionary<string, TheFieldInfo> AddNMILog(TT pBaseThing, TheFormInfo pMyForm, int StartFld, int ParentFld,string pTitle=null, int pWidth = 6, int pHeight = 5)
+        public virtual Dictionary<string, TheFieldInfo> AddNMILog(TT pBaseThing, TheFormInfo pMyForm, int StartFld, int ParentFld, string pTitle = null, int pWidth = 6, int pHeight = 5, bool EnableOnStartup = false)
         {
-            var tFlds=new Dictionary<string, TheFieldInfo>();
-            SetProperty("NMILog", "Log Ready!");
-            EnableNMILog = false;
-            ClearNMILog();
-            tFlds["Group"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.CollapsibleGroup, StartFld, 2, 0,string.IsNullOrEmpty(pTitle)? "Debug Info":pTitle, null, new nmiCtrlCollapsibleGroup { ParentFld = ParentFld, TileWidth = pWidth, DoClose = true, IsSmall = true });
-            tFlds["Check"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.SingleCheck, StartFld + 10, 2, 0, "Enable Log", nameof(EnableNMILog), new nmiCtrlSingleCheck { ParentFld = StartFld, TileWidth = 3 });
-            tFlds["ClearButton"]= NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileButton, StartFld + 20, 2, 0, "Clear Log", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 3, ParentFld = StartFld });
-            tFlds["ClearButton"].RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "clear", (a, b) => {
+            var tFlds = new Dictionary<string, TheFieldInfo>();
+            if (!EnableOnStartup)
+            {
+                EnableNMILog = false;
+                ClearNMILog();
+            }
+            tFlds["Group"] = NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.CollapsibleGroup, StartFld, 2, 0, string.IsNullOrEmpty(pTitle) ? "Debug Info" : pTitle, null, new nmiCtrlCollapsibleGroup { ParentFld = ParentFld, TileWidth = pWidth, DoClose = true, IsSmall = true });
+            tFlds["Check"] = NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.SingleCheck, StartFld + 10, 2, 0, "Enable Log", nameof(EnableNMILog), new nmiCtrlSingleCheck { ParentFld = StartFld, TileWidth = 3 });
+            tFlds["ClearButton"] = NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileButton, StartFld + 20, 2, 0, "Clear Log", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 3, ParentFld = StartFld });
+            tFlds["ClearButton"].RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "clear", (a, b) =>
+            {
                 ClearNMILog();
             });
-            tFlds["NMILog"]=NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TextArea, StartFld + 30, 0, 0, "Log", "NMILog", new nmiCtrlTextArea { ParentFld = StartFld, NoTE = true, TileHeight = pHeight, TileWidth = pWidth });
+            tFlds["NMILog"] = NMI.AddSmartControl(pBaseThing, pMyForm, eFieldType.TextArea, StartFld + 30, 0, 0, "Log", "NMILog", new nmiCtrlTextArea { ParentFld = StartFld, NoTE = true, TileHeight = pHeight, TileWidth = pWidth });
             return tFlds;
         }
 

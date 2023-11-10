@@ -227,7 +227,8 @@ namespace nsCDEngine.ISM
                 tSettings["MyDeviceInfo"] = CU.SerializeObjectToJSONString(TheBaseAssets.MyServiceHostInfo.MyDeviceInfo);
                 if (tSettings.ContainsKey("FederationID") || !string.IsNullOrEmpty(TheBaseAssets.MyScopeManager?.FederationID))
                     tSettings["FederationID"] = TheBaseAssets.MyScopeManager?.FederationID;
-
+                if (MyPrivateSettings.Keys.Contains("ProseNodeID") && tSettings.Keys.Contains("ProseNodeID") && MyPrivateSettings["ProseNodeID"].Value != tSettings["ProseNodeID"])
+                    tSettings["ProseNodeID"] = MyPrivateSettings["ProseNodeID"].Value; //Required to identify Node in MeshManager if the Node was not commissioned by the MeshManager
                 //Step 3: copy all locally stored settings to the Private Settings cache
                 tSettings.ToList().ForEach(x => MyPrivateSettings[x.Key] = MyPrivateSettings.ContainsKey(x.Key) ?
                         new aCDESetting
@@ -666,75 +667,79 @@ namespace nsCDEngine.ISM
                     SetDeviceInfo();
 
                 var ProSeUrl = GetArgOrEnv(CmdArgs, "ProvisioningService");
-                if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.NodeToken) && !string.IsNullOrEmpty(ProSeUrl) && !CU.CBool(TheBaseAssets.MySettings.GetSetting("HasContactedProSe", new Guid("{03EE660D-1C90-4D17-891D-47932E06E5B4}"))))
+                if (!CU.CBool(TheBaseAssets.MySettings.GetSetting("HasContactedProSe", new Guid("{03EE660D-1C90-4D17-891D-47932E06E5B4}"))))
                 {
-                    TheBaseAssets.IsInAgentStartup = true;
-                    bool Success = false;
-                    while (!Success)
+                    if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.NodeToken) && !string.IsNullOrEmpty(ProSeUrl))
                     {
-                        string error = "";
-                        TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Contacting Provisioning Service ({ProSeUrl}) ...", eMsgLevel.l3_ImportantMessage));
-                        var task = GetProvisioningInfo(ProSeUrl, TheBaseAssets.MyServiceHostInfo.NodeToken);
-                        if (task.Wait(16000) && task.Status == TaskStatus.RanToCompletion)
+                        TheBaseAssets.IsInAgentStartup = true;
+                        bool Success = false;
+                        while (!Success)
                         {
-                            if (string.IsNullOrEmpty(task.Result))
+                            string error = "";
+                            var task = GetProvisioningInfo(ProSeUrl, TheBaseAssets.MyServiceHostInfo.NodeToken);
+                            if (task.Wait(16000) && task.Status == TaskStatus.RanToCompletion)
                             {
-                                Success = true;
+                                if (string.IsNullOrEmpty(task.Result))
+                                {
+                                    Success = true;
+                                }
+                                else
+                                {
+                                    error = task.Result;
+                                    Success = false;
+                                }
                             }
                             else
                             {
-                                error = task.Result;
                                 Success = false;
+                                error = "Timeout";
                             }
-                        }
-                        else
-                        {
-                            Success = false;
-                            error = "Timeout";
-                        }
-                        //Decide what to do by default - my suggestion: (0 being the default
-                        //Option 2: just fail through...leaves the Node in a none-configured state as the node will start normally
-                        //Option 1: Wait here for a certain amount of time then repeat
-                        //Option 0: Shutdown the relay here before it writes anything to cache. Than an external "watchdog" can decide what to do next (restart or nothing)
-                        if (!Success)
-                        {
-                            switch (CU.CInt(GetArgOrEnv(CmdArgs, "ProvisioningFailureOption")))
+                            //Decide what to do by default - my suggestion: (0 being the default
+                            //Option 2: just fail through...leaves the Node in a none-configured state as the node will start normally
+                            //Option 1: Wait here for a certain amount of time then repeat
+                            //Option 0: Shutdown the relay here before it writes anything to cache. Than an external "watchdog" can decide what to do next (restart or nothing)
+                            if (!Success)
                             {
-                                case 2:
-                                    TheBaseAssets.IsInAgentStartup = false;
-                                    return true;
-                                case 1:
-                                    TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"...failed. Trying again in 15sec", eMsgLevel.l2_Warning, error));
-                                    CU.SleepOneEye(15000, 1000);
-                                    if (!TheBaseAssets.MasterSwitch)
-                                    {
+                                switch (CU.CInt(GetArgOrEnv(CmdArgs, "ProvisioningFailureOption")))
+                                {
+                                    case 2:
+                                        TheBaseAssets.IsInAgentStartup = false;
+                                        return true;
+                                    case 1:
+                                        TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"...failed. Trying again in 15sec", eMsgLevel.l2_Warning, error));
+                                        CU.SleepOneEye(15000, 1000);
+                                        if (!TheBaseAssets.MasterSwitch)
+                                        {
+                                            TheBaseAssets.MyApplication.Shutdown(false);
+                                            return false;
+                                        }
+                                        break;
+                                    default:
+                                        TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"...failed. Shutting down", eMsgLevel.l1_Error, error));
+                                        TheBaseAssets.IsInAgentStartup = false;
                                         TheBaseAssets.MyApplication.Shutdown(false);
                                         return false;
-                                    }
-                                    break;
-                                default:
-                                    TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"...failed. Shutting down", eMsgLevel.l1_Error, error));
-                                    TheBaseAssets.IsInAgentStartup = false;
-                                    TheBaseAssets.MyApplication.Shutdown(false);
-                                    return false;
+                                }
                             }
-                        }
-                        if (Success)
-                        {
-                            TheBaseAssets.MySettings.SetSetting("HasContactedProSe", "true", true, new Guid("{03EE660D-1C90-4D17-891D-47932E06E5B4}"));
-                            if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProvisioningService) && !ProSeUrl.Equals(TheBaseAssets.MyServiceHostInfo.ProvisioningService, StringComparison.OrdinalIgnoreCase))
+                            if (Success)
                             {
-                                //New in 4.203.1: allows to redirect to a different ProvService for load-balancing and geo-distribution
-                                ProSeUrl = TheBaseAssets.MyServiceHostInfo.ProvisioningService;
-                                Success = false;
+                                TheBaseAssets.MySettings.SetSetting("HasContactedProSe", "true", true, new Guid("{03EE660D-1C90-4D17-891D-47932E06E5B4}"));
+                                if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProvisioningService) && !ProSeUrl.Equals(TheBaseAssets.MyServiceHostInfo.ProvisioningService, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    //New in 4.203.1: allows to redirect to a different ProvService for load-balancing and geo-distribution
+                                    ProSeUrl = TheBaseAssets.MyServiceHostInfo.ProvisioningService;
+                                    Success = false;
+                                }
+                                else
+                                    TheBaseAssets.MyServiceHostInfo.ProvisioningService = ProSeUrl;
                             }
-                            else
-                                TheBaseAssets.MyServiceHostInfo.ProvisioningService = ProSeUrl;
                         }
+                        TheBaseAssets.IsInAgentStartup = false;
+                        return Success;
                     }
-                    TheBaseAssets.IsInAgentStartup = false;
-                    return Success;
                 }
+                else
+                    TheBaseAssets.MyServiceHostInfo.ProvisioningService = ProSeUrl;
             }
             TheBaseAssets.MyServiceHostInfo.SetProxy(GetArgOrEnv(CmdArgs, "ProxyToken"));
             if (TheBaseAssets.MyScopeManager.IsScopingEnabled)
@@ -1382,6 +1387,11 @@ namespace nsCDEngine.ISM
             try
             {
                 //step 1: Decrypt buffer and check if valid
+                if (pBuffer[0]=='{')
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service responded: {CU.CArray2UTF8String(pBuffer)}", eMsgLevel.l1_Error));
+                    return $"Provisioning Service responded With: {CU.CArray2UTF8String(pBuffer)}";
+                }
                 var tSettings = TheBaseAssets.MyCrypto.DecryptKV(pBuffer);
                 if (tSettings == null || tSettings.Count == 0 || (tSettings.ContainsKey("TryLater") && CU.CBool(tSettings["TryLater"])))
                 {
