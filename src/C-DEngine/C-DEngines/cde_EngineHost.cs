@@ -576,7 +576,7 @@ namespace nsCDEngine.Engines
         static TheBaseEngine CreatePlugin(string pPluginName)
         {
             if (TheBaseAssets.MyCDEPlugins.ContainsKey(pPluginName) && TheBaseAssets.MyCDEPlugins[pPluginName].PluginType != null
-                && !pPluginName.Equals(MyCustomEngines?.GetType().FullName)
+                && MyPluginEngines?.Any(s=>s.GetType().FullName== pPluginName)==true // !pPluginName.Equals(MyCustomEngines?.GetType().FullName)
                 )
                 return null;    //new V4.106: Dont ever start a plugin twice! (StorageService already started)
             TheBaseEngine tBase = new ();
