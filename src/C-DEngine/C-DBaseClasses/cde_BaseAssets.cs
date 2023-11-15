@@ -501,7 +501,6 @@ namespace nsCDEngine.BaseClasses
             }
 
             //Step 2: Restore from backup if exists
-#if CDE_NET45 // Backup/Restore only support on NET45
             // To ensure that restored backups are not overwritten during shutdown, we write them to a temp directory and move them into place on start up
             if (!MyServiceHostInfo.UseRandomDeviceID && !MyServiceHostInfo.IsIsolated)
             {
@@ -541,7 +540,6 @@ namespace nsCDEngine.BaseClasses
                     }
                 }
             }
-#endif
 
             MyServiceHostInfo.EnableTaskKPIs = TheCommonUtils.CBool(MySettings.GetSetting("EnableTaskKPIs"));
             if (MyServiceHostInfo.EnableTaskKPIs)
@@ -811,46 +809,13 @@ namespace nsCDEngine.BaseClasses
             MySettings.UpdateLocalSettings();
         }
 
-
+        
         /// <summary>
         /// All public Parameter/Settings handed to the C-DEngine during Startup
         /// These settings are visible, unencrypted AND changable by plugins.
         /// Please use TheBaseAssets.MySettings.Set|GetSetting("settingname") to access the content
         /// In future versions of the CDE this dictionary might be read only or even internal only
         /// </summary>
-        /// Soon [Obsolete("Please do not use anymore as this will become hidden in the future. Use TheBaseAssets.MySettings.GetSetting() instead")]
-        public static IDictionary<string, string> MyCmdArgs;
-
-        /// <summary>
-        /// RETIRED: please use TheCDESettingsFactory.GetSetting()
-        /// </summary>
-        /// <param name="pName"></param>
-        /// <returns></returns>
-        [Obsolete("Please use MySettings.GetSetting() instead")]
-        public static string GetCustomAppParameter(string pName)
-        {
-            return MySettings.GetSetting(pName); //Now in cdeTPI
-        }
-
-        /// <summary>
-        /// RETIRED: Use TheCDESettingsFactory.SetSetting()
-        /// </summary>
-        /// <param name="pName"></param>
-        /// <param name="pValue"></param>
-        /// <returns></returns>
-        [Obsolete("Please use MySettings.SetSetting() instead")]
-        public static bool SetCustomAppParameter(string pName, string pValue)
-        {
-            return MySettings.SetSetting(pName, pValue, true);
-        }
-
-        /// <summary>
-        /// Updates essential Parameter of the C-DEngine Host application.
-        /// </summary>
-        [Obsolete("Please use MySettings.UpdateLocalSettings() instead")]
-        public static void UpdateAppParameter()
-        {
-            MySettings.UpdateLocalSettings();
-        }
+        internal static IDictionary<string, string> MyCmdArgs;
     }
 }

@@ -1215,7 +1215,6 @@ namespace nsCDEngine.Communication
                         {
                             bool bExit = false;
                             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
-                            //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: This is a logic lock. Consitency of the queue has to be maintained here but only between this function and the GetNextMessage function
                             {
                                 if (TheCDEKPIs.EnableKpis)
                                 {
@@ -1235,7 +1234,7 @@ namespace nsCDEngine.Communication
                                     {
                                         tName = tP.Split('=')[0];
                                         if (tName.Length == tP.Length) continue;
-                                        if (tSP.Any(s => s.StartsWith(tName)))
+                                        if (tSP.Exists(s => s.StartsWith(tName)))
                                         {
                                             tSP.RemoveAll(s => s.StartsWith(tName));
                                             tSP.Add(tP);
@@ -1263,7 +1262,6 @@ namespace nsCDEngine.Communication
                         {
                             bool bExit = false;
                             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
-                            //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: This is a logic lock. Consitency of the queue has to be maintained here but only between this function and the GetNextMessage function
                             {
                                 if (TheCDEKPIs.EnableKpis)
                                 {
@@ -1285,7 +1283,7 @@ namespace nsCDEngine.Communication
                                         if (tName.Length == tP.Length)
                                             continue;
                                         var tVal = Parts.Length > 1 ? Parts[1] : null;
-                                        if (!tSP.Any(s => s.StartsWith(tName)) || tVal?.StartsWith("{")==true || tVal?.StartsWith("[")==true)
+                                        if (!tSP.Exists(s => s.StartsWith(tName)) || tVal?.StartsWith("{")==true || tVal?.StartsWith("[")==true)
                                             tSP.Add(tP);
                                         else
                                         {
@@ -1319,7 +1317,7 @@ namespace nsCDEngine.Communication
                     }
                     if (pMessage.NoDuplicates())
                     {
-                        var tQi = tQ.FirstOrDefault(s => s.HashID == tHash);
+                        var tQi = tQ.Find(s => s.HashID == tHash);
                         if (tQi != null)
                         {
                             tOldStamp = tQi.EntryTime;
@@ -1467,7 +1465,6 @@ namespace nsCDEngine.Communication
             TheCoreQueueContent tMsg = null;
             int pQCountRet = 0;
             MyCoreQueue.MyRecordsRWLock.RunUnderUpgradeableReadLock(() =>
-            //lock (MyCoreQueue.MyRecordsLock)    //LOCK-REVIEW: Must remain main lock - this is a Logic Lock - not a database lock
             {
                 var tQKV = MyCoreQueue.MyRecords.GetDynamicEnumerable(); // MH: .Values; also too expensive - makes a copy //.TheValues.ToList();  //CM: To expensive: Lock already on the block
                 if (tQKV.Any())
@@ -1638,7 +1635,7 @@ namespace nsCDEngine.Communication
 
 
 #region TSM History Management
-        internal ConcurrentDictionary<string, TheSentRegistryItem> MyTSMHistory = null;
+        internal cdeConcurrentDictionary<string, TheSentRegistryItem> MyTSMHistory = null;
         internal int MyTSMHistoryCount = 0;
 
         internal bool WasTSMSeenBefore(TSM pTSM, string pRealSID, bool pIsOutgoing)

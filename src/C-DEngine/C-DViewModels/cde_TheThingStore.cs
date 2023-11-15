@@ -35,20 +35,6 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Creates a copy of a TheThingStore with a selectable subset of properties.
         /// </summary>
-        /// <param name="baseItem">Optional TheThingStore with additional properties to copy into the clone.</param>
-        /// <param name="ResetBase">Creates a new cdeMID and timestamp. Otherwise the item will have the same cdeMID and timestamp as the baseItem. </param>
-        /// <param name="propertiesToInclude">Properties to copy.</param>
-        /// <param name="propertiesToExclude">Properties to not include in the clone.</param>
-        /// <param name="forExternalConsumption">Set a flag that is used by the Historian mechanism internally.</param>
-        /// <returns>The copy of the baseItem TheThingStore</returns>
-        [Obsolete("Use the overload with ThePropertyFilter instead.")]
-        public TheThingStore CloneForThingSnapshot(TheThingStore baseItem, bool ResetBase, IEnumerable<string> propertiesToInclude, List<string> propertiesToExclude, bool forExternalConsumption)
-        {
-            return CloneForThingSnapshot(null, baseItem, ResetBase, new TheHistoryParameters(new ThePropertyFilter { Properties = propertiesToInclude?.ToList(), PropertiesToExclude = propertiesToExclude?.ToList() }), forExternalConsumption, out _);
-        }
-        /// <summary>
-        /// Creates a copy of a TheThingStore with a selectable subset of properties.
-        /// </summary>
         /// <param name="baseItem">TheThingStore to copy.</param>
         /// <param name="ResetBase">Creates a new cdeMID and timestamp. Otherwise the item will have the same cdeMID and timestamp as the baseItem. </param>
         /// <param name="propFilter">Specification of which properties to copy. If null, all properties will be copied.</param>

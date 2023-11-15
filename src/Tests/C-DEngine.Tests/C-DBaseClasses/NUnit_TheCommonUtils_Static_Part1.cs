@@ -771,26 +771,6 @@ namespace NUnit_TheCommonUtils
 
         } // function T1035_GetCalendarweek
 
-        [Test]
-        public void T1036_GetCmdArgValue()
-        {
-            // Auto-Generated Test Function
-            // System.String GetCmdArgValue(System.String)
-
-            // <HelpStart fn="TheCommonUtils.GetCmdArgValue_string" />
-            string strExpected = null;
-
-            string pKey = "P";
-#pragma warning disable CS0618 // Type or member is obsolete
-            string strReturned = TheCommonUtils.GetCmdArgValue(pKey);
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            Assert.AreEqual(strExpected, strReturned);
-            // <HelpEnd fn="TheCommonUtils.GetCmdArgValue_string" />
-
-        } // function T1036_GetCmdArgValue
-
-
 
 
         [Test]
@@ -1360,25 +1340,6 @@ namespace NUnit_TheCommonUtils
 
 
         [Test]
-        public void T1075_cdeDeleteAppSetting()
-        {
-            // Auto-Generated Test Function
-            // Void cdeDeleteAppSetting(System.String)
-
-            // <HelpStart fn="TheCommonUtils.cdeDeleteAppSetting_string" />
-
-            string pKeyname = "Hello C-DEngine";
-#pragma warning disable CS0618 // Type or member is obsolete
-            TheCommonUtils.cdeDeleteAppSetting(pKeyname);
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            // No return value, so omit Assert statement.
-            // Assert.AreEqual(Expected, Returned);
-            // <HelpEnd fn="TheCommonUtils.cdeDeleteAppSetting_string" />
-
-        } // function T1075_cdeDeleteAppSetting
-
-        [Test]
         public void T1076_cdeESCXML()
         {
             // Auto-Generated Test Function
@@ -1430,28 +1391,6 @@ namespace NUnit_TheCommonUtils
         } // function T1078_cdeEscapeString
 
 
-
-        [Test]
-        public void T1081_cdeGetAppSetting()
-        {
-            // Auto-Generated Test Function
-            // System.String cdeGetAppSetting(System.String, System.String, Boolean, Boolean)
-
-            // <HelpStart fn="TheCommonUtils.cdeGetAppSetting_string_string_bool_bool" />
-            string strExpected = "Hello C-DEngine";
-
-            string pSetting = "Hello C-DEngine";
-            string alt = "Hello C-DEngine";
-            bool IsEncrypted = true;
-            bool IsAltDefault = true;
-#pragma warning disable CS0618 // Type or member is obsolete
-            string strReturned = TheCommonUtils.cdeGetAppSetting(pSetting, alt, IsEncrypted, IsAltDefault);
-#pragma warning restore CS0618 // Type or member is obsolete
-
-            Assert.AreEqual(strExpected, strReturned);
-            // <HelpEnd fn="TheCommonUtils.cdeGetAppSetting_string_string_bool_bool" />
-
-        } // function T1081_cdeGetAppSetting
 
         [Test]
         public void T1082_cdeGuidToString()

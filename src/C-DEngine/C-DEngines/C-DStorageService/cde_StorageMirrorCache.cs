@@ -73,7 +73,7 @@ namespace nsCDEngine.Engines.StorageService
 
         #region MyRecordsHelpers
         // Helper functions to manipulate MyRecords while keeping the recordsBySequenceNumber in sync
-        // These private functions assume that the MyRecordsLock has been taken by the caller
+        // These private functions assume that the WriteLock has been taken by the caller
         private bool TryAddInternal(string pStrKey, T item)
         {
             bool addToSequence = AppendOnly || MyRecords.TryAdd(pStrKey, item);
@@ -159,7 +159,7 @@ namespace nsCDEngine.Engines.StorageService
             if (recordsBySequenceNumber == null)
             {
                 firstSequenceNumberReturned = 0;
-                return null;
+                return new List<T>();
             }
 
             int index = GetIndexForSequenceNumber(previousSequenceNumber, out firstSequenceNumberReturned);
@@ -273,10 +273,12 @@ namespace nsCDEngine.Engines.StorageService
                     });
                 }
             });
+#pragma warning disable S2583 // Conditionally executed code should be reachable
             if (doSave && IsCachePersistent)
             {
                 SaveCacheToDisk(false, false);
             }
+#pragma warning restore S2583 // Conditionally executed code should be reachable
             if (itemsToRemove != null)
             {
                 NotifyOfUpdate(itemsToRemove);
@@ -391,7 +393,6 @@ namespace nsCDEngine.Engines.StorageService
 
         #endregion
 
-        // CODE REVIEW MH: Need to coordinate with RW lock. Also need to figuer out how this relates to the StorageMirror.MyRecordsLock
         internal IReaderWriterLock MyRecordsRWLock;
         /// <summary>
         /// My store identifier
@@ -431,11 +432,6 @@ namespace nsCDEngine.Engines.StorageService
         /// </summary>
         internal long mTotalCacheCounter;
         internal DateTimeOffset mLastStore = DateTimeOffset.MinValue;
-
-#pragma warning disable 67
-        [Obsolete("This is no longer fired. Please remove your handler. We will remove this in a later version.")]
-        public event PropertyChangedEventHandler PropertyChanged;
-#pragma warning restore 67
 
         public bool BlockWriteIfIsolated
         {
@@ -647,107 +643,104 @@ namespace nsCDEngine.Engines.StorageService
         {
             if (!TheBaseAssets.MasterSwitch || TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID) return;
             bool bLoaded = false;
-            MyRecordsRWLock.RunUnderWriteLock(() => //LOCK-REVIEW: Here we need both locks: Write AND MyRecordsLock that no reading and Saving happens until this is done
+            MyRecordsRWLock.RunUnderWriteLock(() => 
             {
-                //lock (MyRecordsLock)                //LOCK-REVIEW: Here we need both locks: Write AND MyRecordsLock that no reading and Saving happens until this is done
+                // In case records are split among many files
+                List<string> filesToReturn = new();
+                if (AppendOnly && MaxCacheFileSize > 0)
                 {
-                    // In case records are split among many files
-                    List<string> filesToReturn = new ();
-                    if (AppendOnly && MaxCacheFileSize > 0)
+                    DirectoryInfo di = new(TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
+                    FileInfo[] fileInfo = di.GetFiles($"{MyStoreID.Replace('&', 'n')}*");
+                    if (fileInfo.Length > 0)
                     {
-                        DirectoryInfo di = new (TheCommonUtils.cdeFixupFileName(cacheFileFolder, true));
-                        FileInfo[] fileInfo = di.GetFiles($"{MyStoreID.Replace('&', 'n')}*");
-                        if (fileInfo.Length > 0)
-                        {
-                            List<FileInfo> orderedFileInfo = fileInfo.OrderBy(s => s.CreationTime).ToList();
-                            foreach (FileInfo f in orderedFileInfo)
-                                filesToReturn.Add(f.FullName);
-                        }
-                        else
-                            bLoaded = true;
+                        List<FileInfo> orderedFileInfo = fileInfo.OrderBy(s => s.CreationTime).ToList();
+                        foreach (FileInfo f in orderedFileInfo)
+                            filesToReturn.Add(f.FullName);
                     }
                     else
-                        filesToReturn.Add(TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true));
-                    int i = 0;
-                    foreach (string FileToReturn in filesToReturn)
+                        bLoaded = true;
+                }
+                else
+                    filesToReturn.Add(TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true));
+                int i = 0;
+                foreach (string FileToReturn in filesToReturn)
+                {
+                    try
                     {
-                        try
+                        if (System.IO.File.Exists(FileToReturn + ".0")) // new file written by a previous save operation, but not renamed (= crash or failure during save)
                         {
-                            if (System.IO.File.Exists(FileToReturn + ".0")) // new file written by a previous save operation, but not renamed (= crash or failure during save)
+                            // Better to not use the .new file, as it is likely not written completely and the JSON deserializer may not recognize a corruption
+                            // Trade off is that we lose a generation of Saves (since last flush), but it's better to lost data than to risk data corruption
+                            // Instead, rename the potentially corrupt .0 file (.new) to .corrupt so we can do forensics on what kind of corruption we see
+                            try
                             {
-                                // Better to not use the .new file, as it is likely not written completely and the JSON deserializer may not recognize a corruption
-                                // Trade off is that we lose a generation of Saves (since last flush), but it's better to lost data than to risk data corruption
-                                // Instead, rename the potentially corrupt .0 file (.new) to .corrupt so we can do forensics on what kind of corruption we see
-                                try
+                                var fileCorrupt = TheCommonUtils.cdeFixupFileName(string.Format("cache\\LostFound\\{0}", MyStoreID.Replace('&', 'n')), true);
+                                TheCommonUtils.CreateDirectories(fileCorrupt);
+                                if (TheBaseAssets.MyServiceHostInfo != null && TheBaseAssets.MyServiceHostInfo.DebugLevel >= eDEBUG_LEVELS.VERBOSE)
                                 {
-                                    var fileCorrupt = TheCommonUtils.cdeFixupFileName(string.Format("cache\\LostFound\\{0}", MyStoreID.Replace('&', 'n')), true);
-                                    TheCommonUtils.CreateDirectories(fileCorrupt);
-                                    if (TheBaseAssets.MyServiceHostInfo != null && TheBaseAssets.MyServiceHostInfo.DebugLevel >= eDEBUG_LEVELS.VERBOSE)
-                                    {
-                                        // For debuglevel verbose or higher: keep all potentially corrupt files
-                                        System.IO.File.Move(FileToReturn + ".0", fileCorrupt + DateTimeOffset.Now.ToString("o").Replace(":", "").Replace(".", "") + ".corrupt");
-                                    }
-                                    else
-                                    {
-                                        // only keep the last potentially corrupt file
-                                        try
-                                        {
-                                            System.IO.File.Delete(fileCorrupt + ".corrupt");
-                                        }
-                                        catch
-                                        {
-                                            // ignored
-                                        }
-                                        System.IO.File.Move(FileToReturn + ".0", fileCorrupt + ".corrupt");
-                                    }
-                                    // Log - detected failure during storage mirror save - data may have been lost
-                                    TheBaseAssets.MySYSLOG.WriteToLog(4807, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheMirrorCache", string.Format("Detected earlier failure during save/shutdown while loading Cache file {0} for Mirror {1}.", FileToReturn, typeof(T)), eMsgLevel.l1_Error));
+                                    // For debuglevel verbose or higher: keep all potentially corrupt files
+                                    System.IO.File.Move(FileToReturn + ".0", fileCorrupt + DateTimeOffset.Now.ToString("o").Replace(":", "").Replace(".", "") + ".corrupt");
                                 }
-                                catch (Exception e)
+                                else
                                 {
-                                    // Log - detected failure during storage mirror save - data may have been lost, unable to clean up .0 file
-                                    TheBaseAssets.MySYSLOG.WriteToLog(4808, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Detected earlier failure during save/shutdown while loading Cache file {0} for Mirror {1}. Unable to cleanup.", FileToReturn, typeof(T)), eMsgLevel.l1_Error, e.ToString()));
+                                    // only keep the last potentially corrupt file
+                                    try
+                                    {
+                                        System.IO.File.Delete(fileCorrupt + ".corrupt");
+                                    }
+                                    catch
+                                    {
+                                        // ignored
+                                    }
+                                    System.IO.File.Move(FileToReturn + ".0", fileCorrupt + ".corrupt");
                                 }
+                                // Log - detected failure during storage mirror save - data may have been lost
+                                TheBaseAssets.MySYSLOG.WriteToLog(4807, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheMirrorCache", string.Format("Detected earlier failure during save/shutdown while loading Cache file {0} for Mirror {1}.", FileToReturn, typeof(T)), eMsgLevel.l1_Error));
                             }
-
-                            if (AppendOnly && TracksInsertionOrder)
-                                fileOffsets.TryAdd(FileToReturn, recordsBySequenceNumber.Count);
-                            if (LoadFile(FileToReturn))
+                            catch (Exception e)
                             {
+                                // Log - detected failure during storage mirror save - data may have been lost, unable to clean up .0 file
+                                TheBaseAssets.MySYSLOG.WriteToLog(4808, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Detected earlier failure during save/shutdown while loading Cache file {0} for Mirror {1}. Unable to cleanup.", FileToReturn, typeof(T)), eMsgLevel.l1_Error, e.ToString()));
+                            }
+                        }
+
+                        if (AppendOnly && TracksInsertionOrder)
+                            fileOffsets.TryAdd(FileToReturn, recordsBySequenceNumber.Count);
+                        if (LoadFile(FileToReturn))
+                        {
+                            bLoaded = i == 0 || bLoaded;
+                        }
+                        else
+                        {
+                            if (LoadFile(FileToReturn + ".1")) // Previous copy
+                            {
+                                // Log: encountered corrupted storage mirror, falling back to latest snapshot (data may have been lost)
+                                TheBaseAssets.MySYSLOG.WriteToLog(4809, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed, but recovered from previous backup copy. Some data may have been lost.", FileToReturn, typeof(T)), eMsgLevel.l2_Warning));
                                 bLoaded = i == 0 || bLoaded;
                             }
                             else
                             {
-                                if (LoadFile(FileToReturn + ".1")) // Previous copy
+                                if (System.IO.File.Exists(FileToReturn) || System.IO.File.Exists(FileToReturn + ".1"))
                                 {
-                                    // Log: encountered corrupted storage mirror, falling back to latest snapshot (data may have been lost)
-                                    TheBaseAssets.MySYSLOG.WriteToLog(4809, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed, but recovered from previous backup copy. Some data may have been lost.", FileToReturn, typeof(T)), eMsgLevel.l2_Warning));
-                                    bLoaded = i == 0 || bLoaded;
+                                    if (UseSafeSave)
+                                        TheBaseAssets.MySYSLOG.WriteToLog(4810, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed. Unable to recover from previous backup copies but maybe no file existed before.", FileToReturn, typeof(T)), eMsgLevel.l1_Error));
                                 }
                                 else
                                 {
-                                    if (System.IO.File.Exists(FileToReturn) || System.IO.File.Exists(FileToReturn + ".1"))
-                                    {
-                                        if (UseSafeSave)
-                                            TheBaseAssets.MySYSLOG.WriteToLog(4810, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed. Unable to recover from previous backup copies but maybe no file existed before.", FileToReturn, typeof(T)), eMsgLevel.l1_Error));
-                                    }
-                                    else
-                                    {
-                                        // No Store files exists: consider the store loaded
-                                        bLoaded = i == 0 || bLoaded;
-                                    }
-                                    // Remove record of offset if loading failed
-                                    if (AppendOnly && TracksInsertionOrder)
-                                        fileOffsets.RemoveNoCare(FileToReturn);
+                                    // No Store files exists: consider the store loaded
+                                    bLoaded = i == 0 || bLoaded;
                                 }
+                                // Remove record of offset if loading failed
+                                if (AppendOnly && TracksInsertionOrder)
+                                    fileOffsets.RemoveNoCare(FileToReturn);
                             }
                         }
-                        catch (Exception e)
-                        {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4811, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed", FileToReturn, typeof(T)), eMsgLevel.l1_Error, e.ToString()));
-                        }
-                        i++;
                     }
+                    catch (Exception e)
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(4811, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheMirrorCache", string.Format("Loading of Cache file {0} for Mirror {1} failed", FileToReturn, typeof(T)), eMsgLevel.l1_Error, e.ToString()));
+                    }
+                    i++;
                 }
                 eventCachedReady?.Invoke(new TSM("TheMirrorCache", MyStoreID, bLoaded ? eMsgLevel.l4_Message : eMsgLevel.l1_Error, bLoaded ? MyStoreID : "ERROR: Failed to load store"));
             });
@@ -1018,7 +1011,7 @@ namespace nsCDEngine.Engines.StorageService
                             }
                             else
                             {
-                                storeData = MyRecords.Values; //LOCK-REVIEW: staring here, internal store and list can diviate, but no lock required
+                                storeData = MyRecords.Values; //LOCK-REVIEW: starting here, internal store and list can diviate, but no lock required
                             }
 
                             if ((IsReady && recordsBySequenceNumber != null) || MyRecords.Count > 0)
@@ -1405,7 +1398,7 @@ namespace nsCDEngine.Engines.StorageService
         /// </summary>
         public void Reset()
         {
-            MyRecordsRWLock.RunUnderWriteLock(() =>  //lock (MyRecordsLock)
+            MyRecordsRWLock.RunUnderWriteLock(() =>  
             {
                 MyRecords.Clear();
                 if (recordsBySequenceNumber != null)
@@ -1415,20 +1408,6 @@ namespace nsCDEngine.Engines.StorageService
                 }
             });
             SaveCacheToDisk(false, false);
-        }
-
-        /// <summary>
-        /// Deletes all cache files for this MirrorCache.
-        /// Used for AppendOnly StorageMirrors that are broken up into multiple files.
-        /// </summary>
-        private void DeleteAllCacheFiles()
-        {
-            string directoryPath = TheCommonUtils.cdeFixupFileName(cacheFileFolder, true);
-            string[] files = Directory.GetFiles(directoryPath, $"{MyStoreID.Replace('&', 'n')}*");
-            foreach (string file in files)
-            {
-                File.Delete(file);
-            }
         }
 
         /// <summary>
@@ -1564,7 +1543,7 @@ namespace nsCDEngine.Engines.StorageService
         void ReturnFill(TheStorageMirror<T>.StoreResponse pNewRecords)
         {
             List<T> resList = null;
-            MyRecordsRWLock.RunUnderWriteLock(() => // lock (MyRecordsLock)
+            MyRecordsRWLock.RunUnderWriteLock(() => 
             {
                 Reset();
                 if (!pNewRecords.HasErrors)
@@ -1749,13 +1728,13 @@ namespace nsCDEngine.Engines.StorageService
         {
             if (pDetails?.Count > 0)
             {
-                MyRecordsRWLock.RunUnderWriteLock(() => // lock (MyRecordsLock)
+                MyRecordsRWLock.RunUnderWriteLock(() => 
                 {
-                    foreach (T detail in pDetails)
+                    foreach (var detailMID in pDetails.Select(s=>s.cdeMID))
                     {
-                        if (detail.cdeMID != Guid.Empty)
+                        if (detailMID != Guid.Empty)
                         {
-                            TryRemoveItemInternal(detail.cdeMID.ToString(), out _);
+                            TryRemoveItemInternal(detailMID.ToString(), out _);
                         }
                     }
                 });
@@ -1841,7 +1820,7 @@ namespace nsCDEngine.Engines.StorageService
         public void AddOrUpdateItemKey(string pStrKey, T pDetails, Action<T> CallBack)
         {
             bool success = false;
-            MyRecordsRWLock.RunUnderWriteLock(() =>  //  lock (MyRecordsLock)
+            MyRecordsRWLock.RunUnderWriteLock(() =>  
             {
                 success = TryUpdateItemInternal(pStrKey, pDetails);
                 if (!success)
@@ -1849,6 +1828,7 @@ namespace nsCDEngine.Engines.StorageService
                     success = DoAddItem(pStrKey, pDetails, true);
                 }
             });
+#pragma warning disable S2583 // Conditionally executed code should be reachable
             if (success)
             {
                 if (IsCachePersistent)
@@ -1856,6 +1836,7 @@ namespace nsCDEngine.Engines.StorageService
                 CallBack?.Invoke(pDetails);
                 NotifyOfUpdate(new List<T> { pDetails });
             }
+#pragma warning restore S2583 // Conditionally executed code should be reachable
         }
 
 
@@ -2055,7 +2036,7 @@ namespace nsCDEngine.Engines.StorageService
                     {
                         foreach (var s in tList)
                         {
-                            eventRecordExpired?.Invoke(s.Value);
+                            eventRecordExpired.Invoke(s.Value);
                         }
                     }
                     TheCommonUtils.cdeRunAsync("ExpireRecords", true, (o) => RemoveItemsByKeyList(tList.Select(x => x.Key).ToList(), null));
@@ -2117,30 +2098,6 @@ namespace nsCDEngine.Engines.StorageService
             });
             if (IsCachePersistent)
                 SaveCacheToDisk(false, true);
-        }
-
-        /// <summary>
-        /// Gets the first item.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <returns>T.</returns>
-        [Obsolete("There is no notion of a first item in a storage mirror cache.")]
-        public T GetFirstItem(out Guid key)
-        {
-            //CODE-REVIEW: This function assumes that the key is a GUID which is NOT garanteed!
-            T tRes = default;
-            var keyLocal = Guid.Empty;
-            MyRecordsRWLock.RunUnderReadLock(() =>
-            {
-                if (MyRecords.Values.Any())
-                {
-                    var t = MyRecords.First();
-                    tRes = t.Value;
-                    keyLocal = TheCommonUtils.CGuid(t.Key);
-                }
-            });
-            key = keyLocal;
-            return tRes;
         }
 
         /// <summary>
@@ -2388,7 +2345,6 @@ namespace nsCDEngine.Engines.StorageService
 
     internal class TheMirrorCacheReaderWriterLock<T> : IReaderWriterLock where T : TheDataBase, INotifyPropertyChanged, new()
     {
-        public static readonly TimeSpan defaultTimeout = new (0, 0, 30);
         readonly ReaderWriterLockSlim _rwLock;
         readonly TheMirrorCache<T> _cache;
         TimeSpan _timeout;
@@ -2398,7 +2354,7 @@ namespace nsCDEngine.Engines.StorageService
         {
             _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
             _cache = cache;
-            _timeout = defaultTimeout;
+            _timeout = new(0, 0, 30);
             DoLog = TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableReaderWriterLockLog"));
             Log("Created RWLock");
         }
@@ -2542,11 +2498,13 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return false;
             }
+#pragma warning disable S2222 // Locks should be released on all paths
             if (_rwLock.TryEnterUpgradeableReadLock(0)) //NOSONAR There is no code here that could throw, so no need to add a try/finally around the ExitUpgradeableReadLock call
             {
                 _rwLock.ExitUpgradeableReadLock();
                 return false;
             }
+#pragma warning restore S2222 // Locks should be released on all paths
             return true;
         }
         public bool IsWriteLocked()
@@ -2555,11 +2513,13 @@ namespace nsCDEngine.Engines.StorageService
             {
                 return false; // This thread is holding the write lock
             }
+#pragma warning disable S2222 // Locks should be released on all paths
             if (_rwLock.TryEnterWriteLock(0))  //NOSONAR There is no code here that could throw, so no need to add a try/finally around the ExitWriteLock call
             {
                 _rwLock.ExitWriteLock();
                 return false;
             }
+#pragma warning restore S2222 // Locks should be released on all paths
             return true;
         }
     }

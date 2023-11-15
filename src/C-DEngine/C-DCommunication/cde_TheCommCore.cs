@@ -166,9 +166,7 @@ namespace nsCDEngine.Communication
                         return false;
                 }
                 if (!TheBaseAssets.MyServiceHostInfo.DisableWebSockets && TheBaseAssets.MyServiceHostInfo.MyStationWSPort > 0
-#if CDE_NET45 || CDE_STANDARD
-                    && (TheBaseAssets.MyServiceHostInfo.MyStationWSPort != TheBaseAssets.MyServiceHostInfo.MyStationPort || MyWebService?.IsHttpListener==false)
-#endif
+                    && (TheBaseAssets.MyServiceHostInfo.MyStationWSPort != TheBaseAssets.MyServiceHostInfo.MyStationPort || MyWebService?.IsHttpListener == false)
                     )
                 {
 #if CDE_USEWSS8
@@ -191,17 +189,9 @@ namespace nsCDEngine.Communication
                             TheBaseAssets.MyServiceHostInfo.MyStationWSPort++;
                             TheBaseAssets.MySettings.UpdateLocalSettings();
                         }
-#if CDE_USECSWS
-                        MyWebSockets = new TheWSServer();
-                        MyWebSockets.Startup();
-                        if (MyWebSockets.IsActive)
-                            TheBaseAssets.MySYSLOG.WriteToLog(5051, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSocketCS Server Started (License see http://sta.github.io/websocket-sharp/)", eMsgLevel.l3_ImportantMessage));
-                        else
-#endif
-                        {
-                            TheBaseAssets.MySYSLOG.WriteToLog(5052, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSocketCS Server failed to Start - WebSockets will be disabled and fallback to http is on", eMsgLevel.l1_Error));
-                            TheBaseAssets.MyServiceHostInfo.DisableWebSockets = true;
-                        }
+
+                        TheBaseAssets.MySYSLOG.WriteToLog(5052, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", "WebSocketCS Server failed to Start - WebSockets will be disabled and fallback to http is on", eMsgLevel.l1_Error));
+                        TheBaseAssets.MyServiceHostInfo.DisableWebSockets = true;
                     }
                 }
                 else
@@ -930,7 +920,7 @@ namespace nsCDEngine.Communication
                             var realp = TheCommonUtils.CUri(pRequestData?.SessionState?.InitReferer, false)?.AbsolutePath;
                             if (!string.IsNullOrEmpty(realp))
                             {
-                                var page = Engines.NMIService.TheNMIEngine.GetPages().FirstOrDefault(s => s.PageName.Equals(realp, StringComparison.InvariantCultureIgnoreCase));
+                                var page = Engines.NMIService.TheNMIEngine.GetPages().Find(s => s.PageName.Equals(realp, StringComparison.InvariantCultureIgnoreCase));
                                 if (page?.AllowScopeQuery == true)
                                     LogOk = TheQueuedSenderRegistry.IsScopeKnown(tscope, false);
                             }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -124,6 +124,25 @@ namespace nsCDEngine.BaseClasses
                 return pIn.Substring(0, pMax) + "...";
             }
             return pIn;
+        }
+
+        public static int cdeGetStableHashCode(this string str)
+        {
+            unchecked
+            {
+                int hash1 = 5381;
+                int hash2 = hash1;
+
+                for (int i = 0; i < str.Length && str[i] != '\0'; i += 2)
+                {
+                    hash1 = ((hash1 << 5) + hash1) ^ str[i];
+                    if (i == str.Length - 1 || str[i + 1] == '\0')
+                        break;
+                    hash2 = ((hash2 << 5) + hash2) ^ str[i + 1];
+                }
+
+                return hash1 + (hash2 * 1566083941);
+            }
         }
 
         /// <summary>
@@ -2280,16 +2299,9 @@ namespace nsCDEngine.BaseClasses
         /// <typeparam name="T">Type of the completed task to return.</typeparam>
         /// <param name="result">Result for the completed task.</param>
         /// <returns>Completed task with Task.Result == result.</returns>
-        public static System.Threading.Tasks.Task<T> TaskFromResult<T>(T result)
+        public static Task<T> TaskFromResult<T>(T result)
         {
-#if !(CDE_NET35 || CDE_NET4)
-            return System.Threading.Tasks.Task.FromResult<T>(result);
-#elif CDE_NET35
-            // No Task.Delay in Net4: Use Async Target package (Microsoft.Bcl.Async)
-            return System.Threading.Tasks.TaskEx.FromResult<T>(result);;
-#else
-            return System.Threading.Tasks.Task.Factory.StartNew( () => result );
-#endif
+            return Task.FromResult<T>(result);
         }
 
         /// <summary>
@@ -2299,13 +2311,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A task.</returns>
         public static Task TaskFromException(Exception e)
         {
-#if !(CDE_NET35 || CDE_NET4 || CDE_NET45)
             return Task.FromException(e);
-#else
-            var taskCS = new TaskCompletionSource<bool>();
-            taskCS.SetException(e);
-            return taskCS.Task;
-#endif
         }
 
 
@@ -2452,6 +2458,7 @@ namespace nsCDEngine.BaseClasses
                 gfsoutStr = gfsoutStr.Replace("%T%", System.DateTimeOffset.Now.ToString("T", cultureInfo));
                 gfsoutStr = gfsoutStr.Replace("%DT%", System.DateTimeOffset.Now.ToString("G", cultureInfo));
                 gfsoutStr = gfsoutStr.Replace("%DTO%", System.DateTimeOffset.Now.ToString("G", cultureInfo));
+                gfsoutStr = gfsoutStr.Replace("%GUID%", $"{Guid.NewGuid()}");
                 if (gfsoutStr.Contains("%MAC%"))
                     gfsoutStr = gfsoutStr.Replace("%MAC%", Discovery.TheNetworkInfo.GetMACAddress(false));
                 gfsoutStr = gfsoutStr.Replace("%APPNAME%", TheBaseAssets.MyServiceHostInfo.ApplicationName);
@@ -2631,83 +2638,6 @@ namespace nsCDEngine.BaseClasses
             if (TheBaseAssets.MySession != null)
                 TheBaseAssets.MySession.LogSession(pSessionID, pUrl, pBrowser, pBrowserDesc, pRef, pCustomData);
         }
-
-
-        #region obsolete function - remove b4 OOS
-
-        /// <summary>
-        /// Returns a setting either known in the current Settings array or set as an environment variable or in App.Config
-        /// First it looks into App.config and if this does not contain the setting it falls back to the existing MySettings and if that does not have the entry it looks in the environment variables.
-        /// </summary>
-        /// <param name="key"></param>
-        /// <returns></returns>
-        [Obsolete("Please Use TheBaseAssets.MySettings.GetAppSetting()")]
-        public static string GetSetting(string key)
-        {
-            var tres = TheBaseAssets.MySettings.GetAppSetting(key, "", false, false);
-            return tres;
-        }
-
-        /// <summary>
-        /// Retrieves a setting from the App.config/web.config "Configuration" Settings
-        /// </summary>
-        /// <param name="pSetting">Key of the Configuration setting</param>
-        /// <param name="alt">Use this alternative if platform does not support the app.config</param>
-        /// <param name="IsEncrypted">If set to true, the value is encrypted</param>
-        /// <returns>The Value of the configuration setting</returns>
-        [Obsolete("Please Use TheBaseAssets.MySettings.GetAppSetting()")]
-        public static string cdeGetAppSetting(string pSetting, string alt, bool IsEncrypted)
-        {
-            return TheBaseAssets.MySettings.GetAppSetting(pSetting, alt, IsEncrypted, false);
-        }
-        /// <summary>
-        /// Retrieves a setting from the App.config/web.config "Configuration" Settings
-        /// </summary>
-        /// <param name="pSetting">Key of the Configuration setting</param>
-        /// <param name="alt">Use this alternative if platform does not support the app.config</param>
-        /// <param name="IsEncrypted">If true, the value is encrypted</param>
-        /// <param name="IsAltDefault">If true, set the value to the Alternative</param>
-        /// <returns>The Value of the configuration setting</returns>
-        [Obsolete("Please Use TheBaseAssets.MySettings.GetAppSetting()")]
-        public static string cdeGetAppSetting(string pSetting, string alt, bool IsEncrypted, bool IsAltDefault)
-        {
-            return TheBaseAssets.MySettings?.GetAppSetting(pSetting, alt, IsEncrypted, IsAltDefault);
-        }
-
-        /// <summary>
-        /// Deletes a setting from the app.config
-        /// </summary>
-        /// <param name="pKeyname"></param>
-        [Obsolete("Please Use TheBaseAssets.MySettings.DeleteAppSetting()")]
-        public static void cdeDeleteAppSetting(string pKeyname)
-        {
-            TheBaseAssets.MySettings.DeleteAppSetting(pKeyname);
-        }
-
-        [Obsolete("Please use TheISMManager.BackupCache")]
-        public static string BackupCache(string pTitle)
-        {
-            return ISM.TheISMManager.BackupCache(pTitle);
-        }
-
-        [Obsolete("Please use TheISMManager.RestoreCache")]
-        public static void RestoreCache(string pTitle)
-        {
-            ISM.TheISMManager.RestoreCache(pTitle);
-        }
-
-        /// <summary>
-        /// Retrieves a Value for a Key provided at application host startup for values
-        /// provided as parameters in the call to TheBaseApplication.StartBaseApplication.
-        /// </summary>
-        /// <param name="pKey">Case Sensitive Key to be retrieved.</param>
-        /// <returns>Value provided as key, or null if not found or not available.</returns>
-        [Obsolete("Use TheBaseAssets.MySettings.GetSetting() instead")]
-        public static string GetCmdArgValue(string pKey)
-        {
-            return TheBaseAssets.MySettings.GetSetting(pKey);
-        }
-        #endregion
     }
 }
 

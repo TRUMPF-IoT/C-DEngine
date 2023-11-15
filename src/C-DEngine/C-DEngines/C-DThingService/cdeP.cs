@@ -288,7 +288,7 @@ namespace nsCDEngine.Engines.ThingService
             // However, the receiver will still see the HasChanged property as not having changed (inherent race condition of the design). But callers will get the right indication for the time of the call/change
             // Only consumer of the return value seems to be the JSON Deserializer of property change messages: unclear if it behaves better with either race condition behavior?
 
-            if (hasChanged)
+            if (hasChanged || (cdeE & 8) != 0) //5.171.0: Always update was missing! Required for HMI-NMI screens
             {
                 if ((cdeE & 4) != 0)
                     cdeCTIM = DateTimeOffset.Now;
@@ -548,21 +548,6 @@ namespace nsCDEngine.Engines.ThingService
         static public cdeP GetParentProperty(cdeP pProp)
         {
             return pProp?.cdeOP;
-        }
-
-        /// <summary>
-        /// Turns event on/off on a Property.
-        /// </summary>
-        /// <param name="TurnEventsOn">if true, events on the property will be turned on</param>
-        /// <returns></returns>
-        [Obsolete("Don't turn this on manually. The NMI Subscription system will know when a registration is needed")]
-        public cdeP SetPropertyEvents(bool TurnEventsOn)
-        {
-            if (TurnEventsOn)
-                cdeFOC |= 0x1;
-            else
-                cdeFOC &= 0xFFFE;
-            return this;
         }
 
         /// <summary>

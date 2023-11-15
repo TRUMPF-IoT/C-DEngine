@@ -38,7 +38,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 MyBaseEngine = pConnector;
                 if (string.IsNullOrEmpty(MyBaseThing.EngineName))
-                    MyBaseThing.EngineName = MyBaseEngine?.GetEngineName();
+                    MyBaseThing.EngineName = MyBaseEngine.GetEngineName();
                 ModelGuid = MyBaseEngine.GetEngineID();
             }
         }
@@ -128,7 +128,7 @@ namespace nsCDEngine.Engines.ThingService
             if (thing.GetBaseThing() != null)
             {
                 MyGroupThings[thing.GetBaseThing().cdeMID] = thing;
-                thing.SetProperty("cdeGroupID", MyBaseThing.cdeMID);
+                thing.SetProperty("cdeGroupID", MyScreenGuid);
                 return UpdateGTP();
             }
             return false;
@@ -237,17 +237,31 @@ namespace nsCDEngine.Engines.ThingService
                 mIsUXInitCalled = true;
 
                 cdeConcurrentDictionary<string, TheMetaDataBase> block = new();
+                int gsx, gsy;
+                SetGroupSize(out gsx, out gsy);
                 MyGroupForm = new(MyScreenGuid, eEngineName.NMIService, null, $"TheThing;:;0;:;True;:;cdeMID={MyBaseThing.cdeMID}")
                 {
                     DefaultView = eDefaultView.Form,
-                    PropertyBag = new nmiCtrlFormView { TileWidth = 18, FitToScreen = true, HideCaption = true, UseMargin = false, InnerClassName = "enFormInner" },
+                    PropertyBag = new nmiCtrlFormView { TileWidth = gsx, FitToScreen = true, HideCaption = true, UseMargin = false, InnerClassName = "enFormInner" },
                     ModelID = "StandardForm"
                 };
+                MyGroupForm.PropertyBag = new nmiCtrlFormView { TileHeight = gsy };
                 MyGroupForm.RegisterEvent2(eUXEvents.OnBeforeMeta, (pmsg, sender) =>
                 {
                     if (!IsGroupVisible)
+                    {
+                        ScanThings();
                         InitDynamicNMI();
+                    }
                     IsGroupVisible = true;
+                });
+                MyGroupForm.RegisterEvent2(eUXEvents.OnShow, (pmsg, sender) =>
+                {
+                    int gsx, gsy;
+                    SetGroupSize(out gsx, out gsy);
+                    MyGroupForm.PropertyBag = new nmiCtrlFormView { TileWidth = gsx };
+                    if (gsy > 0)
+                        MyGroupForm.PropertyBag = new nmiCtrlFormView { TileHeight = gsy };
                 });
                 block["Form"] = MyGroupForm;
                 block["DashIcon"] = NMI.AddFormToThingUX(MyBaseThing, MyGroupForm, "CMyForm", MyBaseThing.FriendlyName, 1, 3, 0, "..Overview", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" });
@@ -255,6 +269,18 @@ namespace nsCDEngine.Engines.ThingService
                 mIsUXInitialized = DoCreateUX(block);
             }
             return true;
+        }
+
+        private void SetGroupSize(out int gsx, out int gsy)
+        {
+            gsx = 18;
+            if (GetProperty("GroupSizeX", false) == null)
+                SetProperty("GroupSizeX", 18);
+            else
+                gsx = CU.CInt(GetProperty("GroupSizeX", true)?.GetValue());
+            gsy = 0;
+            if (GetProperty("GroupSizeY", false) != null)
+                gsy = CU.CInt(GetProperty("GroupSizeY", true)?.GetValue());
         }
 
         /// <summary>
@@ -265,6 +291,7 @@ namespace nsCDEngine.Engines.ThingService
         /// NMI_DisallowAdd: If true, the NMI Editor will not allow adding of new Things
         /// NMI_ShowAllProperties: If true, the form will show all a table with all properties
         /// NMI_AddRefresh: If true, a small refresh button is added to the top left of the Group
+        /// </param>
         /// <returns>If true, the NMI assumes the Form NMI was completely initialized</returns>
         public virtual bool DoCreateUX(cdeConcurrentDictionary<string, TheMetaDataBase> pUXFlds)
         {
@@ -272,20 +299,23 @@ namespace nsCDEngine.Engines.ThingService
             bool ShowAllProperties = CU.CBool(MyBaseThing.GetProperty("NMI_ShowAllProperties", false)?.GetValue());
             bool AddRefresh = CU.CBool(MyBaseThing.GetProperty("NMI_AddRefresh", false)?.GetValue());
 
-            var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = 18, TileHeight = 9 });
-            if (!DisallowAdd)
+            int gsx, gsy;
+            SetGroupSize(out gsx, out gsy);
+            if (gsy == 0) gsy = 9;
+            var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = gsx, TileHeight = gsy });
+            if (!DisallowAdd && !TheBaseAssets.MyServiceHostInfo.IsCloudService)
             {
                 tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
                 {
                     var tMyForm = NMI.GetNMIEditorForm();
                     if (tMyForm != null)
                     {
-                        var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FacePlateUrl", false)?.GetValue()}"));
+                        var tThings = TheThingRegistry.GetThingsByFunc("*", s => !string.IsNullOrEmpty($"{s.GetProperty("FaceTemplate", false)?.GetValue()}"));
                         StringBuilder tOpt = new StringBuilder();
                         foreach (var tThing in tThings)
                         {
                             var tG = tThing.GetProperty("cdeGroupID", false);
-                            if (!MyGroupThings.Keys.Contains(tThing.cdeMID) && (tG==null || CU.CGuid(tG)==Guid.Empty))
+                            if (!MyGroupThings.Keys.Contains(tThing.cdeMID) && (tG==null || CU.CGuid(tG)==Guid.Empty) && tThing.StatusLevel<4)
                             {
                                 if (tOpt.Length > 0) tOpt.Append(";");
                                 tOpt.Append($"{tThing.FriendlyName}:{tThing.cdeMID}");
@@ -296,7 +326,7 @@ namespace nsCDEngine.Engines.ThingService
                         NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.SmartLabel, 2005, 0xA2, 0x80, "Select Thing to Add", null, new nmiCtrlSmartLabel() { NoTE = true, TileWidth = 5 });
                         NMI.GetNMIEditorThing()?.SetProperty("newthing", Guid.Empty);
                         MyBaseThing.SetProperty("newthing", Guid.Empty);
-                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.ComboBox, 2006, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { Options = tOpt.ToString(), NoTE = true, TileWidth = 5 });
+                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.ComboBox, 2006, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { Options = tOpt.ToString(),EnableSearch=true, NoTE = true, TileWidth = 5 });
                         var ttt = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
                         ttt.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
                         {
@@ -308,10 +338,31 @@ namespace nsCDEngine.Engines.ThingService
                                 if (tB != null && AddOrUpdateThingInGroup(tB))
                                 {
                                     ReloadForm();
-                                    TheCommCore.PublishToOriginator(tMsg?.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Control added: {tN.FriendlyName}"));
+                                    TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Control added: {tN.FriendlyName}"));
                                 }
                             }
                         });
+                        var RemBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2011, 2, 0x80, "Clear Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 2,AreYouSure="This removes all Controls, are you sure?",  ClassName = "cdeBadActionButton" });
+                        RemBut?.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "remove", (sender, para) =>
+                        {
+                            var tMsg = para as TheProcessMessage;
+                            if (tMsg != null)
+                            {
+                                ResetAllThings();
+                                ReloadForm();
+                                TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"All Controls Removed"));
+                            }
+                        });
+                        var RefreshBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2015, 2, 0x80, "Refresh", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 1, ClassName = "cdeGoodActionButton" });
+                        RefreshBut?.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, para) =>
+                        {
+                            var tMsg = para as TheProcessMessage;
+                            if (tMsg != null)
+                                ReloadForm();
+                        });
+                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2013, 0xA2, 0x80, "X", "GroupSizeX", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
+                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2014, 0xA2, 0x80, "Y", "GroupSizeY", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
+
                         pMsg.Cookie = true;
                     }
                 });
@@ -332,9 +383,39 @@ namespace nsCDEngine.Engines.ThingService
             {
                 pUXFlds["PropTableGroup"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
                 pUXFlds["PropTable"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.Table, 10010, 8, 0x80, null, "mypropertybag", new nmiCtrlTableView() { TileWidth = 12, TileHeight = 7, NoTE = true, ParentFld = 10000, ShowFilterField = true });
-                //                NMI.AddField(MyGroupForm, new TheFieldInfo() { FldOrder = 10010, DataItem = "mypropertybag", Flags = 8, Type = eFieldType.Table, TileWidth = 12, TileHeight = 7, PropertyBag = new nmiCtrlTableView() { NoTE = true, ParentFld = 4000, ShowFilterField = true } });
             }
             return true;
+        }
+
+        /// <summary>
+        /// Updates all Fld Positions
+        /// </summary>
+        /// <param name="pScene"></param>
+        public virtual void UpdateFldPositions(TheFOR pScene)
+        {
+            foreach (var tf in pScene.Flds)
+            {
+                foreach (var t in MyGroupThings.Values)
+                {
+                    var tn = CU.CInt(t.GetBaseThing().GetProperty($"FldStart_{CU.CGuid(pScene.ID)}", false)?.GetValue());
+                    if (tn==tf.FldOrder)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Delets all Fld Positions
+        /// </summary>
+        public virtual void DeleteAllFldPositions()
+        {
+            foreach (var t in MyGroupThings.Values)
+            {
+                t.GetBaseThing().SetProperty($"FldStart_{CU.CGuid(MyScreenGuid)}", "0");
+            }
+            ReloadForm();
         }
 
         /// <summary>
@@ -353,15 +434,122 @@ namespace nsCDEngine.Engines.ThingService
         public virtual void InitDynamicNMI()
         {
             InitGTP();
+            UpdatePinConnections(false);
             NMI.DeleteFieldsByRange(MyGroupForm, 100, 9999);
             MyGroupForm.FldStart = 100;
             if (MyGroupThings?.Any() == true)
             {
-                int cnt = 0;
-                foreach (var t in MyGroupThings.Values) t?.ShowDeviceFace(MyGroupForm, 78 + (cnt++ * 234), 100);
+                foreach (var t in MyGroupThings.Values)
+                {
+                    t?.AddDeviceFace(MyGroupForm, 0, 0);
+                }
             }
         }
+
+        private void ResetAllThings()
+        {
+            SetProperty("GroupFlds", ";");
+            var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid || CU.CInt(s.GetProperty($"FldStart_{MyScreenGuid}", false)?.GetValue())>0);
+            if (tThings?.Any() == true)
+            {
+                foreach (var tT in tThings)
+                {
+                    tT?.SetProperty($"FldStart_{MyScreenGuid}", 0);
+                    tT?.SetProperty("cdeGroupID", Guid.Empty);
+                }
+            }
+        }
+
+        private void ScanThings()
+        {
+            var tThings = TheThingRegistry.GetThingsByFunc("*", s => CU.CGuid(s.GetProperty("cdeGroupID", false)?.GetValue()) == MyScreenGuid);
+            if (tThings?.Any() == true)
+            {
+                bool FoundOne = false;
+                var tGFP = CU.CStr(GetProperty("GroupFlds", false));
+                List<string> lFields = new List<string>();
+                if (!string.IsNullOrEmpty(tGFP))
+                {
+                    lFields = tGFP.Split(';').ToList();
+                }
+                foreach (var tTcdeMID in tThings.Select(t=>t.cdeMID))
+                {
+                    if (!lFields.Contains($"{tTcdeMID}"))
+                    {
+                        lFields.Add($"{tTcdeMID}");
+                        FoundOne = true;
+                    }
+                }
+                if (FoundOne)
+                {
+                    StringBuilder tRes = new StringBuilder();
+                    foreach (var fID in lFields)
+                    {
+                        if (tRes.Length > 0) tRes.Append(";");
+                        tRes.Append(fID);
+                    }
+                    SetProperty("GroupFlds", tRes.ToString());
+                    InitGTP();
+                }
+            }
+        }
+
         #endregion
+
+        /// <summary>
+        /// Finds Compatible Pins of a given Pin in the current ThingGroup
+        /// </summary>
+        /// <param name="firstPin"></param>
+        /// <returns></returns>
+        public virtual List<ThePin> FindCompatiblePins(ThePin firstPin)
+        {
+            var ret = new List<ThePin>();
+            var AllDevs = GetAllGroupThings();
+            firstPin.CompatiblePins.Clear();
+            foreach (var secondRound in AllDevs)
+            {
+                if (firstPin.cdeO == secondRound.GetBaseThing().cdeMID)
+                    continue;
+                foreach (var secondPin in secondRound.GetBaseThing().GetAllPins())
+                {
+                    foreach (var firstPinType in firstPin.CanConnectToPinType)
+                    {
+                        if (secondPin.CanConnectToPinType.Contains(firstPinType) && firstPin.IsInbound != secondPin.IsInbound &&
+                                (firstPin.MaxConnections == 0 || firstPin.PinConnectionCnt() < firstPin.MaxConnections) &&
+                                (secondPin.MaxConnections == 0 || secondPin.PinConnectionCnt() < secondPin.MaxConnections))
+                        {
+                            firstPin.CompatiblePins.Add(secondPin);
+                            ret.Add(secondPin);
+                        }
+                    }
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// Calculates all Compatible Pin Connections
+        /// </summary>
+        /// <param name="AutoSetConnections"></param>
+        /// <returns></returns>
+        public virtual bool UpdatePinConnections(bool AutoSetConnections)
+        {
+            var AllDevs = GetAllGroupThings();
+            foreach (var firstRound in AllDevs)
+            {
+                foreach (var firstPin in firstRound.GetBaseThing().GetAllPins())
+                {
+                    var res = FindCompatiblePins(firstPin);
+                    if (res.Count == 1 && AutoSetConnections)
+                    {
+                        var secondPin = res[0];
+                        firstRound.GetBaseThing().AddPinConnections(firstPin, new List<ThePin> { secondPin });
+                        TheThingRegistry.GetThingByMID(secondPin.cdeO)?.AddPinConnections(secondPin, new List<ThePin> { firstPin });
+                    }
+                }
+            }
+            return true;
+        }
     }
 
 }

@@ -251,13 +251,6 @@ namespace nsCDEngine.Engines
         }
 
         /// <summary>
-        /// RETIRED IN V4: All Engines now NOT MultiChannel
-        /// </summary>
-        /// <param name="mIsMulti"></param>
-        [Obsolete("Retired in V4 - will be removed in V5")]
-        public void SetMultiChannel(bool mIsMulti) { EngineState.IsMultiChannel = false; }
-
-        /// <summary>
         /// Defines TheBaseEngine as a Mini Relay (Pub/Sub Relaying Only - no Application Code)
         /// </summary>
         /// <param name="pIsRelay"></param>
@@ -1054,7 +1047,7 @@ namespace nsCDEngine.Engines
                         }
                         break;
                     case "CDE_PING":
-                        TheCommCore.PublishToOriginator(pMessage.Message, new TSM(GetEngineName(), $"CDE_PONG{(Command.Length>1?$":{Command[1]}":"")}",$"{pMessage.Message?.PLS}:{MyBaseThing?.GetBaseThing()?.LastMessage}"),true);
+                        TheCommCore.PublishToOriginator(pMessage.Message, new TSM(GetEngineName(), $"CDE_PONG{(Command.Length > 1 ? $":{Command[1]}" : "")}", $"{pMessage.Message?.PLS}:{TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID}:{TheBaseAssets.MySettings.GetSetting("ProseNodeID")}:{MyBaseThing?.GetBaseThing()?.LastMessage}"),true);
                         break;
                     case "CDE_UPDPUSH":
                     case "CDE_FILEPUSH":

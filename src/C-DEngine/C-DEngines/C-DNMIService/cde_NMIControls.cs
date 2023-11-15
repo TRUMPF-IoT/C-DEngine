@@ -537,6 +537,11 @@ namespace nsCDEngine.Engines.NMIService
         public string Caption { get; set; }
 
         /// <summary>
+        /// Title of the Control
+        /// </summary>
+        public string Title { get; set; }
+
+        /// <summary>
         /// Sets the Style for Caption of the TileGroup
         /// </summary>
         public string LabelClassName { get; set; }
@@ -766,11 +771,6 @@ namespace nsCDEngine.Engines.NMIService
         public string Background { get; set; }
 
         /// <summary>
-        /// sets the title of the control
-        /// </summary>
-        public string Title { get; set; }
-
-        /// <summary>
         /// Check Box Width
         /// </summary>
         public int CheckWidth { get; set; }
@@ -861,15 +861,9 @@ namespace nsCDEngine.Engines.NMIService
     public class nmiCtrlDropUploader : TheNMIBaseControl
     {
         /// <summary>
-        /// Title of the Uploaded shown in the drop area of the uploader
-        /// </summary>
-        public string Title { get; set; }
-
-        /// <summary>
         /// Sets the maximum allowed file size to be sent to the relay
         /// </summary>
         public int MaxFileSize { get; set; }
-
     }
 
     /// <summary>
@@ -1100,6 +1094,10 @@ namespace nsCDEngine.Engines.NMIService
     public class nmiCtrlDateTime : TheNMIBaseControl
     {
         /// <summary>
+        /// Allows to define a format for the DateTime string. 
+        /// </summary>
+        public string Format { get; set; }
+        /// <summary>
         /// if set to true, only the date can be picked - otherwise date and time can be picked
         /// </summary>
         public bool? DateOnly { get; set; }
@@ -1119,8 +1117,13 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public bool? IncludeDays { get; set; }
     }
+
     public class nmiCtrlCertPicker : TheNMIBaseControl
     {
+        /// <summary>
+        /// Shows only Private Certs
+        /// </summary>
+        public bool? PrivateCertsOnly { get; set; }
     }
 
     public class nmiCtrlPropertyPicker : TheNMIBaseControl
@@ -1255,6 +1258,11 @@ namespace nsCDEngine.Engines.NMIService
         /// Changes the default separator ; to anything else
         /// </summary>
         public string Separator { get; set; }
+
+        /// <summary>
+        /// Shows the search field on top of the options
+        /// </summary>
+        public bool EnableSearch { get; set; }
     }
 
     public class nmiCtrlComboLookup : TheNMIBaseControl
@@ -1336,11 +1344,6 @@ namespace nsCDEngine.Engines.NMIService
         /// Allows to just tap the button
         /// </summary>
         public bool? EnableTap { get; set; }
-
-        /// <summary>
-        /// Title of the button
-        /// </summary>
-        public string Title { get; set; }
 
         /// <summary>
         /// Function of code executed OnClick
@@ -1504,11 +1507,6 @@ namespace nsCDEngine.Engines.NMIService
         /// displays an image as Thumbnail on the button
         /// </summary>
         public string Thumbnail { get; set; }
-        /// <summary>
-        /// displays an image as Thumbnail on the button
-        /// </summary>
-        [Obsolete("Please use Thumbnail instead - this option will be removed")]
-        public string ThumbNail { get; set; }
 
         /// <summary>
         /// Describes the screen for the ScreenPicker
@@ -1698,15 +1696,6 @@ namespace nsCDEngine.Engines.NMIService
         public bool? UseMargin { get; set; }
     }
 
-
-    /// <summary>
-    /// The base wrapper control for Forms and Tables in the NMI
-    /// </summary>
-    public class nmiCtrlTileEntry : TheNMIBaseControl
-    {
-    }
-
-
     /// <summary>
     /// Shows the default About Button
     /// </summary>
@@ -1723,10 +1712,6 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public string Background { get; set; }
 
-        /// <summary>
-        /// Title of the About Box
-        /// </summary>
-        public string Title { get; set; }
         /// <summary>
         /// Subtitle
         /// </summary>

@@ -34,8 +34,8 @@ namespace nsCDEngine.Engines
         /// Interface to the Current StorageService
         /// NOTE: This will be replace by MyIStorageService in V5- please migrate your code to use MyIStorageService
         /// </summary>
-        [Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
-        public static IStorageService MyStorageService;
+        //[Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
+        //public static IStorageService MyStorageService;
 
         private static IStorageService _MyIStorageService = null;
         /// <summary>
@@ -55,7 +55,7 @@ namespace nsCDEngine.Engines
             if (pService == null)
                 return false;
 #pragma warning disable CS0618 // Type or member is obsolete
-            MyStorageService = pService;
+            //MyStorageService = pService;
 #pragma warning restore CS0618 // Type or member is obsolete
             if (MyIStorageService == null)
             {
@@ -66,7 +66,7 @@ namespace nsCDEngine.Engines
                     TheBaseAssets.MySYSLOG.WriteToLog(4138, new TSM("TheCDEngines", "Distributed StorageService could not be started. Node falls back to local storage only", eMsgLevel.l2_Warning));
                     _MyIStorageService = null;
 #pragma warning disable CS0618 // Type or member is obsolete
-                    MyStorageService = null;
+                    //MyStorageService = null;
 #pragma warning restore CS0618 // Type or member is obsolete
                 }
                 return Succes;
@@ -210,6 +210,10 @@ namespace nsCDEngine.Engines
         /// Fires when a new engine was installed and started
         /// </summary>
         public static Action<string> eventNewPluginInstalled;
+        /// <summary>
+        /// Fires when a new engine was installed and started
+        /// </summary>
+        public static Action<string> eventPluginStarted;
 
         /// <summary>
         /// Fires when All Engines have been started
@@ -572,7 +576,7 @@ namespace nsCDEngine.Engines
         static TheBaseEngine CreatePlugin(string pPluginName)
         {
             if (TheBaseAssets.MyCDEPlugins.ContainsKey(pPluginName) && TheBaseAssets.MyCDEPlugins[pPluginName].PluginType != null
-                && !pPluginName.Equals(MyCustomEngines?.GetType().FullName)
+                && MyPluginEngines?.Any(s=>s.GetType().FullName== pPluginName)==true // !pPluginName.Equals(MyCustomEngines?.GetType().FullName)
                 )
                 return null;    //new V4.106: Dont ever start a plugin twice! (StorageService already started)
             TheBaseEngine tBase = new ();
@@ -699,8 +703,10 @@ namespace nsCDEngine.Engines
         /// <returns>Return TheBaseEngine of the new Topic</returns>
         public static TheBaseEngine RegisterPubSubTopic(string pTopicName)
         {
-            if (string.IsNullOrEmpty(pTopicName) || TheThingRegistry.IsEngineStarted(pTopicName, false))
+            if (string.IsNullOrEmpty(pTopicName))
                 return null;
+            if (TheThingRegistry.IsEngineStarted(pTopicName, false))
+                return TheThingRegistry.GetBaseEngine(pTopicName)?.GetBaseEngine();
             if (TheBaseAssets.MyServiceHostInfo.RelayEngines.Contains(pTopicName)) return null;
             TheBaseAssets.MyServiceHostInfo.RelayEngines.Add(pTopicName);
             var tRes = InitMiniRelay(pTopicName, false);
@@ -832,6 +838,7 @@ namespace nsCDEngine.Engines
             tBase.GetEngineState().IsStarted = true;
             if (tThing != null && tThing.GetBaseThing().StatusLevel == 4)
                 tThing.GetBaseThing().StatusLevel = 0;
+            eventPluginStarted?.Invoke(tBase.GetEngineName());
         }
 
         private static readonly object lockStartEngine = new ();

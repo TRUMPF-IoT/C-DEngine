@@ -246,23 +246,58 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         [ConfigProperty]
-        public int TriggerActiveTime
+        public TimeSpan TriggerStartTime
         {
-            get { return TheCommonUtils.CInt(TheThing.GetSafePropertyString(MyBaseThing, "TriggerActiveTime")); }
-            set { TheThing.SetSafePropertyNumber(MyBaseThing, "TriggerActiveTime", value); }
+            get { return TheThing.MemberGetSafePropertyTime(MyBaseThing); }
+            set { TheThing.MemberSetSafePropertyTime(MyBaseThing, value); }
+        }
+        [ConfigProperty]
+        public TimeSpan TriggerEndTime
+        {
+            get { return TheThing.MemberGetSafePropertyTime(MyBaseThing); }
+            set { TheThing.MemberSetSafePropertyTime(MyBaseThing, value); }
         }
 
+        /// <summary>
+        /// Defines the type used for the start time 
+        /// 0 = TriggerStartTime is used
+        /// 1 = Sunrise is used
+        /// 2 = Sunset is used
+        /// </summary>
         [ConfigProperty]
-        public DateTimeOffset TriggerStartTime
+        public int TriggerStartTimeType
         {
-            get { return TheCommonUtils.CDate(TheThing.GetSafePropertyString(MyBaseThing, "TriggerStartTime")); }
-            set { TheThing.SetSafePropertyDate(MyBaseThing, "TriggerStartTime", value); }
+            get { return TheCommonUtils.CInt(TheThing.MemberGetSafePropertyNumber(MyBaseThing)); }
+            set { TheThing.MemberSetSafePropertyNumber(MyBaseThing, value); }
         }
+
+        /// <summary>
+        /// Defines the type used for the end time 
+        /// 0 = TriggerEndTime is used
+        /// 1 = Sunrise is used
+        /// 2 = Sunset is used
+        /// </summary>
         [ConfigProperty]
-        public DateTimeOffset TriggerEndTime
+        public int TriggerEndTimeType
         {
-            get { return TheCommonUtils.CDate(TheThing.GetSafePropertyString(MyBaseThing, "TriggerEndTime")); }
-            set { TheThing.SetSafePropertyDate(MyBaseThing, "TriggerEndTime", value); }
+            get { return TheCommonUtils.CInt(TheThing.MemberGetSafePropertyNumber(MyBaseThing)); }
+            set { TheThing.MemberSetSafePropertyNumber(MyBaseThing, value); }
+        }
+
+        /// <summary>
+        /// Only Trigger this rule every xx seconds
+        /// </summary>
+        [ConfigProperty]
+        public int TriggerOnlyEvery
+        {
+            get { return TheCommonUtils.CInt(TheThing.MemberGetSafePropertyNumber(MyBaseThing)); }
+            set { TheThing.MemberSetSafePropertyNumber(MyBaseThing, value); }
+        }
+
+        public DateTimeOffset LastAction
+        {
+            get { return TheCommonUtils.CDate(TheThing.MemberGetSafePropertyDate(MyBaseThing)); }
+            set { TheThing.MemberSetSafePropertyDate(MyBaseThing, value); }
         }
 
         [ConfigProperty]
@@ -300,9 +335,6 @@ namespace nsCDEngine.Engines.ThingService
             pBaseThing ??= new TheThing();
             MyBaseThing = pBaseThing;
 
-            TriggerStartTime = DateTimeOffset.MinValue;
-            TriggerEndTime = DateTimeOffset.MaxValue;
-
             if (string.IsNullOrEmpty(MyBaseThing.EngineName))
                 MyBaseThing.EngineName = eEngineName.ThingService;
             MyBaseThing.DeviceType = eKnownDeviceTypes.TheThingRule;
@@ -328,8 +360,8 @@ namespace nsCDEngine.Engines.ThingService
 
         private void CreateRule(string pFriendlyName, TheThing pTriggerThing, string pTriggerProperty, eRuleTrigger pTriggerCondition, string pTriggerValue, bool pDoLogRule, bool bIsRuleActive)
         {
-            TriggerStartTime = DateTimeOffset.MinValue;
-            TriggerEndTime = DateTimeOffset.MaxValue;
+            TriggerStartTime = TimeSpan.Zero;
+            TriggerEndTime = TimeSpan.Zero;
 
             TriggerObject = pTriggerThing.cdeMID.ToString();
             if (!TheCommonUtils.IsNullOrWhiteSpace(pTriggerProperty))

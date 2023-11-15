@@ -7,7 +7,6 @@ using nsCDEngine.Communication;
 using nsCDEngine.Engines;
 using nsCDEngine.Engines.ThingService;
 using nsCDEngine.PluginManagement;
-using nsCDEngine.Security;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -372,25 +371,6 @@ namespace nsCDEngine.ISM
         public static string GetISMExtension()
         {
             return TheBaseAssets.MyApplication?.MyISMRoot?.GetISMExt();
-        }
-
-        /// <summary>
-        /// Asks the ISM to check for updates in the given file
-        /// </summary>
-        /// <param name="PFile"></param>
-        /// <returns></returns>
-        [Obsolete("Retired")]
-        public static string CheckForUpdates(string PFile)
-        {
-            string tClientBinUpdateAt = "";
-            //clientbin Update Check
-            if (File.Exists(TheCommonUtils.GetTargetFolder(true, true) + Path.DirectorySeparatorChar + PFile))
-                tClientBinUpdateAt = TheCommonUtils.GetTargetFolder(true, true) + Path.DirectorySeparatorChar + PFile;
-            if (tClientBinUpdateAt == "" && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory) && File.Exists(TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory + Path.DirectorySeparatorChar + PFile))
-                tClientBinUpdateAt = TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory + Path.DirectorySeparatorChar + PFile;
-            if (tClientBinUpdateAt == "" && File.Exists(TheBaseAssets.MyServiceHostInfo.BaseDirectory + PFile))
-                tClientBinUpdateAt = TheBaseAssets.MyServiceHostInfo.BaseDirectory + PFile;
-            return tClientBinUpdateAt;
         }
 
         /// <summary>
@@ -904,7 +884,7 @@ namespace nsCDEngine.ISM
                         foreach (var told in OldCDEX)
                         {
                             var tOP = Path.GetFileName(told).Split(' ');
-                            if (!tList.Any(s => Path.GetFileName(s).Split(' ')[0] == tOP[0]))
+                            if (!tList.Exists(s => Path.GetFileName(s).Split(' ')[0] == tOP[0]))
                             {
                                 tList.Add(told);
                             }
@@ -1188,7 +1168,7 @@ namespace nsCDEngine.ISM
                 var tFounds = FoundUpdatesToPluginInfo();
                 foreach (var tF in tFounds)
                 {
-                    var tP = mList.FirstOrDefault(s => CompareServiceNames(s.ServiceName, tF.ServiceName));
+                    var tP = mList.Find(s => CompareServiceNames(s.ServiceName, tF.ServiceName));
                     if (tP != null)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(4010, new TSM(eEngineName.ContentService, $"Found updated plugin {tF.ServiceName} with Version {tF.CurrentVersion} higher then installed {tP.CurrentVersion}", eMsgLevel.l3_ImportantMessage));
@@ -1236,7 +1216,8 @@ namespace nsCDEngine.ISM
             MyRoute.RegisterEvent2("TSMReceived", sinkTSMReceived);
             MyRoute.RegisterEvent2("Connected", sinkConnected);
             MyRoute.RegisterEvent2("Disconnected", sinkDisconnected);
-            MyRoute.Connect(TheBaseAssets.MyServiceHostInfo.ProvisioningService, TheBaseAssets.MyServiceHostInfo.ProvisioningScope, true);
+            var ret=MyRoute.Connect(TheBaseAssets.MyServiceHostInfo.ProvisioningService, TheBaseAssets.MyServiceHostInfo.ProvisioningScope, true);
+            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ISMManager", $"Connection to Provision Service {(string.IsNullOrEmpty(ret)? "created" : $"failed: {ret}")}.", eMsgLevel.l3_ImportantMessage));
             return true;
         }
 
@@ -1275,15 +1256,18 @@ namespace nsCDEngine.ISM
             return TheBaseAssets.MyApplication?.MyISMRoot?.SendToProSe(pToSend) == true;
         }
 
+        bool IsReconnecting = false;
         private void sinkDisconnected(TheProcessMessage pMsg, object sender)
         {
             MyRoute = null;
-            if (TheBaseAssets.MasterSwitch)
+            if (TheBaseAssets.MasterSwitch && !IsReconnecting)
             {
+                IsReconnecting = true;
                 TheCommonUtils.TaskDelayOneEye(10000, 100).ContinueWith(t =>
                 {
                     if (TheBaseAssets.MasterSwitch)
                         ConnectToProvisioningService();
+                    IsReconnecting = false;
                 });
             }
         }
@@ -1295,7 +1279,7 @@ namespace nsCDEngine.ISM
 
         private void sinkTSMReceived(TheProcessMessage pMsg, object sender)
         {
-            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("ISMManager", $"Provisioning Message Received ENG={pMsg?.Message?.ENG} TXT={pMsg?.Message?.TXT}", eMsgLevel.l5_HostMessage));
+            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ISMManager", $"Provisioning Message Received ENG={pMsg?.Message?.ENG} TXT={pMsg?.Message?.TXT}", eMsgLevel.l5_HostMessage));
             if (pMsg?.Message?.ENG == eEngineName.ContentService)
             {
                 var tCmd = pMsg?.Message?.TXT?.Split(':');
@@ -1303,7 +1287,6 @@ namespace nsCDEngine.ISM
                 {
                     switch (tCmd[0])
                     {
-                        //Any setting that must only go via ISM Provisioning sErvice
                         default:
                             if (TheCDEngines.MyContentEngine == null)
                                 TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("ISMManager", $"ContentService Not ready! This should not happen!", eMsgLevel.l2_Warning));
@@ -1378,7 +1361,6 @@ namespace nsCDEngine.ISM
             try
             {
                 FileToReturn1 = TheCommonUtils.cdeFixupFileName("backups\\" + pTitle + ".CDEB");
-#if !CDE_NET35 && !CDE_NET4
                 TheCommonUtils.CreateDirectories(FileToReturn1);
                 var SourceDir = TheCommonUtils.cdeFixupFileName("cache", true);
                 TheCommonUtils.CreateDirectories(SourceDir, true);
@@ -1439,7 +1421,6 @@ namespace nsCDEngine.ISM
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(466, new TSM("ISMManager", $"Repeated Backup Creation for {pTitle} failed - giving up now, trying again at next interval", eMsgLevel.l2_Warning));
                 }
-#endif
                 return FileToReturn1;
             }
             catch (Exception e)
@@ -1459,7 +1440,6 @@ namespace nsCDEngine.ISM
         {
             try
             {
-#if CDE_NET45
                 string tRestoreFile = TheCommonUtils.cdeFixupFileName("backups\\" + pTitle);
                 string SourceDir = TheCommonUtils.cdeFixupFileName("__CacheToRestore"); // Write to separate location, then put in place during startup do avoid overwrite
                 TheCommonUtils.CreateDirectories(SourceDir, true);
@@ -1468,7 +1448,6 @@ namespace nsCDEngine.ISM
                     file.Delete();
                 ZipFile.ExtractToDirectory(tRestoreFile, SourceDir);
                 TheBaseAssets.MyApplication.MyISMRoot.Restart(true);
-#endif
                 return true;
             }
             catch (Exception)

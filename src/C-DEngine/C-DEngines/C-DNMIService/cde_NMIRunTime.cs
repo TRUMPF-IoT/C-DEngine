@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -86,7 +86,7 @@ namespace nsCDEngine.Engines.NMIService
                     }
                     break;
                 case "NMI_SHOW_EDITOR":
-                    if (TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
+                    if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
                     {
                         try
                         {
@@ -97,6 +97,18 @@ namespace nsCDEngine.Engines.NMIService
                                 var tfld = GetFieldById(TheCommonUtils.CGuid(tLocParts[0]));
                                 if (tfld != null)
                                 {
+                                    if (!tfld.IsEventRegistered(eUXEvents.OnShowEditor))
+                                    {
+                                        var tParent = TheCommonUtils.CInt(tfld.PropBagGetValue("ParentFld"));
+                                        if (tParent > 0)
+                                        {
+                                            var tParentFld = GetFieldByFldOrder(GetFormById(tfld.FormID), tParent);
+                                            if (TheCommonUtils.CBool(tParentFld?.PropBagGetValue("DisallowEdit")))
+                                            {
+                                                tfld = tParentFld;
+                                            }
+                                        }
+                                    }
                                     var tMyForm = GetNMIEditorForm();
                                     if (tMyForm != null)
                                     {
@@ -724,7 +736,7 @@ namespace nsCDEngine.Engines.NMIService
                                             var tVal = $"{tT.cdeMID}";
                                             if (!string.IsNullOrEmpty(ValueProperty))
                                             {
-                                                var tpVal = TheCommonUtils.CStr(tT.GetAllProperties().FirstOrDefault(s => s.Name == ValueProperty)?.GetValue());
+                                                var tpVal = TheCommonUtils.CStr(tT.GetAllProperties().Find(s => s.Name == ValueProperty)?.GetValue());
                                                 if (tpVal != null)
                                                     tVal = tpVal;
                                             }
@@ -788,7 +800,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             if (string.IsNullOrEmpty(tT.DeviceType) && !tT.IsInit())
                                                 continue;
-                                            if (tLst.Any(s => s.N == tT.DeviceType))
+                                            if (tLst.Exists(s => s.N == tT.DeviceType))
                                                 continue;
                                             var tFN = tT.DeviceType;
                                             var tVal = tT.DeviceType;
@@ -914,8 +926,11 @@ namespace nsCDEngine.Engines.NMIService
                                     TheCommCore.PublishToOriginator(pMsg.Message, LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_TTS", pMsg.Message.PLS)));
                                     return;
                                 }
-                                TSM ErrTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Requested Scene, Dashboard or Form not found###"));
-                                TheCommCore.PublishToOriginator(pMsg.Message, ErrTsm);
+                                if (!TheBaseAssets.MyServiceHostInfo.IsCloudService)
+                                {
+                                    TSM ErrTsm = LocNMI(tClientInfo.LCID, new TSM(eEngineName.NMIService, "NMI_ERROR", "###Requested Scene, Dashboard or Form not found###"));
+                                    TheCommCore.PublishToOriginator(pMsg.Message, ErrTsm);
+                                }
                                 return;
                             }
                         }
@@ -948,10 +963,31 @@ namespace nsCDEngine.Engines.NMIService
                 case "NMI_SAVE_SCREEN":
                     if (cmd.Length > 1 && pMsg.CurrentUserID != Guid.Empty)
                     {
-                        TheFOR tScene = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(pMsg.Message.PLS);
-                        if (tScene == null) return;
-                        string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(tScene.ID)}.cdeFOR";
+                        TheFOR tNewScene = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(pMsg.Message.PLS);
+                        if (tNewScene == null) return;
+                        TheFOR tOldScene = null;
+                        string tPlS = TheCommonUtils.LoadStringFromDisk($"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(tNewScene.ID)}.cdeFOR", null);
+                        if (!string.IsNullOrEmpty(tPlS))
+                        {
+                            tOldScene = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS);
+                            foreach (var tNewField in tNewScene.Flds)
+                            {
+                                var tOldField = tOldScene.Flds.Find(f => f.FldOrder == tNewField.FldOrder);
+                                if (tOldField != null)
+                                    tOldField.PO.MergeBag(tNewField.PO);
+                                else
+                                    tOldScene.Flds.Add(tNewField);
+                            }
+                            pMsg.Message.PLS = TheCommonUtils.SerializeObjectToJSONString(tOldScene);
+                        }
+                        string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(tNewScene.ID)}.cdeFOR";
                         TheCommonUtils.SaveBlobToDisk(pMsg.Message, new[] { "", tTargetDir }, null);
+                        var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", TheCommonUtils.CGuid(tNewScene.ID).ToString());
+                        if (group != null)
+                        {
+                            var tGS = group.GetObject() as TheThingGroup;
+                            tGS?.UpdateFldPositions(tNewScene);
+                        }
                     }
                     break;
                 case "NMI_CLEAR_SCREEN":
@@ -959,6 +995,12 @@ namespace nsCDEngine.Engines.NMIService
                     {
                         string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(cmd[1])}.cdeFOR";
                         TheCommonUtils.DeleteFromDisk(tTargetDir, "");
+                        var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", TheCommonUtils.CGuid(cmd[1]).ToString());
+                        if (group != null)
+                        {
+                            var tGS = group.GetObject() as TheThingGroup;
+                            tGS?.DeleteAllFldPositions();
+                        }
                     }
                     break;
                 case "NMI_SAVE_HOMESCENE":
@@ -999,7 +1041,7 @@ namespace nsCDEngine.Engines.NMIService
                                 if (!string.IsNullOrEmpty(tPls))
                                 {
                                     TheNMIScene tScene2 = TheCommonUtils.DeserializeJSONStringToObject<TheNMIScene>(tPls);
-                                    if (tScene2 != null && tScene2.Screens?.Count > 0 && !tScene2.Screens.Any(s => s.ID == tScene.Screens[0].ID))
+                                    if (tScene2 != null && tScene2.Screens?.Count > 0 && !tScene2.Screens.Exists(s => s.ID == tScene.Screens[0].ID))
                                     {
                                         tScene.Screens[0].FldOrder = tScene2.Screens.OrderByDescending(s => s.FldOrder).First().FldOrder + 10;
                                         tScene2.Screens.Add(tScene.Screens[0]);
@@ -1512,7 +1554,7 @@ namespace nsCDEngine.Engines.NMIService
                 if (tD == null || tD.Category?.EndsWith("-HIDE") == true || tD.PanelTitle?.EndsWith("-HIDE") == true) continue;
                 tMyDashPanels.Add(tD);
             }
-            return !tMyDashPanels.Any((s) => TheUserManager.HasUserAccess(pClientInfo.UserID, s.cdeA) &&
+            return !tMyDashPanels.Exists((s) => TheUserManager.HasUserAccess(pClientInfo.UserID, s.cdeA) &&
                                         (s.Flags == 0 ||
                                          (((s.Flags & 2) != 0 || !pClientInfo.IsOnCloud || pClientInfo.IsUserTrusted) &&
                                           ((s.Flags & 4) == 0 || !pClientInfo.IsMobile) &&

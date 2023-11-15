@@ -165,7 +165,7 @@ namespace nsCDEngine.Communication
 
         internal bool UpdateSessionLCID(Guid pSessionID, int pLCID)
         {
-            lock (GetLock()) //LOCK-REVIEW: This is more a logic lock then read/write MySessionStates.MyRecordsLock)    //low impact
+            lock (GetLock()) //LOCK-REVIEW: This is more a logic lock then read/write RecordsLock)    //low impact
             {
                 TheSessionState tSess = ValidateSEID(pSessionID);   //Low Frequency
                 if (tSess != null)
