@@ -13,7 +13,8 @@
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
     <PackageDescription>ASP.Net Core Enabler for C-DEngine</PackageDescription>
     <PackageIcon>toplogo-128.png</PackageIcon>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	<PackageReadmeFile>readme.md</PackageReadmeFile>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
     <ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
     <!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
@@ -31,6 +32,7 @@
   
   <ItemGroup>
     <None Include="..\C-DEngine\toplogo-128.png" Pack="true" PackagePath="" />
+	<None Include="..\..\readme.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
   
 </Project>
