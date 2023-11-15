@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -6,10 +6,8 @@ using nsCDEngine.Engines.ThingService;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -1244,82 +1242,6 @@ namespace nsCDEngine.BaseClasses
             }
             return AllTopics;
         }
-        #endregion
-
-        #region Randomizer
-        private static readonly IRandomizer cdeRND = new cdeRandomizer(DateTime.Now.Millisecond);   //No Offset needed
-
-        /// <summary>
-        /// Generate a pseudo-random number.
-        /// </summary>
-        /// <returns>A random double value.</returns>
-        public static double GetRandomDouble()
-        {
-            lock (cdeRND)
-                return cdeRND.NextDouble();
-        }
-        /// <summary>
-        /// Generate a pseudo-random number.
-        /// </summary>
-        /// <param name="pMin"></param>
-        /// <param name="pMax"></param>
-        /// <returns>A random unsigned integer.</returns>
-        public static uint GetRandomUInt(uint pMin, uint pMax)
-        {
-            return cdeRND.NextUInt(pMin, pMax);
-        }
-
-        internal interface IRandomizer
-        {
-            double NextDouble();
-            uint NextUInt(uint pMin, uint pMax);
-        }
-        internal class cdeRandomizer : IRandomizer
-        {
-            /// <summary>
-            /// Creates a new pseudo-random number generator with a given seed.
-            /// </summary>
-            /// <param name="seed">A value to use as a seed.</param>
-            public cdeRandomizer(int seed)
-            {
-                init((uint)seed);
-            }
-
-            private RandomNumberGenerator mRandom;
-
-            private void init(uint seed)
-            {
-                mRandom = RandomNumberGenerator.Create(); // Compliant for security-sensitive use cases
-            }
-
-            public uint NextUInt(uint pMin, uint pMax)
-            {
-                if (pMin == pMax) return pMin;
-                if (pMin > pMax)
-                {
-                    (pMin, pMax) = (pMax, pMin);
-                }
-                lock (mRandom)
-                {
-                    byte[] data = new byte[16];
-                    mRandom.GetBytes(data);
-                    var ul = BitConverter.ToUInt64(data, 0);
-                    return (uint)((ul % (pMax - pMin)) + pMin);
-                }
-            }
-
-            public double NextDouble()
-            {
-                lock (mRandom)
-                {
-                    byte[] data = new byte[16];
-                    mRandom.GetBytes(data);
-                    var ul = BitConverter.ToUInt64(data, 0) >>11;
-                    return ul / (double)(1UL << 53);
-                }
-            }
-        }
-
         #endregion
 
         #region Process Helpers
