@@ -525,8 +525,21 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         private readonly StringBuilder MyNMILog = new();
+        public void WriteToNMILog(string pMessage, int pStatusLevel, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        {
+            WriteToNMILog(pMessage, true, null, pStatusLevel, SetLastUpdate, 0, pMsgLevel);
+        }
+        public void WriteToNMILog(string pMessage, DateTimeOffset? SetLastUpdate, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        {
+            WriteToNMILog(pMessage, true, null, -1, SetLastUpdate, 0, pMsgLevel);
+        }
+        public void WriteToNMILog(string pMessage, string EventLogEntryName, int pStatusLevel, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
+        {
+            WriteToNMILog(pMessage, true, EventLogEntryName, pStatusLevel, SetLastUpdate, 0, pMsgLevel);
+        }
         public virtual void WriteToNMILog(string txt, bool AddToLog = false, string EventLogEntryName = null, int pStatusLevel = -1, DateTimeOffset? SetLastUpdate = null, int LogID = 0, eMsgLevel pMsgLevel = eMsgLevel.l4_Message)
         {
+            if (string.IsNullOrEmpty(txt)) return;
             if (EnableNMILog)
             {
                 if (MyNMILog.Length > 0)

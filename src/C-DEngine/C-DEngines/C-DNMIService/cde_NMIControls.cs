@@ -1094,6 +1094,10 @@ namespace nsCDEngine.Engines.NMIService
     public class nmiCtrlDateTime : TheNMIBaseControl
     {
         /// <summary>
+        /// Allows to define a format for the DateTime string. 
+        /// </summary>
+        public string Format { get; set; }
+        /// <summary>
         /// if set to true, only the date can be picked - otherwise date and time can be picked
         /// </summary>
         public bool? DateOnly { get; set; }

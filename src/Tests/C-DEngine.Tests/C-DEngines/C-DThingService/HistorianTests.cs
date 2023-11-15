@@ -237,50 +237,39 @@ namespace CDEngine.ThingService.Net35.Tests
 
             Guid token;
             Guid token2;
-            bool useRegistrationClass = true;
 
             var props2 = props.Union(props.Select(p => $"[{p}].[N]")).Union(props.Select(p => $"[{p}].[Avg]")).Union(props.Select(p => $"[{p}].[Min]")).Union(props.Select(p => $"[{p}].[Max]")).ToList();
-            if (useRegistrationClass)
+            var historyParams = new TheHistoryParameters
             {
-                var historyParams = new TheHistoryParameters
-                {
-                    SamplingWindow = samplingWindow,
-                    ReportUnchangedProperties = reportUnchanged1,
-                    ReportInitialValues = reportInitialValues1,
-                    Persistent = true,
-                    MaintainHistoryStore = false,
-                    CooldownPeriod = cooldownPeriod,
-                    Properties = reportAllProps ? null : props.ToList(),
-                };
-                token = tThing.RegisterForUpdateHistory(historyParams);
-                // Testing unregister and re-register (common pattern for Axoom IoT Sender)
-                tThing.UnregisterUpdateHistory(token);
-                token = tThing.RegisterForUpdateHistory(historyParams);
+                SamplingWindow = samplingWindow,
+                ReportUnchangedProperties = reportUnchanged1,
+                ReportInitialValues = reportInitialValues1,
+                Persistent = true,
+                MaintainHistoryStore = false,
+                CooldownPeriod = cooldownPeriod,
+                Properties = reportAllProps ? null : props.ToList(),
+            };
+            token = tThing.RegisterForUpdateHistory(historyParams);
+            // Testing unregister and re-register (common pattern for Axoom IoT Sender)
+            tThing.UnregisterUpdateHistory(token);
+            token = tThing.RegisterForUpdateHistory(historyParams);
 
-                var historyParams2 = new TheHistoryParameters
-                {
-                    // TODO make a test for aggregation
-                    Properties = reportAllProps ? null : props2,
-                    SamplingWindow = samplingWindow,
-                    ReportUnchangedProperties = reportUnchanged2,
-                    ReportInitialValues = reportInitialValues2,
-                    Persistent = true,
-                    MaintainHistoryStore = true,
-                    ComputeAvg = reportAggregates2,
-                    ComputeN = reportAggregates2,
-                    ComputeMax = reportAggregates2,
-                    ComputeMin = reportAggregates2,
-                    CooldownPeriod = cooldownPeriod,
-                };
-                token2 = tThing.RegisterForUpdateHistory(historyParams2);
-            }
-            else
+            var historyParams2 = new TheHistoryParameters
             {
-#pragma warning disable CS0618 // Type or member is obsolete
-                token = tThing.RegisterForUpdateHistory(0, new TimeSpan(0, 0, 0, 0, 0), props.ToList(), null, samplingWindow, reportUnchanged1, true);
-                token2 = tThing.RegisterForUpdateHistory(0, new TimeSpan(0, 0, 0, 0, 0), props2, null, samplingWindow, reportUnchanged2, true);
-#pragma warning restore CS0618 // Type or member is obsolete
-            }
+                // TODO make a test for aggregation
+                Properties = reportAllProps ? null : props2,
+                SamplingWindow = samplingWindow,
+                ReportUnchangedProperties = reportUnchanged2,
+                ReportInitialValues = reportInitialValues2,
+                Persistent = true,
+                MaintainHistoryStore = true,
+                ComputeAvg = reportAggregates2,
+                ComputeN = reportAggregates2,
+                ComputeMax = reportAggregates2,
+                ComputeMin = reportAggregates2,
+                CooldownPeriod = cooldownPeriod,
+            };
+            token2 = tThing.RegisterForUpdateHistory(historyParams2);
             Assert.AreNotEqual(Guid.Empty, token);
             await TheCommonUtils.TaskDelayOneEye(((int)cooldownPeriod.TotalMilliseconds + 15), 50); // Wait for cooldown period
             {
@@ -288,7 +277,7 @@ namespace CDEngine.ThingService.Net35.Tests
                 int retryCount = 0;
                 while (pendingSnapshotCount > 0 && retryCount < 10)
                 {
-                    WriteLine($"Pending Snapshots: {pendingSnapshotCount }. Waiting 500ms. {retryCount}");
+                    WriteLine($"Pending Snapshots: {pendingSnapshotCount}. Waiting 500ms. {retryCount}");
                     await TheCommonUtils.TaskDelayOneEye(500, 50);
                     retryCount++;
                     pendingSnapshotCount = (tThing.Historian as nsCDEngine.TheStorageMirrorHistorian).TestHookGetPendingSnapShotCount();
@@ -381,7 +370,7 @@ namespace CDEngine.ThingService.Net35.Tests
                     //    retryCount++;
                     //    pendingSnapshotCount = (tThing.Historian as nsCDEngine.TheStorageMirrorHistorian).TestHookGetPendingSnapShotCount();
                     //}
-                    WriteLine($"Done with inputs. Pending Snapshots: {pendingSnapshotCount }");
+                    WriteLine($"Done with inputs. Pending Snapshots: {pendingSnapshotCount}");
                 }
                 bInputsDone = true;
             });
@@ -444,7 +433,7 @@ namespace CDEngine.ThingService.Net35.Tests
                     }
                     pendingSnapshotCount = (tThing.Historian as nsCDEngine.TheStorageMirrorHistorian).TestHookGetPendingSnapShotCount();
                     historyQueueItemCount = (tThing.Historian as nsCDEngine.TheStorageMirrorHistorian).TestHookGetHistoryItemCount();
-                    WriteLine($"Reading results. Inputs Done: {bInputsDone} Items read: {history.Count}. History Items: {historyQueueItemCount }. Pending Snapshots: {pendingSnapshotCount}");
+                    WriteLine($"Reading results. Inputs Done: {bInputsDone} Items read: {history.Count}. History Items: {historyQueueItemCount}. Pending Snapshots: {pendingSnapshotCount}");
 
                 }
                 while (history.Count > 0 || !bInputsDoneBefore || historyResponse.PendingItemCount > 0 || pendingSnapshotCount > 0 || historyQueueItemCount > 0);
@@ -479,7 +468,7 @@ namespace CDEngine.ThingService.Net35.Tests
 
             var orderedInputEntries2 = HistoryInputEntries.Where(e => e.InOutput)./*Where(e => props2.Contains(e.Name)).*/OrderBy(e => e.Time).ThenBy(e => e.Name.Trim('[', ']')).ThenBy(e => e.Value);
 
-            var orderedMirrorEntries = mirrorEntries.OrderBy(e => e.Time).ThenBy(e => e.Name.Trim('[',']')).ThenBy(e => e.Value);
+            var orderedMirrorEntries = mirrorEntries.OrderBy(e => e.Time).ThenBy(e => e.Name.Trim('[', ']')).ThenBy(e => e.Value);
             ValidateEntries(orderedInputEntries2, orderedMirrorEntries, reportAggregates2, /*reportInitialValues2*/true, reportUnchanged2, reportAllProps, samplingWindow); // TODO investigate initial values being reported for reportunchanged (or is this the baseline, one first registration only?)
             var aggregates = orderedMirrorEntries.Where(e => e.Name.StartsWith("["));
             int expectedAggregateCount;
@@ -495,7 +484,7 @@ namespace CDEngine.ThingService.Net35.Tests
                     expectedAggregateCount = 0;
                     var time = DateTimeOffset.MinValue;
                     HashSet<string> propertiesInBucket = new HashSet<string>();
-                    foreach(var item in orderedInputEntries3)
+                    foreach (var item in orderedInputEntries3)
                     {
                         if (!HistoryEntry.InSameSamplingWindow(item.Time, time, samplingWindow))
                         {
@@ -508,7 +497,7 @@ namespace CDEngine.ThingService.Net35.Tests
                     expectedAggregateCount += propertiesInBucket.Count;
                     expectedAggregateCount =
                         //( /*orderedInputEntries2.Count() + */numberOfAggregations // ((iterations - 2)* (iterations - 1) /2 ) // 4 aggregates per input value
-                        ( expectedAggregateCount
+                        (expectedAggregateCount
                         + (reportInitialValues2 ? itemsPerIteration : 0)) // 4 additional ones for each initial value
                         * 4;
                 }
