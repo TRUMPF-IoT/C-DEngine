@@ -10,6 +10,7 @@
 		<AssemblyName>C-DEngine</AssemblyName>
 		<PackageId>C-DEngine</PackageId>
 		<PackageIcon>toplogo-128.png</PackageIcon>
+		<PackageReadmeFile>readme.md</PackageReadmeFile>		
 		<Version>5.161.0$(cdeNugetSuffix)</Version>
 		<Authors>Chris Muench</Authors>
 		<Company>C-Labs</Company>
@@ -33,6 +34,7 @@
 
 	<ItemGroup>
 		<None Include="toplogo-128.png" Pack="true" PackagePath="" />
+		<None Include="..\..\readme.md" Pack="true" PackagePath="\"/>
 		<EmbeddedResource Include="C-DCommunication\ClientBin\FAVICON.ICO" />
 	</ItemGroup>
 	<ItemGroup>
