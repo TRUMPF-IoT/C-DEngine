@@ -1283,7 +1283,7 @@ namespace nsCDEngine.Engines.ThingService
         #region Property Change Throtteling
         private int PublishThrottle = 0;
         private eThrottleKind PublishThrottleKind = eThrottleKind.Last;
-        private DateTimeOffset PubLastSend = DateTime.MinValue;
+        private DateTimeOffset PubLastSend = DateTimeOffset.MinValue;
         private cdeConcurrentDictionary<string, cdeP> PubList = null;
 
         /// <summary>
