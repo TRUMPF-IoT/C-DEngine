@@ -1,5 +1,8 @@
 rem SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
 rem SPDX-License-Identifier: CC0-1.0
+if not exist "%~dp0\AzureSign\azuresign.bat" goto SkipAzureSign
+"%~dp0\AzureSign\azuresign.bat" %1
+:SkipAzureSign
 if not exist "%~dp0\real.sign" goto noSign
 echo signing with c8f244b6856c3a16604e7c00a0dd645c15ebe05a ts: http://timestamp.digicert.com
 set "SignToolEXE=%~dp0\signtool.exe"
@@ -12,3 +15,4 @@ goto exit
 :noSign
 echo !!!!!!! Skipped signing: No "%~dp0\real.sign" file found - expected if not an official build.
 :exit
+
