@@ -313,7 +313,7 @@ namespace nsCDEngine.ISM
             }
             catch (Exception e)
             {
-                TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Provisioning Infor Update failed", eMsgLevel.l1_Error, e.ToString()));
+                TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Provisioning Info Update failed", eMsgLevel.l1_Error, e.ToString()));
             }
             return false;
         }
