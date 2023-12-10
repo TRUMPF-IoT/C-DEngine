@@ -10,8 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using NMI = nsCDEngine.Engines.NMIService.TheNMIEngine;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
+using NMI = nsCDEngine.Engines.NMIService.TheNMIEngine;
 
 namespace nsCDEngine.Engines.ThingService
 {
@@ -237,15 +237,12 @@ namespace nsCDEngine.Engines.ThingService
                 mIsUXInitCalled = true;
 
                 cdeConcurrentDictionary<string, TheMetaDataBase> block = new();
-                int gsx, gsy;
-                SetGroupSize(out gsx, out gsy);
                 MyGroupForm = new(MyScreenGuid, eEngineName.NMIService, null, $"TheThing;:;0;:;True;:;cdeMID={MyBaseThing.cdeMID}")
                 {
                     DefaultView = eDefaultView.Form,
-                    PropertyBag = new nmiCtrlFormView { TileWidth = gsx, FitToScreen = true, HideCaption = true, UseMargin = false, InnerClassName = "enFormInner" },
+                    PropertyBag = new nmiCtrlFormView { FitToScreen = true, HideCaption = true, UseMargin = false, InnerClassName = "enFormInner" },
                     ModelID = "StandardForm"
                 };
-                MyGroupForm.PropertyBag = new nmiCtrlFormView { TileHeight = gsy };
                 MyGroupForm.RegisterEvent2(eUXEvents.OnBeforeMeta, (pmsg, sender) =>
                 {
                     if (!IsGroupVisible)
@@ -257,31 +254,17 @@ namespace nsCDEngine.Engines.ThingService
                 });
                 MyGroupForm.RegisterEvent2(eUXEvents.OnShow, (pmsg, sender) =>
                 {
-                    int gsx, gsy;
-                    SetGroupSize(out gsx, out gsy);
-                    MyGroupForm.PropertyBag = new nmiCtrlFormView { TileWidth = gsx };
-                    if (gsy > 0)
-                        MyGroupForm.PropertyBag = new nmiCtrlFormView { TileHeight = gsy };
+                    CalculateFormSize();
                 });
                 block["Form"] = MyGroupForm;
                 block["DashIcon"] = NMI.AddFormToThingUX(MyBaseThing, MyGroupForm, "CMyForm", MyBaseThing.FriendlyName, 1, 3, 0, "..Overview", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" });
-
                 mIsUXInitialized = DoCreateUX(block);
+                CalculateFormSize();
             }
             return true;
         }
 
-        private void SetGroupSize(out int gsx, out int gsy)
-        {
-            gsx = 18;
-            if (GetProperty("GroupSizeX", false) == null)
-                SetProperty("GroupSizeX", 18);
-            else
-                gsx = CU.CInt(GetProperty("GroupSizeX", true)?.GetValue());
-            gsy = 0;
-            if (GetProperty("GroupSizeY", false) != null)
-                gsy = CU.CInt(GetProperty("GroupSizeY", true)?.GetValue());
-        }
+        private TheFieldInfo NMIEditorField;
 
         /// <summary>
         /// Allows to add new NMI controls to the Group NMI
@@ -295,17 +278,14 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns>If true, the NMI assumes the Form NMI was completely initialized</returns>
         public virtual bool DoCreateUX(cdeConcurrentDictionary<string, TheMetaDataBase> pUXFlds)
         {
-            bool DisallowAdd = CU.CBool(MyBaseThing.GetProperty("NMI_DisallowAdd",false)?.GetValue());
+            bool DisallowAdd = CU.CBool(MyBaseThing.GetProperty("NMI_DisallowAdd", false)?.GetValue());
             bool ShowAllProperties = CU.CBool(MyBaseThing.GetProperty("NMI_ShowAllProperties", false)?.GetValue());
             bool AddRefresh = CU.CBool(MyBaseThing.GetProperty("NMI_AddRefresh", false)?.GetValue());
 
-            int gsx, gsy;
-            SetGroupSize(out gsx, out gsy);
-            if (gsy == 0) gsy = 9;
-            var tFL = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true, TileWidth = gsx, TileHeight = gsy });
+            NMIEditorField = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true });
             if (!DisallowAdd && !TheBaseAssets.MyServiceHostInfo.IsCloudService)
             {
-                tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
+                NMIEditorField.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
                 {
                     var tMyForm = NMI.GetNMIEditorForm();
                     if (tMyForm != null)
@@ -315,7 +295,7 @@ namespace nsCDEngine.Engines.ThingService
                         foreach (var tThing in tThings)
                         {
                             var tG = tThing.GetProperty("cdeGroupID", false);
-                            if (!MyGroupThings.Keys.Contains(tThing.cdeMID) && (tG==null || CU.CGuid(tG)==Guid.Empty) && tThing.StatusLevel<4)
+                            if (!MyGroupThings.Keys.Contains(tThing.cdeMID) && (tG == null || CU.CGuid(tG) == Guid.Empty) && tThing.StatusLevel < 4)
                             {
                                 if (tOpt.Length > 0) tOpt.Append(";");
                                 tOpt.Append($"{tThing.FriendlyName}:{tThing.cdeMID}");
@@ -326,7 +306,7 @@ namespace nsCDEngine.Engines.ThingService
                         NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.SmartLabel, 2005, 0xA2, 0x80, "Select Thing to Add", null, new nmiCtrlSmartLabel() { NoTE = true, TileWidth = 5 });
                         NMI.GetNMIEditorThing()?.SetProperty("newthing", Guid.Empty);
                         MyBaseThing.SetProperty("newthing", Guid.Empty);
-                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.ComboBox, 2006, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { Options = tOpt.ToString(),EnableSearch=true, NoTE = true, TileWidth = 5 });
+                        NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.ComboBox, 2006, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { Options = tOpt.ToString(), EnableSearch = true, NoTE = true, TileWidth = 5 });
                         var ttt = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
                         ttt.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
                         {
@@ -342,7 +322,7 @@ namespace nsCDEngine.Engines.ThingService
                                 }
                             }
                         });
-                        var RemBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2011, 2, 0x80, "Clear Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 2,AreYouSure="This removes all Controls, are you sure?",  ClassName = "cdeBadActionButton" });
+                        var RemBut = NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.TileButton, 2011, 2, 0x80, "Clear Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 2, AreYouSure = "This removes all Controls, are you sure?", ClassName = "cdeBadActionButton" });
                         RemBut?.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "remove", (sender, para) =>
                         {
                             var tMsg = para as TheProcessMessage;
@@ -367,7 +347,7 @@ namespace nsCDEngine.Engines.ThingService
                     }
                 });
             }
-            pUXFlds["NMIEditor"] = tFL;
+            pUXFlds["NMIEditor"] = NMIEditorField;
 
             if (AddRefresh)
             {
@@ -443,6 +423,8 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     t?.AddDeviceFace(MyGroupForm, 0, 0);
                 }
+                DrawPinLines(MyGroupForm, MyGroupThings.Values.ToList());
+                CalculateFormSize();
             }
         }
 
@@ -530,9 +512,10 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Calculates all Compatible Pin Connections
         /// </summary>
-        /// <param name="AutoSetConnections"></param>
+        /// <param name="AutoSetConnections">if true, compatible pins will be auto-connected. Beware, if there are multiple pin combination possible, this migth not do what you expect</param>
+        /// <param name="pPinTypes">Limit the Pin Connections to a specific type</param>
         /// <returns></returns>
-        public virtual bool UpdatePinConnections(bool AutoSetConnections)
+        public virtual bool UpdatePinConnections(bool AutoSetConnections, List<string> pPinTypes=null)
         {
             var AllDevs = GetAllGroupThings();
             foreach (var firstRound in AllDevs)
@@ -540,7 +523,7 @@ namespace nsCDEngine.Engines.ThingService
                 foreach (var firstPin in firstRound.GetBaseThing().GetAllPins())
                 {
                     var res = FindCompatiblePins(firstPin);
-                    if (res.Count == 1 && AutoSetConnections)
+                    if (AutoSetConnections && res.Count == 1 && (pPinTypes?.Any()!=true || pPinTypes.Contains(firstPin.PinType)))
                     {
                         var secondPin = res[0];
                         firstRound.GetBaseThing().AddPinConnections(firstPin, new List<ThePin> { secondPin });
@@ -550,6 +533,201 @@ namespace nsCDEngine.Engines.ThingService
             }
             return true;
         }
+
+        /// <summary>
+        /// Calculates the form size required for the screen
+        /// </summary>
+        public virtual void CalculateFormSize()
+        {
+            int maxh = 0;
+            int maxw = 0;
+            foreach (var t in GetAllGroupThings())
+            {
+                if (t?.MyNMIFaceModel == null)
+                    continue;
+                var tPins = t.GetBaseThing().GetAllPins();
+                bool hasRightPin = tPins.Exists(p => p.NMIIsPinRight);
+                bool hasLeftPin = tPins.Exists(p => !p.NMIIsPinRight);
+                var tFaceWidth = (t.MyNMIFaceModel.XLen + (78 * ((hasLeftPin ? 1 : 0) + (hasRightPin ? 1 : 0))));
+                if (t.MyNMIFaceModel.XPos + tFaceWidth > maxw)
+                    maxw = t.MyNMIFaceModel.XPos + tFaceWidth;
+
+                if (t.MyNMIFaceModel.YPos + t.MyNMIFaceModel.YLen > maxh)
+                    maxh = t.MyNMIFaceModel.YPos + t.MyNMIFaceModel.YLen;
+            }
+            int th = ((maxh + 39) / 78)+1;
+            int tw = ((maxw + 39) / 78)+1;
+            if (tw < 6) tw = 6;
+            if (GetProperty("GroupSizeX", false) != null)
+            {
+                var gsx = CU.CInt(GetProperty("GroupSizeX", true)?.GetValue());
+                if (gsx >= tw)
+                    tw = gsx;
+                else
+                    SetProperty("GroupSizeX", tw);
+            }
+            if (GetProperty("GroupSizeY", false) != null)
+            {
+                var gsy = CU.CInt(GetProperty("GroupSizeY", true)?.GetValue());
+                if (gsy >= th)
+                    th = gsy;
+                else
+                    SetProperty("GroupSizeY", tw);
+            }
+
+            MyGroupForm.PropertyBag = new nmiCtrlFormView { TileWidth = tw, TileHeight = th };
+
+            if (NMIEditorField != null)
+                NMIEditorField.PropertyBag = new nmiCtrlTileGroup { TileWidth = tw, TileHeight = th };
+        }
+
+        public virtual void DrawPinLines(TheFormInfo MyLiveForm, List<TheThingBase> pDevs,ThePropertyBag pProperties=null)
+        {
+            if (pDevs?.Count > 0)
+            {
+                int lineWidth = CU.CInt(ThePropertyBag.PropBagGetValue(pProperties, "LineWidth"));
+                if (lineWidth == 0) lineWidth = 6;
+                for (int i = 0; i < pDevs.Count; i++)
+                {
+                    if (pDevs[i] == null) continue;
+
+                    var allSourcePins = pDevs[i].GetBaseThing().GetBaseThing().GetAllPins();
+                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList();
+                    foreach (var sourcePin in sourceOutPins)
+                    {
+                        string PinTypeFilter = ThePropertyBag.PropBagGetValue(pProperties, "PinTypeFilter");
+                        if (!string.IsNullOrEmpty(PinTypeFilter) && sourcePin.PinType != PinTypeFilter) continue;
+                        var targetInPins = sourcePin?.GetConnectedPins();
+                        if (targetInPins?.Count > 0)
+                        {
+                            bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIIsPinRight);
+                            bool sourcehasLeftPin = allSourcePins.Exists(p => !p.NMIIsPinRight);
+                            foreach (var targetPin in targetInPins)
+                            {
+                                var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
+                                var targetTB = targetT?.GetObject() as TheThingBase;
+                                var targetFace = targetTB?.MyNMIFaceModel;
+                                if (targetFace == null) continue;
+                                var sourceFace = pDevs[i].MyNMIFaceModel;
+                                var flowStyle = "";
+                                if (ThePin.StyleMapper.ContainsKey(sourcePin.PinType))
+                                    flowStyle = ThePin.StyleMapper[sourcePin.PinType];
+
+                                var sLeft = sourcePin.NMIIsPinRight ?
+                                    sourceFace.XPos + sourceFace.XLen + (sourcePin.NMIPinWidth * ((sourcehasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0))) + sourcePin.NMIxDelta :
+                                    sourceFace.XPos - ((sourcePin.NMIPinWidth * (sourceHasRightPin ? 1 : 0)) + sourcePin.NMIxDelta);
+                                var tLeft = targetPin.NMIIsPinRight ?
+                                    targetFace.XPos + targetFace.XLen + targetPin.NMIPinWidth : // targetPin.NMIxDelta :
+                                    targetFace.XPos + (78 - targetPin.NMIPinWidth) + targetPin.NMIxDelta;
+
+                                var left = sLeft > tLeft ? tLeft : sLeft;
+
+                                var sTop = sourceFace.YPos + ((sourcePin.NMIPinTopPosition * 39) + 15) + sourcePin.NMIyDelta;
+                                var tTop = targetFace.YPos + ((targetPin.NMIPinTopPosition * 39) + 15) + targetPin.NMIyDelta;
+
+                                string dir = "up";
+                                var top = tTop;
+                                if (sTop < tTop)
+                                {
+                                    top = sTop;
+                                    dir = "down";
+                                }
+                                int x = left;
+                                int y = top;
+                                int xl = Math.Abs(tLeft - sLeft);
+                                if (xl < lineWidth) xl = lineWidth;
+                                int yl = Math.Abs(sTop - tTop);
+                                if (yl < lineWidth) yl = lineWidth;
+
+                                if (yl > lineWidth)
+                                {
+                                    StringBuilder moveData = new();
+                                    for (int n = 0; n < 3; n++)
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s\"></div>");
+                                    AddPinLine(MyLiveForm, $"line{sourcePin.PinName.Replace(' ', '_')}v_{pDevs[i].GetBaseThing().cdeMID}",
+                                        x + (sourcePin.DrawLineAtTarget ? xl : 0),
+                                        y,
+                                        lineWidth,
+                                        yl + lineWidth,
+                                        moveData.ToString());
+                                }
+                                if (xl > lineWidth)
+                                {
+                                    y = top;
+                                    x = sLeft;
+                                    if (tLeft > sLeft)
+                                        dir = "right";
+                                    else
+                                    {
+                                        dir = "left";
+                                        x = tLeft;
+                                    }
+                                    StringBuilder moveData = new();
+                                    for (int n = 0; n < 3; n++)
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s\"></div>");
+                                    AddPinLine(MyLiveForm, $"line{sourcePin.PinName.Replace(' ', '_')}h_{pDevs[i].GetBaseThing().cdeMID}",
+                                        x,
+                                        y,
+                                        xl,
+                                        lineWidth,
+                                        moveData.ToString());
+                                }
+                            }
+                        }
+                    }
+                }
+                UpdateLines(pDevs);
+            }
+        }
+
+        public virtual void UpdateLines(List<TheThingBase> pDevs)
+        {
+            if (pDevs?.Count > 0)
+            {
+                for (int i = 0; i < pDevs.Count; i++)
+                {
+                    if (pDevs[i] == null) continue;
+                    foreach (var outpin in pDevs[i].GetBaseThing().GetBaseThing().GetAllPins())
+                    {
+                        if (outpin == null) continue;
+                        outpin.SetPinValue(pDevs[i].GetBaseThing());
+                        var flowStyle = "";
+                        if (ThePin.StyleMapper.ContainsKey(outpin.PinType))
+                            flowStyle = ThePin.StyleMapper[outpin.PinType];
+                        
+                        var stylev = $"cdevert{flowStyle}line";
+                        if (CU.CDbl(outpin.PinValue) == 0)
+                            stylev += "nf";
+
+                        var styleh = $"cdehori{flowStyle}line";
+                        if (CU.CDbl(outpin.PinValue) == 0)
+                            styleh += "nf";
+
+                        MyBaseThing.SetProperty($"line{outpin.PinName.Replace(' ', '_')}v_{pDevs[i].GetBaseThing().cdeMID}", stylev);
+                        MyBaseThing.SetProperty($"line{outpin.PinName.Replace(' ', '_')}h_{pDevs[i].GetBaseThing().cdeMID}", styleh);
+                    }
+                }
+                TheThingRegistry.UpdateThing(MyBaseThing, true);
+            }
+        }
+
+        public virtual void AddPinLine(TheFormInfo MyLiveForm, string pDataName, int x, int y, int xl, int yl, string moveData, string pClassname = null)
+        {
+            NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, pDataName,
+                    new nmiCtrlFacePlate
+                    {
+                        NoTE = true,
+                        PixelWidth = xl,
+                        PixelHeight = yl,
+                        IsAbsolute = true,
+                        Left = x,
+                        Top = y,
+                        FaceOwner = MyLiveForm.cdeMID.ToString(),
+                        HTML = string.IsNullOrEmpty(pDataName) ? $"<div class=\"{pClassname}\">{moveData}</div>" : $"<div cdeTAG=\"<%C:{pDataName}%>\">{moveData}</div>",
+                        AllowDrag = true
+                    });
+        }
+
     }
 
 }

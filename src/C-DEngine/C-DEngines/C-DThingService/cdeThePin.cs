@@ -2,14 +2,11 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 using nsCDEngine.BaseClasses;
-using nsCDEngine.Engines.NMIService;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
-using NMI = nsCDEngine.Engines.NMIService.TheNMIEngine;
 using TT = nsCDEngine.Engines.ThingService.TheThing;
 
 namespace nsCDEngine.Engines.ThingService
@@ -62,6 +59,7 @@ namespace nsCDEngine.Engines.ThingService
         public string PinName { get; set; }
         public string PinType { get; set; } = ePinTypeName.Generic;
         public bool IsInbound { get; set; } = false;
+        public bool DrawLineAtTarget { get; set; } 
         public bool PollsFromPin { get; set; } = false;
         public bool AllowsPolling { get; set; } = false;
         public int MaxConnections { get; set; } = 1;
@@ -254,123 +252,6 @@ namespace nsCDEngine.Engines.ThingService
                 TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}linenf");
         }
 
-        private static Dictionary<string, string> StyleMapper = new Dictionary<string, string>();
-
-        public static void UpdateStyleMapper(Dictionary<string, string> pMap)
-        {
-            if (pMap == null) return;
-            foreach (var key in pMap.Keys)
-            {
-                StyleMapper[key] = pMap[key];
-            }
-        }
-        public static void DrawPinLines(TT pGroupBaseThing, TheFormInfo MyLiveForm, List<TheThingBase> pDevs)
-        {
-            if (pDevs?.Count > 0)
-            {
-                for (int i = 0; i < pDevs.Count; i++)
-                {
-                    if (pDevs[i] == null) continue;
-
-                    var allSourcePins = pDevs[i].GetBaseThing().GetBaseThing().GetAllPins();
-                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList();
-                    foreach (var sourcePin in sourceOutPins)
-                    {
-                        //if (sourcePin.PinType != eEmsPinTypeName.ACPowerFlow) continue
-                        var targetInPins = sourcePin?.GetConnectedPins();
-                        if (targetInPins?.Count > 0)
-                        {
-                            bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIIsPinRight);
-                            bool sourcehasLeftPin = allSourcePins.Exists(p => !p.NMIIsPinRight);
-                            foreach (var targetPin in targetInPins)
-                            {
-                                var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
-                                var targetTB = targetT?.GetObject() as TheThingBase;
-                                var targetFace = targetTB?.MyNMIFaceModel;
-                                if (targetFace == null) continue;
-                                var sourceFace = pDevs[i].MyNMIFaceModel;
-
-                                var sLeft = sourcePin.NMIIsPinRight ?
-                                    sourceFace.XPos + sourceFace.XLen + (sourcePin.NMIPinWidth * ((sourcehasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0))) + sourcePin.NMIxDelta :
-                                    sourceFace.XPos - ((sourcePin.NMIPinWidth * (sourceHasRightPin ? 1 : 0)) + sourcePin.NMIxDelta);
-                                var tLeft = targetPin.NMIIsPinRight ?
-                                    targetFace.XPos + targetFace.XLen + targetPin.NMIPinWidth /*+ targetPin.NMIxDelta*/ :
-                                    targetFace.XPos - targetPin.NMIxDelta;
-
-                                var left = sLeft > tLeft ? tLeft : sLeft;
-                                var xl = Math.Abs(tLeft - sLeft);
-                                if (xl < 10) xl = 10;
-
-                                var sTop = sourceFace.YPos + ((sourcePin.NMIPinTopPosition * 39) + 15) + sourcePin.NMIyDelta;
-                                var tTop = targetFace.YPos + ((targetPin.NMIPinTopPosition * 39) + 15) + targetPin.NMIyDelta;
-                                string dir = "up";
-                                var top = tTop;
-                                if (sTop < tTop)
-                                {
-                                    top = sTop;
-                                    dir = "down";
-                                }
-                                var yl = Math.Abs(sTop - tTop);
-                                if (yl < 10)
-                                    yl = 10;
-                                else
-                                {
-                                    if (xl > 10)
-                                    {
-                                        xl = 10;
-                                        left = tLeft;
-                                    }
-                                }
-
-                                var flowStyle = "";
-                                if (StyleMapper.ContainsKey(sourcePin.PinType))
-                                    flowStyle = StyleMapper[sourcePin.PinType];
-                                StringBuilder moveData = new();
-                                for (int n = 0; n < 3; n++)
-                                    moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s\"></div>");
-                                if (xl > 10 || yl > 10)
-                                {
-                                    AddPinLine(pGroupBaseThing, MyLiveForm, $"line{sourcePin.PinName.Replace(' ', '_')}_{pDevs[i].GetBaseThing().cdeMID}",
-                                        left,
-                                        top + 21,
-                                        xl,
-                                        yl,
-                                        moveData.ToString());
-                                }
-                            }
-                        }
-                    }
-                }
-                UpdateLine(pGroupBaseThing, pDevs);
-            }
-        }
-
-        public static void UpdateLine(TT pGroupBaseThing, List<TheThingBase> pDevs)
-        {
-            if (pDevs?.Count > 0)
-            {
-                for (int i = 0; i < pDevs.Count; i++)
-                {
-                    if (pDevs[i] == null) continue;
-                    foreach (var outpin in pDevs[i].GetBaseThing().GetBaseThing().GetAllPins())
-                    {
-                        if (outpin == null) continue;
-                        outpin.SetPinValue(pDevs[i].GetBaseThing());
-                        var flowStyle = "";
-                        if (StyleMapper.ContainsKey(outpin.PinType))
-                            flowStyle = StyleMapper[outpin.PinType];
-                        var style = $"cdevert{flowStyle}line";
-                        if (CU.CDbl(outpin.PinValue) == 0)
-                            style += "nf";
-                        else
-                            style = style;
-                        pGroupBaseThing.SetProperty($"line{outpin.PinName.Replace(' ', '_')}_{pDevs[i].GetBaseThing().cdeMID}", style);
-                    }
-                }
-                TheThingRegistry.UpdateThing(pGroupBaseThing, true);
-            }
-        }
-
         public virtual void SetPinValue(TT pDevs)
         {
             if (PollsFromPin && IsConnectedTo?.Count > 0)
@@ -384,21 +265,15 @@ namespace nsCDEngine.Engines.ThingService
                 PinValue = pDevs?.GetProperty(PinProperty, false)?.GetValue();
         }
 
-        public static void AddPinLine(TT MyBaseThing, TheFormInfo MyLiveForm, string pDataName, int x, int y, int xl, int yl, string moveData, string pClassname = null)
+        internal static Dictionary<string, string> StyleMapper = new Dictionary<string, string>();
+
+        public static void UpdateStyleMapper(Dictionary<string, string> pMap)
         {
-            NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, pDataName,
-                    new nmiCtrlFacePlate
-                    {
-                        NoTE = true,
-                        PixelWidth = xl,
-                        PixelHeight = yl,
-                        IsAbsolute = true,
-                        Left = x,
-                        Top = y,
-                        FaceOwner = MyLiveForm.cdeMID.ToString(),
-                        HTML = string.IsNullOrEmpty(pDataName) ? $"<div class=\"{pClassname}\">{moveData}</div>" : $"<div cdeTAG=\"<%C:{pDataName}%>\">{moveData}</div>",
-                        AllowDrag = true
-                    });
+            if (pMap == null) return;
+            foreach (var key in pMap.Keys)
+            {
+                StyleMapper[key] = pMap[key];
+            }
         }
     }
 
