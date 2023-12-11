@@ -153,9 +153,6 @@ namespace nsCDEngine.Engines.ThingService
                 </div>
                 """;
         }
-                        //<div class="cde{flowStyle}flow{fdire}" style="animation-delay: 2s;"></div>
-                        //<div class="cde{flowStyle}flow{fdire}" style="animation-delay: 4s;"></div>
-
 
         /// <summary>
         /// Add a List of Pins
