@@ -48,6 +48,11 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         public Guid MyScreenGuid { get; protected set; }
         private Guid ModelGuid;
+
+        /// <summary>
+        /// The Control of the NMI Editor of the Group
+        /// </summary>
+        public TheFieldInfo NMIEditorField { get; private set; }
         /// <summary>
         /// Owner plugin of this ThingGroup
         /// </summary>
@@ -263,8 +268,6 @@ namespace nsCDEngine.Engines.ThingService
             }
             return true;
         }
-
-        private TheFieldInfo NMIEditorField;
 
         /// <summary>
         /// Allows to add new NMI controls to the Group NMI
@@ -585,130 +588,12 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (pDevs?.Count > 0)
             {
-                int lineWidth = CU.CInt(ThePropertyBag.PropBagGetValue(pProperties, "LineWidth"));
-                if (lineWidth == 0) lineWidth = 6;
-                for (int i = 0; i < pDevs.Count; i++)
-                {
-                    if (pDevs[i] == null) continue;
-
-                    var allSourcePins = pDevs[i].GetBaseThing().GetBaseThing().GetAllPins();
-                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList();
-                    foreach (var sourcePin in sourceOutPins)
-                    {
-                        string PinTypeFilter = ThePropertyBag.PropBagGetValue(pProperties, "PinTypeFilter");
-                        if (!string.IsNullOrEmpty(PinTypeFilter) && sourcePin.PinType != PinTypeFilter) continue;
-                        var targetInPins = sourcePin?.GetConnectedPins();
-                        if (targetInPins?.Count > 0)
-                        {
-                            bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIIsPinRight);
-                            bool sourcehasLeftPin = allSourcePins.Exists(p => !p.NMIIsPinRight);
-                            foreach (var targetPin in targetInPins)
-                            {
-                                var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
-                                var targetTB = targetT?.GetObject() as TheThingBase;
-                                var targetFace = targetTB?.MyNMIFaceModel;
-                                if (targetFace == null) continue;
-                                var sourceFace = pDevs[i].MyNMIFaceModel;
-                                var flowStyle = "";
-                                if (ThePin.StyleMapper.ContainsKey(sourcePin.PinType))
-                                    flowStyle = ThePin.StyleMapper[sourcePin.PinType];
-
-                                var sLeft = sourcePin.NMIIsPinRight ?
-                                    sourceFace.XPos + sourceFace.XLen + (sourcePin.NMIPinWidth * ((sourcehasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0))) + sourcePin.NMIxDelta :
-                                    sourceFace.XPos - ((sourcePin.NMIPinWidth * (sourceHasRightPin ? 1 : 0)) + sourcePin.NMIxDelta);
-                                var tLeft = targetPin.NMIIsPinRight ?
-                                    targetFace.XPos + targetFace.XLen + targetPin.NMIPinWidth : // targetPin.NMIxDelta :
-                                    targetFace.XPos + (78 - targetPin.NMIPinWidth) + targetPin.NMIxDelta;
-
-                                var left = sLeft > tLeft ? tLeft : sLeft;
-
-                                var sTop = sourceFace.YPos + ((sourcePin.NMIPinTopPosition * 39) + 15) + sourcePin.NMIyDelta;
-                                var tTop = targetFace.YPos + ((targetPin.NMIPinTopPosition * 39) + 15) + targetPin.NMIyDelta;
-
-                                string dir = "up";
-                                var top = tTop;
-                                if (sTop < tTop)
-                                {
-                                    top = sTop;
-                                    dir = "down";
-                                }
-                                int x = left;
-                                int y = top;
-                                int xl = Math.Abs(tLeft - sLeft);
-                                if (xl < lineWidth) xl = lineWidth;
-                                int yl = Math.Abs(sTop - tTop);
-                                if (yl < lineWidth) yl = lineWidth;
-
-                                if (yl > lineWidth)
-                                {
-                                    StringBuilder moveData = new();
-                                    for (int n = 0; n < 3; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s\"></div>");
-                                    AddPinLine(MyLiveForm, $"line{sourcePin.PinName.Replace(' ', '_')}v_{pDevs[i].GetBaseThing().cdeMID}",
-                                        x + (sourcePin.DrawLineAtTarget ? xl : 0),
-                                        y,
-                                        lineWidth,
-                                        yl + lineWidth,
-                                        moveData.ToString());
-                                }
-                                if (xl > lineWidth)
-                                {
-                                    y = top;
-                                    x = sLeft;
-                                    if (tLeft > sLeft)
-                                        dir = "right";
-                                    else
-                                    {
-                                        dir = "left";
-                                        x = tLeft;
-                                    }
-                                    StringBuilder moveData = new();
-                                    for (int n = 0; n < 3; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s\"></div>");
-                                    AddPinLine(MyLiveForm, $"line{sourcePin.PinName.Replace(' ', '_')}h_{pDevs[i].GetBaseThing().cdeMID}",
-                                        x,
-                                        y,
-                                        xl,
-                                        lineWidth,
-                                        moveData.ToString());
-                                }
-                            }
-                        }
-                    }
-                }
                 UpdateLines(pDevs);
             }
         }
 
         public virtual void UpdateLines(List<TheThingBase> pDevs)
         {
-            if (pDevs?.Count > 0)
-            {
-                for (int i = 0; i < pDevs.Count; i++)
-                {
-                    if (pDevs[i] == null) continue;
-                    foreach (var outpin in pDevs[i].GetBaseThing().GetBaseThing().GetAllPins())
-                    {
-                        if (outpin == null) continue;
-                        outpin.SetPinValue(pDevs[i].GetBaseThing());
-                        var flowStyle = "";
-                        if (ThePin.StyleMapper.ContainsKey(outpin.PinType))
-                            flowStyle = ThePin.StyleMapper[outpin.PinType];
-                        
-                        var stylev = $"cdevert{flowStyle}line";
-                        if (CU.CDbl(outpin.PinValue) == 0)
-                            stylev += "nf";
-
-                        var styleh = $"cdehori{flowStyle}line";
-                        if (CU.CDbl(outpin.PinValue) == 0)
-                            styleh += "nf";
-
-                        MyBaseThing.SetProperty($"line{outpin.PinName.Replace(' ', '_')}v_{pDevs[i].GetBaseThing().cdeMID}", stylev);
-                        MyBaseThing.SetProperty($"line{outpin.PinName.Replace(' ', '_')}h_{pDevs[i].GetBaseThing().cdeMID}", styleh);
-                    }
-                }
-                TheThingRegistry.UpdateThing(MyBaseThing, true);
-            }
         }
 
         public virtual void AddPinLine(TheFormInfo MyLiveForm, string pDataName, int x, int y, int xl, int yl, string moveData, string pClassname = null)

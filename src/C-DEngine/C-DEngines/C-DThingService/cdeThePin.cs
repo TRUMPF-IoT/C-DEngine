@@ -147,14 +147,14 @@ namespace nsCDEngine.Engines.ThingService
                  <div class="cdeFacePinDiv">
                     {(PinProperty == null ? "" : $"""<div class="cdePinTopLabel_{dire}"><%C12:1:{PinProperty}%> {Units}</div>""")}
                     <div cdeTAG="<%C:{PinProperty}_css%>">
-                        <div class="cde{flowStyle}flow{fdire}" style="animation-delay: 0s;"></div>
-                        <div class="cde{flowStyle}flow{fdire}" style="animation-delay: 2s;"></div>
-                        <div class="cde{flowStyle}flow{fdire}" style="animation-delay: 4s;"></div>
+                        <div class="cde{flowStyle}flow{fdire}" style="animation-duration: 2s;"></div>
                     </div>
                     {(tP2?.PinProperty == null ? "" : $"""<div class="cdePinBottomLabel_{dire}"><%C12:1:{tP2.PinProperty}%> {tP2.Units}</div>""")}
                 </div>
                 """;
         }
+                        //<div class="cde{flowStyle}flow{fdire}" style="animation-delay: 2s;"></div>
+                        //<div class="cde{flowStyle}flow{fdire}" style="animation-delay: 4s;"></div>
 
 
         /// <summary>
@@ -274,6 +274,13 @@ namespace nsCDEngine.Engines.ThingService
             {
                 StyleMapper[key] = pMap[key];
             }
+        }
+
+        public static string GetMapperStyle(string pPinType)
+        {
+            if (StyleMapper.ContainsKey(pPinType))
+                return StyleMapper[pPinType];
+            return "";
         }
     }
 
