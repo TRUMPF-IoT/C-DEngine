@@ -130,7 +130,7 @@ namespace nsCDEngine.Engines.ThingService
                     fdire = "left";
             }
 
-            flowStyle = GetMapperStyle();
+            flowStyle = GetMapperStyle(flowStyle);
             var ot = TheThingRegistry.GetThingByMID(cdeO);
             if (ot != null)
             {
