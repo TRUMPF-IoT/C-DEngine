@@ -130,8 +130,7 @@ namespace nsCDEngine.Engines.ThingService
                     fdire = "left";
             }
 
-            if (StyleMapper.ContainsKey(PinType))
-                flowStyle = StyleMapper[PinType];
+            flowStyle = GetMapperStyle();
             var ot = TheThingRegistry.GetThingByMID(cdeO);
             if (ot != null)
             {
@@ -238,10 +237,7 @@ namespace nsCDEngine.Engines.ThingService
             if (PinProperty == null) return;
             var tThing = TheThingRegistry.GetThingByMID(cdeO);
             if (tThing == null) return;
-            if (StyleMapper.ContainsKey(PinType))
-                flowStyle = StyleMapper[PinType];
-            else
-                flowStyle = "missing";
+            flowStyle = GetMapperStyle(flowStyle);
             SetPinValue(tThing);
             if (!ForceOff && CU.CDbl(PinValue) > 0)
                 TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}line");
@@ -263,7 +259,6 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         internal static Dictionary<string, string> StyleMapper = new Dictionary<string, string>();
-
         public static void UpdateStyleMapper(Dictionary<string, string> pMap)
         {
             if (pMap == null) return;
@@ -272,12 +267,11 @@ namespace nsCDEngine.Engines.ThingService
                 StyleMapper[key] = pMap[key];
             }
         }
-
-        public static string GetMapperStyle(string pPinType)
+        public virtual string GetMapperStyle(string pStyle)
         {
-            if (StyleMapper.ContainsKey(pPinType))
-                return StyleMapper[pPinType];
-            return "";
+            if (StyleMapper.ContainsKey(PinType))
+                return StyleMapper[PinType];
+            return pStyle;
         }
     }
 
