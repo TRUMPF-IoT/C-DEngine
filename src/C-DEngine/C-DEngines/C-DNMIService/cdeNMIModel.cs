@@ -2787,15 +2787,15 @@ namespace nsCDEngine.Engines.NMIService
                 if (this.Exists(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)))
                 {
                     if (CreateFastCache)
-                        _FastCache.RemoveNoCare(tName);
+                        _FastCache?.RemoveNoCare(tName);
                     this.Remove(this.First(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)));
                 }
                 if (CreateFastCache)
                 {
                     if (tEnt.Length == tName.Length)
-                        _FastCache.TryAdd(tName, true.ToString());
+                        _FastCache?.TryAdd(tName, true.ToString());
                     else
-                        _FastCache.TryAdd(tName, tEnt.Substring(tName.Length + 1));
+                        _FastCache?.TryAdd(tName, tEnt.Substring(tName.Length + 1));
                 }
                 Add(tEnt);
             }

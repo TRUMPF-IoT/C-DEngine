@@ -109,32 +109,38 @@ namespace nsCDEngine.BaseClasses
             if (TheBaseAssets.MyServiceHostInfo == null)
             {
                 TheBaseAssets.MasterSwitch = false;
-                TheSystemMessageLog.ToCo("MyServiceHostInfo is not set! Exiting...");   //Will becalled because if MyServiceHostInfo==null TOCO will be called
+                TheSystemMessageLog.ToCo("MyServiceHostInfo is not set! Exiting...", true);   //Will becalled because if MyServiceHostInfo==null TOCO will be called
                 return false;
             }
             if (TheBaseAssets.CryptoLoadMessage != null)
             {
                 TheBaseAssets.MasterSwitch = false;
-                TheSystemMessageLog.ToCo($"Security initialization failed with {TheBaseAssets.CryptoLoadMessage}. Exiting...");
+                TheSystemMessageLog.ToCo($"Security initialization failed with {TheBaseAssets.CryptoLoadMessage}. Exiting...", true);
                 return false;
             }
             try
             {
                 TheBaseAssets.IsStarting = true;
-
+                TheSystemMessageLog.ToCo($"Settings validated and Crypto DLL loaded sucessfully. Starting...", true);
                 ArgList ??= new Dictionary<string, string>();
                 if (!TheBaseAssets.MySettings.ReadAllAppSettings(ref ArgList))
                 {
                     TheSystemMessageLog.ToCo("Not reading app.config: not supported by platform."); //Will never be called!
                 }
                 if (!TheBaseAssets.MasterSwitch)
+                {
+                    TheSystemMessageLog.ToCo($"Masterswitch off after Reading Setting. Exiting...", true);
                     return false;
+                }
                 TheBaseAssets.MyCmdArgs = ArgList; //MyCmdArgs ONLY contains "public" settings coming from app.config or via the host
 
                 MyUserManager = new TheUserManager();
                 TheBaseAssets.InitAssets(this);
                 if (!TheBaseAssets.MasterSwitch)
+                {
+                    TheSystemMessageLog.ToCo($"Masterswitch off after Initializing Assets. Exiting...", true);
                     return false;
+                }
                 TheBaseAssets.MyScopeManager.RegisterScopeChanged(EventScopeChanged);
                 TheBaseAssets.MySYSLOG.WriteToLog(4140, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Assets and SystemLog Initialized", eMsgLevel.l3_ImportantMessage));
 
@@ -158,6 +164,7 @@ namespace nsCDEngine.BaseClasses
 
                 if (!TheBaseAssets.MyActivationManager.InitializeLicenses())
                 {
+                    TheSystemMessageLog.ToCo($"Licensing issues. Exiting...", true);
                     Shutdown(true);
                     TheBaseAssets.MySYSLOG.WriteToLog(4145, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Licensing error", eMsgLevel.l3_ImportantMessage));
                     return false;
@@ -203,7 +210,11 @@ namespace nsCDEngine.BaseClasses
                 }
                 else
                     TheBaseAssets.MyServiceHostInfo.StartISM = false;
-                if (!TheBaseAssets.MasterSwitch) return false;
+                if (!TheBaseAssets.MasterSwitch)
+                {
+                    TheSystemMessageLog.ToCo($"Masterswitch off after ISM Init. Exiting...", true);
+                    return false;
+                }
 
                 if (MyCommonDisco == null)
                 {
@@ -215,6 +226,7 @@ namespace nsCDEngine.BaseClasses
                 TheCDEngines.eventAllEnginesStarted += sinkEnginesStarted;
                 if (!TheCDEngines.StartEngines(pPlugInLst, null))                                           //Starts all SubEngines and Plugins. MyCmdArgs is a copy of the tParas sent to the Init Assets Function and can be used to set parameters for each engine during startup
                 {
+                    TheSystemMessageLog.ToCo($"Failed to Start Engines. Exiting...", true);
                     Shutdown(true);
                     TheBaseAssets.MySYSLOG.WriteToLog(4149, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Failed to start engines", eMsgLevel.l3_ImportantMessage));
                     return false;

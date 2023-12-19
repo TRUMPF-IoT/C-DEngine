@@ -661,7 +661,13 @@ namespace nsCDEngine.ISM
                 if (File.Exists(CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true)))
                 {
                     byte[] tBuf = File.ReadAllBytes(CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true));
-                    ParseProvisioning(tBuf, true, false);
+                    string proRes = ParseProvisioning(tBuf, true, false);
+                    if (!string.IsNullOrEmpty(proRes))
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Reading Provisioning Info failed. Shutting down", eMsgLevel.l1_Error, proRes));
+                        TheBaseAssets.MyApplication.Shutdown(false);
+                        return false;
+                    }
                 }
                 if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo == null) //It no cdeTPI
                     SetDeviceInfo();

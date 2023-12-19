@@ -144,10 +144,10 @@ namespace nsCDEngine.Engines.ThingService
                 tP2 = MyPins.Find(s => s.NMIPinTopPosition >= 0);
             return $"""
                  <div class="cdeFacePinDiv">
-                    {(PinProperty == null ? "" : $"""<div class="cdePinTopLabel_{dire}"><%C12:1:{PinProperty}%> {Units}</div>""")}
                     <div cdeTAG="<%C:{PinProperty}_css%>">
                         <div class="cde{flowStyle}flow{fdire}" style="animation-duration: 2s;"></div>
                     </div>
+                    {(PinProperty == null ? "" : $"""<div class="cdePinTopLabel_{dire}"><%C12:1:{PinProperty}%> {Units}</div>""")}
                     {(tP2?.PinProperty == null ? "" : $"""<div class="cdePinBottomLabel_{dire}"><%C12:1:{tP2.PinProperty}%> {tP2.Units}</div>""")}
                 </div>
                 """;

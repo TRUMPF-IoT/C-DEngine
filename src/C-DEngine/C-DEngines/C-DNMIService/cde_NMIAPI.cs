@@ -142,10 +142,10 @@ namespace nsCDEngine.Engines.NMIService
 
             if (string.IsNullOrEmpty(pDefaultColor))
                 pDefaultColor = "gray";
-            tFlds["Group"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileGroup, pFldOrder, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = pParentFld, TileHeight = pTileHeight });
-            tFlds["InnerGroup"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileGroup, pFldOrder + 1, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = pFldOrder, TileHeight = pTileHeight });
-            tFlds["BackIcon"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.SmartLabel, pFldOrder + 2, 256, 0, null, null, new nmiCtrlSmartLabel { Value = pBackIcon, FontSize = (56 * pTileHeight), Foreground = pDefaultColor, ParentFld = pFldOrder + 1, TileHeight = pTileHeight, NoTE = true });
-            tFlds["FrontIcon"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.SmartLabel, pFldOrder + 3, 256, 0, null, null, new nmiCtrlSmartLabel { Value = pFrontIcon, IsAbsolute = true, FontSize = (56 * pTileHeight), Foreground = "black", ParentFld = pFldOrder + 1, TileHeight = pTileHeight, NoTE = true });
+            tFlds["Group"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileGroup, pFldOrder, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = pParentFld, TileHeight = pTileHeight, TileWidth=pTileHeight });
+            tFlds["InnerGroup"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.TileGroup, pFldOrder + 1, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = pFldOrder, TileHeight = pTileHeight, TileWidth = pTileHeight });
+            tFlds["BackIcon"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.SmartLabel, pFldOrder + 2, 256, 0, null, null, new nmiCtrlSmartLabel { Value = pBackIcon, FontSize = (56 * pTileHeight), TileWidth = pTileHeight, Foreground = pDefaultColor, ParentFld = pFldOrder + 1, TileHeight = pTileHeight, NoTE = true });
+            tFlds["FrontIcon"] = TheNMIEngine.AddSmartControl(pBaseThing, pMyForm, eFieldType.SmartLabel, pFldOrder + 3, 256, 0, null, null, new nmiCtrlSmartLabel { Value = pFrontIcon, IsAbsolute = true, FontSize = (56 * pTileHeight), TileWidth = pTileHeight, Foreground = "black", ParentFld = pFldOrder + 1, TileHeight = pTileHeight, NoTE = true });
             return tFlds;
         }
 
