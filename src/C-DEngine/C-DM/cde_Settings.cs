@@ -11,10 +11,13 @@ using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Transactions;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
 
 namespace nsCDEngine.ISM
@@ -193,12 +196,27 @@ namespace nsCDEngine.ISM
                 Dictionary<string, string> tSettings= new Dictionary<string, string>();
                 if (!TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
                 {
+                    bool foundTPI = false;
                     var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
-                    if (File.Exists(tpiFile))    
+                    do
                     {
-                        byte[] tBuf = File.ReadAllBytes(tpiFile);
-                        tSettings = TheBaseAssets.MyCrypto.DecryptKV(tBuf);
+                        if (File.Exists(tpiFile))
+                        {
+                            byte[] tBuf = File.ReadAllBytes(tpiFile);
+                            if (tBuf?.Length > 0)
+                            {
+                                tSettings = TheBaseAssets.MyCrypto.DecryptKV(tBuf);
+                                if (tSettings != null)
+                                    foundTPI = true;
+                            }
+                        }
+                        else
+                        {
+                            if (!CheckForTPIBackup(""))
+                                foundTPI=true;
+                        }    
                     }
+                    while (!foundTPI);
                 }
 
                 //step 2: update settings with the latest configured settings
@@ -305,6 +323,11 @@ namespace nsCDEngine.ISM
                     byte[] pBuffer = TheBaseAssets.MyCrypto.EncryptKV(tSettings);
                     var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
                     CU.CreateDirectories(tpiFile);
+                    if (File.Exists(tpiFile))
+                    {
+                        File.Delete($"{tpiFile}.bkp");
+                        File.Move(tpiFile, $"{tpiFile}.bkp");
+                    }
                     File.WriteAllBytes(tpiFile, pBuffer);
                     TheBaseAssets.MyApplication?.MyISMRoot?.SendSettingsToProse(pBuffer);
                 }
@@ -597,6 +620,37 @@ namespace nsCDEngine.ISM
                 TheBaseAssets.MyServiceHostInfo.MyStationURL = TheBaseAssets.MyServiceHostInfo.MyStationURL.Substring(0, TheBaseAssets.MyServiceHostInfo.MyStationURL.Length - 1); //MSU-OK
         }
 
+        private static bool CheckForTPIBackup(string reasonForCheck)
+        {
+            string tpiName = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
+            if (File.Exists($"{tpiName}.bkp"))
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(reasonForCheck))
+                        TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Provisioning Info failed to load: {reasonForCheck}. Trying to load from Backup", eMsgLevel.l2_Warning));
+                    if (!File.Exists($"{tpiName}.bkp_lastgood"))
+                        File.Copy($"{tpiName}.bkp", $"{tpiName}.bkp_lastgood"); //Make sure we have at least one last-good backup
+                    File.Delete(tpiName);
+                    File.Copy($"{tpiName}.bkp", tpiName);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Reading Provisioning Info from Backup failed. Shutting down", eMsgLevel.l1_Error));
+                    return false;
+                }
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(reasonForCheck))
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDESettings", $"No Provision info found. Relay is booting up for the first time.", eMsgLevel.l3_ImportantMessage));
+                else
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Reading Provisioning Info failed - no backup found. Shutting down", eMsgLevel.l1_Error, reasonForCheck));
+                return false;
+            }
+        }
+
         internal static bool ParseSettings(IDictionary<string, string> CmdArgs, bool IsCalledAtStartup, bool SafeLocalSettings)
         {
             var cmdArgsClone = new Dictionary<string, string>(CmdArgs);
@@ -658,17 +712,28 @@ namespace nsCDEngine.ISM
                 if (!string.IsNullOrEmpty(temp) && Guid.Empty != CU.CGuid(temp))
                     TheBaseAssets.MyServiceHostInfo.PresetDeviceID = CU.CGuid(temp);
                 //step 3: Load the local settings if they exist - set by MSI or previous starts of the node
-                if (File.Exists(CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true)))
+                string tpiName = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI",true);
+                bool AtLeastOneGood = false;
+                do
                 {
-                    byte[] tBuf = File.ReadAllBytes(CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true));
-                    string proRes = ParseProvisioning(tBuf, true, false);
-                    if (!string.IsNullOrEmpty(proRes))
+                    if (File.Exists(tpiName))
                     {
-                        TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"Reading Provisioning Info failed. Shutting down", eMsgLevel.l1_Error, proRes));
-                        TheBaseAssets.MyApplication.Shutdown(false);
-                        return false;
+                        byte[] tBuf = File.ReadAllBytes(tpiName);
+                        string proRes = ParseProvisioning(tBuf, true, false);
+                        if (!string.IsNullOrEmpty(proRes) && !CheckForTPIBackup(proRes))
+                        {
+                            TheBaseAssets.MyApplication.Shutdown(false);
+                            return false;
+                        }
+                        else
+                            AtLeastOneGood = true;
                     }
-                }
+                    else
+                    {
+                        if (!CheckForTPIBackup(""))
+                            AtLeastOneGood = true;
+                    }
+                } while (!AtLeastOneGood);
                 if (TheBaseAssets.MyServiceHostInfo.MyDeviceInfo == null) //It no cdeTPI
                     SetDeviceInfo();
 
