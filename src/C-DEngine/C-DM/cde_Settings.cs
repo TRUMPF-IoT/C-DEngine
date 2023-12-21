@@ -10,14 +10,10 @@ using nsCDEngine.Security;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Transactions;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
 
 namespace nsCDEngine.ISM
