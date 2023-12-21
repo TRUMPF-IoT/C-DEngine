@@ -1,8 +1,5 @@
 rem SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
 rem SPDX-License-Identifier: CC0-1.0
-if not exist "%~dp0\AzureSign\azuresign.bat" goto SkipAzureSign
-"%~dp0\AzureSign\azuresign.bat" %1
-:SkipAzureSign
 if not exist "%~dp0\real.sign" goto noSign
 if not exist "%CDE_CODE_SIGN%\azuresecrets.bat" goto noSecrets
 echo Setting Azure Vault secrets
@@ -13,4 +10,3 @@ AzureSignTool.exe sign -du "https://c-labs.com" -fd sha1 -kvu %CDE_KVU% -kvi %CD
 :noSign
 echo !!!!!!! Skipped signing: No "%~dp0\real.sign" file found - expected if not an official build.
 :exit
-
