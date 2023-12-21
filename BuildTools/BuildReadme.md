@@ -8,7 +8,7 @@
 All artifacts are built using the SLN file, either in Visual Studio or using the dotnet SDK's command line tools.
 
 ## Code Signing
-Most binaries are signed using the Windows Authenticode SignTool.exe through a set of batch files (in the [/BuildTools/](/BuildTools/) directory). These are invoked as custom build steps from each of the .csproj files (and the only reason the C-DEngine can currently only be built on Windows). Signing is off by default and is enabled by creating an (empty) /BuildTools/real-sign file.
+Most binaries are signed using the Azure SignTool through a set of batch files (in the [/BuildTools/](/BuildTools/) directory). These are invoked as custom build steps from each of the .csproj files (and the only reason the C-DEngine can currently only be built on Windows). Signing is off by default and is enabled by creating an (empty) /BuildTools/real-sign file.
 
 ## Global MSBuild targets and properties
 A set of global msbuild files ([Directory.Build.props](/Directory.Build.props) and [Directory.Build.targets](/Directory.Build.targets) ) are used to inject common functionality into all projects:
