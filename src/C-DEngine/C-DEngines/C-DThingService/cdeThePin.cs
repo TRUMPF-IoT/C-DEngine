@@ -1,12 +1,13 @@
 ﻿// SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
-
 using nsCDEngine.BaseClasses;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CU = nsCDEngine.BaseClasses.TheCommonUtils;
+using TT = nsCDEngine.Engines.ThingService.TheThing;
 
 namespace nsCDEngine.Engines.ThingService
 {
@@ -48,8 +49,9 @@ namespace nsCDEngine.Engines.ThingService
             }
             set
             {
+                TheThingRegistry.GetThingByMID(cdeO)?.SetProperty(PinProperty, value);
                 if (IsEventRegistered(eThingEvents.PinValueUpdated))
-                    FireEvent(eThingEvents.PropertyChanged, new TheProcessMessage { Message = new BaseClasses.TSM(eEngineName.ThingService, $"PIN_UPDATED:{cdeMID}") { PLS = $"{value}" } }, true);
+                    FireEvent(eThingEvents.PinValueUpdated, new TheProcessMessage { Message = new TSM(eEngineName.ThingService, $"PIN_UPDATED:{cdeMID}") { PLS = $"{value}" } }, true);
             }
         }
         public string Units { get; set; }
@@ -57,6 +59,7 @@ namespace nsCDEngine.Engines.ThingService
         public string PinName { get; set; }
         public string PinType { get; set; } = ePinTypeName.Generic;
         public bool IsInbound { get; set; } = false;
+        public bool DrawLineAtTarget { get; set; } 
         public bool PollsFromPin { get; set; } = false;
         public bool AllowsPolling { get; set; } = false;
         public int MaxConnections { get; set; } = 1;
@@ -73,7 +76,6 @@ namespace nsCDEngine.Engines.ThingService
         public int NMIPinHeight { get; set; } = 39;
         public int NMIxDelta { get; set; } = 0;
         public int NMIyDelta { get; set; } = 0;
-        public string NMIClass { get; set; } = "";
 
         public bool AddPin(ThePin pin)
         {
@@ -110,12 +112,53 @@ namespace nsCDEngine.Engines.ThingService
         /// Gets the NMI Pin Face
         /// </summary>
         /// <returns></returns>
-        public virtual string NMIGetPinLineFace()
+        public virtual string NMIGetPinLineFace(string flowStyle)
         {
-            return "";
+            if (NMIPinTopPosition < 0)
+                return "";
+            string dire = "left";
+            string fdire = "right";
+            if (NMIIsPinRight)
+            {
+                dire = "right";
+                if (IsInbound)
+                    fdire = "left";
+            }
+            else
+            {
+                if (!IsInbound)
+                    fdire = "left";
+            }
+
+            flowStyle = GetMapperStyle(flowStyle);
+            var ot = TheThingRegistry.GetThingByMID(cdeO);
+            if (ot != null)
+            {
+                ot.GetProperty(PinProperty, true).cdeE |= 8;
+                ot.GetProperty($"{PinProperty}_css", true).cdeE |= 8;
+                UpdatePinFlow("", true);
+            }
+
+            ThePin tP2 = null;
+            if (MyPins?.Count > 0)
+                tP2 = MyPins.Find(s => s.NMIPinTopPosition >= 0);
+            return $"""
+                 <div class="cdeFacePinDiv">
+                    <div cdeTAG="<%C:{PinProperty}_css%>">
+                        <div class="cde{flowStyle}flow{fdire}" style="animation-duration: 2s;"></div>
+                    </div>
+                    {(PinProperty == null ? "" : $"""<div class="cdePinTopLabel_{dire}"><%C12:1:{PinProperty}%> {Units}</div>""")}
+                    {(tP2?.PinProperty == null ? "" : $"""<div class="cdePinBottomLabel_{dire}"><%C12:1:{tP2.PinProperty}%> {tP2.Units}</div>""")}
+                </div>
+                """;
         }
 
-
+        /// <summary>
+        /// Add a List of Pins
+        /// </summary>
+        /// <param name="pins"></param>
+        /// <param name="ResetFirst"></param>
+        /// <returns></returns>
         internal bool AddPinConnections(List<ThePin> pins, bool ResetFirst=false)
         {
             if (ResetFirst)
@@ -130,11 +173,19 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         private readonly object lockPinConnection = new object();
-        internal bool AddPinConnection(ThePin pPin)
+        /// <summary>
+        /// Adds a new Pin Connection
+        /// </summary>
+        /// <param name="pPin">The Target Pin</param>
+        /// <param name="ResetFirst">Remove existing connections first</param>
+        /// <returns>True if it was successfully added. False if the pin was already connected or the pin has already reached max connections</returns>
+        public bool AddPinConnection(ThePin pPin, bool ResetFirst = false)
         {
             lock (lockPinConnection)
             {
-                if (!IsConnectedTo.Contains(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections))
+                if (ResetFirst)
+                    IsConnectedTo.Clear();
+                if (pPin!=null && !IsConnectedTo.Contains(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections) && CanConnectToPinType.Contains(pPin.PinType))
                 {
                     IsConnectedTo.Add(pPin);
                     return true;
@@ -179,6 +230,48 @@ namespace nsCDEngine.Engines.ThingService
         public string GetResolvedName()
         {
             return $"{PinName} ({TheThingRegistry.GetThingByMID(cdeO)?.FriendlyName})";
+        }
+
+        public virtual void UpdatePinFlow(string flowStyle, bool ForceOff)
+        {
+            if (PinProperty == null) return;
+            var tThing = TheThingRegistry.GetThingByMID(cdeO);
+            if (tThing == null) return;
+            flowStyle = GetMapperStyle(flowStyle);
+            SetPinValue(tThing);
+            if (!ForceOff && CU.CDbl(PinValue) > 0)
+                TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}line");
+            else
+                TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}linenf");
+        }
+
+        public virtual void SetPinValue(TT pDevs)
+        {
+            if (PollsFromPin && IsConnectedTo?.Count > 0)
+            {
+                double pinv = 0;
+                foreach (var pin in IsConnectedTo)
+                    pinv += CU.CDbl(pin.PinValue);
+                PinValue = pinv;
+            }
+            else
+                PinValue = pDevs?.GetProperty(PinProperty, false)?.GetValue();
+        }
+
+        internal static Dictionary<string, string> StyleMapper = new Dictionary<string, string>();
+        public static void UpdateStyleMapper(Dictionary<string, string> pMap)
+        {
+            if (pMap == null) return;
+            foreach (var key in pMap.Keys)
+            {
+                StyleMapper[key] = pMap[key];
+            }
+        }
+        public virtual string GetMapperStyle(string pStyle)
+        {
+            if (StyleMapper.ContainsKey(PinType))
+                return StyleMapper[PinType];
+            return pStyle;
         }
     }
 

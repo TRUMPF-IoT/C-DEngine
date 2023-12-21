@@ -240,3 +240,4 @@ project.assets.json
 /src/.sonarqube
 /src/sonar.bat
 /src/sonartr.bat
+/BuildTools/AzureSign/azuresign.bat

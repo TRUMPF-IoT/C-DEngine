@@ -54,6 +54,7 @@ namespace nsCDEngine.BaseClasses
                 string codeSignThumb;
                 if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
                 {
+                    TheSystemMessageLog.ToCo($"Starting CodeSign-Verifier in ({pDLLName}) with DVT:{bDontVerifyTrust} VTP:{bVerifyTrustPath} DVI:{bDontVerifyIntegrity}");
                     MyCodeSigner ??= new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
                     codeSignThumb = MyCodeSigner.GetAppCert(bDontVerifyTrust, pFromFile, bVerifyTrustPath, bDontVerifyIntegrity);
                     if (!bDontVerifyTrust && string.IsNullOrEmpty(codeSignThumb))
@@ -66,8 +67,7 @@ namespace nsCDEngine.BaseClasses
                     var pLoader = new CryptoReferenceLoader();
 
                     tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM, out tCryptoAssembly);
-                    if (tTSM != null)
-                        TheSystemMessageLog.ToCo($"Domain:{AppDomain.CurrentDomain?.FriendlyName} DLL:{pFromFile} Cert Found:{codeSignThumb} {tTSM.TXT} {tTSM.PLS}");
+                    TheSystemMessageLog.ToCo($"Domain:{AppDomain.CurrentDomain?.FriendlyName} DLL:{pFromFile} Services:{tL?.Count} Cert Found:{codeSignThumb} {tTSM?.TXT} {tTSM?.PLS}");
                 }
                 else
                 {

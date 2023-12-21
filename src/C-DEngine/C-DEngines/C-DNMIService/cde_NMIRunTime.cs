@@ -1419,7 +1419,7 @@ namespace nsCDEngine.Engines.NMIService
                                                 {
                                                     TheFormInfo tToSend = tTable.Clone(pClientInfo.WebPlatform);
                                                     CheckAddButtonPermission(pClientInfo, tToSend);
-                                                    if (tso != null && tso.TileWidth > 0)
+                                                    if (tso != null && tso.TileWidth > 0 && !TheCommonUtils.CBool(ThePropertyBag.PropBagGetValue(tToSend.PropertyBag,"FitToScreen")))
                                                         tToSend.TileWidth = tso.TileWidth;
                                                     tToSend.FormFields = tJSON.FieldInfo;
                                                     tTsm.PLS += ":-MODELUPDATE-:" + TheCommonUtils.GenerateFinalStr(TheCommonUtils.SerializeObjectToJSONString(tToSend.GetLocalizedForm(pClientInfo.LCID)));

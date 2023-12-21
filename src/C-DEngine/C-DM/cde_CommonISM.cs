@@ -1279,7 +1279,7 @@ namespace nsCDEngine.ISM
 
         private void sinkTSMReceived(TheProcessMessage pMsg, object sender)
         {
-            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ISMManager", $"Provisioning Message Received ENG={pMsg?.Message?.ENG} TXT={pMsg?.Message?.TXT}", eMsgLevel.l5_HostMessage));
+            TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("ISMManager", $"Provisioning Message Received ENG={pMsg?.Message?.ENG} TXT={pMsg?.Message?.TXT}", eMsgLevel.l5_HostMessage));
             if (pMsg?.Message?.ENG == eEngineName.ContentService)
             {
                 var tCmd = pMsg?.Message?.TXT?.Split(':');
@@ -1317,7 +1317,7 @@ namespace nsCDEngine.ISM
                 TimeSpan startFromNow = TheCommonUtils.CDate(TheBaseAssets.MySettings.GetSetting("BackupStart")).Subtract(DateTimeOffset.Now);
                 if (startFromNow.Ticks < 0)
                     startFromNow = new TimeSpan();
-                TimeSpan period = new (TheCommonUtils.CLng(TheBaseAssets.MySettings.GetSetting("BackupFrequency")) * 10000);
+                TimeSpan period = new(TheCommonUtils.CLng(TheBaseAssets.MySettings.GetSetting("BackupFrequency")) * 10000);
                 if (period.Ticks < TimeSpan.TicksPerHour * 15)    //Shortest AutoBackup frequency is 15minutes
                 {
                     if (period.Ticks == 0)  //If period is 0 default to once per day
@@ -1332,8 +1332,8 @@ namespace nsCDEngine.ISM
                 }
                 if (startFromNow.TotalMinutes < 0)
                     startFromNow = new TimeSpan();
-                _ = new Timer (timerAutoBackup, null, startFromNow, period);
-                TheBaseAssets.MySYSLOG.WriteToLog(466, new TSM("ISMManager", $"Auto Backup Started every {period.TotalMinutes} minutes", eMsgLevel.l4_Message));
+                _ = new Timer(timerAutoBackup, null, startFromNow, period);
+                TheBaseAssets.MySYSLOG.WriteToLog(466, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ISMManager", $"Auto Backup Started every {period.TotalMinutes} minutes", eMsgLevel.l4_Message));
             }
         }
 
@@ -1389,7 +1389,7 @@ namespace nsCDEngine.ISM
                                 SendToProvisioningService(tToSend);
                                 TheBackupDefinition tBackup = new () { BackupSize = tToSend.PLB.Length, BackupTime = tNow, FileName = FileToReturn1, Title = pTitle };
                                 TheCDEngines.MyContentEngine?.FireEvent("BackupCreated", TheCDEngines.MyContentEngine, tBackup, true);
-                                TheBaseAssets.MySYSLOG.WriteToLog(466, new TSM("ISMManager", $"Backup {pTitle} created", eMsgLevel.l4_Message));
+                                TheBaseAssets.MySYSLOG.WriteToLog(466, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ISMManager", $"Backup {pTitle} created", eMsgLevel.l4_Message));
                             }
                         }
                         int Keepers = TheCommonUtils.CInt(TheBaseAssets.MySettings.GetSetting("BackupKeepLast"));
