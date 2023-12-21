@@ -2765,6 +2765,7 @@ namespace nsCDEngine.Engines.NMIService
     /// </summary>
     public class ThePropertyBag : List<string>
     {
+        internal readonly object BagLock = new object();
         /// <summary>
         /// Merges the current bag with the bag given as the parameter
         /// </summary>
@@ -2781,14 +2782,17 @@ namespace nsCDEngine.Engines.NMIService
             {
                 if (string.IsNullOrEmpty(tEnt))
                     continue;
-                string tName = tEnt.Split('=')[0];  //NMI-REDO: Tune with IndexOf - see: https://docs.microsoft.com/en-us/visualstudio/profiling/da0013-high-usage-of-string-split-or-string-substring
+                string tName = tEnt.Split('=')[0];  
                 if (bIgnoreNodeSettings && (tName == "EngineName" || TheCommonUtils.IsPropertyOfClass(tName, typeof(nmiPlatBag))))
                     continue;
                 if (this.Exists(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)))
                 {
                     if (CreateFastCache)
                         _FastCache?.RemoveNoCare(tName);
-                    this.Remove(this.First(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)));
+                    lock (BagLock)
+                    {
+                        this.Remove(this.First(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)));
+                    }
                 }
                 if (CreateFastCache)
                 {
@@ -2945,7 +2949,7 @@ namespace nsCDEngine.Engines.NMIService
             if (pQ.HasFastCache())
                 return pQ._FastCache.ContainsKey(pName);
 
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 string toInser = pName.Trim() + Seperator;
                 try
@@ -2964,7 +2968,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (pQ == null || string.IsNullOrEmpty(pName)) return "";
             string retStr = "";
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 string toInser = pName.Trim() + Seperator;
                 try
@@ -2994,7 +2998,7 @@ namespace nsCDEngine.Engines.NMIService
                 return tOut; 
             }
             string retStr = "";
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 try
                 {
@@ -3033,7 +3037,7 @@ namespace nsCDEngine.Engines.NMIService
                 return pQ._FastCache;
 
             cdeConcurrentDictionary<string, string> retStr = new ();
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 try
                 {
@@ -3066,7 +3070,8 @@ namespace nsCDEngine.Engines.NMIService
                     tPropertyBag._FastCache = new cdeConcurrentDictionary<string, string>();
                 foreach (string t in this)
                 {
-                    tPropertyBag.Add(t);
+                    lock (BagLock)
+                        tPropertyBag.Add(t);
                     if (!CreateFastCache) continue;
                     var tP = t.IndexOf('=');
                     if (tP < 0)
@@ -3136,7 +3141,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (pQ == null || string.IsNullOrEmpty(pProps)) return false;
             bool WasInserted = false;
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 string[] plist = TheCommonUtils.cdeSplit(pProps, ":;:", false, false);
                 foreach (string pP in plist)
@@ -3173,7 +3178,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (string.IsNullOrEmpty(pName) || pQ == null || string.IsNullOrEmpty(pValue)) return false;
             bool WasInserted = false;
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 string toInser = pName.Trim() + Seperator;
                 string retStr = "";
@@ -3211,7 +3216,7 @@ namespace nsCDEngine.Engines.NMIService
             string pName = PropBagGetName(pFiller, Seperator);
             string pValue = PropBagGetValue(pFiller, Seperator);
             bool WasInserted = false;
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 string toInser = pName.Trim() + Seperator;
                 string retStr = "";
@@ -3241,7 +3246,7 @@ namespace nsCDEngine.Engines.NMIService
         {
             if (string.IsNullOrEmpty(pName) || pQ == null) return false;
             bool WasRemoved = false;
-            lock (pQ)
+            lock (pQ.BagLock)
             {
                 string toInser = pName.Trim() + Seperator;
                 string retStr = "";
