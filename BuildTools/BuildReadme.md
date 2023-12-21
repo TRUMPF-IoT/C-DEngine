@@ -10,6 +10,23 @@ All artifacts are built using the SLN file, either in Visual Studio or using the
 ## Code Signing
 Most binaries are signed using the Azure SignTool through a set of batch files (in the [/BuildTools/](/BuildTools/) directory). These are invoked as custom build steps from each of the .csproj files (and the only reason the C-DEngine can currently only be built on Windows). Signing is off by default and is enabled by creating an (empty) /BuildTools/real-sign file.
 
+To install the Azure SignTool run the following command line once:
+```ps
+dotnet tool install --global AzureSignTool
+```
+
+You can use a file azuresecrets.bat to set the CDE_* signing secrets on your dev machine only for the signing action to avoid setting it globally.
+
+```
+set CDE_KVU=XXX
+set CDE_KVI=XXX
+set CDE_KVT=XXX
+set CDE_KVS=XXX
+set CDE_KVC=XXX
+rem AzureSignTool.exe sign -du "https://c-labs.com" -fd sha1 -kvu %CDE_KVU% -kvi %CDE_KVI% -kvt %CDE_KVT% -kvs %CDE_KVS% -kvc %CDE_KVC% -tr http://timestamp.digicert.com -td sha1 %1
+```
+Set the CDE_CODE_SIGN variable to point to the directory with the azuresecret.bat file.
+
 ## Global MSBuild targets and properties
 A set of global msbuild files ([Directory.Build.props](/Directory.Build.props) and [Directory.Build.targets](/Directory.Build.targets) ) are used to inject common functionality into all projects:
 
