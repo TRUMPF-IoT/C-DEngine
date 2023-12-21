@@ -16,7 +16,7 @@ dotnet tool install --global AzureSignTool
 ```
 
 You can use a file azuresecrets.bat to set the CDE_* signing secrets on your dev machine only for the signing action to avoid setting it globally.
-
+ 
 ```
 set CDE_KVU=XXX
 set CDE_KVI=XXX
