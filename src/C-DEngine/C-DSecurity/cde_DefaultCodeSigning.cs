@@ -249,6 +249,7 @@ namespace nsCDEngine.Security
                     bool trusted = (WinVerifyTrust(filePath) == 0);
                     if (!trusted)
                     {
+                        TheSystemMessageLog.ToCo($"WinVeridyTrust returned untrusted: {filePath}");
                         return null;
                     }
                 }
@@ -257,8 +258,9 @@ namespace nsCDEngine.Security
                     // No WinVerifyTrust: assume we are on a non-Windows OS: verify PE and certificate integrity ourselves
                     return ReadPECertificateFromBinaryImage(filePath, true, true);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage failed: {ex.Message}");
                     return null;
                 }
             }
@@ -278,8 +280,9 @@ namespace nsCDEngine.Security
                     {
                         return ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (on linux) excepted: {ex.Message}");
                         return null;
                     }
                 }
@@ -291,11 +294,13 @@ namespace nsCDEngine.Security
                 {
                     if (ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity) == null)
                     {
+                        TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (Windows) could not find any valid certificate");
                         return null;
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage excepted: {ex.Message}");
                     return null;
                 }
             }
@@ -539,8 +544,9 @@ namespace nsCDEngine.Security
                             {
                                 signedCms.CheckSignature(!verifyCertificateTrust);
                             }
-                            catch
+                            catch (Exception ex)
                             {
+                                TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage failed verifying trust: {ex.Message}");
                                 return null;
                             }
 
@@ -561,7 +567,7 @@ namespace nsCDEngine.Security
 
                             if (fileHash?.SequenceEqual(signedHash) != true)
                             {
-                                // File hash doesn't match signature: file was tampered with!
+                                TheSystemMessageLog.ToCo($"File hash doesn't match signature: file was tampered with or not using SHA1!");
                                 return null;
                             }
                         }
@@ -777,16 +783,18 @@ namespace nsCDEngine.Security
             {
                 cert = null;
             }
-
             if (cert == null)
             {
-                MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 418, "Diagnostics", $"Cert on Plugin {fileName} not correct or does not exist", eMsgLevel.l1_Error);
-                //TheCDEKPIs.IncrementKPI(eKPINames.UnsignedPlugins);
+                MySYSLOG?.WriteToLog(eDEBUG_LEVELS.OFF, 418, "Diagnostics", $"Cert on Plugin {fileName} not correct or does not exist", eMsgLevel.l1_Error);
                 return false;
             }
 
             // Check to see if thumbprints on file and c-labs file are the same
-            bool match = MyAppHostCert?.Thumbprint.Equals(cert?.Thumbprint, StringComparison.OrdinalIgnoreCase) == true || "7106454E5B20D063623F2BAA26B3A62BBE1249C3".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase);
+            bool match = MyAppHostCert?.Thumbprint.Equals(cert?.Thumbprint, StringComparison.OrdinalIgnoreCase) == true ||
+                    "A99B91578F275D44BE365BA0BD6AF29D49FCA159".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2024 cert
+                    "C8F244B6856C3A16604E7C00A0DD645C15EBE05A".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2023 Cert
+                    "9DBC9DFBBE4588DE1CAF3BA2B672F94C5316C823".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2022 cert
+                    "7106454E5B20D063623F2BAA26B3A62BBE1249C3".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase);
             return match;
         }
     }
