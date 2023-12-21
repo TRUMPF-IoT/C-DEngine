@@ -584,16 +584,160 @@ namespace nsCDEngine.Engines.ThingService
                 NMIEditorField.PropertyBag = new nmiCtrlTileGroup { TileWidth = tw, TileHeight = th };
         }
 
-        public virtual void DrawPinLines(TheFormInfo MyLiveForm, List<TheThingBase> pDevs,ThePropertyBag pProperties=null)
+        /// <summary>
+        /// Automatically draws all Lines between connected Pins
+        /// </summary>
+        /// <param name="MyLiveForm">Target Group Form</param>
+        /// <param name="pDevs">Devices with Pins</param>
+        /// <param name="pProperties">Some properties that can be set on the lines</param>
+        public virtual void DrawPinLines(TheFormInfo MyLiveForm, List<TheThingBase> pDevs, ThePropertyBag pProperties = null)
         {
             if (pDevs?.Count > 0)
             {
+                int lineWidth = CU.CInt(ThePropertyBag.PropBagGetValue(pProperties, "LineWidth"));
+                if (lineWidth == 0) lineWidth = 6;
+                for (int i = 0; i < pDevs.Count; i++)
+                {
+                    if (pDevs[i] == null) continue;
+
+                    var allSourcePins = pDevs[i].GetBaseThing().GetBaseThing().GetAllPins();
+                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList();
+                    foreach (var sourcePin in sourceOutPins)
+                    {
+                        string PinTypeFilter = ThePropertyBag.PropBagGetValue(pProperties, "PinTypeFilter");
+                        if (!string.IsNullOrEmpty(PinTypeFilter) && sourcePin.PinType != PinTypeFilter) continue;
+                        var targetInPins = sourcePin?.GetConnectedPins();
+                        if (targetInPins?.Count > 0)
+                        {
+                            bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIIsPinRight);
+                            bool sourcehasLeftPin = allSourcePins.Exists(p => !p.NMIIsPinRight);
+                            foreach (var targetPin in targetInPins)
+                            {
+                                var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
+                                var targetTB = targetT?.GetObject() as TheThingBase;
+                                var targetFace = targetTB?.MyNMIFaceModel;
+                                if (targetFace == null) continue;
+                                var sourceFace = pDevs[i].MyNMIFaceModel;
+                                var flowStyle = sourcePin.GetMapperStyle("");
+
+                                var sLeft = sourcePin.NMIIsPinRight ?
+                                    sourceFace.XPos + sourceFace.XLen + (sourcePin.NMIPinWidth * ((sourcehasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0))) + sourcePin.NMIxDelta :
+                                    sourceFace.XPos - ((sourcePin.NMIPinWidth * (sourceHasRightPin ? 1 : 0)) + sourcePin.NMIxDelta);
+                                var tLeft = targetPin.NMIIsPinRight ?
+                                    targetFace.XPos + targetFace.XLen + targetPin.NMIPinWidth : // targetPin.NMIxDelta :
+                                    targetFace.XPos + (78 - targetPin.NMIPinWidth) + targetPin.NMIxDelta;
+
+                                var left = sLeft > tLeft ? tLeft : sLeft;
+
+                                var sTop = sourceFace.YPos + ((sourcePin.NMIPinTopPosition * 39) + 15) + sourcePin.NMIyDelta;
+                                var tTop = targetFace.YPos + ((targetPin.NMIPinTopPosition * 39) + 15) + targetPin.NMIyDelta;
+
+                                string dir = "up";
+                                var top = tTop;
+                                if (sTop < tTop)
+                                {
+                                    top = sTop;
+                                    dir = "down";
+                                }
+                                int x = left;
+                                int y = top;
+                                int xl = Math.Abs(tLeft - sLeft);
+                                if (xl < lineWidth) xl = lineWidth;
+                                int yl = Math.Abs(sTop - tTop);
+                                if (yl < lineWidth) yl = lineWidth;
+                                var targetThing = TheThingRegistry.GetThingByMID(targetPin.cdeO);
+                                if (targetThing == null)
+                                    continue;
+                                if (yl > lineWidth)
+                                {
+                                    StringBuilder moveData = new();
+                                    int movecnt = ((yl + lineWidth) / 100) + 1;
+                                    for (int n = 0; n < movecnt; n++)
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
+                                    AddPinLine(MyLiveForm, $"line{targetThing}v_{sourcePin.PinName.Replace(' ', '_')}",
+                                        x + (sourcePin.DrawLineAtTarget ? xl : 0),
+                                        y,
+                                        lineWidth,
+                                        yl + lineWidth,
+                                        moveData.ToString());
+                                    GetProperty($"line{targetThing}v_{sourcePin.PinName.Replace(' ', '_')}", true).cdeE |= 8;
+                                }
+                                if (xl > lineWidth)
+                                {
+                                    y = top;
+                                    x = sLeft;
+                                    if (tLeft > sLeft)
+                                    {
+                                        dir = "right";
+                                    }
+                                    else
+                                    {
+                                        dir = "left";
+                                        if (sourcePin.DrawLineAtTarget)
+                                            dir = "right";
+                                        x = tLeft;
+                                    }
+                                    StringBuilder moveData = new();
+                                    int movecnt = (xl / 100) + 1;
+                                    for (int n = 0; n < movecnt; n++)
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
+                                    AddPinLine(MyLiveForm, $"line{targetThing}h_{sourcePin.PinName.Replace(' ', '_')}",
+                                        x,
+                                        y,
+                                        xl,
+                                        lineWidth,
+                                        moveData.ToString());
+                                    GetProperty($"line{targetThing}h_{sourcePin.PinName.Replace(' ', '_')}", true).cdeE |= 8;
+                                }
+                            }
+                        }
+                    }
+                }
                 UpdateLines(pDevs);
             }
         }
 
+        /// <summary>
+        /// Updates the Line style between pins if there is anything "flowing" along the lines
+        /// </summary>
+        /// <param name="pDevs">Devices with connected pin to update</param>
         public virtual void UpdateLines(List<TheThingBase> pDevs)
         {
+            if (pDevs?.Count > 0)
+            {
+                for (int i = 0; i < pDevs.Count; i++)
+                {
+                    if (pDevs[i] == null) continue;
+                    foreach (var sourcePin in pDevs[i].GetBaseThing().GetBaseThing().GetPinsByFunc(s => !s.IsInbound))
+                    {
+                        if (sourcePin == null) continue;
+                        var flowStyle = sourcePin.GetMapperStyle("");
+
+                        var targetInPins = sourcePin.GetConnectedPins();
+                        if (targetInPins?.Count > 0)
+                        {
+                            foreach (var targetPin in targetInPins)
+                            {
+                                var stylev = $"cdevert{flowStyle}line";
+                                var styleh = $"cdehori{flowStyle}line";
+                                if (CU.CDbl(targetPin.PinValue) == 0)
+                                {
+                                    stylev += "nf";
+                                    styleh += "nf";
+                                }
+                                else
+                                    stylev += "";
+                                var targetThing = TheThingRegistry.GetThingByMID(targetPin.cdeO);
+                                if (targetThing == null)
+                                    continue;
+                                SetProperty($"line{targetThing}v_{sourcePin.PinName.Replace(' ', '_')}", stylev);
+                                SetProperty($"line{targetThing}h_{sourcePin.PinName.Replace(' ', '_')}", styleh);
+                            }
+                        }
+                    }
+                }
+                TheThingRegistry.UpdateThing(MyBaseThing, true);
+            }
         }
 
         public virtual void AddPinLine(TheFormInfo MyLiveForm, string pDataName, int x, int y, int xl, int yl, string moveData, string pClassname = null)
