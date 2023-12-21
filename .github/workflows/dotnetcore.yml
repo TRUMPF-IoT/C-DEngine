@@ -17,6 +17,11 @@ jobs:
 
     env: 
         cdePackagerCheckOverwrite : true
+        CDE_KVU: ${{secrets.CDE_KVU}}
+        CDE_KVI: ${{secrets.CDE_KVI}}
+        CDE_KVT: ${{secrets.CDE_KVT}}
+        CDE_KVS: ${{secrets.CDE_KVS}}
+        CDE_KVC: ${{secrets.CDE_KVC}}
 
     steps:
     - uses: actions/checkout@v2
@@ -89,13 +94,12 @@ jobs:
         echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
         echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
 
-    - name: Install code sign cert
+    - name: Install AzureSignTool
+      run: dotnet tool install --global AzureSignTool
+
+    - name: Enable code signing for build
       run: |
         try {
-          Import-Module PKI
-          Set-Content -value ([Convert]::FromBase64String("${{secrets.CodeSignCert}}")) -path ".\signcert.pfx" -encoding Byte
-          import-pfxcertificate -filepath ".\signcert.pfx" -CertStoreLocation "Cert:\CurrentUser\My" -password (ConvertTo-SecureString -String "${{secrets.CodeSignCertPassword}}" -AsPlainText -Force)
-          remove-item ".\signcert.pfx"
           Set-Content -path ".\BuildTools\\real.sign" -value ""
         } catch { write-host $_; throw $_ }
       shell: powershell

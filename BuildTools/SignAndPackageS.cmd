@@ -7,4 +7,4 @@ call "%~dp0\signMeSha.bat" "%~2%~3" "%~dp0"
 :packnow
 echo Packaging "%~2%~5" "%~2." "%~2." "%~4" now ...
 "%~dp0\cdePackager\cdePackager.exe" "%~2%~5" "%~2." "%~2." "%~4"
-if not %errorlevel%==0 goto :EOF
+exit %errorlevel%
