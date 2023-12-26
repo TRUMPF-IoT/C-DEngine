@@ -675,6 +675,7 @@ namespace nsCDEngine.ISM
                                         if (compressionRatio > THRESHOLD_RATIO)
                                         {
                                             TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"LaunchUpdater: Ratio ({compressionRatio}) between compressed {totalSizeEntry} and uncompressed data {entry.CompressedLength} is highly suspicious, looks like a Zip Bomb Attack", eMsgLevel.l1_Error));
+                                            ShutdownRequired = false;
                                             IsSuspicious = true;
                                             break;
                                         }
@@ -686,13 +687,14 @@ namespace nsCDEngine.ISM
                                 {
                                     TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"LaunchUpdater: the uncompressed data size ({totalSizeArchive}) is too much for the application resource capacity. Allowed max: {THRESHOLD_SIZE}", eMsgLevel.l1_Error));
                                     IsSuspicious = true;
+                                    ShutdownRequired = false;
                                     break;
                                 }
 
                                 if (totalEntryArchive > THRESHOLD_ENTRIES)
                                 {
                                     TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"LaunchUpdater: too much entries ({totalEntryArchive}) in this archive, can lead to inodes exhaustion of the system. Allowed max: {THRESHOLD_ENTRIES}", eMsgLevel.l1_Error));
-                                    
+                                    ShutdownRequired = false;
                                     IsSuspicious = true;
                                     break;
                                 }
@@ -703,9 +705,10 @@ namespace nsCDEngine.ISM
                                 {
                                     string completeFileName = Path.Combine(tFinalTargetDir, file.FullName);
                                     var destinationFullPath = Path.GetFullPath(completeFileName);
-                                    if (destinationFullPath.StartsWith(tFinalTargetDir))
+                                    if (!destinationFullPath.StartsWith(tFinalTargetDir))
                                     {
                                         TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"Disallowed unzipping of File '{destinationFullPath}' because it would write outside allowed boundary '{tFinalTargetDir}'"));
+                                        ShutdownRequired = false;
                                     }
                                     else
                                     {
@@ -724,6 +727,7 @@ namespace nsCDEngine.ISM
                     catch (Exception ee)
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"File: {tFile} failed to upgrade: {ee}"));
+                        ShutdownRequired = false;
                     }
                 }
                 if (ShutdownRequired)
