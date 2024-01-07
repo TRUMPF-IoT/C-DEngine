@@ -1445,7 +1445,7 @@ namespace nsCDEngine.ISM
             try
             {
                 string tRestoreFile = TheCommonUtils.cdeFixupFileName("backups\\" + pTitle);
-                string SourceDir = TheCommonUtils.cdeFixupFileName("__CacheToRestore"); // Write to separate location, then put in place during startup do avoid overwrite
+                string SourceDir = TheCommonUtils.cdeFixupFileName("__cachetorestore"); // Write to separate location, then put in place during startup do avoid overwrite
                 TheCommonUtils.CreateDirectories(SourceDir, true);
                 var downloadedMessageInfo = new DirectoryInfo(SourceDir);
                 foreach (FileInfo file in downloadedMessageInfo.GetFiles())
