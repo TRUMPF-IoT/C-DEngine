@@ -504,16 +504,16 @@ namespace nsCDEngine.BaseClasses
             // To ensure that restored backups are not overwritten during shutdown, we write them to a temp directory and move them into place on start up
             if (!MyServiceHostInfo.UseRandomDeviceID && !MyServiceHostInfo.IsIsolated)
             {
-                string cacheParentPath = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash() + "ClientBin\\";
-                if (Directory.Exists(cacheParentPath + "__CacheToRestore"))
+                string cacheParentPath = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash() + "ClientBin"+ Path.DirectorySeparatorChar;
+                if (Directory.Exists(cacheParentPath + "__cachetorestore"))
                 {
                     // Keep the old Cache around just in case
                     try
                     {
                         // First make space for the old copy, in case there was one already
-                        if (Directory.Exists(cacheParentPath + "__CacheOld"))
+                        if (Directory.Exists(cacheParentPath + "__cacheold"))
                         {
-                            Directory.Delete(cacheParentPath + "__CacheOld", true);
+                            Directory.Delete(cacheParentPath + "__cacheold", true);
                         }
                     }
                     catch
@@ -522,7 +522,7 @@ namespace nsCDEngine.BaseClasses
                     }
                     try
                     {
-                        Directory.Move(cacheParentPath + "Cache", cacheParentPath + "__CacheOld");
+                        Directory.Move(cacheParentPath + "cache", cacheParentPath + "__cacheold");
                     }
                     catch
                     {
@@ -532,7 +532,7 @@ namespace nsCDEngine.BaseClasses
                     // Now move the restored cache into place
                     try
                     {
-                        Directory.Move(cacheParentPath + "__CacheToRestore", cacheParentPath + "Cache");
+                        Directory.Move(cacheParentPath + "__cachetorestore", cacheParentPath + "cache");
                     }
                     catch
                     {
