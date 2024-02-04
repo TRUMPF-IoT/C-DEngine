@@ -57,7 +57,7 @@ namespace nsCDEngine.BaseClasses
             try
             {
                 var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
-                return assembly.FullName.Contains("CoreLib");
+                return assembly.FullName.Contains("CoreLib") || assembly.FullName.Contains("mscorlib"); //5.181.0: Fix for Android 14
             }
             catch
             {
