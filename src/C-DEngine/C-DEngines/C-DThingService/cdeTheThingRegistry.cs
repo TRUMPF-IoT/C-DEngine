@@ -1599,7 +1599,7 @@ namespace nsCDEngine.Engines.ThingService
             List<TheThing> tList = GetThingsOfEngine(pEngineName, allowRemoteEngine);
             var tThing = tList?.Find(s => TheThing.GetSafePropertyString(s, "ID") == pID);
             _thingByIdCache ??= new cdeConcurrentDictionary<string, TheThing>();
-            _thingByIdCache.TryAdd(cacheKey, tThing);
+            _thingByIdCache?.TryAdd(cacheKey, tThing);
             return tThing;
         }
         static cdeConcurrentDictionary<string, TheThing> _thingByIdCache;
