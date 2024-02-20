@@ -53,7 +53,7 @@ namespace cdeASPNetMiddleware
 
             if (TheBaseAssets.MyServiceHostInfo == null || !TheBaseAssets.MyServiceHostInfo.AllSystemsReady)  //&& Request.Url.ToString().EndsWith("cdestatus.aspx", StringComparison.OrdinalIgnoreCase))
             {
-                await Response.WriteAsync($"<html><head><meta http-equiv=\"refresh\" content=\"10; url={TheBaseAssets.MyServiceHostInfo.MyStationURL}{Request.Path}{Request.QueryString}\"></head><body>...Cloud initializing, please wait</body></html>");
+                await Response.WriteAsync($"<html><head><meta http-equiv=\"refresh\" content=\"10; url={TheBaseAssets.MyServiceHostInfo.MyStationURL}{Request.Path}{Request.QueryString}\"></head><body>...Relay initializing, please wait</body></html>");
                 return;
             }
 
