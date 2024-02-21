@@ -208,6 +208,7 @@ namespace nsCDEngine.ISM
         /// Fires when the ISM requires a restart
         /// </summary>
         public Action<bool, string> eventShutdownRequired;  //True=Restart
+        internal Action<string, bool> eventInternalShutdown;
         /// <summary>
         /// Fires when the ISM has updates that can be installed
         /// </summary>
@@ -764,8 +765,8 @@ namespace nsCDEngine.ISM
                     {
                         TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", "Start of updater failed " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l1_Error, e.ToString())); //Log Entry that service has been started
                     }
-                    if (eventShutdownRequired != null && ShutdownRequired && (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.Application || TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.Device))
-                        eventShutdownRequired(false, pVersion);
+                    if (eventInternalShutdown != null && ShutdownRequired && (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.Application || TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.Device))
+                        eventInternalShutdown("Extractor requests Shutdown", false);
                 }
                 else
                     TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", "Extraction of updater failed " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l1_Error));
@@ -815,7 +816,7 @@ namespace nsCDEngine.ISM
                 }
                 TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", "!!! Remote Wipe IS AUTHORIZED - Token Valid---wiping starting... !!!", eMsgLevel.l3_ImportantMessage));
             }
-            if (eventShutdownRequired != null)
+            if (eventInternalShutdown != null)
             {
                 //New 5.112: We are now recommending to use PM2 for autostart and auto - restart
                 bool FireShutdown = false;
@@ -856,7 +857,7 @@ namespace nsCDEngine.ISM
                     }
                 }
                 if (FireShutdown)
-                    eventShutdownRequired?.Invoke(ForceQuitt, ISMCurrentVersion);
+                    eventInternalShutdown?.Invoke("Restart/Wipe requests Shutdown", ForceQuitt);
             }
         }
 

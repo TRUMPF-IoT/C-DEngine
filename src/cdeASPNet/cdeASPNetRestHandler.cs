@@ -59,7 +59,7 @@ namespace cdeASPNetMiddleware
 
             if (Request.Path.ToString().EndsWith("cdeRestart.aspx") && cdeASPNetCommon.IsTokenValid(Request))
             {
-                TheBaseAssets.MyApplication?.Shutdown(true);
+                TheBaseAssets.MyApplication?.Shutdown("Restart Requested", true);
                 return;
             }
             if (Request.Path.ToString().EndsWith("ashx", StringComparison.CurrentCultureIgnoreCase))

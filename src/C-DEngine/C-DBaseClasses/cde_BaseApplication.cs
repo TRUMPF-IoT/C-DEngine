@@ -165,7 +165,7 @@ namespace nsCDEngine.BaseClasses
                 if (!TheBaseAssets.MyActivationManager.InitializeLicenses())
                 {
                     TheSystemMessageLog.ToCo($"Licensing issues. Exiting...", true);
-                    Shutdown(true);
+                    Shutdown("Licensing Issue", true);
                     TheBaseAssets.MySYSLOG.WriteToLog(4145, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Licensing error", eMsgLevel.l3_ImportantMessage));
                     return false;
                 }
@@ -191,7 +191,7 @@ namespace nsCDEngine.BaseClasses
                                         if (TheBaseAssets.IsInAgentStartup)
                                             MyISMRoot?.Restart(true);
                                         else
-                                            Shutdown(true);
+                                            Shutdown("Free License expired", true);
                                     }
                                 });
                         });
@@ -204,7 +204,7 @@ namespace nsCDEngine.BaseClasses
 
                 if (TheBaseAssets.MyServiceHostInfo.StartISM && MyISMRoot == null && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.BaseDirectory))
                 {
-                    MyISMRoot = new TheISMManager { eventShutdownRequired = sinkAppShutdown };
+                    MyISMRoot = new TheISMManager { eventShutdownRequired = sinkAppShutdown, eventInternalShutdown= sinkInternalShutdown };
                     MyISMRoot.InitISM("", "", "", TheBaseAssets.MyServiceHostInfo.CurrentVersion, TheBaseAssets.MyServiceHostInfo.ISMScanForUpdatesOnUSB, TheBaseAssets.MyServiceHostInfo.ISMScanOnStartup);
                     TheBaseAssets.MySYSLOG.WriteToLog(4142, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "ISM Started", eMsgLevel.l3_ImportantMessage));
                 }
@@ -227,7 +227,7 @@ namespace nsCDEngine.BaseClasses
                 if (!TheCDEngines.StartEngines(pPlugInLst, null))                                           //Starts all SubEngines and Plugins. MyCmdArgs is a copy of the tParas sent to the Init Assets Function and can be used to set parameters for each engine during startup
                 {
                     TheSystemMessageLog.ToCo($"Failed to Start Engines. Exiting...", true);
-                    Shutdown(true);
+                    Shutdown("Failed to start Engines", true);
                     TheBaseAssets.MySYSLOG.WriteToLog(4149, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "Failed to start engines", eMsgLevel.l3_ImportantMessage));
                     return false;
                 }
@@ -255,7 +255,12 @@ namespace nsCDEngine.BaseClasses
 
         void sinkAppShutdown(bool ForceExit, string pVersion)
         {
-            Shutdown(ForceExit);
+            Shutdown("ISM Forced Shutdown", ForceExit);
+        }
+
+        void sinkInternalShutdown(string pReason, bool ForceExit)
+        {
+            Shutdown(pReason, ForceExit);
         }
         /// <summary>
         /// Shutsdown the C-DEngine and all plugins
@@ -264,6 +269,17 @@ namespace nsCDEngine.BaseClasses
         /// <param name="force">If True and the C-DEngine will Stop or restart the hosting application. If it is hosted in IIS, the Application Pool hosting the app will be Stopped or Restarted depending on the next parameter</param>
         /// <param name="waitIfPending">Waits in case The shutdown is already initiated</param>
         public virtual void Shutdown(bool force, bool waitIfPending = false)
+        {
+            Shutdown("old version", force, waitIfPending);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="pReason">Reason for Shutdown</param>
+        /// <param name="force">If True and the C-DEngine will Stop or restart the hosting application. If it is hosted in IIS, the Application Pool hosting the app will be Stopped or Restarted depending on the next parameter</param>
+        /// <param name="waitIfPending">Waits in case The shutdown is already initiated</param>
+        public virtual void Shutdown(string pReason, bool force, bool waitIfPending = false)
         {
             if (!waitIfPending && (!TheBaseAssets.MasterSwitch || TheCommonUtils.cdeIsLocked(ShutdownLock))) 
                 return;                                   //Make sure we dont do this twice
@@ -299,7 +315,7 @@ namespace nsCDEngine.BaseClasses
                     {
                         TheCommonUtils.SleepOneEye(100, 100);
                     }
-                    TheBaseAssets.MySYSLOG?.WriteToLog(3, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM(TheBaseAssets.MyServiceHostInfo.ApplicationName, TheBaseAssets.MyServiceHostInfo.ApplicationTitle + " Initiating shutdown at : " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l6_Debug));
+                    TheBaseAssets.MySYSLOG?.WriteToLog(3, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(TheBaseAssets.MyServiceHostInfo.ApplicationName, $"{TheBaseAssets.MyServiceHostInfo.ApplicationTitle} Initiating shutdown. Reason: {(string.IsNullOrEmpty(pReason)?"unknown":pReason)} at : ${TheCommonUtils.GetDateTimeString(DateTimeOffset.Now)}", eMsgLevel.l6_Debug));
                     TheBaseAssets.MasterSwitch = false;
                     TheBaseAssets.ForceShutdown = force;
                     TheCDEngines.StopAllEngines();

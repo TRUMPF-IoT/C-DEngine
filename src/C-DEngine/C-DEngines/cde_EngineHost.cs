@@ -342,7 +342,7 @@ namespace nsCDEngine.Engines
             }
             if (!TheBaseAssets.MasterSwitch)
             {
-                TheBaseAssets.MyApplication.Shutdown(true);
+                TheBaseAssets.MyApplication.Shutdown("MasterSwitch is off", true);
                 return;
             }
 
@@ -369,7 +369,7 @@ namespace nsCDEngine.Engines
             if (TheBaseAssets.MyServiceHostInfo.IsIsolated && TheBaseAssets.MyCDEPlugins.Count == 0)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Isolated Plugin Could not be found- ISOLater will exit", eMsgLevel.l1_Error));
-                TheBaseAssets.MyApplication.Shutdown(true);
+                TheBaseAssets.MyApplication.Shutdown("Isolated Plugin not found", true);
                 return;
             }
 
@@ -510,7 +510,7 @@ namespace nsCDEngine.Engines
             {
                 StopAllEngines();
                 TheBaseAssets.MySYSLOG.WriteToLog(4131, new TSM("TheCDEngines", "Communication could not be started! All Engines stopped", eMsgLevel.l1_Error));
-                TheBaseAssets.MyApplication.Shutdown(true);
+                TheBaseAssets.MyApplication.Shutdown("Communication could not start", true);
                 return;
             }
             TheBaseAssets.MySYSLOG.WriteToLog(4132, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Communication Started", eMsgLevel.l3_ImportantMessage));
@@ -533,7 +533,7 @@ namespace nsCDEngine.Engines
             TheBaseAssets.MyServiceHostInfo.AllSystemsReady = true;
             TheBaseAssets.MyServiceHostInfo.AllEnginesAreStarting = false;
             if (!TheBaseAssets.MasterSwitch)
-                TheBaseAssets.MyApplication.Shutdown(true);
+                TheBaseAssets.MyApplication.Shutdown("MasterSwitch off at end of Engine Start", true);
 
             //AutoBackup
             ISM.TheISMManager.StartAutoBackup();

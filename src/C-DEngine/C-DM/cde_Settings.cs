@@ -382,7 +382,7 @@ namespace nsCDEngine.ISM
                     {
                         TheSystemMessageLog.ToCo("Local cdeTPI file has no entries. Most likely crypto lib is not matching, node will terminate"); //Syslog is not initiated at this point
                         TheBaseAssets.IsStarting = false;
-                        TheBaseAssets.MyApplication?.Shutdown(true);
+                        TheBaseAssets.MyApplication?.Shutdown("Local cdeTPI empty or corrupt - crypto lib wrong?", true);
                         TheBaseAssets.MasterSwitch = false;
                         return false;
                     }
@@ -718,7 +718,7 @@ namespace nsCDEngine.ISM
                         string proRes = ParseProvisioning(tBuf, true, false);
                         if (!string.IsNullOrEmpty(proRes) && !CheckForTPIBackup(proRes))
                         {
-                            TheBaseAssets.MyApplication.Shutdown(false);
+                            TheBaseAssets.MyApplication.Shutdown("Provisoning Data could not be parsed correctly", false);
                             return false;
                         }
                         else
@@ -777,14 +777,14 @@ namespace nsCDEngine.ISM
                                         CU.SleepOneEye(15000, 1000);
                                         if (!TheBaseAssets.MasterSwitch)
                                         {
-                                            TheBaseAssets.MyApplication.Shutdown(false);
+                                            TheBaseAssets.MyApplication.Shutdown("Provisioning Service could not be reached and Masterswitch is off", false);
                                             return false;
                                         }
                                         break;
                                     default:
                                         TheBaseAssets.MySYSLOG.WriteToLog(2821, new TSM("TheCDESettings", $"...failed. Shutting down", eMsgLevel.l1_Error, error));
                                         TheBaseAssets.IsInAgentStartup = false;
-                                        TheBaseAssets.MyApplication.Shutdown(false);
+                                        TheBaseAssets.MyApplication.Shutdown("Provisioning Service could not be reached ...forcing exit", false);
                                         return false;
                                 }
                             }
