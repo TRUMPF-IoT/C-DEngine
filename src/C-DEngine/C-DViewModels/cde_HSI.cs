@@ -412,8 +412,7 @@ namespace nsCDEngine.ViewModels
         public string GetMeta(string pUrl)
         {
             if (string.IsNullOrEmpty(pUrl)) pUrl = "/default.aspx";
-            string tMeta = "<link rel=\"shortcut icon\" type=\"image/ico\" href=\"/" + favicon_ico + "\" />";
-            tMeta += "<meta name=\"application-name\" content=\"" + ApplicationTitle + "\" />";
+            string tMeta ="<meta name=\"application-name\" content=\"" + ApplicationTitle + "\" />";
             tMeta += "<meta name=\"msapplication-starturl\" content=\"" + GetPrimaryStationURL(false) + pUrl + "\" />";
             tMeta += "<meta name=\"msapplication-navbutton-color\" content=\"" + ApplicationTitle + "\" />";
             tMeta += "<meta name=\"msapplication-window\" content=\"" + OptScrRes4by3 + "\" />";
@@ -422,6 +421,11 @@ namespace nsCDEngine.ViewModels
             tMeta += "<meta name=\"msapplication-TileImage\" content=\"" + TileImage + "\"/> ";
             tMeta += "<meta name=\"msapplication-task\" content=\"name=" + ApplicationTitle + ";action-uri=" + GetPrimaryStationURL(false) + pUrl + ";icon-uri=" + favicon_ico + "\" />";
             tMeta += "<meta name=\"msapplication-task\" content=\"name=C-DEngine Status Log;action-uri=" + GetPrimaryStationURL(false) + "/cdeStatus.aspx;icon-uri=" + favicon_ico + "\" />";
+            tMeta += "<link rel=\"shortcut icon\" type=\"image/ico\" href=\"/" + favicon_ico + "\" />";
+            tMeta += "<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\">";
+            tMeta += "<link rel=\"icon\" type=\"image/png\" sizes=\"32x32\" href=\"/favicon-32x32.png\">";
+            tMeta += "<link rel=\"icon\" type=\"image/png\" sizes=\"16x16\" href=\"/favicon-16x16.png\">";
+            tMeta += "<link rel=\"manifest\" href=\"/site.webmanifest\">";
             return tMeta;
         }
 

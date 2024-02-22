@@ -84,7 +84,7 @@ namespace nsCDEngine.Engines.ThingService
                 if (!Success)
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(13424, new TSM(eEngineName.ThingService, "Thing Registry Store could not be initialized in time! Node is in unstable state and will shutdown", eMsgLevel.l1_Error));
-                    TheBaseAssets.MyApplication.Shutdown(true);
+                    TheBaseAssets.MyApplication.Shutdown("Fatal Error: Thing Registry could not be initialized", true);
                     return;
                 }
             }
@@ -1599,7 +1599,7 @@ namespace nsCDEngine.Engines.ThingService
             List<TheThing> tList = GetThingsOfEngine(pEngineName, allowRemoteEngine);
             var tThing = tList?.Find(s => TheThing.GetSafePropertyString(s, "ID") == pID);
             _thingByIdCache ??= new cdeConcurrentDictionary<string, TheThing>();
-            _thingByIdCache.TryAdd(cacheKey, tThing);
+            _thingByIdCache?.TryAdd(cacheKey, tThing);
             return tThing;
         }
         static cdeConcurrentDictionary<string, TheThing> _thingByIdCache;

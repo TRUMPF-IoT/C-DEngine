@@ -127,6 +127,9 @@ jobs:
     - name: Gather artifacts
       run: (robocopy .\bin\ .\artifacts\ *.CDEX *.CDEP *.nupkg *.snupkg *.msi cdePackager* /s /np) ^& IF %ERRORLEVEL% LEQ 1 exit 0
       shell: cmd
+    - name: Gather nuget artifacts
+      run: (robocopy .\src\nugets .\artifacts\ *.nupkg *.snupkg /s /np) ^& IF %ERRORLEVEL% LEQ 1 exit 0
+      shell: cmd      
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:
