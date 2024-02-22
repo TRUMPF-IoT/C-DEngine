@@ -42,3 +42,7 @@ License: MPL-2.0
 Files:  src/Tests/DataLogVerifier/readme.md
 Copyright: 2009-2022 TRUMPF Laser GmbH, authors: C-Labs
 License: MPL-2.0
+
+Files:  src/Nugets/*
+Copyright: 2009-2022 TRUMPF Laser GmbH, authors: C-Labs
+License: MPL-2.0
