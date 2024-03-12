@@ -24,7 +24,7 @@
 		<!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
 		<ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
 		<!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
-		<PackageOutputPath>$(OutDir)</PackageOutputPath>
+		<PackageOutputPath>$(SolutionDir)Nugets</PackageOutputPath>
 		<DefineConstants>TRACE;CDE_SYSLOG;$(DefineConstants)</DefineConstants>
 		<LangVersion>preview</LangVersion>
 		<DocumentationFile>$(OutputPath)C-DEngine.xml</DocumentationFile>

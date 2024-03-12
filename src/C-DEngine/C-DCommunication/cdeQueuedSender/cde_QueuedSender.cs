@@ -564,8 +564,8 @@ namespace nsCDEngine.Communication
                         }
                         if (TheBaseAssets.MyServiceHostInfo.IsIsolated)
                         {
-                            TheBaseAssets.MySYSLOG.WriteToLog(23051, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QSRegistry", $"Route to Master-Node is down - ISOLater will close {pCause}", eMsgLevel.l3_ImportantMessage));
-                            TheBaseAssets.MyApplication.Shutdown(true);
+                            TheBaseAssets.MySYSLOG.WriteToLog(23051, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QSRegistry", $"Route to Primary-Node is down - ISOLater will close {pCause}", eMsgLevel.l3_ImportantMessage));
+                            TheBaseAssets.MyApplication.Shutdown("Primary Node Down", true);
                             return;
                         }
                         else

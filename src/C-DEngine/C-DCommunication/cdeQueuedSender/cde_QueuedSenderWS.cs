@@ -210,7 +210,7 @@ namespace nsCDEngine.Communication
                             }
                             if (MyTargetNodeChannel.SenderType != cdeSenderType.CDE_CLOUDROUTE) //CODE-REVIEW: 4.0113 is this still valid: Must not reset HB if talking to cloud due to Cloud-Disconnect issue
                                 ResetHeartbeatTimer(false, tCurSessState);
-                            if (!cdeSenderType.CDE_JAVAJASON.Equals(MyTargetNodeChannel.SenderType))
+                            if (!cdeSenderType.CDE_JAVAJASON.Equals(MyTargetNodeChannel.SenderType) && tCurSessState!=null)
                                 tDev.NPA = TheBaseAssets.MyScopeManager.GetISBPath(TheBaseAssets.MyServiceHostInfo.RootDir, MyTargetNodeChannel.SenderType, TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.SenderType, tCurSessState.FID, tCurSessState.cdeMID, true);
                             if (tCurSessState ==null || MyTargetNodeChannel.MySessionState == null || MyTargetNodeChannel.MySessionState.HasExpired)
                                 throw new Exception($"Session was deleted or has expired ({MyTargetNodeChannel?.MySessionState?.HasExpired})");
