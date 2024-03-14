@@ -509,7 +509,7 @@ namespace cdeNewtonsoft.Json.Serialization
         {
             get
             {
-#if !(PORTABLE40 || PORTABLE || DOTNET || NETSTANDARD2_0)
+#if !(PORTABLE40 || PORTABLE || DOTNET || NETSTANDARD2_0 || NETSTANDARD2_1)
 #if !(CDE_IOS && !HAVE_REFLECTION_EMIT)
                 if (DynamicCodeGeneration)
                 {
