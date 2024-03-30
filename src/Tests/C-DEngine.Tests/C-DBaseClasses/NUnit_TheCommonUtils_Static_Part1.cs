@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2024 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using NUnitTestForHelp;
 using static nsCDEngine.BaseClasses.TheCommonUtils;
+using NUnit.Framework.Legacy;
 
 namespace NUnit_TheCommonUtils
 {
@@ -30,8 +31,8 @@ namespace NUnit_TheCommonUtils
         //    bool bInit = BaseApplication.Init(strGUID, strScopeID);
         //    bool bStart = BaseApplication.Start();
 
-        //    Assert.IsTrue(bInit);
-        //    Assert.IsTrue(bStart);
+        //    ClassicAssert.IsTrue(bInit);
+        //    ClassicAssert.IsTrue(bStart);
         //}
 
         //[OneTimeTearDown]
@@ -53,7 +54,7 @@ namespace NUnit_TheCommonUtils
             byte[] pIn = new byte[] { 49, 50, 51, 52, 53, 54, 55, 56, 57 }; ;
             string strReturned = TheCommonUtils.CArray2UTF8String(pIn);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CArray2UTF8String_byte[]" />
 
         } // function T1000_CArray2UTF8String
@@ -72,7 +73,7 @@ namespace NUnit_TheCommonUtils
             bool StripFileCodes = true;
             string strReturned = TheCommonUtils.CArray2UTF8String(pIn, StripFileCodes);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CArray2UTF8String_byte[]_bool" />
 
         } // function T1001_CArray2UTF8String
@@ -92,7 +93,7 @@ namespace NUnit_TheCommonUtils
             int len = 5;
             string strReturned = TheCommonUtils.CArray2UTF8String(pIn, start, len);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CArray2UTF8String_byte[]_int_int" />
 
         } // function T1002_CArray2UTF8String
@@ -113,7 +114,7 @@ namespace NUnit_TheCommonUtils
             bool StripFileCodes = true;
             string strReturned = TheCommonUtils.CArray2UTF8String(pIn, start, len, StripFileCodes);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CArray2UTF8String_byte[]_int_int_bool" />
 
         } // function T1003_CArray2UTF8String
@@ -131,7 +132,7 @@ namespace NUnit_TheCommonUtils
             byte[] pIn = new Byte[] { 48, 00, 48, 00, 55, 00 };
             string strReturned = TheCommonUtils.CArray2UnicodeString(pIn);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CArray2UnicodeString_byte[]" />
 
         } // function T1004_CArray2UnicodeString
@@ -151,7 +152,7 @@ namespace NUnit_TheCommonUtils
             int len = 8;
             string strReturned = TheCommonUtils.CArray2UnicodeString(pIn, start, len);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CArray2UnicodeString_byte[]_int_int" />
 
         } // function T1005_CArray2UnicodeString
@@ -169,7 +170,7 @@ namespace NUnit_TheCommonUtils
             object inObj = (object)false;
             bool bReturned = TheCommonUtils.CBool(inObj);
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
             // <HelpEnd fn="TheCommonUtils.CBool_object" />
 
         } // function T1006_CBool
@@ -187,7 +188,7 @@ namespace NUnit_TheCommonUtils
             object inObj = 123;
             byte Expected = TheCommonUtils.CByte(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CByte_object" />
 
         } // function T1007_CByte
@@ -205,7 +206,7 @@ namespace NUnit_TheCommonUtils
             object inObj = 90;
             char Expected = TheCommonUtils.CChar(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CChar_object" />
 
         } // function T1008_CChar
@@ -223,7 +224,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "5/1/2012";
             DateTimeOffset Expected = TheCommonUtils.CDate(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CDate_object" />
 
         } // function T1009_CDate
@@ -241,7 +242,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "1/1/1900";
             DateTimeOffset Expected = TheCommonUtils.CDate(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CDate_object" />
 
         } // function T1010_CDate
@@ -260,7 +261,7 @@ namespace NUnit_TheCommonUtils
             object inObj = (9876.0000 + 0.5432);
             double Returned = TheCommonUtils.CDbl(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CDbl_object" />
 
         } // function T1012_CDbl
@@ -278,7 +279,7 @@ namespace NUnit_TheCommonUtils
             object inObj = (object)(bool)true;
             double Returned = TheCommonUtils.CDblWithBool(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CDblWithBool_object" />
 
         } // function T1013_CDblWithBool
@@ -295,7 +296,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "3.141592654";
             float Returned = TheCommonUtils.CFloat(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CFloat_object" />
 
         } // function T1014_CFloat
@@ -312,7 +313,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "{1BDDE03F-7BAE-4CA4-9A00-C809B02E41C9}";
             Guid Returned = TheCommonUtils.CGuid(inObj);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.CGuid_object" />
 
         } // function T1015_CGuid
@@ -330,7 +331,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "123456789";
             int iReturned = TheCommonUtils.CInt(inObj);
 
-            Assert.AreEqual(iExpected, iReturned);
+            ClassicAssert.AreEqual(iExpected, iReturned);
             // <HelpEnd fn="TheCommonUtils.CInt_object" />
 
         } // function T1016_CInt
@@ -352,23 +353,22 @@ namespace NUnit_TheCommonUtils
 
             DateTimeOffset Returned = CJSONDateToDateTime(strJSONDate);
 
-            Assert.AreEqual(dateInput1.Hour, Returned.Hour);
-            Assert.AreEqual(dateInput1.Minute, Returned.Minute);
-            Assert.AreEqual(dateInput1.Second, Returned.Second);
-            Assert.AreEqual(dateInput1.Millisecond, Returned.Millisecond);
-            Assert.AreEqual(dateInput1.Ticks, Returned.Ticks);
-            Assert.AreEqual(dateInput1.Year, Returned.Year);
-            Assert.AreEqual(dateInput1.Month, Returned.Month);
-            Assert.AreEqual(dateInput1.Day, Returned.Day);
-
-            Assert.AreEqual(dateInput2.Hour, Returned.Hour);
-            Assert.AreEqual(dateInput2.Minute, Returned.Minute);
-            Assert.AreEqual(dateInput2.Second, Returned.Second);
-            Assert.AreEqual(dateInput2.Millisecond, Returned.Millisecond);
-            Assert.AreEqual(dateInput2.Ticks, Returned.Ticks);
-            Assert.AreEqual(dateInput2.Year, Returned.Year);
-            Assert.AreEqual(dateInput2.Month, Returned.Month);
-            Assert.AreEqual(dateInput2.Day, Returned.Day);
+            ClassicAssert.AreEqual(dateInput1.Hour, Returned.Hour);
+            ClassicAssert.AreEqual(dateInput1.Minute, Returned.Minute);
+            ClassicAssert.AreEqual(dateInput1.Second, Returned.Second);
+            ClassicAssert.AreEqual(dateInput1.Millisecond, Returned.Millisecond);
+            ClassicAssert.AreEqual(dateInput1.Ticks, Returned.Ticks);
+            ClassicAssert.AreEqual(dateInput1.Year, Returned.Year);
+            ClassicAssert.AreEqual(dateInput1.Month, Returned.Month);
+            ClassicAssert.AreEqual(dateInput1.Day, Returned.Day);
+            ClassicAssert.AreEqual(dateInput2.Hour, Returned.Hour);
+            ClassicAssert.AreEqual(dateInput2.Minute, Returned.Minute);
+            ClassicAssert.AreEqual(dateInput2.Second, Returned.Second);
+            ClassicAssert.AreEqual(dateInput2.Millisecond, Returned.Millisecond);
+            ClassicAssert.AreEqual(dateInput2.Ticks, Returned.Ticks);
+            ClassicAssert.AreEqual(dateInput2.Year, Returned.Year);
+            ClassicAssert.AreEqual(dateInput2.Month, Returned.Month);
+            ClassicAssert.AreEqual(dateInput2.Day, Returned.Day);
             // <HelpEnd fn="TheCommonUtils.CJSONDateToDateTime_string" />
 
         } // function T1017_CJSONDateToDateTime
@@ -387,32 +387,32 @@ namespace NUnit_TheCommonUtils
             // DateTimeOffset dateOutput = TheCommonUtils.CJSONDateToDateTime(strJSONDate);
             DateTimeOffset dateOutput2 = CJSONDateToDateTime(strJSONDate2);
 
-            //Assert.AreEqual(date.Hour, dateOutput1.Hour);
-            //Assert.AreEqual(date.Minute, dateOutput1.Minute);
-            //Assert.AreEqual(date.Second, dateOutput1.Second);
-            //Assert.AreEqual(date.Millisecond, dateOutput1.Millisecond);
-            //Assert.AreEqual(date.Ticks, dateOutput1.Ticks);
-            //Assert.AreEqual(date.Year, dateOutput1.Year);
-            //Assert.AreEqual(date.Month, dateOutput1.Month);
-            //Assert.AreEqual(date.Day, dateOutput1.Day);
+            //ClassicAssert.AreEqual(date.Hour, dateOutput1.Hour);
+            //ClassicAssert.AreEqual(date.Minute, dateOutput1.Minute);
+            //ClassicAssert.AreEqual(date.Second, dateOutput1.Second);
+            //ClassicAssert.AreEqual(date.Millisecond, dateOutput1.Millisecond);
+            //ClassicAssert.AreEqual(date.Ticks, dateOutput1.Ticks);
+            //ClassicAssert.AreEqual(date.Year, dateOutput1.Year);
+            //ClassicAssert.AreEqual(date.Month, dateOutput1.Month);
+            //ClassicAssert.AreEqual(date.Day, dateOutput1.Day);
 
-            Assert.AreEqual(date.Hour, dateOutput2.Hour);
-            Assert.AreEqual(date.Minute, dateOutput2.Minute);
-            Assert.AreEqual(date.Second, dateOutput2.Second);
-            Assert.AreEqual(date.Millisecond, dateOutput2.Millisecond);
-            Assert.AreEqual(date.Ticks, dateOutput2.Ticks);
-            Assert.AreEqual(date.Year, dateOutput2.Year);
-            Assert.AreEqual(date.Month, dateOutput2.Month);
-            Assert.AreEqual(date.Day, dateOutput2.Day);
+            ClassicAssert.AreEqual(date.Hour, dateOutput2.Hour);
+            ClassicAssert.AreEqual(date.Minute, dateOutput2.Minute);
+            ClassicAssert.AreEqual(date.Second, dateOutput2.Second);
+            ClassicAssert.AreEqual(date.Millisecond, dateOutput2.Millisecond);
+            ClassicAssert.AreEqual(date.Ticks, dateOutput2.Ticks);
+            ClassicAssert.AreEqual(date.Year, dateOutput2.Year);
+            ClassicAssert.AreEqual(date.Month, dateOutput2.Month);
+            ClassicAssert.AreEqual(date.Day, dateOutput2.Day);
 
-            //Assert.AreEqual(dateInput.Hour, dateOutput1.Hour);
-            //Assert.AreEqual(dateInput.Minute, dateOutput1.Minute);
-            //Assert.AreEqual(dateInput.Second, dateOutput1.Second);
-            //Assert.AreEqual(dateInput.Millisecond, dateOutput1.Millisecond);
-            //Assert.AreEqual(dateInput.Ticks, dateOutput1.Ticks);
-            //Assert.AreEqual(dateInput.Year, dateOutput1.Year);
-            //Assert.AreEqual(dateInput.Month, dateOutput1.Month);
-            //Assert.AreEqual(dateInput.Day, dateOutput1.Day);
+            //ClassicAssert.AreEqual(dateInput.Hour, dateOutput1.Hour);
+            //ClassicAssert.AreEqual(dateInput.Minute, dateOutput1.Minute);
+            //ClassicAssert.AreEqual(dateInput.Second, dateOutput1.Second);
+            //ClassicAssert.AreEqual(dateInput.Millisecond, dateOutput1.Millisecond);
+            //ClassicAssert.AreEqual(dateInput.Ticks, dateOutput1.Ticks);
+            //ClassicAssert.AreEqual(dateInput.Year, dateOutput1.Year);
+            //ClassicAssert.AreEqual(dateInput.Month, dateOutput1.Month);
+            //ClassicAssert.AreEqual(dateInput.Day, dateOutput1.Day);
 
         } // function T1011_CDateTimeToJSONDate
 
@@ -463,7 +463,7 @@ namespace NUnit_TheCommonUtils
             int len = 789;
             string strReturned = TheCommonUtils.CLeft(inStr, len);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CLeft_string_int" />
 
         } // function T1018_CLeft
@@ -481,7 +481,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "123456789000";
             long lReturned = TheCommonUtils.CLng(inObj);
 
-            Assert.AreEqual(lExpected, lReturned);
+            ClassicAssert.AreEqual(lExpected, lReturned);
             // <HelpEnd fn="TheCommonUtils.CLng_object" />
 
         } // function T1019_CLng
@@ -499,7 +499,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "4096";
             short iReturned = TheCommonUtils.CShort(inObj);
 
-            Assert.AreEqual(iExpected, iReturned);
+            ClassicAssert.AreEqual(iExpected, iReturned);
             // <HelpEnd fn="TheCommonUtils.CShort_object" />
 
         } // function T1020_CShort
@@ -517,7 +517,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "Hello" + " " + "C-DEngine";
             string strReturned = TheCommonUtils.CStr(inObj);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.CStr_object" />
 
         } // function T1021_CStr
@@ -537,7 +537,7 @@ namespace NUnit_TheCommonUtils
             char sep = ',';
             int iReturned = TheCommonUtils.CStringPosInStringList(pInStr, pSearchStr, sep);
 
-            Assert.AreEqual(iExpected, iReturned);
+            ClassicAssert.AreEqual(iExpected, iReturned);
             // <HelpEnd fn="TheCommonUtils.CStringPosInStringList_string_string_char" />
 
         } // function T1022_CStringPosInStringList
@@ -598,7 +598,7 @@ namespace NUnit_TheCommonUtils
             byte[] abReturned = new byte[6];
             int c2Read = memstrExpected.Read(abReturned, 0, 6);
 
-            Assert.AreEqual(c1Read, c2Read);
+            ClassicAssert.AreEqual(c1Read, c2Read);
             CollectionAssert.AreEqual(abExpected, abReturned);
 
             // <HelpEnd fn="TheCommonUtils.CStringToMemoryStream_string" />
@@ -617,7 +617,7 @@ namespace NUnit_TheCommonUtils
             object inObj = (object)1024;
             UInt32 uiReturned = TheCommonUtils.CUInt(inObj);
 
-            Assert.AreEqual(uiExpected, uiReturned);
+            ClassicAssert.AreEqual(uiExpected, uiReturned);
             // <HelpEnd fn="TheCommonUtils.CUInt_object" />
 
         } // function T1026_CUInt
@@ -634,7 +634,7 @@ namespace NUnit_TheCommonUtils
             object inObj = (object)16777215;
             UInt64 uiReturned = TheCommonUtils.CULng(inObj);
 
-            Assert.AreEqual(uiExpected, uiReturned);
+            ClassicAssert.AreEqual(uiExpected, uiReturned);
             // <HelpEnd fn="TheCommonUtils.CULng_object" />
 
         } // function T1027_CULng
@@ -652,7 +652,7 @@ namespace NUnit_TheCommonUtils
             object inObj = "31415";
             UInt16 uiReturned = TheCommonUtils.CUShort(inObj);
 
-            Assert.AreEqual(uiExpected, uiReturned);
+            ClassicAssert.AreEqual(uiExpected, uiReturned);
             // <HelpEnd fn="TheCommonUtils.CUShort_object" />
 
         } // function T1028_CUShort
@@ -713,7 +713,7 @@ namespace NUnit_TheCommonUtils
             bool IgnoreGuids = true;
             Uri uriReturned = TheCommonUtils.CUri(inObj, IgnoreGuids);
 
-            Assert.AreEqual(uriExpected, uriReturned);
+            ClassicAssert.AreEqual(uriExpected, uriReturned);
             // <HelpEnd fn="TheCommonUtils.CUri_object_bool" />
 
         } // function T1031_CUri
@@ -731,7 +731,7 @@ namespace NUnit_TheCommonUtils
             string pGuid = "Hello C-DEngine";
             bool bReturned = TheCommonUtils.DoUrlsContainAnyUrl(sGuidList, pGuid);
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
             // <HelpEnd fn="TheCommonUtils.DoUrlsContainAnyUrl_string_string" />
 
         } // function T1032_DoUrlsContainAnyUrl
@@ -755,8 +755,8 @@ namespace NUnit_TheCommonUtils
 
             int dowReturned = TheCommonUtils.GetCalendarweek(datetime);
 
-            Assert.AreEqual(dowExpected, dowReturned);
-            Assert.AreEqual(iExpected, dowReturned);
+            ClassicAssert.AreEqual(dowExpected, dowReturned);
+            ClassicAssert.AreEqual(iExpected, dowReturned);
 
             // January 1, 2016 also occurs in the 52nd week!
             iExpected = 52;
@@ -765,8 +765,8 @@ namespace NUnit_TheCommonUtils
 
             dowReturned = TheCommonUtils.GetCalendarweek(datetime);
 
-            Assert.AreEqual(dowExpected, dowReturned);
-            Assert.AreEqual(iExpected, dowReturned);
+            ClassicAssert.AreEqual(dowExpected, dowReturned);
+            ClassicAssert.AreEqual(iExpected, dowReturned);
             // <HelpEnd fn="TheCommonUtils.GetCalendarweek_DateTime" />
 
         } // function T1035_GetCalendarweek
@@ -786,7 +786,7 @@ namespace NUnit_TheCommonUtils
             string pURLs = "Guid.NewGuid().ToString()";
             Guid Returned = TheCommonUtils.GetFirstURL(pURLs);
 
-            Assert.AreEqual(Returned, Expected);
+            ClassicAssert.AreEqual(Returned, Expected);
             // <HelpEnd fn="TheCommonUtils.GetFirstURL_string" />
 
         } // function T1039_GetFirstURL
@@ -803,7 +803,7 @@ namespace NUnit_TheCommonUtils
             string pURLs = "Hello C-DEngine";
             Guid Returned = TheCommonUtils.GetLastURL(pURLs);
 
-            Assert.AreEqual(Returned, Expected);
+            ClassicAssert.AreEqual(Returned, Expected);
             // <HelpEnd fn="TheCommonUtils.GetLastURL_string" />
 
         } // function T1040_GetLastURL
@@ -821,7 +821,7 @@ namespace NUnit_TheCommonUtils
             cdeSenderType pType = cdeSenderType.CDE_SERVICE;
             int iReturned = TheCommonUtils.GetMaxMessageSize(pType);
 
-            Assert.AreEqual(iExpected, iReturned);
+            ClassicAssert.AreEqual(iExpected, iReturned);
             // <HelpEnd fn="TheCommonUtils.GetMaxMessageSize_cdeSenderType" />
 
         } // function T1041_GetMaxMessageSize
@@ -838,7 +838,7 @@ namespace NUnit_TheCommonUtils
             string extension = "Hello C-DEngine";
             string strReturned = TheCommonUtils.GetMimeTypeFromExtension(extension);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.GetMimeTypeFromExtension_string" />
 
         } // function T1042_GetMimeTypeFromExtension
@@ -856,7 +856,7 @@ namespace NUnit_TheCommonUtils
             int pIdx = 789;
             Guid Returned = TheCommonUtils.GetNodeById(pURLs, pIdx);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.GetNodeById_string_int" />
 
         } // function T1043_GetNodeById
@@ -874,7 +874,7 @@ namespace NUnit_TheCommonUtils
             string propName = "Hello C-DEngine";
             object Expected = TheCommonUtils.GetPropValue(src, propName);
 
-            Assert.AreNotEqual(Expected, Returned);
+            ClassicAssert.AreNotEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.GetPropValue_object_string" />
 
         } // function T1044_GetPropValue
@@ -890,7 +890,7 @@ namespace NUnit_TheCommonUtils
 
             double Expected = TheCommonUtils.GetRandomDouble();
 
-            Assert.AreNotEqual(Expected, Returned);
+            ClassicAssert.AreNotEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.GetRandomDouble" />
 
         } // function T1045_GetRandomDouble
@@ -908,7 +908,7 @@ namespace NUnit_TheCommonUtils
             UInt32 pMax = 33;
             UInt32 uiReturned = TheCommonUtils.GetRandomUInt(pMin, pMax);
 
-            Assert.AreEqual(uiExpected, uiReturned);
+            ClassicAssert.AreEqual(uiExpected, uiReturned);
             // <HelpEnd fn="TheCommonUtils.GetRandomUInt_UInt32_UInt32" />
 
         } // function T1046_GetRandomUInt
@@ -925,7 +925,7 @@ namespace NUnit_TheCommonUtils
         //    Guid pSenderGuid = Guid.NewGuid();
         //    cdeSenderType Expected = TheCommonUtils.T1047_GetSenderTypeFromGuid(pSenderGuid);
 
-        //    Assert.AreEqual(Expected, Returned);
+        //    ClassicAssert.AreEqual(Expected, Returned);
         //   //HelpEnd fn="TheCommonUtils.GetSenderTypeFromGuid_Guid" ;
 
         //} // function T1047_GetSenderTypeFromGuid
@@ -942,7 +942,7 @@ namespace NUnit_TheCommonUtils
             object pStack = new System.Diagnostics.StackTrace(true);
             string strReturned = TheCommonUtils.GetStackInfo(pStack);
 
-            Assert.AreNotEqual(strExpected, strReturned);
+            ClassicAssert.AreNotEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.GetStackInfo_object" />
 
         } // function T1048_GetStackInfo
@@ -965,7 +965,7 @@ namespace NUnit_TheCommonUtils
             strExpected = strExpected.Substring(0, 15);
             strReturned = strReturned.Substring(0, 15);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.GetTimeStamp" />
 
         } // function T1049_GetTimeStamp
@@ -984,7 +984,7 @@ namespace NUnit_TheCommonUtils
             object inObj = Guid.NewGuid().ToString();
             bool bReturned = TheCommonUtils.IsGuid(inObj);
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
 
             // Call without a valid GUID
             bExpected = false;
@@ -992,7 +992,7 @@ namespace NUnit_TheCommonUtils
             inObj = "123456-1234-1234-1234-1234";
             bReturned = TheCommonUtils.IsGuid(inObj);
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
             // <HelpEnd fn="TheCommonUtils.IsGuid_object" />
 
         } // function T1051_IsGuid
@@ -1009,7 +1009,7 @@ namespace NUnit_TheCommonUtils
 
         //    bool bReturned = TheCommonUtils.IsHostADevice();
 
-        //    Assert.AreEqual(bExpected, bReturned);
+        //    ClassicAssert.AreEqual(bExpected, bReturned);
         //    // <HelpEnd fn="TheCommonUtils.IsHostADevice" />
 
         //} // function T1052_IsHostADevice
@@ -1028,7 +1028,7 @@ namespace NUnit_TheCommonUtils
             string userAgent = "Hello C-DEngine";
             bool bReturned = TheCommonUtils.IsMobileDevice(userAgent);
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
             // <HelpEnd fn="TheCommonUtils.IsMobileDevice_string" />
 
         } // function T1054_IsMobileDevice
@@ -1045,7 +1045,7 @@ namespace NUnit_TheCommonUtils
 
             bool bReturned = TheCommonUtils.IsMono();
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
             // <HelpEnd fn="TheCommonUtils.IsMono" />
 
         } // function T1055_IsMono
@@ -1061,7 +1061,7 @@ namespace NUnit_TheCommonUtils
 
             bool bReturned = TheCommonUtils.IsMonoRT();
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
             // <HelpEnd fn="TheCommonUtils.IsMonoRT" />
 
         } // function T1056_IsMonoRT
@@ -1079,7 +1079,7 @@ namespace NUnit_TheCommonUtils
             string url = "LOCALHOST";
             bool bReturned = TheCommonUtils.IsUrlLocalhost(url);
 
-            Assert.AreEqual(bExpected, bReturned);
+            ClassicAssert.AreEqual(bExpected, bReturned);
             // <HelpEnd fn="TheCommonUtils.IsUrlLocalhost_string" />
 
         } // function T1057_IsUrlLocalhost
@@ -1100,8 +1100,8 @@ namespace NUnit_TheCommonUtils
             string pCustomData = "Hello C-DEngine";
             TheCommonUtils.LogSession(pSessionID, pUrl, pBrowser, pBrowserDesc, pRef, pCustomData);
 
-            // No return value, so omit Assert statement.
-            // Assert.AreEqual(Expected, Returned);
+            // No return value, so omit ClassicAssert statement.
+            // ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.LogSession_Guid_string_string_string_string_string" />
 
         } // function T1058_LogSession
@@ -1118,7 +1118,7 @@ namespace NUnit_TheCommonUtils
 
         //    string strReturned = TheCommonUtils.MOTLockGenerator();
 
-        //    Assert.AreEqual(strExpected, strReturned);
+        //    ClassicAssert.AreEqual(strExpected, strReturned);
         //    // <HelpEnd fn="TheCommonUtils.MOTLockGenerator" />
 
         //} // function T1059_MOTLockGenerator
@@ -1153,7 +1153,7 @@ namespace NUnit_TheCommonUtils
             int minuteInterval = 5;
             RoundingDirection direction = RoundingDirection.RoundDown;
             DateTimeOffset Returned = TheCommonUtils.RoundDateToMinuteInterval(time, minuteInterval, direction);
-            Assert.AreEqual(Returned.Second, 0);
+            ClassicAssert.AreEqual(Returned.Second, 0);
         }
 
 
@@ -1182,13 +1182,13 @@ namespace NUnit_TheCommonUtils
             RoundingDirection direction = RoundingDirection.RoundDown;
             DateTimeOffset Returned = TheCommonUtils.RoundDateToMinuteInterval(time, minuteInterval, direction);
 
-            Assert.AreEqual(Expected.Year, Returned.Year);
-            Assert.AreEqual(Expected.Month, Returned.Month);
-            Assert.AreEqual(Expected.Day, Returned.Day);
-            Assert.AreEqual(Expected.Hour, Returned.Hour);
-            Assert.AreEqual(Expected.Minute, Returned.Minute);
-            Assert.AreEqual(Expected.Second, Returned.Second);
-            Assert.AreEqual(Expected.Millisecond, Returned.Millisecond);
+            ClassicAssert.AreEqual(Expected.Year, Returned.Year);
+            ClassicAssert.AreEqual(Expected.Month, Returned.Month);
+            ClassicAssert.AreEqual(Expected.Day, Returned.Day);
+            ClassicAssert.AreEqual(Expected.Hour, Returned.Hour);
+            ClassicAssert.AreEqual(Expected.Minute, Returned.Minute);
+            ClassicAssert.AreEqual(Expected.Second, Returned.Second);
+            ClassicAssert.AreEqual(Expected.Millisecond, Returned.Millisecond);
             // <HelpEnd fn="TheCommonUtils.RoundDateToMinuteInterval_DateTimeOffset_int_RoundingDirection" />
 
 
@@ -1207,8 +1207,8 @@ namespace NUnit_TheCommonUtils
             UInt32 minPeriod = 32;
             TheCommonUtils.SleepOneEye(ms, minPeriod);
 
-            // No return value, so omit Assert statement.
-            // Assert.AreEqual(Expected, Returned);
+            // No return value, so omit ClassicAssert statement.
+            // ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.SleepOneEye_UInt32_UInt32" />
 
         } // function T1063_SleepOneEye
@@ -1247,7 +1247,7 @@ namespace NUnit_TheCommonUtils
             byte[] byteValue = new Byte[] { 0, 1, 2, 3, 4, 5 };
             string strReturned = TheCommonUtils.ToHexString(byteValue);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.ToHexString_byte[]" />
 
         } // function T1066_ToHexString
@@ -1264,7 +1264,7 @@ namespace NUnit_TheCommonUtils
             string pUrl = "First/Second/Third/";
             string strReturned = TheCommonUtils.TruncTrailingSlash(pUrl);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.TruncTrailingSlash_string" />
 
         } // function T1067_TruncTrailingSlash
@@ -1305,7 +1305,7 @@ namespace NUnit_TheCommonUtils
             byte[] abReturned = TheCommonUtils.cdeCompressString(sourceString);
 
             string strOutput = TheCommonUtils.cdeDecompressToString(abReturned);
-            Assert.AreEqual(sourceString, strOutput);
+            ClassicAssert.AreEqual(sourceString, strOutput);
             // <HelpEnd fn="TheCommonUtils.cdeCompressString_string" />
 
             sourceString = "";
@@ -1315,7 +1315,7 @@ namespace NUnit_TheCommonUtils
                 abReturned = TheCommonUtils.cdeCompressString(sourceString);
 
                 strOutput = TheCommonUtils.cdeDecompressToString(abReturned);
-                Assert.AreEqual(sourceString, strOutput);
+                ClassicAssert.AreEqual(sourceString, strOutput);
             }
 
         } // function T1070_cdeCompressString
@@ -1333,7 +1333,7 @@ namespace NUnit_TheCommonUtils
             byte[] sourceArray = TheCommonUtils.cdeCompressString(sourceString);
 
             string strOutput = TheCommonUtils.cdeDecompressToString(sourceArray);
-            Assert.AreEqual(sourceString, strOutput);
+            ClassicAssert.AreEqual(sourceString, strOutput);
             // <HelpEnd fn="TheCommonUtils.cdeDecompressToString_byte[]" />
 
         } // function T1073_cdeDecompressToString
@@ -1351,7 +1351,7 @@ namespace NUnit_TheCommonUtils
             string pToEscape = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdeESCXML(pToEscape);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeESCXML_string" />
 
         } // function T1076_cdeESCXML
@@ -1368,7 +1368,7 @@ namespace NUnit_TheCommonUtils
             string pToEscape = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdeESCXMLwBR(pToEscape);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeESCXMLwBR_string" />
 
         } // function T1077_cdeESCXMLwBR
@@ -1385,7 +1385,7 @@ namespace NUnit_TheCommonUtils
             string strReturned = TheCommonUtils.cdeEscapeString(pToEscape);
             string strExpected = "One%20%2B%20Two%20%3D%20Three%20%28Right%21%29";
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeEscapeString_string" />
 
         } // function T1078_cdeEscapeString
@@ -1405,7 +1405,7 @@ namespace NUnit_TheCommonUtils
 
             string strReturned = TheCommonUtils.cdeGuidToString(InGuid);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeGuidToString_Guid" />
 
         } // function T1082_cdeGuidToString
@@ -1424,7 +1424,7 @@ namespace NUnit_TheCommonUtils
             string ostr = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdeJavaEncode(ostr);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeJavaEncode_string" />
 
         } // function T1084_cdeJavaEncode
@@ -1441,7 +1441,7 @@ namespace NUnit_TheCommonUtils
             string ostr = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdeJavaEncode4Code(ostr);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeJavaEncode4Code_string" />
 
         } // function T1085_cdeJavaEncode4Code
@@ -1458,7 +1458,7 @@ namespace NUnit_TheCommonUtils
             string ostr = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdeJavaEncode4Line(ostr);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeJavaEncode4Line_string" />
 
         } // function T1086_cdeJavaEncode4Line
@@ -1475,7 +1475,7 @@ namespace NUnit_TheCommonUtils
             string InString = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdePartialEscapeString(InString);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdePartialEscapeString_string" />
 
         } // function T1087_cdePartialEscapeString
@@ -1534,7 +1534,7 @@ namespace NUnit_TheCommonUtils
             string strInput = "\t\r\nHello C-DEngine\t\r\n";
             string strReturned = TheCommonUtils.cdeStripIllegalChars(strInput);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeStripIllegalChars_string" />
 
         } // function T1094_cdeStripIllegalChars
@@ -1552,7 +1552,7 @@ namespace NUnit_TheCommonUtils
             int pMax = 789;
             string strReturned = TheCommonUtils.cdeSubstringMax(pIn, pMax);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeSubstringMax_string_int" />
 
         } // function T1095_cdeSubstringMax
@@ -1570,7 +1570,7 @@ namespace NUnit_TheCommonUtils
             int digits = 2;
             double Returned = TheCommonUtils.cdeTruncate(value, digits);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.cdeTruncate_double_int" />
 
         } // function T1096_cdeTruncate
@@ -1588,7 +1588,7 @@ namespace NUnit_TheCommonUtils
             int digits = 4;
             double Returned = TheCommonUtils.cdeTruncate(value, digits);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.cdeTruncate_double_int" />
 
         } // function T1097_cdeTruncate
@@ -1606,7 +1606,7 @@ namespace NUnit_TheCommonUtils
             string pUid = Expected.ToString();
             Guid Returned = TheCommonUtils.cdeUUIDtoGuid(pUid);
 
-            Assert.AreEqual(Expected, Returned);
+            ClassicAssert.AreEqual(Expected, Returned);
             // <HelpEnd fn="TheCommonUtils.cdeUUIDtoGuid_string" />
 
         } // function T1098_cdeUUIDtoGuid
@@ -1623,7 +1623,7 @@ namespace NUnit_TheCommonUtils
             string pToEscape = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdeUnESCXML(pToEscape);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeUnESCXML_string" />
 
         } // function T1099_cdeUnESCXML
@@ -1641,7 +1641,7 @@ namespace NUnit_TheCommonUtils
             string pToEscape = "Hello C-DEngine";
             string strReturned = TheCommonUtils.cdeUnescapeString(pToEscape);
 
-            Assert.AreEqual(strExpected, strReturned);
+            ClassicAssert.AreEqual(strExpected, strReturned);
             // <HelpEnd fn="TheCommonUtils.cdeUnescapeString_string" />
 
         } // function T1100_cdeUnescapeString
@@ -1685,7 +1685,7 @@ namespace NUnit_TheCommonUtils
 //    byte[] pTag = new Byte[] { 0, 1, 2, 3, 4, 5 };
 //    string strReturned = TheCommonUtils.cdeCreateXMLElement(pEleName, pTag);
 
-//    Assert.AreEqual(strExpected, strReturned);
+//    ClassicAssert.AreEqual(strExpected, strReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeCreateXMLElemet_string_byte[]" />
 
 //} // function T1072_cdeCreateXMLElemet
@@ -1706,7 +1706,7 @@ namespace NUnit_TheCommonUtils
 //    int len = 789;
 //    string strReturned = TheCommonUtils.cdeDecompressToString(sourceArray, pStartPointer, len);
 
-//    Assert.AreEqual(strExpected, strReturned);
+//    ClassicAssert.AreEqual(strExpected, strReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeDecompressToString_byte[]_int_int" />
 
 //} // function T1074_cdeDecompressToString
@@ -1724,7 +1724,7 @@ namespace NUnit_TheCommonUtils
 //    string pFileName = "Hello C-DEngine";
 //    string strReturned = TheCommonUtils.cdeFixupFileName(pFileName);
 
-//    Assert.AreEqual(strExpected, strReturned);
+//    ClassicAssert.AreEqual(strExpected, strReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeFixupFileName_string" />
 
 //} // function T1079_cdeFixupFileName
@@ -1743,7 +1743,7 @@ namespace NUnit_TheCommonUtils
 //    bool IsEncrypted = true;
 //    string strReturned = TheCommonUtils.cdeGetAppSetting(pSetting, alt, IsEncrypted);
 
-//    Assert.AreEqual(strExpected, strReturned);
+//    ClassicAssert.AreEqual(strExpected, strReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeGetAppSetting_string_string_bool" />
 
 //} // function T1080_cdeGetAppSetting
@@ -1772,7 +1772,7 @@ namespace NUnit_TheCommonUtils
 //    //// TheCommonUtils.SleepOneEye(20000, 10);
 //    //bReturned = TheCommonUtils.cdeIsLocked(o);
 
-//    Assert.AreEqual(bExpected, bReturned);
+//    ClassicAssert.AreEqual(bExpected, bReturned);
 
 //    // Test 1 - locked object.
 //    bExpected = true;
@@ -1782,7 +1782,7 @@ namespace NUnit_TheCommonUtils
 //        bReturned = TheCommonUtils.cdeIsLocked(o);
 //    }
 
-//    Assert.AreEqual(bExpected, bReturned);
+//    ClassicAssert.AreEqual(bExpected, bReturned);
 
 //    // <HelpEnd fn="TheCommonUtils.cdeIsLocked_object" />
 
@@ -1804,7 +1804,7 @@ namespace NUnit_TheCommonUtils
 //    byte[] val = new Byte[] { 0, 1, 2, 3, 4, 5 };
 //    string strReturned = TheCommonUtils.cdeRSADecrypt(pSessionID, val);
 
-//    Assert.AreEqual(strExpected, strReturned);
+//    ClassicAssert.AreEqual(strExpected, strReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeRSADecrypt_Guid_byte[]" />
 
 //} // function T1088_cdeRSADecrypt
@@ -1822,7 +1822,7 @@ namespace NUnit_TheCommonUtils
 //    byte[] val = new Byte[] { 0, 1, 2, 3, 4, 5 };
 //    string strReturned = TheCommonUtils.cdeRSADecrypt(pSessionID, val);
 
-//    Assert.AreEqual(strExpected, strReturned);
+//    ClassicAssert.AreEqual(strExpected, strReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeRSADecrypt_Guid_byte[]" />
 
 //} // function T1089_cdeRSADecrypt
@@ -1840,7 +1840,7 @@ namespace NUnit_TheCommonUtils
 //    string val = "Hello C-DEngine";
 //    byte[] abReturned = TheCommonUtils.cdeRSAEncrypt(pSessionID, val);
 
-//    Assert.AreEqual(abExpected, abReturned);
+//    ClassicAssert.AreEqual(abExpected, abReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeRSAEncrypt_Guid_string" />
 
 //} // function T1090_cdeRSAEncrypt
@@ -1858,7 +1858,7 @@ namespace NUnit_TheCommonUtils
 //    string val = "";
 //    byte[] abReturned = TheCommonUtils.cdeRSAEncryptWithKeys(rsaPublic, val);
 
-//    Assert.AreEqual(abExpected, abReturned);
+//    ClassicAssert.AreEqual(abExpected, abReturned);
 //    // <HelpEnd fn="TheCommonUtils.cdeRSAEncryptWithKeys_string_string" />
 
 //} // function T1091_cdeRSAen

@@ -5,20 +5,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+		<TargetFramework>netstandard2.1</TargetFramework>
 		<RootNamespace>nsCDEngine</RootNamespace>
 		<AssemblyName>C-DEngine</AssemblyName>
 		<PackageId>C-DEngine</PackageId>
 		<PackageIcon>toplogo-128.png</PackageIcon>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>		
-		<Version>5.161.0$(cdeNugetSuffix)</Version>
+		<Version>6.104.0$(cdeNugetSuffix)</Version>
 		<Authors>Chris Muench</Authors>
 		<Company>C-Labs</Company>
 		<Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>C-Labs Distributed Engine</Description>
 		<PackageDescription>C-Labs Distributed Engine</PackageDescription>
-		<Copyright>Copyright © 2017-2023 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+		<Copyright>Copyright © 2017-2024 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
 		<PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
@@ -34,7 +34,7 @@
 
 	<ItemGroup>
 		<None Include="toplogo-128.png" Pack="true" PackagePath="" />
-		<None Include="..\..\readme.md" Pack="true" PackagePath="\"/>
+		<None Include="..\..\readme.md" Pack="true" PackagePath="\" />
 		<EmbeddedResource Include="C-DCommunication\ClientBin\FAVICON.ICO" />
 	</ItemGroup>
 	<ItemGroup>
@@ -48,7 +48,6 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<UpdaterInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\cdeUpdater.csproj'))</UpdaterInSolution>
 		<NewtonsoftSharedInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\cdeNewtonsoft.JSON'))</NewtonsoftSharedInSolution>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(NewtonsoftSharedInSolution)' == 'True'">
@@ -59,23 +58,6 @@
 	  <NoWarn>1701;1702;CS1591</NoWarn>
 	</PropertyGroup>
 
-	<ItemGroup Condition="'$(UpdaterInSolution)' == 'True'">
-		<EmbeddedResource Include="$(MSBuildProjectDir)..\..\bin\$(Configuration)\cdeUpdater\net48\cdeUpdater.exe" Link="cdeUpdater.exe" />
-
-		<ProjectReference Include="..\Utilities\cdeUpdater\cdeUpdater.csproj" PrivateAssets="All" Condition="'$(TargetFramework)'!='netstandard2.0'">
-			<Project>{a30c012b-f161-48a7-ad0c-f12bd1ed263c}</Project>
-			<Name>cdeUpdater</Name>
-			<Private>True</Private>
-			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-		</ProjectReference>
-		<ProjectReference Include="..\Utilities\cdeUpdater\cdeUpdater.csproj" PrivateAssets="All" AdditionalProperties="TargetFramework=net48" Condition="'$(TargetFramework)'=='netstandard2.0'">
-			<Project>{a30c012b-f161-48a7-ad0c-f12bd1ed263c}</Project>
-			<Name>cdeUpdater</Name>
-			<Private>True</Private>
-			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-		</ProjectReference>
-
-	</ItemGroup>
 	<ItemGroup>
 		<None Update="C-DEngine.CDES">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

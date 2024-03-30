@@ -61,6 +61,9 @@ namespace cdePackager
                     case "netstandard2.0":
                         tPluginPlatform = cdePlatform.NETSTD_V20;
                         break;
+                    case "netstandard2.1":
+                        tPluginPlatform = cdePlatform.NETSTD_V21;
+                        break;
                 }
             }
 

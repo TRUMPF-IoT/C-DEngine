@@ -1053,7 +1053,10 @@ namespace nsCDEngine.BaseClasses
                     switch (targetFramework.Version.Major)
                     {
                         case 2:
-                            tPluginPlatform = cdePlatform.NETSTD_V20;
+                            if (targetFramework.Version.Minor==1)
+                                tPluginPlatform = cdePlatform.NETSTD_V21;
+                            else
+                                tPluginPlatform = cdePlatform.NETSTD_V20;
                             break;
                         default:
                             break;

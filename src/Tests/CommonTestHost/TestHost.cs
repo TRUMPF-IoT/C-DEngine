@@ -52,7 +52,7 @@ namespace C_DEngine.Tests.TestCommon
                     return false;
                 }
 
-                //Assert.IsTrue(TheBaseAssets.MyApplication == null, "Not starting test host: BaseApplication already created.");
+                //ClassicAssert.IsTrue(TheBaseAssets.MyApplication == null, "Not starting test host: BaseApplication already created.");
 
                 TheScopeManager.SetApplicationID("/cVjzPfjlO;{@QMj:jWpW]HKKEmed[llSlNUAtoE`]G?"); //SDK Non-Commercial ID. FOR COMMERCIAL APP GET THIS ID FROM C-LABS!
 
@@ -125,7 +125,7 @@ namespace C_DEngine.Tests.TestCommon
                 }
                 else
                 {
-                    ///Assert.IsTrue(started, "Failed to start engines (timeout)");
+                    ///ClassicAssert.IsTrue(started, "Failed to start engines (timeout)");
                     TestContext.Out.WriteLine("Failed to start engines (timeout)");
                 }
                 AppDomain.CurrentDomain.DomainUnload += OnDomainUnload;
@@ -177,7 +177,7 @@ namespace C_DEngine.Tests.TestCommon
 #if OPCUASERVER
             // TODO Actually use our own OPC Server for the unit test
             var opcServerThing = TheThingRegistry.GetThingsOfEngine("CDMyOPCUAServer.cdeMyOPCServerService").FirstOrDefault();
-            Assert.IsNotNull(opcServerThing, $"Unable to obtain OPC Server thing: error loading plug-in or server not yet initialized?");
+            ClassicAssert.IsNotNull(opcServerThing, $"Unable to obtain OPC Server thing: error loading plug-in or server not yet initialized?");
 
             lock (opcServerStartupLock)
             {
@@ -202,7 +202,7 @@ namespace C_DEngine.Tests.TestCommon
                     theOpcThing.SetProperty("OpcProp09", "0009");
                     theOpcThing.SetProperty("OpcProp10", "0010");
                     var tThing = TheThingRegistry.RegisterThing(theOpcThing);
-                    Assert.IsNotNull(tThing);
+                    ClassicAssert.IsNotNull(tThing);
 
                     var addThingResponse = TheCommRequestResponse.PublishRequestJSonAsync<MsgAddThingsToServer, MsgAddThingsToServerResponse>(myContentService, opcServerThing, new MsgAddThingsToServer
                     (
@@ -214,10 +214,10 @@ namespace C_DEngine.Tests.TestCommon
                         }
                     ), new TimeSpan(0, 0, 30)).Result;
 
-                    Assert.IsNotNull(addThingResponse, "No reply to OPC Server MsgAddThingToServer");
-                    Assert.IsTrue(string.IsNullOrEmpty(addThingResponse.Error), $"Error adding thing to OPC Server: '{addThingResponse.Error}'.");
-                    Assert.AreEqual(1, addThingResponse.ThingStatus.Count, $"Error adding thing to OPC Server.");
-                    Assert.IsTrue(string.IsNullOrEmpty(addThingResponse.ThingStatus[0].Error), $"Error adding thing to OPC Server: '{addThingResponse.ThingStatus[0].Error}'.");
+                    ClassicAssert.IsNotNull(addThingResponse, "No reply to OPC Server MsgAddThingToServer");
+                    ClassicAssert.IsTrue(string.IsNullOrEmpty(addThingResponse.Error), $"Error adding thing to OPC Server: '{addThingResponse.Error}'.");
+                    ClassicAssert.AreEqual(1, addThingResponse.ThingStatus.Count, $"Error adding thing to OPC Server.");
+                    ClassicAssert.IsTrue(string.IsNullOrEmpty(addThingResponse.ThingStatus[0].Error), $"Error adding thing to OPC Server: '{addThingResponse.ThingStatus[0].Error}'.");
 
                     MsgStartStopServerResponse responseStart;
                     int retryCount = 1;
@@ -232,9 +232,9 @@ namespace C_DEngine.Tests.TestCommon
                         retryCount--;
                     } while (retryCount >= 0 && responseStart == null);
 
-                    Assert.IsNotNull(responseStart, "Failed to send MsgStartStopServer message to restart OPC UA Server");
-                    Assert.IsTrue(string.IsNullOrEmpty(responseStart.Error), $"Error restarting OPC Server: '{addThingResponse.Error}'.");
-                    Assert.IsTrue(responseStart.Running, $"OPC Server not running after MsgStartStopServer Restart message");
+                    ClassicAssert.IsNotNull(responseStart, "Failed to send MsgStartStopServer message to restart OPC UA Server");
+                    ClassicAssert.IsTrue(string.IsNullOrEmpty(responseStart.Error), $"Error restarting OPC Server: '{addThingResponse.Error}'.");
+                    ClassicAssert.IsTrue(responseStart.Running, $"OPC Server not running after MsgStartStopServer Restart message");
                 }
             }
             return opcServerThing;
