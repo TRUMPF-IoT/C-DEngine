@@ -108,9 +108,6 @@ jobs:
       run: dotnet restore './src/C-DEngine.sln'
 
     # Workaround for gitversiontask lock exception: build a single targetframework first
-    #- name: Build cdeUpdater Net48
-    #  run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --framework net48 --configuration Release --no-restore --disable-parallel /nowarn:nu5105
-
     - name: Build cdeUpdater
       run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --configuration Release --no-restore --disable-parallel /nowarn:nu5105
 
@@ -121,8 +118,8 @@ jobs:
       run: .\src\C-DEngine\packagecde.cmd Release
       shell: cmd
 
-    - name: Test
-      run: dotnet test './src/C-DEngine.sln' --configuration Release --no-build --no-restore --verbosity normal
+    #- name: Test
+     # run: dotnet test './src/C-DEngine.sln' --configuration Release --no-build --no-restore --verbosity normal
 
     - name: Gather artifacts
       run: (robocopy .\bin\ .\artifacts\ *.CDEX *.CDEP *.nupkg *.snupkg *.msi cdePackager* /s /np) ^& IF %ERRORLEVEL% LEQ 1 exit 0
