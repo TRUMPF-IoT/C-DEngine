@@ -11,7 +11,7 @@
 		<PackageId>C-DEngine</PackageId>
 		<PackageIcon>toplogo-128.png</PackageIcon>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>		
-		<Version>6.104.0$(cdeNugetSuffix)</Version>
+		<Version>6.104.0</Version>
 		<Authors>Chris Muench</Authors>
 		<Company>C-Labs</Company>
 		<Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
