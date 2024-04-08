@@ -118,8 +118,8 @@ jobs:
       run: .\src\C-DEngine\packagecde.cmd Release
       shell: cmd
 
-    #- name: Test
-     # run: dotnet test './src/C-DEngine.sln' --configuration Release --no-build --no-restore --verbosity normal
+    - name: Test
+      run: dotnet test './src/C-DEngine.sln' --configuration Release --no-build --no-restore --verbosity normal
 
     - name: Gather artifacts
       run: (robocopy .\bin\ .\artifacts\ *.CDEX *.CDEP *.nupkg *.snupkg *.msi cdePackager* /s /np) ^& IF %ERRORLEVEL% LEQ 1 exit 0
