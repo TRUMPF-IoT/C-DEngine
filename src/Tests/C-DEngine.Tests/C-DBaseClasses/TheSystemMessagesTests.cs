@@ -8,7 +8,6 @@ using nsCDEngine.Communication;
 using nsCDEngine.Engines.ThingService;
 using nsCDEngine.ViewModels;
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -37,20 +36,20 @@ namespace CDEngine.BaseClasses.Net35.Tests
                 numberOfMessages++;
                 if (o is TheProcessMessage msg)
                 {
-                    ClassicAssert.AreEqual(msg.Message.TXT, txt);
-                    ClassicAssert.AreEqual(msg.Message.PLS, payload);
-                    ClassicAssert.AreEqual(msg.Message.ENG, contentServiceEng.GetEngineName());
+                    Assert.That(txt, Is.EqualTo(msg.Message.TXT));
+                    Assert.That(payload, Is.EqualTo(msg.Message.PLS));
+                    Assert.That(contentServiceEng.GetEngineName(), Is.EqualTo(msg.Message.ENG));
                     testMsg.PLS = "TestPayload2";
-                    //ClassicAssert.AreNotEqual(msg.Message.PLS, testMsg.PLS); // This fails
+                    //Assert.AreNotEqual(msg.Message.PLS, testMsg.PLS); // This fails
                 }
                 if (t is ICDEThing thing)
                 {
-                    ClassicAssert.AreEqual(thing.GetBaseThing().cdeMID, contentServiceThing.cdeMID);
+                    Assert.That(contentServiceThing.cdeMID, Is.EqualTo(thing.GetBaseThing().cdeMID));
                 }
             });
             TheCommCore.PublishCentral(testMsg, true);
             TheCommonUtils.SleepOneEye(5000, 1000);
-            ClassicAssert.AreEqual(numberOfMessages, 1);
+            Assert.That(1, Is.EqualTo(numberOfMessages));
         }
 
         // Tests the eEngineEvents.IncomingMessage2 - fired for both Thing and Engine messages
@@ -72,7 +71,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
             testMsg.SetOriginatorThing(contentServiceThing);
             TheCommCore.PublishCentral(testMsg, true);
             TheCommonUtils.SleepOneEye(5000, 1000);
-            ClassicAssert.AreEqual(numberOfMessages, 2);
+            Assert.That(2, Is.EqualTo(numberOfMessages));
         }
 
         [SetUp]

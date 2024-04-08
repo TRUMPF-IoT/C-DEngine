@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 ﻿using NUnit.Framework;
-using NUnit.Framework.Legacy;
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -60,7 +59,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            ClassicAssert.IsTrue(mirror != null);
+            Assert.That(mirror, Is.Not.EqualTo(null));
             mirror?.Dispose();
             mirror = null;
 
@@ -93,7 +92,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            ClassicAssert.IsTrue(mirror != null);
+            Assert.That(mirror, Is.Not.EqualTo(null));
             mirror?.Dispose();
             mirror = null;
 
@@ -162,7 +161,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            ClassicAssert.IsFalse(response.HasErrors);
+            Assert.That(response.HasErrors, Is.False);
 
             #endregion
         }
@@ -227,7 +226,7 @@ namespace CDEngine.StorageService.Net35.Tests
             //Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) ClassicAssert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
 
             #endregion
 
@@ -247,7 +246,7 @@ namespace CDEngine.StorageService.Net35.Tests
             // Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) ClassicAssert.Fail($"Unable to retrieve items! Reason: {response.ErrorMsg}");
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to retrieve items! Reason: {response.ErrorMsg}");
 
             mirror?.Dispose();
 
@@ -257,7 +256,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             var expectedCount = maxCount == 0 ? totalCandidates : Math.Min(maxCount, totalCandidates);
 
-            ClassicAssert.AreEqual(expectedCount, response.MyRecords.Count, "Not all test records were not added successfully.");
+            Assert.That(response.MyRecords.Count, Is.EqualTo(expectedCount), "Not all test records were not added successfully.");
 
             #endregion
         }
@@ -297,7 +296,7 @@ namespace CDEngine.StorageService.Net35.Tests
                     tsmMiddle = tsmCurrent;
                 }
             }
-            if (tsmMiddle == null) ClassicAssert.Fail("Unable to cache the middle TSM!");
+            if (tsmMiddle == null) Assert.Fail("Unable to cache the middle TSM!");
 
             // Spin up your mirror
             mirror = new TheStorageMirror<TheStorageEngineTSM>(TheCDEngines.MyIStorageService)
@@ -328,7 +327,7 @@ namespace CDEngine.StorageService.Net35.Tests
             //Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) ClassicAssert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
 
             #endregion
 
@@ -347,7 +346,7 @@ namespace CDEngine.StorageService.Net35.Tests
             // Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) ClassicAssert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
 
             // Attempt to retrieve your middle item
             tsmMatch = mirror.GetEntryByID(tsmMiddle.cdeMID);
@@ -358,7 +357,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            ClassicAssert.IsTrue(tsmMatch == null);
+            Assert.That(tsmMatch, Is.EqualTo(null));
 
             #endregion
         }
@@ -412,7 +411,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            ClassicAssert.IsTrue(totalCandidates == totalInserts);
+            Assert.That(totalCandidates, Is.EqualTo(totalInserts));
 
             #endregion
         }
@@ -471,14 +470,14 @@ namespace CDEngine.StorageService.Net35.Tests
 
             countdown.Wait();
 
-            ClassicAssert.AreEqual(totalCandidates, myRecords.Count, "Not all test records were added successfully.");
+            Assert.That(myRecords.Count, Is.EqualTo(totalCandidates), "Not all test records were added successfully.");
 
             #endregion
 
             #region ACT
 
             var expectedCount = maxCount == 0 ? totalCandidates : Math.Min(maxCount, totalCandidates);
-            ClassicAssert.AreEqual(expectedCount, mirror.Count, "Not all test records were not added successfully.");
+            Assert.That(mirror.Count, Is.EqualTo(expectedCount), "Not all test records were not added successfully.");
 
             // Retrieve your items...
             counter = 0;
@@ -497,7 +496,7 @@ namespace CDEngine.StorageService.Net35.Tests
                 {
                     if (match != null)
                     {
-                        ClassicAssert.IsNull(match, "Item found that was supposed to have been removed due to max count limit", counter);
+                        Assert.That(match, Is.Null, $"Item found that was supposed to have been removed due to max count limit");
                     }
                 }
                 counter++;
@@ -509,7 +508,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            ClassicAssert.IsFalse(entryNotFound, "TheMirrorCache was missing one or more test entries!");
+            Assert.That(entryNotFound, Is.False, "TheMirrorCache was missing one or more test entries!");
 
             #endregion
         }
@@ -552,7 +551,7 @@ namespace CDEngine.StorageService.Net35.Tests
                     tsmMiddle = tsmCurrent;
                 }
             }
-            if (tsmMiddle == null) ClassicAssert.Fail("Unable to cache the middle TSM!");
+            if (tsmMiddle == null) Assert.Fail("Unable to cache the middle TSM!");
 
             // Spin up your mirror
             mirror = new TheMirrorCache<TheStorageEngineTSM>(10)
@@ -572,7 +571,7 @@ namespace CDEngine.StorageService.Net35.Tests
             });
 
             countdown.Wait();
-            if (TSMs.Count != myRecords.Count) ClassicAssert.Fail("Not all test records were not added successfully.");
+            if (TSMs.Count != myRecords.Count) Assert.Fail("Not all test records were not added successfully.");
 
             #endregion
 
@@ -591,7 +590,7 @@ namespace CDEngine.StorageService.Net35.Tests
             // Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if (tsmRemoved == null) ClassicAssert.Fail("Unable to remove item by ID!");
+            if (tsmRemoved == null) Assert.Fail("Unable to remove item by ID!");
 
             // Attempt to retrieve your middle item
             tsmMatch = mirror.GetEntryByID(tsmMiddle.cdeMID);
@@ -602,7 +601,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            ClassicAssert.IsTrue(tsmMatch == null);
+            Assert.That(tsmMatch, Is.EqualTo(null));
 
             #endregion
         }

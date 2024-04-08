@@ -112,7 +112,7 @@ namespace C_DEngine.Tests.TestCommon
                 //TheBaseAssets.MasterSwitch = false;
                 var appStarted = MyBaseApplication.StartBaseApplication(null, ArgList);
 
-                Assert.IsTrue(appStarted, "Failed to StartBaseApplication");         //Start the C-DEngine Application. If a PluginService class is added DIRECTLY to the host project you can instantiate the Service here replacing the null with "new cdePluginService1()"
+                Assert.That(appStarted, Is.True, "Failed to StartBaseApplication");         //Start the C-DEngine Application. If a PluginService class is added DIRECTLY to the host project you can instantiate the Service here replacing the null with "new cdePluginService1()"
                                                                                      //If the Application fails to start, quit the app. StartBaseApplication returns very fast as all the C-DEngine code is running asynchronously
                                                                                      //MyBaseApplication.MyCommonDisco.RegisterUPnPUID("*", null);     //Only necessary if UPnP is used to find devices
 
@@ -121,7 +121,7 @@ namespace C_DEngine.Tests.TestCommon
                 if (engineStartedTask.Wait(20000))
                 {
                     started = engineStartedTask.Result;
-                    Assert.IsTrue(started, "Failed to start engines");
+                    Assert.That(started, Is.True, "Failed to start engines");
                 }
                 else
                 {
@@ -131,7 +131,7 @@ namespace C_DEngine.Tests.TestCommon
                 AppDomain.CurrentDomain.DomainUnload += OnDomainUnload;
             }
             myContentService = TheThingRegistry.GetBaseEngineAsThing(eEngineName.ContentService);
-            Assert.IsNotNull(myContentService);
+            Assert.That(myContentService, Is.Not.Null);
             TestContext.Out.WriteLine("{DateTimeOffset.Now} Host started");
             return true;
         }

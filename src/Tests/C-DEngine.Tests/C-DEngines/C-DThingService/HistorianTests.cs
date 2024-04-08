@@ -16,7 +16,6 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Globalization;
 using System.Threading;
-using NUnit.Framework.Legacy;
 
 #if !CDE_NET35
 namespace CDEngine.ThingService.Net45.Tests
@@ -216,7 +215,7 @@ namespace CDEngine.ThingService.Net35.Tests
             additionalCounter = 0;
             var testThing = new TheThing();
             var tThing = TheThingRegistry.RegisterThing(testThing);
-            ClassicAssert.IsNotNull(tThing);
+            Assert.That(tThing, Is.Not.Null);
 
             // Track the properties for which results are to be retrieved
             var props = new HashSet<string>();
@@ -271,7 +270,7 @@ namespace CDEngine.ThingService.Net35.Tests
                 CooldownPeriod = cooldownPeriod,
             };
             token2 = tThing.RegisterForUpdateHistory(historyParams2);
-            ClassicAssert.AreNotEqual(Guid.Empty, token);
+            Assert.That(Guid.Empty, Is.Not.EqualTo(token));
             await TheCommonUtils.TaskDelayOneEye(((int)cooldownPeriod.TotalMilliseconds + 15), 50); // Wait for cooldown period
             {
                 var pendingSnapshotCount = (tThing.Historian as nsCDEngine.TheStorageMirrorHistorian).TestHookGetPendingSnapShotCount();
@@ -288,15 +287,15 @@ namespace CDEngine.ThingService.Net35.Tests
             var initialPropCount = history.Aggregate(0, (s, item) => s + item.PB.Count);
             if (reportInitialValues1)
             {
-                ClassicAssert.IsTrue(itemsPerIteration < initialPropCount); // TODO check the exact number and items
+                Assert.That(itemsPerIteration, Is.LessThan(initialPropCount)); // TODO check the exact number and items
             }
             else
             {
-                ClassicAssert.AreEqual(0, initialPropCount);
+                Assert.That(initialPropCount, Is.EqualTo(0));
             }
 
             //history = tThing.GetThingHistory(token, 25, false);
-            //ClassicAssert.AreEqual(1, history.Count); // BUG: When a property does not already exist, the snapshot is not properly picked up (cdeP is not yet added to the property bag)
+            //Assert.AreEqual(1, history.Count); // BUG: When a property does not already exist, the snapshot is not properly picked up (cdeP is not yet added to the property bag)
 
             bool bInputsDone = false;
 
@@ -514,7 +513,7 @@ namespace CDEngine.ThingService.Net35.Tests
             //File.WriteAllText(Path.Combine(TestContext.CurrentContext.WorkDirectory, "orderedInputs2"), cdeNewtonsoft.Json.JsonConvert.SerializeObject(orderedInputEntries2, cdeNewtonsoft.Json.Formatting.None, TheBaseAssets.cdeNewtonJSONConfig));
             //File.WriteAllText(Path.Combine(TestContext.CurrentContext.WorkDirectory, "aggregates2"), cdeNewtonsoft.Json.JsonConvert.SerializeObject(aggregates, cdeNewtonsoft.Json.Formatting.None, TheBaseAssets.cdeNewtonJSONConfig));
 
-            ClassicAssert.AreEqual(expectedAggregateCount, aggregates.Count(), "Mismatched aggregate count");
+            Assert.That(aggregates.Count(), Is.EqualTo(expectedAggregateCount), "Mismatched aggregate count");
             tThing.UnregisterUpdateHistory(token);
             tThing.UnregisterUpdateHistory(token2);
         }
@@ -582,7 +581,7 @@ namespace CDEngine.ThingService.Net35.Tests
             if (!bIgnoreMismatchForReportUnchangedValues)
             {
                 // With reportunchangedvalues and short cooldown periods, an update may miss it's timebucket and the previous update gets reported again: these show up as mismatched due to artificial timestamps
-                ClassicAssert.AreEqual(0, mismatchedItems.Count, "Some reported items did not match or items were missing");
+                Assert.That(mismatchedItems.Count, Is.EqualTo(0), "Some reported items did not match or items were missing");
             }
             else
             {
@@ -591,8 +590,8 @@ namespace CDEngine.ThingService.Net35.Tests
                     WriteLine($"{mismatchedItems.Count} mismatched items found. Ignored due to expected behavior with reportunchanged.");
                 }
             }
-            ClassicAssert.AreEqual(0, unreportedItems.Count, $"One or more items were not reported");
-            ClassicAssert.AreEqual(0, extraOutputs.Count, $"Extra items were reported that did not match an input");
+            Assert.That(unreportedItems.Count, Is.EqualTo(0), $"One or more items were not reported");
+            Assert.That(extraOutputs.Count, Is.EqualTo(0), $"Extra items were reported that did not match an input");
         }
 
         internal struct HistoryEntry

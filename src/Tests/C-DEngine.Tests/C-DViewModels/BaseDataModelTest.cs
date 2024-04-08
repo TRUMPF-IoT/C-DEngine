@@ -6,7 +6,6 @@
 
 using nsCDEngine.ViewModels;
 using System.Collections.Generic;
-using NUnit.Framework.Legacy;
 
 #if !CDE_NET35
 namespace CDEngine.BaseDataModel.Net45.Tests
@@ -28,18 +27,18 @@ namespace CDEngine.BaseDataModel.Net35.Tests
                  },
             };
             var pluginInfoClone = pluginInfo.Clone();
-            ClassicAssert.AreNotSame(pluginInfo.DeviceTypes, pluginInfoClone.DeviceTypes);
-            ClassicAssert.AreEqual(pluginInfo.DeviceTypes.Count, pluginInfoClone.DeviceTypes.Count);
+            Assert.That(pluginInfoClone.DeviceTypes, Is.Not.SameAs(pluginInfo.DeviceTypes));
+            Assert.That(pluginInfoClone.DeviceTypes.Count, Is.EqualTo(pluginInfo.DeviceTypes.Count));
             int i = 0;
             foreach(var dt in pluginInfo.DeviceTypes)
             {
-                ClassicAssert.IsTrue(dt.Description == pluginInfoClone.DeviceTypes[i].Description);
-                ClassicAssert.IsTrue(dt.DeviceType == pluginInfoClone.DeviceTypes[i].DeviceType);
-                ClassicAssert.AreNotSame(dt.Capabilities, pluginInfoClone.DeviceTypes[i].Capabilities);
-                ClassicAssert.AreEqual(dt.Capabilities.Length, pluginInfoClone.DeviceTypes[i].Capabilities.Length);
+                Assert.That(dt.Description, Is.EqualTo(pluginInfoClone.DeviceTypes[i].Description));
+                Assert.That(dt.DeviceType, Is.EqualTo(pluginInfoClone.DeviceTypes[i].DeviceType));
+                Assert.That(pluginInfoClone.DeviceTypes[i].Capabilities, Is.Not.SameAs(dt.Capabilities));
+                Assert.That(pluginInfoClone.DeviceTypes[i].Capabilities.Length, Is.EqualTo(dt.Capabilities.Length));
                 for (int j = 0; j < dt.Capabilities.Length; j++)
                 {
-                    ClassicAssert.IsTrue(dt.Capabilities[j] == pluginInfoClone.DeviceTypes[i].Capabilities[j]);
+                    Assert.That(dt.Capabilities[j], Is.EqualTo(pluginInfoClone.DeviceTypes[i].Capabilities[j]));
                 }
             }
         }

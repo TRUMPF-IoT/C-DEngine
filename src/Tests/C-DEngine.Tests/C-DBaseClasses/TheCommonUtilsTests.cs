@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
 ﻿using NUnit.Framework;
-using NUnit.Framework.Legacy;
 using nsCDEngine.BaseClasses;
 using System;
 using System.Collections.Generic;
@@ -41,7 +40,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
             b1.ARef = a2;
             var json = TheCommonUtils.SerializeObjectToJSONString(a1);
             var expectedJson = "{\"AName\":\"A1\",\"BRef\":{\"BName\":\"B1\",\"ARef\":{\"AName\":\"A2\"}}}";
-            ClassicAssert.AreEqual(expectedJson, json);
+            Assert.That(json, Is.EqualTo(expectedJson));
 
             if (TheCommonUtils.cdeNewtonJSONConfig.ReferenceLoopHandling != cdeNewtonsoft.Json.ReferenceLoopHandling.Serialize)
             {
@@ -50,7 +49,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
                 // This will crash the process with stack overflow with option ReferenceLoopHandling.Serialize
                 var jsonCycle = TheCommonUtils.SerializeObjectToJSONString(a1);
                 var expectedJsonCycle = "{\"AName\":\"A1\",\"BRef\":{\"BName\":\"B1\",\"ARef\":{\"AName\":\"A2\"}}}";
-                ClassicAssert.AreEqual(expectedJsonCycle, jsonCycle);
+                Assert.That(jsonCycle, Is.EqualTo(expectedJsonCycle));
             }
         }
 
@@ -60,7 +59,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
             var date = new DateTimeOffset(2017, 12, 21, 11, 12, 13, 456, new TimeSpan(1, 0, 0));
             var dateString = TheCommonUtils.CStr(date);
             var expectedString = "2017-12-21T11:12:13.4560000+01:00";
-            ClassicAssert.AreEqual(expectedString, dateString);
+            Assert.That(dateString, Is.EqualTo(expectedString));
         }
 
         [Test]
@@ -70,13 +69,13 @@ namespace CDEngine.BaseClasses.Net35.Tests
                 var date = DateTime.MinValue;
                 var dateTimeOffsetValue = TheCommonUtils.CDate(date);
                 var expectedValue = DateTimeOffset.MinValue;
-                ClassicAssert.AreEqual(expectedValue, dateTimeOffsetValue);
+                Assert.That(dateTimeOffsetValue, Is.EqualTo(expectedValue));
             }
             {
                 var date = DateTime.MaxValue;
                 var dateTimeOffsetValue = TheCommonUtils.CDate(date);
                 var expectedValue = DateTimeOffset.MaxValue;
-                ClassicAssert.AreEqual(expectedValue, dateTimeOffsetValue);
+                Assert.That(dateTimeOffsetValue, Is.EqualTo(expectedValue));
             }
             // TODO Figure out a way to run these tests in interesting timezones as they depend on the local machines timezone:
             // UTC, Berlin (UTC+1 DST), UTC-1, Casablanca (UTC with DST), UTC-12 (International dateline West), UTC+12, UTC+14 (Kiritimati Island)
@@ -94,7 +93,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
                 {
                     expectedValue = new DateTimeOffset(date);
                 }
-                ClassicAssert.AreEqual(expectedValue, dateTimeOffsetValue);
+                Assert.That(dateTimeOffsetValue, Is.EqualTo(expectedValue));
             }
             {
                 var date = new DateTime(9999, 12, 31, 23, 59, 50, DateTimeKind.Local);
@@ -108,7 +107,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
                 {
                     expectedValue = new DateTimeOffset(date);
                 }
-                ClassicAssert.AreEqual(expectedValue, dateTimeOffsetValue);
+                Assert.That(dateTimeOffsetValue, Is.EqualTo(expectedValue));
             }
         }
 
@@ -122,7 +121,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
                 uint result;
                 result = TheCommonUtils.GetRandomUInt(1, 1000);
 
-                ClassicAssert.IsTrue(result >= 1 && result < 1000);
+                Assert.That(result >= 1 && result < 1000);
                 if (result != 1)
                 {
 
@@ -146,7 +145,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
                 {
                     count++;
                 }
-                ClassicAssert.IsFalse(valueCount < acceptableCount, $"Count for {i} not acceptable: {valueCount} should be {acceptableCount}");
+                Assert.That(valueCount, Is.GreaterThanOrEqualTo(acceptableCount), $"Count for {i} not acceptable: {valueCount} should be {acceptableCount}");
             }
         }
 
@@ -157,21 +156,21 @@ namespace CDEngine.BaseClasses.Net35.Tests
             string safeFileName = TheCommonUtils.GetSafeFileName(fileName, "json", true);
             var dateTimePart = safeFileName.Substring(fileName.Length + 1, 17);
             var timestamp = DateTime.ParseExact(dateTimePart, "yyyyMMddHHmmfffff", CultureInfo.InvariantCulture);
-            ClassicAssert.AreEqual(safeFileName, $"a+b_c_d_{timestamp:yyyyMMddHHmmfffff}.json", "Actual File Name: " + safeFileName);
+            Assert.That($"a+b_c_d_{timestamp:yyyyMMddHHmmfffff}.json", Is.EqualTo(safeFileName), "Actual File Name: " + safeFileName);
         }
 
         [Test]
         public void TestGetSafeFileNameNoTimeStamp()
         {
             string safeFileName = TheCommonUtils.GetSafeFileName("a+b:c/d", "json", false);
-            ClassicAssert.IsTrue(safeFileName.Equals("a+b_c_d.json"), "Actual File Name: " + safeFileName);
+            Assert.That(safeFileName, Is.EqualTo("a+b_c_d.json"), "Actual File Name: " + safeFileName);
         }
 
         [Test]
         public void TestGetSafeFileNameInvalidExtension()
         {
             string safeFileName = TheCommonUtils.GetSafeFileName("a+b:c/d", "jso", false);
-            ClassicAssert.IsTrue(safeFileName.Equals("a+b_c_d.jso"), "Actual File Name: " + safeFileName);
+            Assert.That(safeFileName, Is.EqualTo("a+b_c_d.jso"), "Actual File Name: " + safeFileName);
         }
     }
 }
