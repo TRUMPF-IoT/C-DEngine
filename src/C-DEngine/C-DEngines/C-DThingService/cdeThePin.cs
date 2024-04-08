@@ -77,6 +77,8 @@ namespace nsCDEngine.Engines.ThingService
         public int NMIxDelta { get; set; } = 0;
         public int NMIyDelta { get; set; } = 0;
 
+        internal Guid MyPinMapper;
+
         public bool AddPin(ThePin pin)
         {
             if (string.IsNullOrEmpty(pin?.PinName))
@@ -172,6 +174,15 @@ namespace nsCDEngine.Engines.ThingService
             return ret;
         }
 
+        public static bool ConnectPins(ThePin pin1, ThePin pin2, bool Reset1First=false, bool Reset2First = false)
+        {
+            if (pin1 == null || pin2 == null)
+                return false;
+            bool ret1=pin1.AddPinConnection(pin2, Reset1First);
+            bool ret2=pin2.AddPinConnection(pin1, Reset2First);
+            return ret1 || ret2;
+        }
+
         private readonly object lockPinConnection = new object();
         /// <summary>
         /// Adds a new Pin Connection
@@ -188,6 +199,9 @@ namespace nsCDEngine.Engines.ThingService
                 if (pPin!=null && !IsConnectedTo.Contains(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections) && CanConnectToPinType.Contains(pPin.PinType))
                 {
                     IsConnectedTo.Add(pPin);
+                    var tThing = TheThingRegistry.GetThingByMID(cdeO);
+                    if (tThing == null) return true;
+                    tThing.UpdatePinProperty(this);
                     return true;
                 }
             }
@@ -224,7 +238,7 @@ namespace nsCDEngine.Engines.ThingService
 
         public override string ToString()
         {
-            return $"{PinName}:{cdeO}";
+            return $"{cdeO}:{PinName}";
         }
 
         public string GetResolvedName()

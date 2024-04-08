@@ -406,15 +406,28 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         public virtual void ReloadForm()
         {
-            InitDynamicNMI();
+            ReloadForm(false);
+        }
+        /// <summary>
+        /// Reloads the Form with updated Dynamic Fields
+        /// </summary>
+        public virtual void ReloadForm(bool Force)
+        {
+            InitDynamicNMI(Force);
             if (MyGroupForm != null)
                 TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyGroupForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyGroupForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
         }
-
         /// <summary>
         /// Initializes the dynamic part of the form
         /// </summary>
         public virtual void InitDynamicNMI()
+        {
+            InitDynamicNMI(false);
+        }
+        /// <summary>
+        /// Initializes the dynamic part of the form
+        /// </summary>
+        public virtual void InitDynamicNMI(bool force)
         {
             InitGTP();
             UpdatePinConnections(false);
@@ -532,7 +545,46 @@ namespace nsCDEngine.Engines.ThingService
                         firstRound.GetBaseThing().AddPinConnections(firstPin, new List<ThePin> { secondPin });
                         TheThingRegistry.GetThingByMID(secondPin.cdeO)?.AddPinConnections(secondPin, new List<ThePin> { firstPin });
                     }
+                    TheThingRegistry.GetThingByMID(firstPin.cdeO)?.UpdatePinMapper($"PIN_{firstPin.PinName}");
                 }
+            }
+            return true;
+        }
+
+        public virtual bool UpdateSavedPinConnections()
+        {
+            try
+            {
+                var AllDevs = GetAllGroupThings();
+                foreach (var gThing in AllDevs)
+                {
+                    foreach (var firstPin in gThing.GetBaseThing().GetAllPins())
+                    {
+                        var tConnList = $"{gThing.GetProperty($"PINCON_{firstPin.PinName}", false).GetValue()}";
+                        if (!string.IsNullOrEmpty(tConnList))
+                        {
+                            var tList = tConnList.Split(';');
+                            foreach (var t in tList)
+                            {
+                                var p = t.Split(':');
+                                var tt = TheThingRegistry.GetThingByMID(CU.CGuid(p[0]));
+                                if (tt != null)
+                                {
+                                    var secondPin = tt.GetPin(p[1]);
+                                    if (secondPin != null)
+                                    {
+                                        gThing.GetBaseThing().AddPinConnections(firstPin, new List<ThePin> { secondPin });
+                                        tt?.AddPinConnections(firstPin, new List<ThePin> { firstPin });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) 
+            {
+                //
             }
             return true;
         }

@@ -385,12 +385,12 @@ namespace nsCDEngine.Engines.ThingService
             bool hasRightPin = tPins.Exists(p => p.NMIIsPinRight);
             bool hasLeftPin = tPins.Exists(p => !p.NMIIsPinRight);
             var tFaceWidth = (MyNMIFaceModel.XLen + (78 * ((hasLeftPin ? 1 : 0) + (hasRightPin ? 1 : 0))));
-            var fld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = true, AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
+            var fld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = !CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")), AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
             if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
                 fld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
-                    pMsg.Cookie = OnShowEditor(NMI.GetNMIEditorForm(), "GROUP", pMsg);
+                    pMsg.Cookie = OnShowEditor(NMI.GetNMIEditorForm(), $"THING_{MyBaseThing.cdeMID}", pMsg);
                 });
             }
             //Pin Render
@@ -432,17 +432,17 @@ namespace nsCDEngine.Engines.ThingService
             return startFld;
         }
 
-        public virtual bool OnShowEditor(TheFormInfo pForm,string pTarget, TheProcessMessage pMsg)
+        public virtual bool OnShowEditor(TheFormInfo pForm, string pTarget, TheProcessMessage pMsg)
         {
             if (pTarget.StartsWith("PIN_"))
             {
                 var pinID = pTarget.Split('_')[1];
-                var pin=MyBaseThing.GetPin(pinID);
+                var pin = MyBaseThing.GetPin(pinID);
                 string tCompatPins = "";
                 foreach (var tC in pin.CompatiblePins)
                 {
                     if (tCompatPins.Length > 0) tCompatPins += ";";
-                    tCompatPins += $"{tC.GetResolvedName()}:{tC}";
+                    tCompatPins += $"{tC.GetResolvedName()}:{tC.PinName}";
                 }
                 string tIC = "";
                 foreach (var tC in pin.GetConnectedPins())
@@ -451,16 +451,59 @@ namespace nsCDEngine.Engines.ThingService
                     tIC += tC.GetResolvedName();
                 }
 
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 10, 0, 0, "Pin Name", null,new nmiCtrlSingleEnded { NoTE=true, Value =pin.PinName, FontSize=20 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 10, 0, 0, "Pin Name", null, new nmiCtrlSingleEnded { NoTE = true, Value = pin.PinName, FontSize = 20 });
                 NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 11, 0, 0, "Pin Value", null, new nmiCtrlSingleEnded { NoTE = true, Value = $"{pin.PinValue} {pin.Units}", FontSize = 20 });
                 NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 12, 0, 0, "Pin ID", null, new nmiCtrlSingleEnded { NoTE = true, Value = $"{pin.cdeMID}", FontSize = 20 });
                 NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 13, 0, 0, "Pin Type", null, new nmiCtrlSingleEnded { NoTE = true, Value = $"{pin.PinType}", FontSize = 20 });
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TextArea, 14, 0, 0, "Is Connected to", null, new nmiCtrlTextArea { NoTE = true, Value = $"{tIC}", TileHeight =2, FontSize=12 });
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ComboBox, 15, 2, MyBaseThing.cdeA, "Add Connection", $"{pTarget}_NewConnection", new nmiCtrlComboBox { NoTE=true, Options=tCompatPins });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TextArea, 14, 0, 0, "Is Connected to", null, new nmiCtrlTextArea { NoTE = true, Value = $"{tIC}", TileHeight = 2, FontSize = 12 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ComboBox, 15, 2, MyBaseThing.cdeA, "Select a Compatible Pin", $"{pTarget}_NewConnection", new nmiCtrlComboBox { TileWidth = 5, NoTE = true, Options = tCompatPins });
+                MyConnectionAdded = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 16, 2, 0, "Add", null, new nmiCtrlTileButton { TileWidth = 1, NoTE = true, ClassName = "cdeGoodActionButton" });
+                MyConnectionAdded.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, (sender, obj) =>
+                {
+                    try
+                    {
+                        var pmsg = obj as TheProcessMessage;
+                        if (pmsg == null) return;
+
+                        var tPin = pmsg.Message.PLS.Split(':')[1];
+                        var pinID = tPin.Split('_')[1];
+                        var pin = MyBaseThing.GetPin(pinID);
+                        if (pin == null) return;
+
+                        var targetPin = $"{MyBaseThing.GetProperty($"{pTarget}_NewConnection").GetValue()}";
+                        if (string.IsNullOrEmpty(targetPin)) return;
+
+                        var t = pin.CompatiblePins.Where(s => s.PinName == targetPin);
+                        if (t?.Any() == false) return;
+                        foreach (var c in t)
+                        {
+                            ThePin.ConnectPins(c, pin);
+                        }
+                        MyBaseThing.SetProperty($"{pTarget}_NewConnection", "");
+                    }
+                    catch { 
+                        //indended for now
+                    }
+                });
+
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, 17, 0x2, 0x0, "Pin Source-Thing", $"{pTarget}_ThgSource", new nmiCtrlThingPicker() { NoTE = true, Value=$"{MyBaseThing.GetProperty($"{pTarget}_ThgSource", false)}" });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.PropertyPicker, 18, 0x2, 0x0, "Pin Source-Property", $"{pTarget}_ThgProp", new nmiCtrlPropertyPicker() { TileWidth = 5, Value= $"{MyBaseThing.GetProperty($"{pTarget}_ThgProp", false)}", NoTE = true, ThingFld = 17 });
+                MyPinMapperButton = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 19, 2, 0, "Update", null, new nmiCtrlTileButton { TileWidth = 1, NoTE = true, ClassName = "cdeGoodActionButton" });
+                MyPinMapperButton.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, (sender, obj) =>
+                {
+                    var pmsg=(obj as TheProcessMessage);
+                    if (pmsg?.Message?.PLS == null)
+                        return;
+                    var tPin = pmsg.Message.PLS.Split(':')[1];
+                    MyBaseThing.UpdatePinMapper(tPin);
+                });
                 return true;
             }
             return false;
         }
+
+        protected TheFieldInfo MyConnectionAdded = null;
+        protected TheFieldInfo MyPinMapperButton = null;
 
         /// <summary>
         /// Device Face Model - if null the Thing has no model
@@ -1058,7 +1101,7 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     thingWithHistory.Historian?.UnregisterAllConsumersForOwnerAsync(this).Wait();
                 }
-
+                RemoveAllPinConnections();
                 tThing.RegisterEvent(eThingEvents.ThingDeleted, deleteAction);
 
                 if (tThing.Delete())
@@ -2771,7 +2814,7 @@ namespace nsCDEngine.Engines.ThingService
             return false;
         }
 
-        private void UpdatePinProperty(ThePin pin)
+        internal void UpdatePinProperty(ThePin pin)
         {
             StringBuilder tIC = new();
             foreach (var tC in pin.GetConnectedPins())
@@ -2779,7 +2822,46 @@ namespace nsCDEngine.Engines.ThingService
                 if (tIC.Length > 0) tIC.Append(";");
                 tIC.Append(tC);
             }
-            SetProperty($"PIN_{pin.PinName}_IsConnectedTo", tIC.ToString());
+            SetProperty($"PINCON_{pin.PinName}", $"{tIC}");
+        }
+
+        public void UpdatePinMapper(string tPin)
+        {
+            try
+            {
+                var pinID = tPin.Split('_')[1];
+                var pin = GetPin(pinID);
+                if (pin == null)
+                    return;
+                if (GetProperty($"{tPin}_ThgSource", false) != null && GetProperty($"{tPin}_ThgProp", false) != null)
+                {
+                    TheThingRegistry.UnmapPropertyMapper(pin.MyPinMapper);
+                    var tmg = TheThingRegistry.PropertyMapper(TT.GetSafePropertyGuid(this, $"{tPin}_ThgSource"), TT.GetSafePropertyString(this, $"{tPin}_ThgProp"), this.cdeMID, pin.PinProperty, false);
+                    if (tmg != Guid.Empty)
+                        pin.MyPinMapper = tmg;
+                }
+            }
+            catch
+            {
+                //intended for now
+            }
+        }
+
+        public bool RemoveAllPinConnections()
+        {
+            foreach (var tPin2Remove in MyPins.Values)
+            {
+                TheThingRegistry.UnmapPropertyMapper(tPin2Remove.MyPinMapper);
+                if (!tPin2Remove.HasConnectedPins())
+                    continue;
+                foreach (var tConPin in tPin2Remove.GetConnectedPins())
+                {
+                    var tt = TheThingRegistry.GetThingByMID(tConPin.cdeO);
+                    var targetPin = tt?.GetPin(tConPin.PinName);
+                    tt?.RemovePinConnections(targetPin, [tConPin]);
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -2810,12 +2892,14 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (string.IsNullOrEmpty(pPinID?.PinName) || !MyPins.ContainsKey(pPinID.PinName))
                 return false;
+            TheThingRegistry.UnmapPropertyMapper(pPinID.MyPinMapper);
             if (!MyPins[pPinID.PinName].HasConnectedPins())
                 return false;
             if (pConnectedTo?.Count > 0)
             {
                 foreach (var t in pConnectedTo)
                     MyPins[pPinID.PinName].RemoveConnection(t);
+                UpdatePinProperty(MyPins[pPinID.PinName]);
                 return true;
             }
             return false;
