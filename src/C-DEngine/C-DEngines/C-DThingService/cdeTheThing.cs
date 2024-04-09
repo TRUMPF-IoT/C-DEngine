@@ -350,7 +350,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <param name="pTop">Top (in Pixels) to position the FacePlate</param>
         /// <param name="pProperties">Set Properties on the DeviceFace</param>
         /// <returns></returns>
-        protected virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, ThePropertyBag pProperties=null)
+        protected virtual int ShowDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, ThePropertyBag pProperties = null)
         {
             if (MyNMIFaceModel == null)
             {
@@ -374,7 +374,7 @@ namespace nsCDEngine.Engines.ThingService
                             max = tn;
                         }
                     }
-                    startFld = 25 * (int)Math.Round((max+13) / 25.0);
+                    startFld = 25 * (int)Math.Round((max + 13) / 25.0);
                 }
             }
             else
@@ -393,6 +393,16 @@ namespace nsCDEngine.Engines.ThingService
                     pMsg.Cookie = OnShowEditor(NMI.GetNMIEditorForm(), $"THING_{MyBaseThing.cdeMID}", pMsg);
                 });
             }
+            if (fld != null)
+            {
+                MyNMIFaceModel.OwnerFormInfoId = fld.cdeMID;
+                var tso = TheFormsGenerator.GetScreenOptions(MyLiveForm.cdeMID, null, MyLiveForm);
+                var po = tso?.Flds?.Find(s => s.FldOrder == startFld);
+                if (po?.PO!=null)
+                {
+                    fld.PropertyBag = po.PO;
+                }
+            }
             //Pin Render
             bool hideBorder = ThePropertyBag.PropBagHasValue(pProperties, "HideBorder", "=");
             foreach (var pin in tPins)
@@ -403,7 +413,7 @@ namespace nsCDEngine.Engines.ThingService
                         new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace("") });
                 else
                     tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
-                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - ((78-(hideBorder?0:4)) - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15+pin.NMIyDelta, HTML = pin.NMIGetPinLineFace("") });
+                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - ((78 - (hideBorder ? 0 : 4)) - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15 + pin.NMIyDelta, HTML = pin.NMIGetPinLineFace("") });
                 if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
                     tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
@@ -415,19 +425,19 @@ namespace nsCDEngine.Engines.ThingService
             //FacePlate Render
             var tg = new nmiCtrlTileGroup { ParentFld = startFld, NoTE = true, PixelWidth = MyNMIFaceModel.XLen, DisallowEdit = true, PixelHeight = MyNMIFaceModel.YLen, IsAbsolute = true, Left = hasLeftPin ? 78 : 0, Top = 0 };
             startFld = MyLiveForm.FldPos;
-            var gfld=NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, tg);
+            var gfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, tg);
             if (!hideBorder)
-                gfld.PropertyBag = new nmiCtrlTileGroup { Style= "border: outset;" };
+                gfld.PropertyBag = new nmiCtrlTileGroup { Style = "border: outset;" };
             if (!string.IsNullOrEmpty(MyNMIFaceModel.FaceTemplate))
             {
-                var tp = new nmiCtrlFacePlate { ParentFld = startFld, NoTE = true,DisallowEdit=true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen };
+                var tp = new nmiCtrlFacePlate { ParentFld = startFld, NoTE = true, DisallowEdit = true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen };
                 if (MyNMIFaceModel.FaceTemplate.StartsWith("/"))
                     tp.HTMLUrl = MyNMIFaceModel.FaceTemplate;
                 else
                     tp.HTML = $"<div class=\"{MyNMIFaceModel.FaceTemplate}\"></div>";
                 NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName", tp);
                 if (MyNMIFaceModel.AddTTS)
-                    NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileButton, MyLiveForm.FldPos, 2, 0x0, null, null, new nmiCtrlTileButton() { ParentFld = startFld, OnClick = $"TTS:{MyBaseThing.cdeMID}", DisallowEdit=true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, NoTE = true, ClassName = "enTransBut" });
+                    NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileButton, MyLiveForm.FldPos, 2, 0x0, null, null, new nmiCtrlTileButton() { ParentFld = startFld, OnClick = $"TTS:{MyBaseThing.cdeMID}", DisallowEdit = true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, NoTE = true, ClassName = "enTransBut" });
             }
             return startFld;
         }

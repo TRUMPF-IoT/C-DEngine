@@ -982,6 +982,12 @@ namespace nsCDEngine.Engines.NMIService
                         }
                         string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(tNewScene.ID)}.cdeFOR";
                         TheCommonUtils.SaveBlobToDisk(pMsg.Message, new[] { "", tTargetDir }, null);
+                        var form = GetFormById(TheCommonUtils.CGuid(tNewScene.ID));
+                        if (!string.IsNullOrEmpty(form?.ModelID))
+                        {
+                            tTargetDir = $"FormORs\\{form.ModelID}.cdeFOR";
+                            TheCommonUtils.SaveBlobToDisk(pMsg.Message, new[] { "", tTargetDir }, null);
+                        }
                         var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", TheCommonUtils.CGuid(tNewScene.ID).ToString());
                         if (group != null)
                         {

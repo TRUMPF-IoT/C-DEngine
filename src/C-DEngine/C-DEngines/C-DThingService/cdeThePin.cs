@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 using nsCDEngine.BaseClasses;
+using nsCDEngine.Engines.NMIService;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -295,8 +296,45 @@ namespace nsCDEngine.Engines.ThingService
     /// </summary>
     public class TheNMIFaceModel
     {
-        public int XPos { get; set; } = 0;
-        public int YPos { get; set; } = 0;
+        int _xpos = 0;
+        public int XPos
+        {
+            get
+            {
+                int ret = _xpos;
+                if (OwnerFormInfoId != Guid.Empty)
+                {
+                    var f = TheNMIEngine.GetFieldById(OwnerFormInfoId);
+                    if (f != null)
+                    {
+                        var dx = CU.CInt(ThePropertyBag.PropBagGetValue(f?.PropertyBag, "DragX"));
+                        ret += dx;
+                    }
+                }
+                return ret;
+            }
+            set { _xpos = value; }
+        }
+
+        int _ypos = 0;
+        public int YPos
+        {
+            get
+            {
+                int ret = _ypos;
+                if (OwnerFormInfoId != Guid.Empty)
+                {
+                    var f = TheNMIEngine.GetFieldById(OwnerFormInfoId);
+                    if (f != null)
+                    {
+                        var dy = CU.CInt(ThePropertyBag.PropBagGetValue(f?.PropertyBag, "DragY"));
+                        ret += dy;
+                    }
+                }
+                return ret;
+            }
+            set { _ypos = value; }
+        }
         public int XLen { get; set; } = 0;
         public int YLen { get; set; } = 0;
         public string Prefix { get; set; } = "NOP";
@@ -315,5 +353,7 @@ namespace nsCDEngine.Engines.ThingService
             YLen = yl;
             Prefix = pFix;
         }
+
+        internal Guid OwnerFormInfoId;
     }
 }

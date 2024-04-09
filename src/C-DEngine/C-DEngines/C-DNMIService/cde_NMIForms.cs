@@ -207,14 +207,16 @@ namespace nsCDEngine.Engines.NMIService
                     }
                 }
             }
-
-            string tPlS = TheCommonUtils.LoadStringFromDisk($"{pClientInfo.UserID}\\{FormId}.cdeFOR", null);
-            if (!string.IsNullOrEmpty(tPlS))
+            if (pClientInfo != null)
             {
-                TheFOR Ttso = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS);
-                tso = SetTSO(tso, Ttso, true);
-                if (pInfo!=null && !string.IsNullOrEmpty(Ttso?.StartGroup))
-                    pInfo.PropertyBag = new ThePropertyBag { $"StartGroup={Ttso.StartGroup}" };
+                string tPlS = TheCommonUtils.LoadStringFromDisk($"{pClientInfo.UserID}\\{FormId}.cdeFOR", null);
+                if (!string.IsNullOrEmpty(tPlS))
+                {
+                    TheFOR Ttso = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS);
+                    tso = SetTSO(tso, Ttso, true);
+                    if (pInfo != null && !string.IsNullOrEmpty(Ttso?.StartGroup))
+                        pInfo.PropertyBag = new ThePropertyBag { $"StartGroup={Ttso.StartGroup}" };
+                }
             }
             return tso;
         }

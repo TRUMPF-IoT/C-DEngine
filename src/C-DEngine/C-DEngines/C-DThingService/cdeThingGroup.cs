@@ -406,28 +406,14 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         public virtual void ReloadForm()
         {
-            ReloadForm(false);
-        }
-        /// <summary>
-        /// Reloads the Form with updated Dynamic Fields
-        /// </summary>
-        public virtual void ReloadForm(bool Force)
-        {
-            InitDynamicNMI(Force);
+            InitDynamicNMI();
             if (MyGroupForm != null)
-                TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{TheCommonUtils.cdeGuidToString(MyGroupForm.cdeMID)}:CMyForm:{TheCommonUtils.cdeGuidToString(MyGroupForm.cdeMID)}:{TheCommonUtils.cdeGuidToString(ModelGuid)}:true:true"));
+                TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{CU.cdeGuidToString(MyGroupForm.cdeMID)}:CMyForm:{CU.cdeGuidToString(MyGroupForm.cdeMID)}:{CU.cdeGuidToString(ModelGuid)}:true:true"));
         }
         /// <summary>
         /// Initializes the dynamic part of the form
         /// </summary>
         public virtual void InitDynamicNMI()
-        {
-            InitDynamicNMI(false);
-        }
-        /// <summary>
-        /// Initializes the dynamic part of the form
-        /// </summary>
-        public virtual void InitDynamicNMI(bool force)
         {
             InitGTP();
             UpdatePinConnections(false);
