@@ -638,17 +638,18 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     if (pDevs[i] == null) continue;
 
-                    var allSourcePins = pDevs[i].GetBaseThing().GetBaseThing().GetAllPins();
-                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList();
+                    var sourceT = pDevs[i].GetBaseThing().GetBaseThing();
+                    var allSourcePins = sourceT.GetAllPins();
+                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList(); //Starting from "Out" pins
                     foreach (var sourcePin in sourceOutPins)
                     {
                         string PinTypeFilter = ThePropertyBag.PropBagGetValue(pProperties, "PinTypeFilter");
                         if (!string.IsNullOrEmpty(PinTypeFilter) && sourcePin.PinType != PinTypeFilter) continue;
-                        var targetInPins = sourcePin?.GetConnectedPins();
+                        var targetInPins = sourcePin?.GetConnectedPins();   //To their connected Pins
                         if (targetInPins?.Count > 0)
                         {
                             bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIIsPinRight);
-                            bool sourcehasLeftPin = allSourcePins.Exists(p => !p.NMIIsPinRight);
+                            bool sourceHasLeftPin = allSourcePins.Exists(p => !p.NMIIsPinRight);
                             foreach (var targetPin in targetInPins)
                             {
                                 var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
@@ -657,12 +658,14 @@ namespace nsCDEngine.Engines.ThingService
                                 if (targetFace == null) continue;
                                 var sourceFace = pDevs[i].MyNMIFaceModel;
                                 var flowStyle = sourcePin.GetMapperStyle("");
+                                bool targetHasRightPin = targetT.GetAllPins().Exists(p => p.NMIIsPinRight);
+                                bool targetHasLeftPin = targetT.GetAllPins().Exists(p => !p.NMIIsPinRight);
 
                                 var sLeft = sourcePin.NMIIsPinRight ?
-                                    sourceFace.XPos + sourceFace.XLen + (sourcePin.NMIPinWidth * ((sourcehasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0))) + sourcePin.NMIxDelta :
-                                    sourceFace.XPos - ((sourcePin.NMIPinWidth * (sourceHasRightPin ? 1 : 0)) + sourcePin.NMIxDelta);
+                                    sourceFace.XPos + (sourceFace.XLen + (78 * ((sourceHasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0)))) - (78- sourcePin.NMIPinWidth) :
+                                    sourceFace.XPos + (78 - targetPin.NMIPinWidth) + targetPin.NMIxDelta; 
                                 var tLeft = targetPin.NMIIsPinRight ?
-                                    targetFace.XPos + targetFace.XLen + targetPin.NMIPinWidth : // targetPin.NMIxDelta :
+                                    targetFace.XPos + (targetFace.XLen + (78 * ((targetHasLeftPin ? 1 : 0) + (targetHasRightPin ? 1 : 0)))) - (78 - sourcePin.NMIPinWidth) :
                                     targetFace.XPos + (78 - targetPin.NMIPinWidth) + targetPin.NMIxDelta;
 
                                 var left = sLeft > tLeft ? tLeft : sLeft;
@@ -683,26 +686,25 @@ namespace nsCDEngine.Engines.ThingService
                                 if (xl < lineWidth) xl = lineWidth;
                                 int yl = Math.Abs(sTop - tTop);
                                 if (yl < lineWidth) yl = lineWidth;
-                                var targetThing = TheThingRegistry.GetThingByMID(targetPin.cdeO);
-                                if (targetThing == null)
-                                    continue;
                                 if (yl > lineWidth)
                                 {
+                                    if (!sourcePin.DrawLineAtTarget)
+                                        x = sLeft;
                                     StringBuilder moveData = new();
                                     int movecnt = ((yl + lineWidth) / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
                                         moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
-                                    AddPinLine(MyLiveForm, $"line{targetThing}v_{sourcePin.PinName.Replace(' ', '_')}",
+                                    AddPinLine(MyLiveForm, $"line{targetT}v_{sourcePin.PinName.Replace(' ', '_')}",
                                         x + (sourcePin.DrawLineAtTarget ? xl : 0),
                                         y,
                                         lineWidth,
                                         yl + lineWidth,
                                         moveData.ToString());
-                                    GetProperty($"line{targetThing}v_{sourcePin.PinName.Replace(' ', '_')}", true).cdeE |= 8;
+                                    GetProperty($"line{targetT}v_{sourcePin.PinName.Replace(' ', '_')}", true).cdeE |= 8;
                                 }
                                 if (xl > lineWidth)
                                 {
-                                    y = top;
+                                    //y = top;
                                     x = sLeft;
                                     if (tLeft > sLeft)
                                     {
@@ -719,13 +721,13 @@ namespace nsCDEngine.Engines.ThingService
                                     int movecnt = (xl / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
                                         moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
-                                    AddPinLine(MyLiveForm, $"line{targetThing}h_{sourcePin.PinName.Replace(' ', '_')}",
+                                    AddPinLine(MyLiveForm, $"line{targetT}h_{sourcePin.PinName.Replace(' ', '_')}",
                                         x,
                                         y,
                                         xl,
                                         lineWidth,
                                         moveData.ToString());
-                                    GetProperty($"line{targetThing}h_{sourcePin.PinName.Replace(' ', '_')}", true).cdeE |= 8;
+                                    GetProperty($"line{targetT}h_{sourcePin.PinName.Replace(' ', '_')}", true).cdeE |= 8;
                                 }
                             }
                         }

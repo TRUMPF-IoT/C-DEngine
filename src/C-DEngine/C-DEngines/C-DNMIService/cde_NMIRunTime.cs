@@ -1001,6 +1001,15 @@ namespace nsCDEngine.Engines.NMIService
                     {
                         string tTargetDir = $"{pMsg.CurrentUserID}\\{TheCommonUtils.CGuid(cmd[1])}.cdeFOR";
                         TheCommonUtils.DeleteFromDisk(tTargetDir, "");
+                        if (pMsg?.Message?.PLS == "FORCE")
+                        {
+                            var form = GetFormById(TheCommonUtils.CGuid(cmd[1]));
+                            if (!string.IsNullOrEmpty(form?.ModelID))
+                            {
+                                tTargetDir = $"FormORs\\{form.ModelID}.cdeFOR";
+                                TheCommonUtils.DeleteFromDisk(tTargetDir, "");
+                            }
+                        }
                         var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", TheCommonUtils.CGuid(cmd[1]).ToString());
                         if (group != null)
                         {
