@@ -413,7 +413,7 @@ namespace nsCDEngine.Engines.ThingService
                         new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace("") });
                 else
                     tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
-                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth - (hideBorder ? 0 : 4), PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - ((78 - (hideBorder ? 0 : 4)) - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15 + pin.NMIyDelta, HTML = pin.NMIGetPinLineFace("") });
+                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth /*- (hideBorder ? 0 : 4)*/, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - ((78 - (hideBorder ? 0 : 4)) - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15 + pin.NMIyDelta, HTML = pin.NMIGetPinLineFace("") });
                 if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
                     tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>

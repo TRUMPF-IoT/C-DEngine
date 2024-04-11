@@ -662,11 +662,11 @@ namespace nsCDEngine.Engines.ThingService
                                 bool targetHasLeftPin = targetT.GetAllPins().Exists(p => !p.NMIIsPinRight);
 
                                 var sLeft = sourcePin.NMIIsPinRight ?
-                                    sourceFace.XPos + (sourceFace.XLen + (78 * ((sourceHasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0)))) - (78- sourcePin.NMIPinWidth) :
-                                    sourceFace.XPos + (78 - targetPin.NMIPinWidth) + targetPin.NMIxDelta; 
+                                    sourceFace.XPos + sourcePin.NMIxDelta + (sourceFace.XLen + (78 * ((sourceHasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0)))) - (78- sourcePin.NMIPinWidth) :
+                                    sourceFace.XPos + sourcePin.NMIxDelta + (78 - sourcePin.NMIPinWidth); 
                                 var tLeft = targetPin.NMIIsPinRight ?
-                                    targetFace.XPos + (targetFace.XLen + (78 * ((targetHasLeftPin ? 1 : 0) + (targetHasRightPin ? 1 : 0)))) - (78 - sourcePin.NMIPinWidth) :
-                                    targetFace.XPos + (78 - targetPin.NMIPinWidth) + targetPin.NMIxDelta;
+                                    targetFace.XPos + targetPin.NMIxDelta + (targetFace.XLen + (78 * ((targetHasLeftPin ? 1 : 0) + (targetHasRightPin ? 1 : 0)))) - (78 - targetPin.NMIPinWidth) :
+                                    targetFace.XPos + targetPin.NMIxDelta + (78 - targetPin.NMIPinWidth);
 
                                 var left = sLeft > tLeft ? tLeft : sLeft;
 
@@ -695,7 +695,7 @@ namespace nsCDEngine.Engines.ThingService
                                     for (int n = 0; n < movecnt; n++)
                                         moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
                                     AddPinLine(MyLiveForm, $"line{targetT}v_{sourcePin.PinName.Replace(' ', '_')}",
-                                        x + (sourcePin.DrawLineAtTarget ? xl : 0),
+                                        x + (sourcePin.DrawLineAtTarget && xl>lineWidth ? xl : 0),
                                         y,
                                         lineWidth,
                                         yl + lineWidth,
