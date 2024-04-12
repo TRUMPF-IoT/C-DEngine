@@ -7,6 +7,7 @@ using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static nsCDEngine.Engines.ThingService.ThePin;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
 using TT = nsCDEngine.Engines.ThingService.TheThing;
 
@@ -35,8 +36,33 @@ namespace nsCDEngine.Engines.ThingService
     {
         public const string Generic = "nsu=http://c-labs.com/UA/Energy;i=2001"; //OPC UA: once OPCF standardized Pins replace with Standard
     }
+    public class ThePinOR
+    {
+        public int PinOverrides { get; set; } = 0;
+        public ePinLocation NMIPinLocation { get; set; } = 0;
+        public int NMIPinPosition { get; set; } = 0;
+        public int NMIPinWidth { get; set; } = 0;
+        public int NMIPinHeight { get; set; } = 0;
+        public int NMIxDelta { get; set; } = 0;
+        public int NMIyDelta { get; set; } = 0;
+        public string PinProperty { get; set; } = null;
+
+        public ePinLocation oNMIPinLocation { get; set; } = 0;
+        public int oNMIPinPosition { get; set; } = 0;
+        public int oNMIPinWidth { get; set; } = 0;
+        public int oNMIPinHeight { get; set; } = 0;
+        public int oNMIxDelta { get; set; } = 0;
+        public int oNMIyDelta { get; set; } = 0;
+        public string oPinProperty { get; set; } = null;
+
+    }
     public class ThePin : TheMetaDataBase
     {
+        public enum ePinLocation
+        {
+            Left=0, Right=1, Top=2, Bottom=3
+        }
+
         public object PinValue
         {
             get
@@ -71,8 +97,13 @@ namespace nsCDEngine.Engines.ThingService
 
         public List<ThePin> MyPins { get; set; } = new List<ThePin>();
         public string PinProperty { get; set; } = null;
-        public bool NMIIsPinRight { get; set; } = false;
-        public int NMIPinTopPosition { get; set; } = 0;
+
+        /// <summary>
+        /// Pin Location describes on what side of the FacePlace the pin will be (left=0, right=1)
+        /// In the future top=2, bottom=3 will be added
+        /// </summary>
+        public ePinLocation NMIPinLocation { get; set; } = 0;
+        public int NMIPinPosition { get; set; } = 0;
         public int NMIPinWidth { get; set; } = 78;
         public int NMIPinHeight { get; set; } = 39;
         public int NMIxDelta { get; set; } = 0;
@@ -117,11 +148,11 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public virtual string NMIGetPinLineFace(string flowStyle)
         {
-            if (NMIPinTopPosition < 0)
+            if (NMIPinPosition < 0)
                 return "";
             string dire = "left";
             string fdire = "right";
-            if (NMIIsPinRight)
+            if (NMIPinLocation==ePinLocation.Right)
             {
                 dire = "right";
                 if (IsInbound)
@@ -144,7 +175,7 @@ namespace nsCDEngine.Engines.ThingService
 
             ThePin tP2 = null;
             if (MyPins?.Count > 0)
-                tP2 = MyPins.Find(s => s.NMIPinTopPosition >= 0);
+                tP2 = MyPins.Find(s => s.NMIPinPosition >= 0);
             return $"""
                  <div class="cdeFacePinDiv">
                     <div cdeTAG="<%C:{PinProperty}_css%>">

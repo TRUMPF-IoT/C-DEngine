@@ -8,6 +8,7 @@ using nsCDEngine.Engines.NMIService;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
@@ -193,6 +194,16 @@ namespace nsCDEngine.Engines.ThingService
         public List<TheThingBase> GetThingsOfType(Type pType)
         {
             return MyGroupThings.Values.Where(s => s?.GetType() == pType || s?.GetType()?.IsSubclassOf(pType) == true).ToList();
+        }
+
+        /// <summary>
+        /// Returns the first of its kind
+        /// </summary>
+        /// <param name="pType"></param>
+        /// <returns></returns>
+        public TheThingBase GetFirstThingsOfType(Type pType)
+        {
+            return MyGroupThings.Values.FirstOrDefault(s => s?.GetType() == pType || s?.GetType()?.IsSubclassOf(pType) == true);
         }
 
         /// <summary>
@@ -524,6 +535,24 @@ namespace nsCDEngine.Engines.ThingService
             {
                 foreach (var firstPin in firstRound.GetBaseThing().GetAllPins())
                 {
+                    var pOver = $"{firstRound.GetProperty($"PIN_{firstPin.PinName}_PinOverrides",false)?.GetValue()}";
+                    if (!string.IsNullOrEmpty(pOver))
+                    {
+                        ThePinOR tp =CU.DeserializeJSONStringToObject<ThePinOR>(pOver);
+                        if (tp != null)
+                        {
+                            if ((tp.PinOverrides & 1) !=0)
+                                firstPin.NMIPinLocation = tp.NMIPinLocation;
+                            if ((tp.PinOverrides & 2) != 0)
+                                firstPin.NMIPinPosition = tp.NMIPinPosition;
+                            if ((tp.PinOverrides & 4) != 0)
+                                firstPin.NMIPinWidth = tp.NMIPinWidth;
+                            if ((tp.PinOverrides & 8) != 0)
+                                firstPin.NMIxDelta = tp.NMIxDelta;
+                            if ((tp.PinOverrides & 16) != 0)
+                                firstPin.PinProperty = tp.PinProperty;
+                        }
+                    }
                     var res = FindCompatiblePins(firstPin);
                     if (AutoSetConnections && res.Count == 1 && (pPinTypes?.Any()!=true || pPinTypes.Contains(firstPin.PinType)))
                     {
@@ -587,8 +616,8 @@ namespace nsCDEngine.Engines.ThingService
                 if (t?.MyNMIFaceModel == null)
                     continue;
                 var tPins = t.GetBaseThing().GetAllPins();
-                bool hasRightPin = tPins.Exists(p => p.NMIIsPinRight);
-                bool hasLeftPin = tPins.Exists(p => !p.NMIIsPinRight);
+                bool hasRightPin = tPins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Right);
+                bool hasLeftPin = tPins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
                 var tFaceWidth = (t.MyNMIFaceModel.XLen + (78 * ((hasLeftPin ? 1 : 0) + (hasRightPin ? 1 : 0))));
                 if (t.MyNMIFaceModel.XPos + tFaceWidth > maxw)
                     maxw = t.MyNMIFaceModel.XPos + tFaceWidth;
@@ -648,8 +677,8 @@ namespace nsCDEngine.Engines.ThingService
                         var targetInPins = sourcePin?.GetConnectedPins();   //To their connected Pins
                         if (targetInPins?.Count > 0)
                         {
-                            bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIIsPinRight);
-                            bool sourceHasLeftPin = allSourcePins.Exists(p => !p.NMIIsPinRight);
+                            bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Right);
+                            bool sourceHasLeftPin = allSourcePins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
                             foreach (var targetPin in targetInPins)
                             {
                                 var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
@@ -658,20 +687,20 @@ namespace nsCDEngine.Engines.ThingService
                                 if (targetFace == null) continue;
                                 var sourceFace = pDevs[i].MyNMIFaceModel;
                                 var flowStyle = sourcePin.GetMapperStyle("");
-                                bool targetHasRightPin = targetT.GetAllPins().Exists(p => p.NMIIsPinRight);
-                                bool targetHasLeftPin = targetT.GetAllPins().Exists(p => !p.NMIIsPinRight);
+                                bool targetHasRightPin = targetT.GetAllPins().Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Right);
+                                bool targetHasLeftPin = targetT.GetAllPins().Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
 
-                                var sLeft = sourcePin.NMIIsPinRight ?
+                                var sLeft = sourcePin.NMIPinLocation == ThePin.ePinLocation.Right ?
                                     sourceFace.XPos + sourcePin.NMIxDelta + (sourceFace.XLen + (78 * ((sourceHasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0)))) - (78- sourcePin.NMIPinWidth) :
                                     sourceFace.XPos + sourcePin.NMIxDelta + (78 - sourcePin.NMIPinWidth); 
-                                var tLeft = targetPin.NMIIsPinRight ?
+                                var tLeft = targetPin.NMIPinLocation == ThePin.ePinLocation.Right ?
                                     targetFace.XPos + targetPin.NMIxDelta + (targetFace.XLen + (78 * ((targetHasLeftPin ? 1 : 0) + (targetHasRightPin ? 1 : 0)))) - (78 - targetPin.NMIPinWidth) :
                                     targetFace.XPos + targetPin.NMIxDelta + (78 - targetPin.NMIPinWidth);
 
                                 var left = sLeft > tLeft ? tLeft : sLeft;
 
-                                var sTop = sourceFace.YPos + ((sourcePin.NMIPinTopPosition * 39) + 15) + sourcePin.NMIyDelta;
-                                var tTop = targetFace.YPos + ((targetPin.NMIPinTopPosition * 39) + 15) + targetPin.NMIyDelta;
+                                var sTop = sourceFace.YPos + ((sourcePin.NMIPinPosition * 39) + 15) + sourcePin.NMIyDelta;
+                                var tTop = targetFace.YPos + ((targetPin.NMIPinPosition * 39) + 15) + targetPin.NMIyDelta;
 
                                 string dir = "up";
                                 var top = tTop;

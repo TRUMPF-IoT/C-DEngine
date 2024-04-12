@@ -85,6 +85,47 @@ namespace nsCDEngine.Engines.NMIService
                         }
                     }
                     break;
+                case "NMI_HIDE_EDITOR":
+                    if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
+                    {
+                        try
+                        {
+                            if (!pMsg.Message.IsFirstNode() || !TheUserManager.CloudCheck(pMsg, 128, true, tClientInfo)) return;
+                            var tLocParts = pMsg.Message?.PLS.Split(';');
+                            if (tLocParts?.Length > 1)
+                            {
+                                var tfld = GetFieldById(TheCommonUtils.CGuid(tLocParts[0]));
+                                if (tfld != null)
+                                {
+                                    if (!tfld.IsEventRegistered(eUXEvents.OnHideEditor))
+                                    {
+                                        var tParent = TheCommonUtils.CInt(tfld.PropBagGetValue("ParentFld"));
+                                        if (tParent > 0)
+                                        {
+                                            var tParentFld = GetFieldByFldOrder(GetFormById(tfld.FormID), tParent);
+                                            if (TheCommonUtils.CBool(tParentFld?.PropBagGetValue("DisallowEdit")))
+                                            {
+                                                tfld = tParentFld;
+                                            }
+                                        }
+                                    }
+                                    var tMyForm = GetNMIEditorForm();
+                                    if (tMyForm != null)
+                                    {
+                                        if (tfld.IsEventRegistered(eUXEvents.OnHideEditor))
+                                        {
+                                            tfld.FireEvent(eUXEvents.OnHideEditor, pMsg, false);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            //ignored
+                        }
+                    }
+                    break;
                 case "NMI_SHOW_EDITOR":
                     if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")) && !string.IsNullOrEmpty(pMsg.Message?.PLS))
                     {

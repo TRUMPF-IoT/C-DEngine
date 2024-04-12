@@ -382,15 +382,19 @@ namespace nsCDEngine.Engines.ThingService
             MyBaseThing.SetProperty($"FldStart_{MyLiveForm.cdeMID}", startFld);
             MyLiveForm.FldStart = startFld;
             var tPins = MyBaseThing.GetAllPins();
-            bool hasRightPin = tPins.Exists(p => p.NMIIsPinRight);
-            bool hasLeftPin = tPins.Exists(p => !p.NMIIsPinRight);
+            bool hasRightPin = tPins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Right);
+            bool hasLeftPin = tPins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
             var tFaceWidth = (MyNMIFaceModel.XLen + (78 * ((hasLeftPin ? 1 : 0) + (hasRightPin ? 1 : 0))));
-            var tFrameFld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = !CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")), AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none;" });
+            var tFrameFld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = !CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")), AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none; z-index:20;" });
             if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
                 tFrameFld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                 {
                     pMsg.Cookie = OnShowEditor(NMI.GetNMIEditorForm(), $"THING_{MyBaseThing.cdeMID}", pMsg);
+                });
+                tFrameFld?.RegisterEvent2(eUXEvents.OnHideEditor, (pMsg, obj) =>
+                {
+                    pMsg.Cookie = OnHideEditor(NMI.GetNMIEditorForm(), $"THING_{MyBaseThing.cdeMID}", pMsg);
                 });
             }
             if (tFrameFld != null)
@@ -408,17 +412,21 @@ namespace nsCDEngine.Engines.ThingService
             foreach (var pin in tPins)
             {
                 TheFieldInfo tfld = null;
-                if (!pin.NMIIsPinRight)
+                if (pin.NMIPinLocation == ThePin.ePinLocation.Left)
                     tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
-                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinTopPosition) + 15, HTML = pin.NMIGetPinLineFace("") });
+                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = 78 - pin.NMIPinWidth, Top = (39 * pin.NMIPinPosition) + 15, HTML = pin.NMIGetPinLineFace("") });
                 else
                     tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
-                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth /*- (hideBorder ? 0 : 4)*/, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - ((78 - (hideBorder ? 0 : 4)) - pin.NMIxDelta), Top = (39 * pin.NMIPinTopPosition) + 15 + pin.NMIyDelta, HTML = pin.NMIGetPinLineFace("") });
+                        new nmiCtrlFacePlate { NoTE = true, ParentFld = startFld, PixelWidth = pin.NMIPinWidth /*- (hideBorder ? 0 : 4)*/, PixelHeight = pin.NMIPinHeight, IsAbsolute = true, Left = tFaceWidth - ((78 - (hideBorder ? 0 : 4)) - pin.NMIxDelta), Top = (39 * pin.NMIPinPosition) + 15 + pin.NMIyDelta, HTML = pin.NMIGetPinLineFace("") });
                 if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
                 {
                     tfld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
                     {
                         pMsg.Cookie = OnShowEditor(NMI.GetNMIEditorForm(), $"PIN_{pin.PinName}", pMsg);
+                    });
+                    tfld?.RegisterEvent2(eUXEvents.OnHideEditor, (pMsg, obj) =>
+                    {
+                        pMsg.Cookie = OnHideEditor(NMI.GetNMIEditorForm(), $"PIN_{pin.PinName}", pMsg);
                     });
                 }
             }
@@ -426,8 +434,21 @@ namespace nsCDEngine.Engines.ThingService
             var tg = new nmiCtrlTileGroup { ParentFld = startFld, NoTE = true, PixelWidth = MyNMIFaceModel.XLen, DisallowEdit = true, PixelHeight = MyNMIFaceModel.YLen, IsAbsolute = true, Left = hasLeftPin ? 78 : 0, Top = 0 };
             startFld = MyLiveForm.FldPos;
             var gfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, tg);
+            if (pProperties != null)
+                gfld.PropertyBag = pProperties;
             if (!hideBorder)
-                gfld.PropertyBag = new nmiCtrlTileGroup { Style = "border: outset;" };
+            {
+                string tClassName = ThePropertyBag.PropBagGetValue(pProperties, "ClassName");
+                string tBorderName= ThePropertyBag.PropBagGetValue(pProperties, "BorderClass");
+                if (!string.IsNullOrEmpty(tBorderName))
+                {
+                    if (string.IsNullOrEmpty(tClassName)) tClassName = ""; else tClassName += " ";
+                    tClassName += tBorderName;
+                    gfld.PropertyBag = new nmiCtrlTileGroup { ClassName = tClassName };
+                }
+                else
+                    gfld.PropertyBag = new nmiCtrlTileGroup { Style = "border: outset;" };
+            }
             if (!string.IsNullOrEmpty(MyNMIFaceModel.FaceTemplate))
             {
                 var tp = new nmiCtrlFacePlate { ParentFld = startFld, NoTE = true, DisallowEdit = true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen };
@@ -440,6 +461,25 @@ namespace nsCDEngine.Engines.ThingService
                     NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileButton, MyLiveForm.FldPos, 2, 0x0, null, null, new nmiCtrlTileButton() { ParentFld = startFld, OnClick = $"TTS:{MyBaseThing.cdeMID}", DisallowEdit = true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen, NoTE = true, ClassName = "enTransBut" });
             }
             return startFld;
+        }
+
+        public virtual bool OnHideEditor(TheFormInfo pForm, string pTarget, TheProcessMessage pMsg)
+        {
+            if (pTarget.StartsWith("PIN_"))
+            {
+                MyBaseThing.RemoveProperty($"{pTarget}_PinLocation");
+                MyBaseThing.RemoveProperty($"{pTarget}_PinPosition");
+                MyBaseThing.RemoveProperty($"{pTarget}_PinWidth");
+                MyBaseThing.RemoveProperty($"{pTarget}_PinXDelta");
+                MyBaseThing.RemoveProperty($"{pTarget}_PinProperty");
+
+                MyPinOverrideUpdate?.UnregisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, null);
+                MyPinOverrideClear?.UnregisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, null);
+                MyConnectionAdded?.UnregisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, null);
+                MyPinMapperButton?.UnregisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, null);
+                return true;
+            }
+            return false;
         }
 
         public virtual bool OnShowEditor(TheFormInfo pForm, string pTarget, TheProcessMessage pMsg)
@@ -463,11 +503,117 @@ namespace nsCDEngine.Engines.ThingService
 
                 NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 10, 0, 0, "Pin Name", null, new nmiCtrlSingleEnded { NoTE = true, Value = pin.PinName, FontSize = 20, TileWidth=3 });
                 NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 11, 0, 0, "Pin Value", null, new nmiCtrlSingleEnded { NoTE = true, Value = $"{pin.PinValue} {pin.Units}", FontSize = 20, TileWidth=3 });
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SmartLabel, 12, 0, 0, "Pin ID", null, new nmiCtrlSmartLabel { NoTE = true, Value = $"ID: {pin.cdeMID}", FontSize = 20, TileFactorY=2 });
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SmartLabel, 13, 0, 0, "Pin Type", null, new nmiCtrlSmartLabel { NoTE = true, Value = $"UA: {pin.PinType}", FontSize = 20, TileFactorY = 2 });
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TextArea, 14, 0, 0, "Is Connected to", null, new nmiCtrlTextArea { NoTE = true, Value = $"{tIC}", TileHeight = 2, FontSize = 12 });
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ComboBox, 15, 2, MyBaseThing.cdeA, "Select a Compatible Pin", $"{pTarget}_NewConnection", new nmiCtrlComboBox { TileWidth = 5, NoTE = true, Options = tCompatPins });
-                MyConnectionAdded = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 16, 2, 0, "Add", null, new nmiCtrlTileButton { TileWidth = 1, NoTE = true, ClassName = "cdeGoodActionButton" });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.CollapsibleGroup, 12, 2, 0, "Pin Overrides", null, new nmiCtrlCollapsibleGroup { IsSmall=true, DoClose=true, TileWidth=6 });
+                //NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SmartLabel, 12, 0, 0, "Pin ID", null, new nmiCtrlSmartLabel { NoTE = true, Value = $"ID: {pin.cdeMID}", FontSize = 20, TileFactorY=2 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ComboBox, 13, 2, 0, "Location", $"{pTarget}_PinLocation", new nmiCtrlComboBox{ ParentFld = 12, NoTE = true, Value = $"{(int)pin.NMIPinLocation}", Options="Left:0;Right:1", TileWidth=1 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.Number, 14, 2, 0, "Position", $"{pTarget}_PinPosition", new nmiCtrlNumber { ParentFld = 12, NoTE = true, Value = $"{pin.NMIPinPosition}", TileWidth=1 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.Number, 15, 2, 0, "Width", $"{pTarget}_PinWidth", new nmiCtrlNumber { ParentFld = 12, NoTE = true, Value = $"{pin.NMIPinWidth}", TileWidth = 1 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.Number, 17, 2, 0, "XDelta", $"{pTarget}_PinXDelta", new nmiCtrlNumber { ParentFld = 12, NoTE = true, Value = $"{pin.NMIxDelta}", TileWidth = 1 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SingleEnded, 18, 0, 0, "TID", null, new nmiCtrlSingleEnded{ ParentFld = 12, NoTE = true, Value = $"{MyBaseThing.cdeMID}", TileWidth=1 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.PropertyPicker, 19, 2, 0, "Pin Property", $"{pTarget}_PinProperty", new nmiCtrlPropertyPicker { ParentFld = 12, NoTE = true, Value = $"{pin.PinProperty}", TileWidth = 5, ThingFld=18 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SmartLabel, 20, 0, 0, "Pin Type", null, new nmiCtrlSmartLabel { ParentFld=12, NoTE = true, Value = $"UA: {pin.PinType}", FontSize = 20, TileFactorY = 2 });
+                MyPinOverrideUpdate = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 22, 2, 0, "Update Pin", null, new nmiCtrlTileButton { ParentFld=12, TileWidth = 4, NoTE = true, ClassName = "cdeGoodActionButton" });
+                MyPinOverrideUpdate.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, (sender, obj) =>
+                {
+                    try
+                    {
+                        var pmsg = obj as TheProcessMessage;
+                        if (pmsg == null) return;
+
+                        var pinID = pTarget.Split('_')[1];
+                        var pin = MyBaseThing.GetPin(pinID);
+
+                        var tP = new ThePinOR();
+                        tP.PinOverrides=0;
+                        if (MyBaseThing.GetProperty($"{pTarget}_PinOverrides", false) == null)
+                        {
+                            tP.oNMIPinLocation = pin.NMIPinLocation;
+                            tP.oNMIPinPosition = pin.NMIPinPosition;
+                            tP.oNMIPinWidth = pin.NMIPinWidth;
+                            tP.oNMIxDelta = pin.NMIxDelta;
+                            tP.oPinProperty = pin.PinProperty;
+                        }
+
+                        object tprop = MyBaseThing.GetProperty($"{pTarget}_PinLocation", false)?.GetValue();
+                        if (tprop != null && pin.NMIPinLocation != (ThePin.ePinLocation)CU.CInt(tprop))
+                        {
+                            tP.NMIPinLocation = (ThePin.ePinLocation)CU.CInt(tprop);
+                            pin.NMIPinLocation = tP.NMIPinLocation;
+                            tP.PinOverrides |= 1;
+                        }
+                        tprop = $"{MyBaseThing.GetProperty($"{pTarget}_PinPosition", false)?.GetValue()}";
+                        if (tprop!=null && pin.NMIPinPosition != CU.CInt(tprop))
+                        {
+                            tP.NMIPinPosition = CU.CInt(tprop);
+                            pin.NMIPinPosition = tP.NMIPinPosition;
+                            tP.PinOverrides |= 2;
+                        }
+                        tprop = $"{MyBaseThing.GetProperty($"{pTarget}_PinWidth", false)?.GetValue()}";
+                        if (tprop!=null && pin.NMIPinWidth != CU.CInt(tprop) && CU.CInt(tprop)>0)
+                        {
+                            tP.NMIPinWidth = CU.CInt(tprop);
+                            pin.NMIPinWidth = tP.NMIPinWidth;
+                            tP.PinOverrides |= 4;
+                        }
+                        tprop = $"{MyBaseThing.GetProperty($"{pTarget}_PinXDelta", false)?.GetValue()}";
+                        if (tprop!=null && pin.NMIxDelta != CU.CInt(tprop))
+                        {
+                            tP.NMIxDelta = CU.CInt(tprop);
+                            pin.NMIxDelta = tP.NMIxDelta;
+                            tP.PinOverrides |= 8;
+                        }
+                        tprop = $"{MyBaseThing.GetProperty($"{pTarget}_PinProperty", false)?.GetValue()}";
+                        if (tprop!=null && pin.PinProperty!=$"{tprop}")
+                        {
+                            tP.PinProperty = $"{tprop}";
+                            pin.PinProperty = tP.PinProperty;
+                            tP.PinOverrides |= 16;
+                        }
+
+                        if (tP.PinOverrides!=0)
+                        {
+                            var t = CU.SerializeObjectToJSONString(tP);
+                            MyBaseThing.SetProperty($"{pTarget}_PinOverrides", t);
+                        }
+                    }
+                    catch
+                    {
+                        //indended for now
+                    }
+                });
+                MyPinOverrideClear = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 23, 2, 0, "Clear", null, new nmiCtrlTileButton { ParentFld=12, TileWidth = 2, NoTE = true, ClassName = "cdeBadActionButton", AreYouSure="Are you sure to reset the overrides?" });
+                MyPinOverrideClear.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, (sender, obj) =>
+                {
+                    try
+                    {
+                        var pOver = $"{MyBaseThing.GetProperty($"{pTarget}_PinOverrides", false)?.GetValue()}";
+                        if (!string.IsNullOrEmpty(pOver))
+                        {
+                            var pinID = pTarget.Split('_')[1];
+                            var firstPin = MyBaseThing.GetPin(pinID);
+                            ThePinOR tp = CU.DeserializeJSONStringToObject<ThePinOR>(pOver);
+                            if ((tp.PinOverrides & 1) != 0)
+                                firstPin.NMIPinLocation = tp.oNMIPinLocation;
+                            if ((tp.PinOverrides & 2) != 0)
+                                firstPin.NMIPinPosition = tp.oNMIPinPosition;
+                            if ((tp.PinOverrides & 4) != 0)
+                                firstPin.NMIPinWidth = tp.oNMIPinWidth;
+                            if ((tp.PinOverrides & 8) != 0)
+                                firstPin.NMIxDelta = tp.oNMIxDelta;
+                            if ((tp.PinOverrides & 16) != 0)
+                                firstPin.PinProperty = tp.oPinProperty;
+                            MyBaseThing.RemoveProperty($"{pTarget}_PinOverrides");
+                        }
+                        TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Pin ({pTarget}) overrides removed."));
+                    }
+                    catch
+                    {
+                        //indended for now
+                    }
+                });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TextArea, 24, 0, 0, "Is Connected to", null, new nmiCtrlTextArea { NoTE = true, Value = $"{tIC}", TileHeight = 2, FontSize = 12 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ComboBox, 25, 2, MyBaseThing.cdeA, "Select a Compatible Pin", $"{pTarget}_NewConnection", new nmiCtrlComboBox { TileWidth = 5, NoTE = true, Options = tCompatPins });
+                MyConnectionAdded = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 26, 2, 0, null, null, new nmiCtrlTileButton { TileWidth = 1, Thumbnail = "FA2:002b", NoTE = true, ClassName = "cdeGoodActionButton" });
                 MyConnectionAdded.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, (sender, obj) =>
                 {
                     try
@@ -496,9 +642,9 @@ namespace nsCDEngine.Engines.ThingService
                     }
                 });
 
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, 17, 0x2, 0x0, "Pin Source-Thing", $"{pTarget}_ThgSource", new nmiCtrlThingPicker() { NoTE = true, Value=$"{MyBaseThing.GetProperty($"{pTarget}_ThgSource", false)}" });
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.PropertyPicker, 18, 0x2, 0x0, "Pin Source-Property", $"{pTarget}_ThgProp", new nmiCtrlPropertyPicker() { TileWidth = 5, Value= $"{MyBaseThing.GetProperty($"{pTarget}_ThgProp", false)}", NoTE = true, ThingFld = 17 });
-                MyPinMapperButton = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 19, 2, 0, "Update", null, new nmiCtrlTileButton { TileWidth = 1, NoTE = true, ClassName = "cdeGoodActionButton" });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, 27, 0x2, 0x0, "Pin Source-Thing", $"{pTarget}_ThgSource", new nmiCtrlThingPicker() { NoTE = true, Value=$"{MyBaseThing.GetProperty($"{pTarget}_ThgSource", false)}", TileWidth=3 });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.PropertyPicker, 28, 0x2, 0x0, "Pin Source-Property", $"{pTarget}_ThgProp", new nmiCtrlPropertyPicker() { TileWidth = 2, Value= $"{MyBaseThing.GetProperty($"{pTarget}_ThgProp", false)}", NoTE = true, ThingFld = 27 });
+                MyPinMapperButton = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, 29, 2, 0, null, null, new nmiCtrlTileButton { TileWidth = 1, Thumbnail = "FA2:f021", NoTE = true, ClassName = "cdeGoodActionButton" });
                 MyPinMapperButton.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, pTarget, (sender, obj) =>
                 {
                     var pmsg=(obj as TheProcessMessage);
@@ -512,6 +658,8 @@ namespace nsCDEngine.Engines.ThingService
             return false;
         }
 
+        protected TheFieldInfo MyPinOverrideUpdate = null;
+        protected TheFieldInfo MyPinOverrideClear = null;
         protected TheFieldInfo MyConnectionAdded = null;
         protected TheFieldInfo MyPinMapperButton = null;
 
@@ -859,6 +1007,10 @@ namespace nsCDEngine.Engines.ThingService
         /// Event fired when a user right clicks an NMI control in Edit Mode
         /// </summary>
         public const string OnShowEditor = "OnShowEditor";
+        /// <summary>
+        /// Event fired when a user closes the NMI Editor
+        /// </summary>
+        public const string OnHideEditor = "OnHideEditor";
     }
 
     /// <summary>
