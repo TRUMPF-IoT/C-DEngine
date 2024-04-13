@@ -510,6 +510,7 @@ namespace nsCDEngine.Engines.ThingService
                     foreach (var firstPinType in firstPin.CanConnectToPinType)
                     {
                         if (secondPin.CanConnectToPinType.Contains(firstPinType) && firstPin.IsInbound != secondPin.IsInbound &&
+                            !firstPin.IsConnectedToPin(secondPin) &&
                                 (firstPin.MaxConnections == 0 || firstPin.PinConnectionCnt() < firstPin.MaxConnections) &&
                                 (secondPin.MaxConnections == 0 || secondPin.PinConnectionCnt() < secondPin.MaxConnections))
                         {
@@ -550,6 +551,10 @@ namespace nsCDEngine.Engines.ThingService
                             if ((tp.PinOverrides & 8) != 0)
                                 firstPin.NMIxDelta = tp.NMIxDelta;
                             if ((tp.PinOverrides & 16) != 0)
+                                firstPin.NMIPinHeight = tp.NMIPinHeight;
+                            if ((tp.PinOverrides & 32) != 0)
+                                firstPin.NMIyDelta = tp.NMIyDelta;
+                            if ((tp.PinOverrides & 64) != 0)
                                 firstPin.PinProperty = tp.PinProperty;
                         }
                     }
@@ -669,12 +674,12 @@ namespace nsCDEngine.Engines.ThingService
 
                     var sourceT = pDevs[i].GetBaseThing().GetBaseThing();
                     var allSourcePins = sourceT.GetAllPins();
-                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList(); //Starting from "Out" pins
+                    var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList(); //Starting from "Out" pins as SourcePins
                     foreach (var sourcePin in sourceOutPins)
                     {
                         string PinTypeFilter = ThePropertyBag.PropBagGetValue(pProperties, "PinTypeFilter");
                         if (!string.IsNullOrEmpty(PinTypeFilter) && sourcePin.PinType != PinTypeFilter) continue;
-                        var targetInPins = sourcePin?.GetConnectedPins();   //To their connected Pins
+                        var targetInPins = sourcePin?.GetConnectedPins();   //To their connected Pins "In" Pins as TargetPins
                         if (targetInPins?.Count > 0)
                         {
                             bool sourceHasRightPin = allSourcePins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Right);
@@ -691,65 +696,82 @@ namespace nsCDEngine.Engines.ThingService
                                 bool targetHasLeftPin = targetT.GetAllPins().Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
 
                                 var sLeft = sourcePin.NMIPinLocation == ThePin.ePinLocation.Right ?
-                                    sourceFace.XPos + sourcePin.NMIxDelta + (sourceFace.XLen + (78 * ((sourceHasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0)))) - (78- sourcePin.NMIPinWidth) :
-                                    sourceFace.XPos + sourcePin.NMIxDelta + (78 - sourcePin.NMIPinWidth); 
+                                    sourceFace.XPos + sourcePin.NMIxDelta + (sourceFace.XLen + (78 * ((sourceHasLeftPin ? 1 : 0) + (sourceHasRightPin ? 1 : 0)))) - (78 - sourcePin.NMIPinWidth) :
+                                    sourceFace.XPos + sourcePin.NMIxDelta + (78 - sourcePin.NMIPinWidth);
                                 var tLeft = targetPin.NMIPinLocation == ThePin.ePinLocation.Right ?
                                     targetFace.XPos + targetPin.NMIxDelta + (targetFace.XLen + (78 * ((targetHasLeftPin ? 1 : 0) + (targetHasRightPin ? 1 : 0)))) - (78 - targetPin.NMIPinWidth) :
                                     targetFace.XPos + targetPin.NMIxDelta + (78 - targetPin.NMIPinWidth);
 
-                                var left = sLeft > tLeft ? tLeft : sLeft;
-
                                 var sTop = sourceFace.YPos + ((sourcePin.NMIPinPosition * 39) + 15) + sourcePin.NMIyDelta;
                                 var tTop = targetFace.YPos + ((targetPin.NMIPinPosition * 39) + 15) + targetPin.NMIyDelta;
 
-                                string dir = "up";
-                                var top = tTop;
-                                if (sTop < tTop)
-                                {
-                                    top = sTop;
-                                    dir = "down";
-                                }
-                                int x = left;
-                                int y = top;
-                                int xl = Math.Abs(tLeft - sLeft);
+                                int xl = Math.Abs(sLeft - tLeft);
                                 if (xl < lineWidth) xl = lineWidth;
                                 int yl = Math.Abs(sTop - tTop);
                                 if (yl < lineWidth) yl = lineWidth;
+
+                                bool bDrawAtTarget = false;// sourcePin.DrawLineAtTarget;
+                                if (sourcePin.NMIPinLocation == ThePin.ePinLocation.Right && tLeft > sLeft)
+                                    bDrawAtTarget = true;
+                                if (sourcePin.NMIPinLocation == ThePin.ePinLocation.Left && tLeft < sLeft)
+                                    bDrawAtTarget = true;
+                                if (targetPin.NMIPinLocation == ThePin.ePinLocation.Right && tLeft > sLeft)
+                                    bDrawAtTarget = true;
+                                if (targetPin.NMIPinLocation == ThePin.ePinLocation.Left && tLeft < sLeft)
+                                    bDrawAtTarget = true;
+
                                 if (yl > lineWidth)
                                 {
-                                    if (!sourcePin.DrawLineAtTarget)
-                                        x = sLeft;
+                                    #region MoveData
+                                    string dir = "up";
+                                    if (sTop < tTop)
+                                        dir = "down";
                                     StringBuilder moveData = new();
                                     int movecnt = ((yl + lineWidth) / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {10 * 2}s;\"></div>");
+                                    #endregion
+
+                                    int x = sLeft;
+                                    int y = sTop;
+                                    if (bDrawAtTarget)
+                                        x = tLeft;
+                                    if (sTop > tTop)
+                                        y = tTop;
+
                                     AddPinLine(MyLiveForm, $"line{targetT}v_{sourcePin.PinName.Replace(' ', '_')}",
-                                        x + (sourcePin.DrawLineAtTarget && xl>lineWidth ? xl : 0),
+                                        x,
                                         y,
                                         lineWidth,
                                         yl + lineWidth,
                                         moveData.ToString());
                                     GetProperty($"line{targetT}v_{sourcePin.PinName.Replace(' ', '_')}", true).cdeE |= 8;
                                 }
+
                                 if (xl > lineWidth)
                                 {
-                                    //y = top;
-                                    x = sLeft;
+                                    #region MoveData
+                                    string dir = "left";
                                     if (tLeft > sLeft)
-                                    {
                                         dir = "right";
-                                    }
                                     else
                                     {
-                                        dir = "left";
-                                        if (sourcePin.DrawLineAtTarget)
+                                        if (bDrawAtTarget)
                                             dir = "right";
-                                        x = tLeft;
                                     }
                                     StringBuilder moveData = new();
                                     int movecnt = (xl / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
                                         moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
+                                    #endregion
+
+                                    int x = sLeft;
+                                    int y = tTop;
+                                    if (bDrawAtTarget)
+                                        y = sTop;
+                                    if (sLeft > tLeft)
+                                        x = tLeft;
+
                                     AddPinLine(MyLiveForm, $"line{targetT}h_{sourcePin.PinName.Replace(' ', '_')}",
                                         x,
                                         y,

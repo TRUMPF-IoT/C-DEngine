@@ -228,7 +228,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 if (ResetFirst)
                     IsConnectedTo.Clear();
-                if (pPin!=null && !IsConnectedTo.Contains(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections) && CanConnectToPinType.Contains(pPin.PinType))
+                if (pPin!=null && !IsConnectedToPin(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections) && CanConnectToPinType.Contains(pPin.PinType))
                 {
                     IsConnectedTo.Add(pPin);
                     var tThing = TheThingRegistry.GetThingByMID(cdeO);
@@ -244,9 +244,21 @@ namespace nsCDEngine.Engines.ThingService
         {
             lock (lockPinConnection)
             {
-                if (IsConnectedTo.Contains(pPin))
+                if (IsConnectedTo.Exists(s => s.cdeO == pPin.cdeO && s.PinName == pPin.PinName))
                 {
                     IsConnectedTo.Remove(pPin);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal bool IsConnectedToPin(ThePin pPin)
+        {
+            lock (lockPinConnection)
+            {
+                if (IsConnectedTo.Exists(s => s.cdeO == pPin.cdeO && s.PinName == pPin.PinName))
+                {
                     return true;
                 }
             }
