@@ -595,6 +595,8 @@ namespace nsCDEngine.Engines.ThingService
                         {
                             var t = CU.SerializeObjectToJSONString(tP);
                             MyBaseThing.SetProperty($"{pTarget}_PinOverrides", t);
+                            TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Pin ({pTarget}) overrides updated."));
+                            (MyBaseThing.GetObject() as ICDEThing)?.FireEvent(eThingEvents.PinUpdated, MyBaseThing, pin, true);
                         }
                     }
                     catch
@@ -628,8 +630,9 @@ namespace nsCDEngine.Engines.ThingService
                             if ((tp.PinOverrides & 64) != 0)
                                 firstPin.PinProperty = tp.oPinProperty;
                             MyBaseThing.RemoveProperty($"{pTarget}_PinOverrides");
+                            TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Pin ({pTarget}) overrides removed."));
+                            (MyBaseThing.GetObject() as ICDEThing)?.FireEvent(eThingEvents.PinUpdated, MyBaseThing, firstPin, true);
                         }
-                        TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Pin ({pTarget}) overrides removed."));
                     }
                     catch
                     {
@@ -660,6 +663,7 @@ namespace nsCDEngine.Engines.ThingService
                             MyBaseThing.RemovePinConnections(pin, [tTargetPin]);
                             TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Pin ({pTarget}) connection removed."));
                             MyBaseThing.RemoveProperty($"{pTarget}_NewConnection");
+                            (MyBaseThing.GetObject() as ICDEThing)?.FireEvent(eThingEvents.PinUpdated, MyBaseThing, tSourcePin, true);
                             return;
                         }
                         if (tPinParts.Length > 1)
@@ -669,6 +673,7 @@ namespace nsCDEngine.Engines.ThingService
                             ThePin.ConnectPins(tTargetPin, tSourcePin);
                             MyBaseThing.RemoveProperty($"{pTarget}_NewConnection");
                             TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Pin ({pTarget}) connected."));
+                            (MyBaseThing.GetObject() as ICDEThing)?.FireEvent(eThingEvents.PinUpdated, MyBaseThing, tSourcePin, true);
                         }
                     }
                     catch { 
@@ -929,6 +934,10 @@ namespace nsCDEngine.Engines.ThingService
     /// </summary>
     public static class eThingEvents
     {
+        /// <summary>
+        /// Fired when a Pin was updated
+        /// </summary>
+        public const string PinUpdated = "PinUpdated";
         /// <summary>
         /// Fired when a Pin Value was updated
         /// </summary>
