@@ -193,7 +193,7 @@ namespace nsCDEngine.Engines.NMIService
                 var tMods = pInfo.ModelID.Split(';');
                 foreach (string tM in tMods)
                 {
-                    var tS = TheCommonUtils.GetSystemResource(null, $"FormORs\\{tM}.cdeFOR");
+                    var tS = TheCommonUtils.GetSystemResource(null, $"FormORs\\{tM}-{TheCommonUtils.cdeGuidToString(FormId)}.cdeFOR");
                     if (tS != null)
                     {
                         string tPlS1 = TheCommonUtils.CArray2UTF8String(tS); 

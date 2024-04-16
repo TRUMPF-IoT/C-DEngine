@@ -1026,7 +1026,7 @@ namespace nsCDEngine.Engines.NMIService
                         var form = GetFormById(TheCommonUtils.CGuid(tNewScene.ID));
                         if (!string.IsNullOrEmpty(form?.ModelID))
                         {
-                            tTargetDir = $"FormORs\\{form.ModelID}.cdeFOR";
+                            tTargetDir = $"FormORs\\{form.ModelID}-{TheCommonUtils.cdeGuidToString(form.cdeMID)}.cdeFOR";
                             TheCommonUtils.SaveBlobToDisk(pMsg.Message, new[] { "", tTargetDir }, null);
                         }
                         var group = TheThingRegistry.GetThingByProperty("*", Guid.Empty, "MyGroupMID_ID", TheCommonUtils.CGuid(tNewScene.ID).ToString());
@@ -1047,7 +1047,7 @@ namespace nsCDEngine.Engines.NMIService
                             var form = GetFormById(TheCommonUtils.CGuid(cmd[1]));
                             if (!string.IsNullOrEmpty(form?.ModelID))
                             {
-                                tTargetDir = $"FormORs\\{form.ModelID}.cdeFOR";
+                                tTargetDir = $"FormORs\\{form.ModelID}-{TheCommonUtils.cdeGuidToString(form.cdeMID)}.cdeFOR";
                                 TheCommonUtils.DeleteFromDisk(tTargetDir, "");
                             }
                         }
