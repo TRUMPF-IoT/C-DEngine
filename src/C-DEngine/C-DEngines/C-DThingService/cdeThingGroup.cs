@@ -669,6 +669,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (pDevs?.Count > 0)
             {
+                MyLiveForm.FldStart = 8000;
                 int lineWidth = CU.CInt(ThePropertyBag.PropBagGetValue(pProperties, "LineWidth"));
                 if (lineWidth == 0) lineWidth = 6;
                 for (int i = 0; i < pDevs.Count; i++)
@@ -834,9 +835,9 @@ namespace nsCDEngine.Engines.ThingService
             }
         }
 
-        public virtual void AddPinLine(TheFormInfo MyLiveForm, string pDataName, int x, int y, int xl, int yl, string moveData, string pClassname = null)
+        public virtual TheFieldInfo AddPinLine(TheFormInfo MyLiveForm, string pDataName, int x, int y, int xl, int yl, string moveData, string pClassname = null)
         {
-            NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, pDataName,
+            return NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, pDataName,
                     new nmiCtrlFacePlate
                     {
                         NoTE = true,
