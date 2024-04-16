@@ -79,6 +79,10 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         public void RemoveAllThingsInGroup()
         {
+            foreach (var thing in MyGroupThings.Values)
+            {
+                thing.GetBaseThing().SetProperty("cdeGroupID", Guid.Empty);
+            }
             MyGroupThings.Clear();
         }
 
@@ -104,7 +108,7 @@ namespace nsCDEngine.Engines.ThingService
             return tOld.Length!=tRes.Length;
         }
 
-        private void InitGTP()
+        public void InitGTP()
         {
             lock (MyGroupThings.MyLock)
             {
@@ -365,7 +369,7 @@ namespace nsCDEngine.Engines.ThingService
 
             if (AddRefresh)
             {
-                var tBut = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, TileWidth = 1, TileHeight = 1, Left = 0, Top = 0, NoTE = true, ClassName = "enTransBut" });
+                var tBut = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, RenderTarget=$"PINT{CU.cdeGuidToString(MyGroupForm.cdeMID)}", TileWidth = 1, TileHeight = 1, TileFactorY=2, Left = 38, Top = 0, NoTE = true, ClassName = "enTransBut" });
                 tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, pmsg) =>
                 {
                     ReloadForm();
@@ -490,16 +494,19 @@ namespace nsCDEngine.Engines.ThingService
         }
 
         #endregion
-
+        public virtual List<ThePin> FindCompatiblePins(ThePin firstPin)
+        {
+            return FindCompatiblePins(GetAllGroupThings(),firstPin);
+        }
         /// <summary>
         /// Finds Compatible Pins of a given Pin in the current ThingGroup
         /// </summary>
-        /// <param name="firstPin"></param>
+        /// <param name="AllDevs">Collection of ThingBases to look for compatible pins</param>
+        /// <param name="firstPin">PinType of Pin to look for</param>
         /// <returns></returns>
-        public virtual List<ThePin> FindCompatiblePins(ThePin firstPin)
+        public virtual List<ThePin> FindCompatiblePins(IEnumerable<TheThingBase> AllDevs, ThePin firstPin)
         {
             var ret = new List<ThePin>();
-            var AllDevs = GetAllGroupThings();
             firstPin.CompatiblePins.Clear();
             foreach (var secondRound in AllDevs)
             {
@@ -562,8 +569,7 @@ namespace nsCDEngine.Engines.ThingService
                     if (AutoSetConnections && res.Count == 1 && (pPinTypes?.Any()!=true || pPinTypes.Contains(firstPin.PinType)))
                     {
                         var secondPin = res[0];
-                        firstRound.GetBaseThing().AddPinConnections(firstPin, new List<ThePin> { secondPin });
-                        TheThingRegistry.GetThingByMID(secondPin.cdeO)?.AddPinConnections(secondPin, new List<ThePin> { firstPin });
+                        ThePin.ConnectPins(firstPin, secondPin);
                     }
                     TheThingRegistry.GetThingByMID(firstPin.cdeO)?.UpdatePinMapper($"PIN_{firstPin.PinName}");
                 }
@@ -592,10 +598,7 @@ namespace nsCDEngine.Engines.ThingService
                                 {
                                     var secondPin = tt.GetPin(p[1]);
                                     if (secondPin != null)
-                                    {
-                                        gThing.GetBaseThing().AddPinConnections(firstPin, new List<ThePin> { secondPin });
-                                        tt?.AddPinConnections(firstPin, new List<ThePin> { firstPin });
-                                    }
+                                        ThePin.ConnectPins(firstPin,secondPin);
                                 }
                             }
                         }
