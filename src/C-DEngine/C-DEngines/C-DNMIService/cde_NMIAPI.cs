@@ -707,6 +707,15 @@ namespace nsCDEngine.Engines.NMIService
             tFlds.Add("CANVAS", tFL);
             if (!TheBaseAssets.MyServiceHostInfo.IsCloudService)
             {
+                tFL.RegisterEvent2(eUXEvents.OnHideEditor, (pMsg, para) =>
+                {
+                    var tNMIEditorForm = GetNMIEditorForm();
+                    if (tNMIEditorForm != null)
+                    {
+                        AddScreenButton?.UnregisterUXEvent(pBaseThing, eUXEvents.OnClick, "add",null);
+                        pMsg.Cookie = true;
+                    }
+                });
                 tFL.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, para) =>
                 {
                     var tNMIEditorForm = GetNMIEditorForm();
@@ -722,8 +731,8 @@ namespace nsCDEngine.Engines.NMIService
                         }
                         AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.SmartLabel, 2004, 0xA2, 0x80, null, null, new nmiCtrlSmartLabel() { NoTE = true, FontSize = 24, TileFactorY = 2, Text = "Select a Thing to Add", TileWidth = 5 });
                         AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.ComboBox, 2005, 0xA2, 0x80, null, $"newthing", new nmiCtrlComboBox() { NoTE = true, Options = tOpt, TileWidth = 5 });
-                        var ttt = AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
-                        ttt.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
+                        AddScreenButton = AddSmartControl(pBaseThing, tNMIEditorForm, eFieldType.TileButton, 2010, 2, 0x80, "Add Thing to Screen", null, new nmiCtrlTileButton { NoTE = true, TileWidth = 5, ClassName = "cdeGoodActionButton" });
+                        AddScreenButton.RegisterUXEvent(pBaseThing, eUXEvents.OnClick, "add", (sender, para) =>
                         {
                             var tMsg = para as TheProcessMessage;
                             var tEdThing = GetNMIEditorThing();
@@ -750,6 +759,7 @@ namespace nsCDEngine.Engines.NMIService
             }
             return tFlds;
         }
+        private static TheFieldInfo AddScreenButton;
 
         private static bool AddFlexibleNMIControls(TheThing pBaseThing, Guid pFormGuid, TheFormInfo pNMIForm)
         {

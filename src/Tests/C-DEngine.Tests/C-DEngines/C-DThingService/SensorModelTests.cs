@@ -95,7 +95,7 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
         public void TestSensorProviderModel()
         {
             var deviceTypes = TheThingRegistry.GetAllDeviceTypesByCap(nsCDEngine.ViewModels.eThingCaps.SensorProvider, true);
-            Assert.Greater(deviceTypes.Count, 0, "No sensor provider device types found");
+            Assert.That(deviceTypes, Is.Not.Empty, "No sensor provider device types found");
             foreach (var deviceType in deviceTypes)
             {
                 TestInfo testInfo;
@@ -105,17 +105,17 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
                 if (testInfo.PreTestSubscriptions != null)
                 {
                     var subscribeResponse = provider.SubscribeSensorsAsync(new TheThing.MsgSubscribeSensors { SubscriptionRequests = testInfo.PreTestSubscriptions, ReplaceAll = false, DefaultTargetThing = provider }).Result;
-                    Assert.IsNotNull(subscribeResponse, "Timeout or subscribe message not implemented by plug-in");
-                    Assert.IsTrue(string.IsNullOrEmpty(subscribeResponse.Error), $"Error from SubscribeSensors: {subscribeResponse.Error}");
+                    Assert.That(subscribeResponse, Is.Not.Null, "Timeout or subscribe message not implemented by plug-in");
+                    Assert.That(string.IsNullOrEmpty(subscribeResponse.Error), $"Error from SubscribeSensors: {subscribeResponse.Error}");
                 }
 
                 int subscriptionCount = BrowseAndSubscribeAllSensors(provider, null, testInfo.MaximumBrowseTags, testInfo.MinimumBrowseTags, out var browseResponse, out var sensorSubscriptionResponse, out var successfullSubscriptions);
 
                 var getSubscriptionResponse = provider.GetSensorProviderSubscriptionsAsync().Result;
-                Assert.IsNotNull(getSubscriptionResponse, "Timeout or get subscriptions message not implemented by plug-in");
-                Assert.IsTrue(string.IsNullOrEmpty(getSubscriptionResponse.Error), $"Error from GetSensorSubscriptions: {getSubscriptionResponse.Error}");
+                Assert.That(getSubscriptionResponse, Is.Not.Null, "Timeout or get subscriptions message not implemented by plug-in");
+                Assert.That(string.IsNullOrEmpty(getSubscriptionResponse.Error), $"Error from GetSensorSubscriptions: {getSubscriptionResponse.Error}");
 
-                Assert.AreEqual(subscriptionCount, getSubscriptionResponse.Subscriptions.Count, $"Subscription count doesn't match for {deviceType}");
+                Assert.That(getSubscriptionResponse.Subscriptions, Has.Count.EqualTo(subscriptionCount), $"Subscription count doesn't match for {deviceType}");
 
                 if (sensorSubscriptionResponse.SubscriptionStatus.Count > 0)
                 {
@@ -126,9 +126,9 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
                     };
                     var unsubscribeResponse = provider.UnsubscribeSensorsAsync(unsubscribeRequest).Result;
 
-                    Assert.IsNotNull(unsubscribeResponse, "Timeout or unsubscribe message not implemented by plug-in");
-                    Assert.IsTrue(string.IsNullOrEmpty(unsubscribeResponse.Error), $"{deviceType}: Error from UnsubscribeSensors for {subscriptionIdToUnsubscribe}: {unsubscribeResponse.Error}");
-                    Assert.AreEqual(0, unsubscribeResponse.Failed?.Count ?? 0);
+                    Assert.That(unsubscribeResponse, Is.Not.Null, "Timeout or unsubscribe message not implemented by plug-in");
+                    Assert.That(string.IsNullOrEmpty(unsubscribeResponse.Error), $"{deviceType}: Error from UnsubscribeSensors for {subscriptionIdToUnsubscribe}: {unsubscribeResponse.Error}");
+                    Assert.That(unsubscribeResponse.Failed?.Count ?? 0, Is.EqualTo(0));
                 }
                 else
                 {
@@ -142,7 +142,7 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
         public void TestSensorConsumerModel()
         {
             var deviceTypes = TheThingRegistry.GetAllDeviceTypesByCap(nsCDEngine.ViewModels.eThingCaps.SensorConsumer, true);
-            Assert.Greater(deviceTypes.Count, 0, "No sensor consumer device types found");
+            Assert.That(deviceTypes, Is.Not.Empty, "No sensor consumer device types found");
 
             var sensorThing = new TheThing { EngineName = "CDMyVThings.TheVThings", DeviceType = "Memory Tag", ID="TestSensorThing01" };
             TheThingRegistry.RegisterThing(sensorThing);
@@ -171,55 +171,55 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
                 {
                     var subscribeToThingsResponse = consumer.SubscribeToThingsAsync(thingSubscriptions).Result;
 
-                    Assert.NotNull(subscribeToThingsResponse, $"Timeout or subscribe to things message not implemented by consumer {deviceType}");
-                    Assert.IsTrue(string.IsNullOrEmpty(subscribeToThingsResponse.Error), $"Error from consumer {deviceType}: {subscribeToThingsResponse.Error}");
-                    Assert.GreaterOrEqual(thingSubscriptions.Count, subscribeToThingsResponse.SubscriptionStatus.Count, $"Not enough status reports for {deviceType}");
+                    Assert.That(subscribeToThingsResponse, Is.Not.Null, $"Timeout or subscribe to things message not implemented by consumer {deviceType}");
+                    Assert.That(string.IsNullOrEmpty(subscribeToThingsResponse.Error), $"Error from consumer {deviceType}: {subscribeToThingsResponse.Error}");
+                    Assert.That(thingSubscriptions, Has.Count.GreaterThanOrEqualTo(subscribeToThingsResponse.SubscriptionStatus.Count), $"Not enough status reports for {deviceType}");
                     foreach (var subStatus in subscribeToThingsResponse.SubscriptionStatus)
                     {
-                        Assert.IsTrue(string.IsNullOrEmpty(subStatus.Error), $"Error from consumer {deviceType}: {subStatus.Error}");
-                        Assert.IsTrue(subStatus.Subscription.SubscriptionId.HasValue && subStatus.Subscription.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {subStatus.Subscription.SubscriptionId}");
+                        Assert.That(string.IsNullOrEmpty(subStatus.Error), $"Error from consumer {deviceType}: {subStatus.Error}");
+                        Assert.That(subStatus.Subscription.SubscriptionId.HasValue && subStatus.Subscription.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {subStatus.Subscription.SubscriptionId}");
                     }
                 }
                 // TODO verify that subscriptions are actually getting consumed (at least for some consumer plug-ins)
                 {
                     var getSubscriptionsResponse = consumer.GetThingSubscriptionsAsync().Result;
 
-                    Assert.NotNull(getSubscriptionsResponse, $"Timeout or get things message not implemented by consumer {deviceType}");
-                    Assert.IsTrue(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
-                    Assert.AreEqual(thingSubscriptions.Count, getSubscriptionsResponse.ThingSubscriptions.Count, $"Missing subscriptions for {deviceType}");
+                    Assert.That(getSubscriptionsResponse, Is.Not.Null, $"Timeout or get things message not implemented by consumer {deviceType}");
+                    Assert.That(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
+                    Assert.That(getSubscriptionsResponse.ThingSubscriptions, Has.Count.EqualTo(thingSubscriptions.Count), $"Missing subscriptions for {deviceType}");
                     foreach (var sub in getSubscriptionsResponse.ThingSubscriptions)
                     {
-                        Assert.IsTrue(sub.SubscriptionId.HasValue && sub.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {sub.SubscriptionId}");
+                        Assert.That(sub.SubscriptionId.HasValue && sub.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {sub.SubscriptionId}");
                     }
 
                     var unsubscribeResponse = consumer.UnsubscribeFromThingsAsync(getSubscriptionsResponse.ThingSubscriptions.Select(sub => sub.SubscriptionId ?? Guid.Empty).Take(1)).Result;
-                    Assert.NotNull(unsubscribeResponse, $"Timeout or unsubscribe things message not implemented by consumer {deviceType}");
-                    Assert.IsTrue(string.IsNullOrEmpty(unsubscribeResponse.Error), $"Error from consumer {deviceType}: {unsubscribeResponse.Error}");
-                    Assert.IsTrue(unsubscribeResponse.Failed != null && unsubscribeResponse.Failed.Count == 0, $"Errors during unsubscribe from consumer {deviceType}: {unsubscribeResponse.Failed.Aggregate("", (s, us) => $"{s} {us.Subscription.SubscriptionId}:{us.Error}")}");
+                    Assert.That(unsubscribeResponse, Is.Not.Null, $"Timeout or unsubscribe things message not implemented by consumer {deviceType}");
+                    Assert.That(string.IsNullOrEmpty(unsubscribeResponse.Error), $"Error from consumer {deviceType}: {unsubscribeResponse.Error}");
+                    Assert.That(unsubscribeResponse.Failed != null && unsubscribeResponse.Failed.Count == 0, $"Errors during unsubscribe from consumer {deviceType}: {unsubscribeResponse.Failed.Aggregate("", (s, us) => $"{s} {us.Subscription.SubscriptionId}:{us.Error}")}");
                 }
 
                 {
                     var getSubscriptionsResponse = consumer.GetThingSubscriptionsAsync().Result;
 
-                    Assert.NotNull(getSubscriptionsResponse, $"Timeout or get things message not implemented by consumer {deviceType}");
-                    Assert.IsTrue(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
-                    Assert.AreEqual(thingSubscriptions.Count - 1, getSubscriptionsResponse.ThingSubscriptions.Count, $"Missing subscriptions for {deviceType}");
+                    Assert.That(getSubscriptionsResponse, Is.Not.Null, $"Timeout or get things message not implemented by consumer {deviceType}");
+                    Assert.That(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
+                    Assert.That(getSubscriptionsResponse.ThingSubscriptions, Has.Count.EqualTo(thingSubscriptions.Count - 1), $"Missing subscriptions for {deviceType}");
                     foreach (var sub in getSubscriptionsResponse.ThingSubscriptions)
                     {
-                        Assert.IsTrue(sub.SubscriptionId.HasValue && sub.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {sub.SubscriptionId}");
+                        Assert.That(sub.SubscriptionId.HasValue && sub.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {sub.SubscriptionId}");
                     }
 
                     var unsubscribeResponse = consumer.UnsubscribeFromThingsAsync(getSubscriptionsResponse.ThingSubscriptions.Select(sub => sub.SubscriptionId ?? Guid.Empty)).Result;
-                    Assert.NotNull(unsubscribeResponse, $"Timeout or unsubscribe things message not implemented by consumer {deviceType}");
-                    Assert.IsTrue(string.IsNullOrEmpty(unsubscribeResponse.Error), $"Error from consumer {deviceType}: {unsubscribeResponse.Error}");
-                    Assert.IsTrue(unsubscribeResponse.Failed != null && unsubscribeResponse.Failed.Count == 0, $"Errors during unsubscribe from consumer {deviceType}: {unsubscribeResponse.Failed.Aggregate("", (s, us) => $"{s} {us.Subscription.SubscriptionId}:{us.Error}")}");
+                    Assert.That(unsubscribeResponse, Is.Not.Null, $"Timeout or unsubscribe things message not implemented by consumer {deviceType}");
+                    Assert.That(string.IsNullOrEmpty(unsubscribeResponse.Error), $"Error from consumer {deviceType}: {unsubscribeResponse.Error}");
+                    Assert.That(unsubscribeResponse.Failed != null && unsubscribeResponse.Failed.Count == 0, $"Errors during unsubscribe from consumer {deviceType}: {unsubscribeResponse.Failed.Aggregate("", (s, us) => $"{s} {us.Subscription.SubscriptionId}:{us.Error}")}");
                 }
                 {
                     var getSubscriptionsResponse = consumer.GetThingSubscriptionsAsync().Result;
 
-                    Assert.NotNull(getSubscriptionsResponse, $"Timeout or get things message not implemented by consumer {deviceType}");
-                    Assert.IsTrue(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
-                    Assert.AreEqual(0, getSubscriptionsResponse.ThingSubscriptions.Count, $"Leaked subscriptions for {deviceType}");
+                    Assert.That(getSubscriptionsResponse, Is.Not.Null, $"Timeout or get things message not implemented by consumer {deviceType}");
+                    Assert.That(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
+                    Assert.That(getSubscriptionsResponse.ThingSubscriptions, Is.Empty, $"Leaked subscriptions for {deviceType}");
                 }
 
                 if (consumer.DeviceType != eKnownDeviceTypes.IBaseEngine)
@@ -259,20 +259,20 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
                 {
                     var exportedConfig = configThing.GetThingConfigurationAsync(false).Result;
 
-                    Assert.IsNotNull(exportedConfig, $"Timeout or subscribe message not implemented by plug-in: {deviceType}");
+                    Assert.That(exportedConfig, Is.Not.Null, $"Timeout or subscribe message not implemented by plug-in: {deviceType}");
                     //Assert.IsTrue(string.IsNullOrEmpty(exportedConfig.Error)); // TODO Add an error property to TheThingConfiguration?
-                    Assert.AreEqual(subscriptionCount, exportedConfig.SensorSubscriptions?.Count ?? 0);
-                    Assert.Greater(exportedConfig.ConfigurationValues.Count, 0, $"No config properties returned: {deviceType}");
+                    Assert.That(exportedConfig.SensorSubscriptions?.Count ?? 0, Is.EqualTo(subscriptionCount));
+                    Assert.That(exportedConfig.ConfigurationValues, Is.Not.Empty, $"No config properties returned: {deviceType}");
                     var configAsJson = TheCommonUtils.SerializeObjectToJSONString(exportedConfig);
                     WriteLine($"{deviceType}: Generated configuration export with {exportedConfig.ConfigurationValues.Count} settings, {exportedConfig.SensorSubscriptions?.Count ?? 0} sensor subscriptions: " + "{0}", configAsJson);
                 }
                 {
                     var exportedGeneralizedConfig = configThing.GetThingConfigurationAsync(true).Result;
 
-                    Assert.IsNotNull(exportedGeneralizedConfig, $"Timeout or subscribe message not implemented by plug-in: {deviceType}");
+                    Assert.That(exportedGeneralizedConfig, Is.Not.Null, $"Timeout or subscribe message not implemented by plug-in: {deviceType}");
                     //Assert.IsTrue(string.IsNullOrEmpty(exportedConfig.Error)); // TODO Add an error property to TheThingConfiguration?
-                    Assert.AreEqual(subscriptionCount, exportedGeneralizedConfig.SensorSubscriptions?.Count ?? 0);
-                    Assert.Greater(exportedGeneralizedConfig.ConfigurationValues.Count, 0, $"No config properties returned: {deviceType}");
+                    Assert.That(exportedGeneralizedConfig.SensorSubscriptions?.Count ?? 0, Is.EqualTo(subscriptionCount));
+                    Assert.That(exportedGeneralizedConfig.ConfigurationValues, Is.Not.Empty, $"No config properties returned: {deviceType}");
                     var configAsJson = TheCommonUtils.SerializeObjectToJSONString(exportedGeneralizedConfig);
                     WriteLine($"{deviceType}: Generated generalized configuration with {exportedGeneralizedConfig.ConfigurationValues.Count} settings, {exportedGeneralizedConfig.SensorSubscriptions?.Count ?? 0} sensor subscriptions: " + "{0}", configAsJson);
                 }
@@ -292,7 +292,7 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
             var providers = new List<TheThing>();
             {
                 var deviceTypes = TheThingRegistry.GetAllDeviceTypesByCap(nsCDEngine.ViewModels.eThingCaps.SensorProvider, true);
-                Assert.Greater(deviceTypes.Count, 0, "No sensor provider device types found");
+                Assert.That(deviceTypes, Is.Not.Empty, "No sensor provider device types found");
                 foreach (var deviceType in deviceTypes)
                 {
                     TestInfo testInfo;
@@ -302,10 +302,10 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
                     int subscriptionCount = BrowseAndSubscribeAllSensors(provider, sensorThing, testInfo.MaximumBrowseTags, testInfo.MinimumBrowseTags, out var browseResponse, out var sensorSubscriptionResponse, out var successfullSubscriptions);
 
                     var getSubscriptionResponse = provider.GetSensorProviderSubscriptionsAsync().Result;
-                    Assert.IsNotNull(getSubscriptionResponse, "Timeout or get subscriptions message not implemented by plug-in");
-                    Assert.IsTrue(string.IsNullOrEmpty(getSubscriptionResponse.Error), $"Error from GetSensorSubscriptions: {getSubscriptionResponse.Error}");
+                    Assert.That(getSubscriptionResponse, Is.Not.Null, "Timeout or get subscriptions message not implemented by plug-in");
+                    Assert.That(string.IsNullOrEmpty(getSubscriptionResponse.Error), $"Error from GetSensorSubscriptions: {getSubscriptionResponse.Error}");
 
-                    Assert.AreEqual(subscriptionCount, getSubscriptionResponse.Subscriptions.Count);
+                    Assert.That(getSubscriptionResponse.Subscriptions, Has.Count.EqualTo(subscriptionCount));
 
                     if (sensorSubscriptionResponse.SubscriptionStatus.Count <= 0)
                     {
@@ -318,7 +318,7 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
             var consumers = new List<TheThing>();
             {
                 var deviceTypes = TheThingRegistry.GetAllDeviceTypesByCap(nsCDEngine.ViewModels.eThingCaps.SensorConsumer, true);
-                Assert.Greater(deviceTypes.Count, 0, "No sensor consumer device types found");
+                Assert.That(deviceTypes, Is.Not.Empty, "No sensor consumer device types found");
 
                 foreach (var deviceType in deviceTypes)
                 {
@@ -334,25 +334,25 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
                     {
                         var subscribeToThingsResponse = consumer.SubscribeToThingsAsync(thingSubscriptions).Result;
 
-                        Assert.NotNull(subscribeToThingsResponse, $"Timeout or subscribe to things message not implemented by consumer {deviceType}");
-                        Assert.IsTrue(string.IsNullOrEmpty(subscribeToThingsResponse.Error), $"Error from consumer {deviceType}: {subscribeToThingsResponse.Error}");
-                        Assert.GreaterOrEqual(thingSubscriptions.Count, subscribeToThingsResponse.SubscriptionStatus.Count, $"Not enough status reports for {deviceType}");
+                        Assert.That(subscribeToThingsResponse, Is.Not.Null, $"Timeout or subscribe to things message not implemented by consumer {deviceType}");
+                        Assert.That(string.IsNullOrEmpty(subscribeToThingsResponse.Error), $"Error from consumer {deviceType}: {subscribeToThingsResponse.Error}");
+                        Assert.That(thingSubscriptions, Has.Count.GreaterThanOrEqualTo(subscribeToThingsResponse.SubscriptionStatus.Count), $"Not enough status reports for {deviceType}");
                         foreach (var subStatus in subscribeToThingsResponse.SubscriptionStatus)
                         {
-                            Assert.IsTrue(string.IsNullOrEmpty(subStatus.Error), $"Error from consumer {deviceType}: {subStatus.Error}");
-                            Assert.IsTrue(subStatus.Subscription.SubscriptionId.HasValue && subStatus.Subscription.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {subStatus.Subscription.SubscriptionId}");
+                            Assert.That(string.IsNullOrEmpty(subStatus.Error), $"Error from consumer {deviceType}: {subStatus.Error}");
+                            Assert.That(subStatus.Subscription.SubscriptionId.HasValue && subStatus.Subscription.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {subStatus.Subscription.SubscriptionId}");
                         }
                     }
                     // TODO verify that subscriptions are actually getting consumed (at least for some consumer plug-ins)
                     {
                         var getSubscriptionsResponse = consumer.GetThingSubscriptionsAsync().Result;
 
-                        Assert.NotNull(getSubscriptionsResponse, $"Timeout or get things message not implemented by consumer {deviceType}");
-                        Assert.IsTrue(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
-                        Assert.AreEqual(thingSubscriptions.Count, getSubscriptionsResponse.ThingSubscriptions.Count, $"Missing or too many subscriptions for {deviceType}");
+                        Assert.That(getSubscriptionsResponse, Is.Not.Null, $"Timeout or get things message not implemented by consumer {deviceType}");
+                        Assert.That(string.IsNullOrEmpty(getSubscriptionsResponse.Error), $"Error from consumer {deviceType}: {getSubscriptionsResponse.Error}");
+                        Assert.That(getSubscriptionsResponse.ThingSubscriptions, Has.Count.EqualTo(thingSubscriptions.Count), $"Missing or too many subscriptions for {deviceType}");
                         foreach (var sub in getSubscriptionsResponse.ThingSubscriptions)
                         {
-                            Assert.IsTrue(sub.SubscriptionId.HasValue && sub.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {sub.SubscriptionId}");
+                            Assert.That(sub.SubscriptionId.HasValue && sub.SubscriptionId != Guid.Empty, $"No subscriptionid from consumer {deviceType}: {sub.SubscriptionId}");
                         }
                     }
 
@@ -394,18 +394,18 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
             var owner = TheThingRegistry.GetBaseEngineAsThing(eEngineName.ContentService);
             var things = TheThing.CreateThingPipelineFromConfigurationAsync(owner, pipelineConfig).Result;
 
-            Assert.AreEqual(pipelineConfig.ThingConfigurations.Count, things.Count, "Not all pipeline things were created.");
-            Assert.AreEqual(pipelineConfig.ThingConfigurations.Count(cfg => cfg.ThingSpecializationParameters != null), things.Count, "Not all specialization parameters were created.");
+            Assert.That(things, Has.Count.EqualTo(pipelineConfig.ThingConfigurations.Count), "Not all pipeline things were created.");
+            Assert.That(things, Has.Count.EqualTo(pipelineConfig.ThingConfigurations.Count(cfg => cfg.ThingSpecializationParameters != null)), "Not all specialization parameters were created.");
             int i = 0;
             foreach (var thing in things)
             {
-                Assert.NotNull(thing, $"Thing {i} not created: {pipelineConfig.ThingConfigurations[i].ThingIdentity}");
+                Assert.That(thing, Is.Not.Null, $"Thing {i} not created: {pipelineConfig.ThingConfigurations[i].ThingIdentity}");
                 i++;
             }
             var memoryThing = things.FirstOrDefault(t => t.EngineName == sensorThing.EngineName);
-            Assert.NotNull(memoryThing);
+            Assert.That(memoryThing, Is.Not.Null);
             var minimumTagCount = configs.Sum(c => c.Value.MinimumBrowseTags);
-            Assert.Greater(memoryThing.MyPropertyBag.Count, minimumTagCount); // TODO adjust this to actual sensors, not just the OPC UA client subscription count
+            Assert.That(memoryThing.MyPropertyBag, Has.Count.GreaterThan(minimumTagCount)); // TODO adjust this to actual sensors, not just the OPC UA client subscription count
 
             foreach (var thing in things)
             {
@@ -456,7 +456,7 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
 
             var owner = TheThingRegistry.GetBaseEngineAsThing(eEngineName.ContentService);
             var testThing = TheThing.CreateThingFromConfigurationAsync(owner, config).Result;
-            Assert.IsNotNull(testThing, $"Error creating thing for {config.ThingIdentity.EngineName} / {config.ThingIdentity.DeviceType}");
+            Assert.That(testThing, Is.Not.Null, $"Error creating thing for {config.ThingIdentity.EngineName} / {config.ThingIdentity.DeviceType}");
             return testThing;
         }
 
@@ -466,9 +466,9 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
             out List<TheThing.TheSensorSubscriptionStatus> successfullSubscriptions)
         {
             browseResponse = provider.ProviderBrowseSensorsAsync().Result;
-            Assert.IsNotNull(browseResponse, $"Timeout or browse message not implemented by plug-in: {new TheThingReference(provider)}");
-            Assert.IsTrue(string.IsNullOrEmpty(browseResponse.Error), $"Browse error: {browseResponse.Error}");
-            Assert.GreaterOrEqual(browseResponse.Sensors.Count, minimumBrowseTags);
+            Assert.That(browseResponse, Is.Not.Null, $"Timeout or browse message not implemented by plug-in: {new TheThingReference(provider)}");
+            Assert.That(string.IsNullOrEmpty(browseResponse.Error), $"Browse error: {browseResponse.Error}");
+            Assert.That(browseResponse.Sensors, Has.Count.GreaterThanOrEqualTo(minimumBrowseTags));
 
             var subscribeRequest = new TheThing.MsgSubscribeSensors
             {
@@ -492,19 +492,19 @@ namespace CDEngine.ThingService.SensorPipeline.Net35.Tests
             int subscriptionCount = subscribeRequest.SubscriptionRequests.Count;
             sensorSubscriptionResponse = provider.SubscribeSensorsAsync(subscribeRequest).Result;
 
-            Assert.IsNotNull(sensorSubscriptionResponse, "Timeout or subscribe message not implemented by plug-in");
-            Assert.IsTrue(string.IsNullOrEmpty(sensorSubscriptionResponse.Error), $"Error from SubscribeSensors: {sensorSubscriptionResponse.Error}. {new TheThingReference(provider)}");
-            Assert.AreEqual(sensorSubscriptionResponse.SubscriptionStatus.Count, subscriptionCount);
+            Assert.That(sensorSubscriptionResponse, Is.Not.Null, "Timeout or subscribe message not implemented by plug-in");
+            Assert.That(string.IsNullOrEmpty(sensorSubscriptionResponse.Error), $"Error from SubscribeSensors: {sensorSubscriptionResponse.Error}. {new TheThingReference(provider)}");
+            Assert.That(subscriptionCount, Is.EqualTo(sensorSubscriptionResponse.SubscriptionStatus.Count));
             foreach (var status in sensorSubscriptionResponse.SubscriptionStatus)
             {
-                Assert.True(string.IsNullOrEmpty(status.Error) || status.Error.Contains("BadUserAccessDenied"), $"{status.Subscription.SensorId}: {status.Error}");
+                Assert.That(string.IsNullOrEmpty(status.Error) || status.Error.Contains("BadUserAccessDenied"), $"{status.Subscription.SensorId}: {status.Error}");
             }
 
             successfullSubscriptions = sensorSubscriptionResponse.SubscriptionStatus.Where(s => string.IsNullOrEmpty(s.Error)).ToList();
             return subscriptionCount;
         }
 
-#if! LOCAL_OPCSERVER
+#if! OPCUASERVER
         [SetUp]
         public void InitTests()
         {

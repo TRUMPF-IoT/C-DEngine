@@ -1,22 +1,22 @@
 <!--
- SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-FileCopyrightText: Copyright (c) 2009-2024 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48;net60-windows;net7.0-windows</TargetFrameworks>
+    <TargetFrameworks>net8.0-windows</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>cdeUpdater</RootNamespace>
     <AssemblyName>cdeUpdater</AssemblyName>
     <PackageId>cdeUpdater</PackageId>
-    <Version>5.161.0$(cdeNugetSuffix)</Version>
+    <Version>6.104.0$(cdeNugetSuffix)</Version>
     <Authors>Chris Muench</Authors>
     <Company>C-Labs</Company>
 	  <LangVersion>preview</LangVersion>
     <Product>cdeUpdater for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
-    <Copyright>Copyright © 2017-2023 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <Copyright>Copyright © 2017-2024 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->

@@ -87,12 +87,12 @@ namespace cdeASPNetMiddleware
             {
                 Response.StatusCode = tReq.StatusCode;
                 cdeASPNetCommon.AddCookiesToHeader(Response, tReq);
-                Response.Headers.Add("Cache-Control", tReq.AllowCaching ? "max-age=60, public" : "no-cache");
+                Response.Headers.Append("Cache-Control", tReq.AllowCaching ? "max-age=60, public" : "no-cache");
                 if (tReq.StatusCode > 300 && tReq.StatusCode < 400 && tReq.Header != null)
-                    Response.Headers.Add("Location", tReq.Header.cdeSafeGetValue("Location"));
+                    Response.Headers.Append("Location", tReq.Header.cdeSafeGetValue("Location"));
                 if (tReq.ResponseBuffer != null)
                 {
-                    Response.Headers.Add("cdeDeviceID", TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString());
+                    Response.Headers.Append("cdeDeviceID", TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID.ToString());
                     Response.ContentType = tReq.ResponseMimeType;
                     await Response.Body.WriteAsync(tReq.ResponseBuffer);
                     return;

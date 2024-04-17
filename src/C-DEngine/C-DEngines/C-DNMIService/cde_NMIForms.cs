@@ -193,7 +193,7 @@ namespace nsCDEngine.Engines.NMIService
                 var tMods = pInfo.ModelID.Split(';');
                 foreach (string tM in tMods)
                 {
-                    var tS = TheCommonUtils.GetSystemResource(null, $"FormORs\\{tM}.cdeFOR");
+                    var tS = TheCommonUtils.GetSystemResource(null, $"FormORs\\{tM}-{TheCommonUtils.cdeGuidToString(FormId)}.cdeFOR");
                     if (tS != null)
                     {
                         string tPlS1 = TheCommonUtils.CArray2UTF8String(tS); 
@@ -207,14 +207,16 @@ namespace nsCDEngine.Engines.NMIService
                     }
                 }
             }
-
-            string tPlS = TheCommonUtils.LoadStringFromDisk($"{pClientInfo.UserID}\\{FormId}.cdeFOR", null);
-            if (!string.IsNullOrEmpty(tPlS))
+            if (pClientInfo != null)
             {
-                TheFOR Ttso = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS);
-                tso = SetTSO(tso, Ttso, true);
-                if (pInfo!=null && !string.IsNullOrEmpty(Ttso?.StartGroup))
-                    pInfo.PropertyBag = new ThePropertyBag { $"StartGroup={Ttso.StartGroup}" };
+                string tPlS = TheCommonUtils.LoadStringFromDisk($"{pClientInfo.UserID}\\{FormId}.cdeFOR", null);
+                if (!string.IsNullOrEmpty(tPlS))
+                {
+                    TheFOR Ttso = TheCommonUtils.DeserializeJSONStringToObject<TheFOR>(tPlS);
+                    tso = SetTSO(tso, Ttso, true);
+                    if (pInfo != null && !string.IsNullOrEmpty(Ttso?.StartGroup))
+                        pInfo.PropertyBag = new ThePropertyBag { $"StartGroup={Ttso.StartGroup}" };
+                }
             }
             return tso;
         }

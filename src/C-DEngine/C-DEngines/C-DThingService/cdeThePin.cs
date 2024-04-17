@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 using nsCDEngine.BaseClasses;
+using nsCDEngine.Engines.NMIService;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static nsCDEngine.Engines.ThingService.ThePin;
 using CU = nsCDEngine.BaseClasses.TheCommonUtils;
 using TT = nsCDEngine.Engines.ThingService.TheThing;
 
@@ -34,8 +36,33 @@ namespace nsCDEngine.Engines.ThingService
     {
         public const string Generic = "nsu=http://c-labs.com/UA/Energy;i=2001"; //OPC UA: once OPCF standardized Pins replace with Standard
     }
+    public class ThePinOR
+    {
+        public int PinOverrides { get; set; } = 0;
+        public ePinLocation NMIPinLocation { get; set; } = 0;
+        public int NMIPinPosition { get; set; } = 0;
+        public int NMIPinWidth { get; set; } = 0;
+        public int NMIPinHeight { get; set; } = 0;
+        public int NMIxDelta { get; set; } = 0;
+        public int NMIyDelta { get; set; } = 0;
+        public string PinProperty { get; set; } = null;
+
+        public ePinLocation oNMIPinLocation { get; set; } = 0;
+        public int oNMIPinPosition { get; set; } = 0;
+        public int oNMIPinWidth { get; set; } = 0;
+        public int oNMIPinHeight { get; set; } = 0;
+        public int oNMIxDelta { get; set; } = 0;
+        public int oNMIyDelta { get; set; } = 0;
+        public string oPinProperty { get; set; } = null;
+
+    }
     public class ThePin : TheMetaDataBase
     {
+        public enum ePinLocation
+        {
+            Left=0, Right=1, Top=2, Bottom=3
+        }
+
         public object PinValue
         {
             get
@@ -70,12 +97,19 @@ namespace nsCDEngine.Engines.ThingService
 
         public List<ThePin> MyPins { get; set; } = new List<ThePin>();
         public string PinProperty { get; set; } = null;
-        public bool NMIIsPinRight { get; set; } = false;
-        public int NMIPinTopPosition { get; set; } = 0;
+
+        /// <summary>
+        /// Pin Location describes on what side of the FacePlace the pin will be (left=0, right=1)
+        /// In the future top=2, bottom=3 will be added
+        /// </summary>
+        public ePinLocation NMIPinLocation { get; set; } = 0;
+        public int NMIPinPosition { get; set; } = 0;
         public int NMIPinWidth { get; set; } = 78;
         public int NMIPinHeight { get; set; } = 39;
         public int NMIxDelta { get; set; } = 0;
         public int NMIyDelta { get; set; } = 0;
+
+        internal Guid MyPinMapper;
 
         public bool AddPin(ThePin pin)
         {
@@ -114,11 +148,11 @@ namespace nsCDEngine.Engines.ThingService
         /// <returns></returns>
         public virtual string NMIGetPinLineFace(string flowStyle)
         {
-            if (NMIPinTopPosition < 0)
+            if (NMIPinPosition < 0)
                 return "";
             string dire = "left";
             string fdire = "right";
-            if (NMIIsPinRight)
+            if (NMIPinLocation==ePinLocation.Right)
             {
                 dire = "right";
                 if (IsInbound)
@@ -141,7 +175,7 @@ namespace nsCDEngine.Engines.ThingService
 
             ThePin tP2 = null;
             if (MyPins?.Count > 0)
-                tP2 = MyPins.Find(s => s.NMIPinTopPosition >= 0);
+                tP2 = MyPins.Find(s => s.NMIPinPosition >= 0);
             return $"""
                  <div class="cdeFacePinDiv">
                     <div cdeTAG="<%C:{PinProperty}_css%>">
@@ -172,6 +206,15 @@ namespace nsCDEngine.Engines.ThingService
             return ret;
         }
 
+        public static bool ConnectPins(ThePin pin1, ThePin pin2, bool Reset1First=false, bool Reset2First = false)
+        {
+            if (pin1 == null || pin2 == null)
+                return false;
+            bool ret1=pin1.AddPinConnection(pin2, Reset1First);
+            bool ret2=pin2.AddPinConnection(pin1, Reset2First);
+            return ret1 || ret2;
+        }
+
         private readonly object lockPinConnection = new object();
         /// <summary>
         /// Adds a new Pin Connection
@@ -185,9 +228,12 @@ namespace nsCDEngine.Engines.ThingService
             {
                 if (ResetFirst)
                     IsConnectedTo.Clear();
-                if (pPin!=null && !IsConnectedTo.Contains(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections) && CanConnectToPinType.Contains(pPin.PinType))
+                if (pPin!=null && !IsConnectedToPin(pPin) && (MaxConnections == 0 || IsConnectedTo.Count < MaxConnections) && CanConnectToPinType.Contains(pPin.PinType))
                 {
                     IsConnectedTo.Add(pPin);
+                    var tThing = TheThingRegistry.GetThingByMID(cdeO);
+                    if (tThing == null) return true;
+                    tThing.UpdatePinProperty(this);
                     return true;
                 }
             }
@@ -198,9 +244,21 @@ namespace nsCDEngine.Engines.ThingService
         {
             lock (lockPinConnection)
             {
-                if (IsConnectedTo.Contains(pPin))
+                if (IsConnectedTo.Exists(s => s.cdeO == pPin.cdeO && s.PinName == pPin.PinName))
                 {
                     IsConnectedTo.Remove(pPin);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal bool IsConnectedToPin(ThePin pPin)
+        {
+            lock (lockPinConnection)
+            {
+                if (IsConnectedTo.Exists(s => s.cdeO == pPin.cdeO && s.PinName == pPin.PinName))
+                {
                     return true;
                 }
             }
@@ -224,7 +282,7 @@ namespace nsCDEngine.Engines.ThingService
 
         public override string ToString()
         {
-            return $"{PinName}:{cdeO}";
+            return $"{cdeO}:{PinName}";
         }
 
         public string GetResolvedName()
@@ -281,8 +339,45 @@ namespace nsCDEngine.Engines.ThingService
     /// </summary>
     public class TheNMIFaceModel
     {
-        public int XPos { get; set; } = 0;
-        public int YPos { get; set; } = 0;
+        int _xpos = 0;
+        public int XPos
+        {
+            get
+            {
+                int ret = _xpos;
+                if (OwnerFormInfoId != Guid.Empty)
+                {
+                    var f = TheNMIEngine.GetFieldById(OwnerFormInfoId);
+                    if (f != null)
+                    {
+                        var dx = CU.CInt(ThePropertyBag.PropBagGetValue(f?.PropertyBag, "DragX"));
+                        ret += dx;
+                    }
+                }
+                return ret;
+            }
+            set { _xpos = value; }
+        }
+
+        int _ypos = 0;
+        public int YPos
+        {
+            get
+            {
+                int ret = _ypos;
+                if (OwnerFormInfoId != Guid.Empty)
+                {
+                    var f = TheNMIEngine.GetFieldById(OwnerFormInfoId);
+                    if (f != null)
+                    {
+                        var dy = CU.CInt(ThePropertyBag.PropBagGetValue(f?.PropertyBag, "DragY"));
+                        ret += dy;
+                    }
+                }
+                return ret;
+            }
+            set { _ypos = value; }
+        }
         public int XLen { get; set; } = 0;
         public int YLen { get; set; } = 0;
         public string Prefix { get; set; } = "NOP";
@@ -301,5 +396,7 @@ namespace nsCDEngine.Engines.ThingService
             YLen = yl;
             Prefix = pFix;
         }
+
+        internal Guid OwnerFormInfoId;
     }
 }
