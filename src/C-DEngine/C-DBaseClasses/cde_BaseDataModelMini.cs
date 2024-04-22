@@ -320,9 +320,13 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         X32_V4 = 16,
         /// <summary>
+        /// .NE Standard 2.1
+        /// </summary>
+        NETSTD_V21 = 17,
+        /// <summary>
         /// Max Terminator
         /// </summary>
-        MAX = 17
+        MAX = 18
     }
 
     /// <summary>

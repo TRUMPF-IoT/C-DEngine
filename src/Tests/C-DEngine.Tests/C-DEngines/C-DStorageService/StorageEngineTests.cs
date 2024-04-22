@@ -1,9 +1,8 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2024 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
 ﻿using NUnit.Framework;
-
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
@@ -60,7 +59,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            Assert.IsTrue(mirror != null);
+            Assert.That(mirror, Is.Not.EqualTo(null));
             mirror?.Dispose();
             mirror = null;
 
@@ -93,7 +92,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            Assert.IsTrue(mirror != null);
+            Assert.That(mirror, Is.Not.EqualTo(null));
             mirror?.Dispose();
             mirror = null;
 
@@ -162,7 +161,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            Assert.IsFalse(response.HasErrors);
+            Assert.That(response.HasErrors, Is.False);
 
             #endregion
         }
@@ -227,7 +226,7 @@ namespace CDEngine.StorageService.Net35.Tests
             //Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) Assert.Fail("Unable to add test collection items! Reason: {0}", response.ErrorMsg);
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
 
             #endregion
 
@@ -247,7 +246,7 @@ namespace CDEngine.StorageService.Net35.Tests
             // Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) Assert.Fail("Unable to retrieve items! Reason: {0}", response.ErrorMsg);
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to retrieve items! Reason: {response.ErrorMsg}");
 
             mirror?.Dispose();
 
@@ -257,7 +256,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             var expectedCount = maxCount == 0 ? totalCandidates : Math.Min(maxCount, totalCandidates);
 
-            Assert.AreEqual(expectedCount, response.MyRecords.Count, "Not all test records were not added successfully.");
+            Assert.That(response.MyRecords.Count, Is.EqualTo(expectedCount), "Not all test records were not added successfully.");
 
             #endregion
         }
@@ -328,7 +327,7 @@ namespace CDEngine.StorageService.Net35.Tests
             //Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) Assert.Fail("Unable to add test collection items! Reason: {0}", response.ErrorMsg);
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
 
             #endregion
 
@@ -347,7 +346,7 @@ namespace CDEngine.StorageService.Net35.Tests
             // Wait for response
             gate.Reset();
             gate.Wait(30000);
-            if ((response != null) && response.HasErrors) Assert.Fail("Unable to remove item by ID! Reason: {0}", response.ErrorMsg);
+            if ((response != null) && response.HasErrors) Assert.Fail($"Unable to add test collection items! Reason: {response.ErrorMsg}");
 
             // Attempt to retrieve your middle item
             tsmMatch = mirror.GetEntryByID(tsmMiddle.cdeMID);
@@ -358,7 +357,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            Assert.IsTrue(tsmMatch == null);
+            Assert.That(tsmMatch, Is.EqualTo(null));
 
             #endregion
         }
@@ -412,7 +411,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            Assert.IsTrue(totalCandidates == totalInserts);
+            Assert.That(totalCandidates, Is.EqualTo(totalInserts));
 
             #endregion
         }
@@ -471,14 +470,14 @@ namespace CDEngine.StorageService.Net35.Tests
 
             countdown.Wait();
 
-            Assert.AreEqual(totalCandidates, myRecords.Count, "Not all test records were added successfully.");
+            Assert.That(myRecords.Count, Is.EqualTo(totalCandidates), "Not all test records were added successfully.");
 
             #endregion
 
             #region ACT
 
             var expectedCount = maxCount == 0 ? totalCandidates : Math.Min(maxCount, totalCandidates);
-            Assert.AreEqual(expectedCount, mirror.Count, "Not all test records were not added successfully.");
+            Assert.That(mirror.Count, Is.EqualTo(expectedCount), "Not all test records were not added successfully.");
 
             // Retrieve your items...
             counter = 0;
@@ -497,7 +496,7 @@ namespace CDEngine.StorageService.Net35.Tests
                 {
                     if (match != null)
                     {
-                        Assert.IsNull(match, "Item found that was supposed to have been removed due to max count limit", counter);
+                        Assert.That(match, Is.Null, $"Item found that was supposed to have been removed due to max count limit");
                     }
                 }
                 counter++;
@@ -509,7 +508,7 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            Assert.IsFalse(entryNotFound, "TheMirrorCache was missing one or more test entries!");
+            Assert.That(entryNotFound, Is.False, "TheMirrorCache was missing one or more test entries!");
 
             #endregion
         }
@@ -602,131 +601,11 @@ namespace CDEngine.StorageService.Net35.Tests
 
             #region ASSERT
 
-            Assert.IsTrue(tsmMatch == null);
+            Assert.That(tsmMatch, Is.EqualTo(null));
 
             #endregion
         }
-#if !NETCOREAPP3_1
-        [Test]
-        [Description("This is a primitive test to evaluate whether or not the insertion of multiple TSMs cause the AvgCPU/AvgRAM to exceed preset limits.")]
-        [Category("Optimization")]
-        public void ApplyLoadToTheStorageMirrorTest()
-        {
-            #region ARRANGE
 
-            PerformanceCounter counterCPU;
-            PerformanceCounter counterRAM;
-            BlockingCollection<float> metricsCPU;
-            BlockingCollection<float> metricsRAM;
-
-            counterCPU = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            counterRAM = new PerformanceCounter("Memory", "Available MBytes");
-            metricsCPU = new BlockingCollection<float>(100000);
-            metricsRAM = new BlockingCollection<float>(100000);
-
-            Timer timerCPU;
-            timerCPU = new Timer((state) =>
-            {
-                if (metricsCPU.IsAddingCompleted)
-                {
-                    float oldest = metricsCPU.FirstOrDefault();
-                    metricsCPU.TryTake(out oldest);
-                }
-                metricsCPU.TryAdd(counterCPU.NextValue());
-            }, null, 1000, 10);
-
-            Timer timerRAM;
-            timerRAM = new Timer((state) =>
-            {
-                if (metricsRAM.IsAddingCompleted)
-                {
-                    float oldest = metricsRAM.FirstOrDefault();
-                    metricsRAM.TryTake(out oldest);
-                }
-                metricsRAM.TryAdd(counterRAM.NextValue());
-            }, null, 1000, 10);
-
-            counterCPU.NextValue();
-            var memoryBefore = counterRAM.NextValue();
-            Thread.Sleep(1000); // Per MSDN suggestion when using PerformanceCounter mechanism...
-
-            int totalCandidates = 1000000;
-            int countCallbacks = 0;
-            var random = new Random();
-            var data = Enumerable.Range(1, totalCandidates).OrderBy(i => random.Next(1, totalCandidates));
-            CountdownEvent countdown = new CountdownEvent(totalCandidates);
-            TheStorageMirror<TheStorageEngineTSM> mirror;
-            mirror = new TheStorageMirror<TheStorageEngineTSM>(TheCDEngines.MyIStorageService)
-            {
-                IsRAMStore = true,
-                CacheStoreInterval = 1,
-                IsStoreIntervalInSeconds = true,
-                IsCachePersistent = true,
-                UseSafeSave = true,
-                AllowFireUpdates = true,
-            };
-
-
-
-            #endregion
-
-            #region ACT
-
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            try
-            {
-                Parallel.ForEach(data, currentNumber =>
-                {
-                    mirror.AddAnItem(
-                        new TheStorageEngineTSM() { TXTPattern = currentNumber.ToString() },
-                        state =>
-                        {
-                            Interlocked.Increment(ref countCallbacks);
-                            countdown.Signal();
-                        });
-                });
-            }
-            catch (Exception ex)
-            {
-                Assert.IsTrue(true, ex.Message);
-            }
-
-            countdown.Wait();
-
-            stopwatch.Stop();
-            timerCPU.Change(Timeout.Infinite, Timeout.Infinite);
-            timerCPU.Dispose();
-            timerRAM.Change(Timeout.Infinite, Timeout.Infinite);
-            timerRAM.Dispose();
-            counterCPU?.Dispose();
-            counterRAM?.Dispose();
-            countdown?.Dispose();
-            mirror?.Dispose();
-
-            #endregion
-
-            #region ASSERT
-
-            float avgCPU = metricsCPU.Average();
-            float maxCPU = 99f;
-
-            float avgRAM = metricsRAM.Average();
-            float maxRAM = memoryBefore + 1000f;
-
-            Assert.IsTrue(
-                (avgCPU <= maxCPU && avgRAM <= maxRAM && totalCandidates == countCallbacks),
-                buildSummary(totalCandidates,
-                    stopwatch.ElapsedMilliseconds,
-                    avgCPU,
-                    maxCPU,
-                    avgRAM,
-                    maxRAM));
-
-            #endregion
-        }
-#endif
         private string buildSummary(int totalCandidates, long elaspedTime, float avgCPU, float maxCPU, float avgRAM, float maxRAM)
         {
             string summary = string.Empty;

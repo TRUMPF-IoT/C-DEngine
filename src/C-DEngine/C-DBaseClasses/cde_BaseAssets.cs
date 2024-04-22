@@ -613,7 +613,7 @@ namespace nsCDEngine.BaseClasses
 #elif CDE_NET4
                 MyServiceHostInfo.cdePlatform = Environment.Is64BitProcess ? cdePlatform.NETV4_64 : cdePlatform.NETV4_32;
 #elif CDE_STANDARD
-                MyServiceHostInfo.cdePlatform = cdePlatform.NETSTD_V20;
+                MyServiceHostInfo.cdePlatform = cdePlatform.NETSTD_V21;
 #else
                 MyServiceHostInfo.cdePlatform = TheCommonUtils.GetAssemblyPlatform(Assembly.GetEntryAssembly(), false, out var empty);// old: Environment.Is64BitProcess ? cdePlatform.X64_V3 : cdePlatform.X32_V4;
 #endif

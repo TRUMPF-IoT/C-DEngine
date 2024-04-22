@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2024 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -27,18 +27,18 @@ namespace CDEngine.BaseDataModel.Net35.Tests
                  },
             };
             var pluginInfoClone = pluginInfo.Clone();
-            Assert.AreNotSame(pluginInfo.DeviceTypes, pluginInfoClone.DeviceTypes);
-            Assert.AreEqual(pluginInfo.DeviceTypes.Count, pluginInfoClone.DeviceTypes.Count);
+            Assert.That(pluginInfoClone.DeviceTypes, Is.Not.SameAs(pluginInfo.DeviceTypes));
+            Assert.That(pluginInfoClone.DeviceTypes.Count, Is.EqualTo(pluginInfo.DeviceTypes.Count));
             int i = 0;
             foreach(var dt in pluginInfo.DeviceTypes)
             {
-                Assert.IsTrue(dt.Description == pluginInfoClone.DeviceTypes[i].Description);
-                Assert.IsTrue(dt.DeviceType == pluginInfoClone.DeviceTypes[i].DeviceType);
-                Assert.AreNotSame(dt.Capabilities, pluginInfoClone.DeviceTypes[i].Capabilities);
-                Assert.AreEqual(dt.Capabilities.Length, pluginInfoClone.DeviceTypes[i].Capabilities.Length);
+                Assert.That(dt.Description, Is.EqualTo(pluginInfoClone.DeviceTypes[i].Description));
+                Assert.That(dt.DeviceType, Is.EqualTo(pluginInfoClone.DeviceTypes[i].DeviceType));
+                Assert.That(pluginInfoClone.DeviceTypes[i].Capabilities, Is.Not.SameAs(dt.Capabilities));
+                Assert.That(pluginInfoClone.DeviceTypes[i].Capabilities.Length, Is.EqualTo(dt.Capabilities.Length));
                 for (int j = 0; j < dt.Capabilities.Length; j++)
                 {
-                    Assert.IsTrue(dt.Capabilities[j] == pluginInfoClone.DeviceTypes[i].Capabilities[j]);
+                    Assert.That(dt.Capabilities[j], Is.EqualTo(pluginInfoClone.DeviceTypes[i].Capabilities[j]));
                 }
             }
         }
