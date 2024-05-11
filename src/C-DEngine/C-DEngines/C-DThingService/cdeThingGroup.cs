@@ -586,7 +586,7 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     foreach (var firstPin in gThing.GetBaseThing().GetAllPins())
                     {
-                        var tConnList = $"{gThing.GetProperty($"PINCON_{firstPin.PinName}", false).GetValue()}";
+                        var tConnList = $"{gThing.GetProperty($"PINCON_{firstPin.PinName}", false)?.GetValue()}";
                         if (!string.IsNullOrEmpty(tConnList))
                         {
                             var tList = tConnList.Split(';');
@@ -714,7 +714,7 @@ namespace nsCDEngine.Engines.ThingService
                                 int yl = Math.Abs(sTop - tTop);
                                 if (yl < lineWidth) yl = lineWidth;
 
-                                bool bDrawAtTarget = false;// sourcePin.DrawLineAtTarget;
+                                bool bDrawAtTarget = false;
                                 if (sourcePin.NMIPinLocation == ThePin.ePinLocation.Right && tLeft > sLeft)
                                     bDrawAtTarget = true;
                                 if (sourcePin.NMIPinLocation == ThePin.ePinLocation.Left && tLeft < sLeft)
@@ -733,7 +733,7 @@ namespace nsCDEngine.Engines.ThingService
                                     StringBuilder moveData = new();
                                     int movecnt = ((yl + lineWidth) / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {10 * 2}s;\"></div>");
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
                                     #endregion
 
                                     int x = sLeft;

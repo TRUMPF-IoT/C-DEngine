@@ -144,7 +144,7 @@ namespace nsCDEngine.Engines.NMIService
                                         if (tParent > 0)
                                         {
                                             var tParentFld = GetFieldByFldOrder(GetFormById(tfld.FormID), tParent);
-                                            if (TheCommonUtils.CBool(tParentFld?.PropBagGetValue("DisallowEdit")))
+                                            if (!TheCommonUtils.CBool(tParentFld?.PropBagGetValue("DisallowEdit")))
                                             {
                                                 tfld = tParentFld;
                                             }
@@ -759,7 +759,7 @@ namespace nsCDEngine.Engines.NMIService
                                     List<TheComboOptions> tLst = new ()
                                     {
                                         new TheComboOptions { G = "Refresh", N = "Refresh Picker", V = "CDE_PPP" },
-                                        new TheComboOptions { G = "Refresh", N = "Empty Entry", V = "" }
+                                        new TheComboOptions { G = "Refresh", N = "Empty Entry", V = $"{Guid.Empty}" }
                                     };
                                     if (tThings != null)
                                     {
@@ -833,7 +833,7 @@ namespace nsCDEngine.Engines.NMIService
                                     List<TheComboOptions> tLst = new ()
                                     {
                                         new TheComboOptions { N = "Refresh Picker", V = "CDE_PPP" },
-                                        new TheComboOptions { N = "Empty Entry", V = "" }
+                                        new TheComboOptions { N = "Empty Entry", V = "CDE_NOP" }
                                     };
                                     if (tThings != null)
                                     {

@@ -32,14 +32,11 @@ namespace cdeASPNetMiddleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (context.Request.Path.ToString().StartsWith("/ISB"))
+            if (context.WebSockets.IsWebSocketRequest)
             {
-                if (context.WebSockets.IsWebSocketRequest)
-                {
-                    using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                    await ProcessWSRequest(context, webSocket);
+                using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                if (await ProcessWSRequest(context, webSocket, context.Request.Path.ToString().StartsWith("/ISB")) == null)
                     return;
-                }
             }
             await _next(context);
         }
@@ -49,22 +46,31 @@ namespace cdeASPNetMiddleware
         /// </summary>
         /// <param name="context">The http context.</param>
         /// <param name="ws">The incoming WebSockets.</param>
-        public static async Task ProcessWSRequest(HttpContext context, WebSocket ws)
+        public static async Task<string> ProcessWSRequest(HttpContext context, WebSocket ws, bool IsISB)
         {
             try
             {
                 TheRequestData tRequestData = cdeASPNetCommon.CreateRequest(context);
                 if (tRequestData == null)
-                    return;
+                    return null;
                 tRequestData.ResponseMimeType = "cde/ws";
 
-                await TheQueuedSenderRegistry.ProcessCloudRequest(ws, tRequestData);
+                if (!IsISB)
+                {
+                    return await TheQueuedSenderRegistry.ProcessWSRequest(ws, tRequestData);
+                }
+                else
+                {
+                    await TheQueuedSenderRegistry.ProcessCloudRequest(ws, tRequestData);
+                    return null;
+                }
             }
             catch (Exception ex)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(423, new TSM("TheCloudWSockets", "Processing Error 500", ex.ToString()));
                 context.Response.StatusCode = 500;
             }
+            return null;
         }
     }
 }

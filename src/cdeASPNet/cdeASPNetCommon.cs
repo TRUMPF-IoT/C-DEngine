@@ -14,7 +14,7 @@ namespace cdeASPNetMiddleware
 {
     internal static class cdeASPNetCommon
     {
-        internal static TheRequestData CreateRequest(HttpContext pContext)
+        internal static TheRequestData CreateRequest(HttpContext pContext, bool BypassCertCheck=false)
         {
             var tCon = pContext.Connection;
             TheRequestData tReq = new ()
@@ -26,7 +26,7 @@ namespace cdeASPNetMiddleware
                 ClientCert = tCon.ClientCertificate,
                 RemoteAddress=tCon.RemoteIpAddress.ToString()
             };
-            if (TheCommCore.MyHttpService != null && TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage > 1) //If CDE requires a certificate, terminate all incoming requests before any processing
+            if (!BypassCertCheck && TheCommCore.MyHttpService != null && TheBaseAssets.MyServiceHostInfo.ClientCertificateUsage > 1) //If CDE requires a certificate, terminate all incoming requests before any processing
             {
                 var err = TheCommCore.MyHttpService.ValidateCertificateRoot(tReq);
                 if (TheBaseAssets.MyServiceHostInfo.DisableNMI && !string.IsNullOrEmpty(err))
