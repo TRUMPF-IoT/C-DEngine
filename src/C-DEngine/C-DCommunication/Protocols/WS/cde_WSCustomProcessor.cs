@@ -143,7 +143,7 @@ namespace nsCDEngine.Communication
                 hasFaulted = true;
                 if (TheBaseAssets.MasterSwitch)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", $"CustomProcessWS Loop has failed because WebSocket was closed during ReceiveAsync.", eMsgLevel.l1_Error));
+                    TheBaseAssets.MySYSLOG.WriteToLog(4369, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("ProcessWS", $"CustomProcessWS Loop has failed because WebSocket was closed during ReceiveAsync. {eee.Message}", eMsgLevel.l1_Error));
                 }
             }
             if (hasFaulted || (websocket != null && websocket.State != WebSocketState.Closed))

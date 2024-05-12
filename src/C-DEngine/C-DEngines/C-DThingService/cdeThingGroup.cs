@@ -605,7 +605,7 @@ namespace nsCDEngine.Engines.ThingService
                     }
                 }
             }
-            catch (Exception ex) 
+            catch (Exception) 
             {
                 //
             }
