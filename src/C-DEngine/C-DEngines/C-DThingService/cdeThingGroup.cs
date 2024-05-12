@@ -659,6 +659,16 @@ namespace nsCDEngine.Engines.ThingService
                 NMIEditorField.PropertyBag = new nmiCtrlTileGroup { TileWidth = tw, TileHeight = th };
         }
 
+        int calculateFlowLength(int LineWidth)
+        {
+            int flowlength = 150;
+            while (LineWidth > flowlength)
+            {
+                flowlength *= 2;
+            }
+            return flowlength;
+        }
+
         /// <summary>
         /// Automatically draws all Lines between connected Pins
         /// </summary>
@@ -733,7 +743,7 @@ namespace nsCDEngine.Engines.ThingService
                                     StringBuilder moveData = new();
                                     int movecnt = ((yl + lineWidth) / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-name: flow-{dir}{calculateFlowLength(yl)}; animation-duration: {movecnt * 2}s;\"></div>");
                                     #endregion
 
                                     int x = sLeft;
@@ -766,7 +776,7 @@ namespace nsCDEngine.Engines.ThingService
                                     StringBuilder moveData = new();
                                     int movecnt = (xl / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-name: flow-{dir}{calculateFlowLength(xl)}; animation-duration: {movecnt * 2}s;\"></div>");
                                     #endregion
 
                                     int x = sLeft;
