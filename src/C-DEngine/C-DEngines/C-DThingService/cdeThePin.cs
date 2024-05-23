@@ -86,7 +86,8 @@ namespace nsCDEngine.Engines.ThingService
         public string PinName { get; set; }
         public string PinType { get; set; } = ePinTypeName.Generic;
         public bool IsInbound { get; set; } = false;
-        public bool DrawLineAtTarget { get; set; } 
+        public int PinNumber { get; set; } 
+        public string PinConfig { get; set; }
         public bool PollsFromPin { get; set; } = false;
         public bool AllowsPolling { get; set; } = false;
         public int MaxConnections { get; set; } = 1;

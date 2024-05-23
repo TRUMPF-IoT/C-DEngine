@@ -385,7 +385,8 @@ namespace nsCDEngine.Engines.ThingService
             bool hasRightPin = tPins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Right);
             bool hasLeftPin = tPins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
             var tFaceWidth = (MyNMIFaceModel.XLen + (78 * ((hasLeftPin ? 1 : 0) + (hasRightPin ? 1 : 0))));
-            var tFrameFld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = !CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")), AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = "touch-action: none; z-index:20;" });
+            int zindex = CU.CInt(ThePropertyBag.PropBagGetValue(pProperties, "ZIndex", "="));
+            var tFrameFld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, new nmiCtrlTileGroup { IsAbsolute = true, DisallowEdit = !CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")), AllowDrag = true, Left = pLeft, Top = pTop, PixelWidth = tFaceWidth, PixelHeight = MyNMIFaceModel.YLen, Style = $"touch-action: none; z-index:{20+zindex};" });
             if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && CU.CBool(TheBaseAssets.MySettings.GetSetting("RedPill")))
             {
                 tFrameFld?.RegisterEvent2(eUXEvents.OnShowEditor, (pMsg, obj) =>
