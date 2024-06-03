@@ -14,9 +14,9 @@ namespace nsCDEngine.Communication
 {
     public class TheWebSocketHooks: TheDataBase
     {
-        public void PostToSocket(object sender, byte[] data)
+        public void PostToSocket(object sender, byte[] data, bool SendAsBinary)
         {
-            (sender as TheWSCustomProcessor)?.PostToSocket(null,data,true,false);
+            (sender as TheWSCustomProcessor)?.PostToSocket(null,data, SendAsBinary, false);
         }
     }
 
