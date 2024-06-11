@@ -90,6 +90,7 @@ namespace nsCDEngine.Engines.ThingService
         public string PinConfig { get; set; }
         public bool PollsFromPin { get; set; } = false;
         public bool AllowsPolling { get; set; } = false;
+        public bool IsOnline { get; set; } = false;
         public int MaxConnections { get; set; } = 1;
         private List<ThePin> IsConnectedTo { get; set; } = new List<ThePin>();
         public List<string> CanConnectToPinType { get; set; } = new List<string>();
