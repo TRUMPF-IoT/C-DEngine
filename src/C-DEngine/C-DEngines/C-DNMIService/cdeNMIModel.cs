@@ -2084,7 +2084,7 @@ namespace nsCDEngine.Engines.NMIService
         [IgnoreDataMember]
         public int FldPos
         {
-            get { return ++mFldPos; }
+            get { mFldPos += 2; return mFldPos; }
         }
         [IgnoreDataMember]
         public int CurFldPos
