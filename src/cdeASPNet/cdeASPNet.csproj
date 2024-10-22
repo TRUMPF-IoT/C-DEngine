@@ -5,11 +5,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net7.0;net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <Authors>Chris Muench</Authors>
     <Company>C-Labs</Company>
     <Description>ASP.Net Core Enabler for C-DEngine on ($(TargetFramework))</Description>
-    <Copyright>Copyright © 2017-2023 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <Copyright>Copyright © 2017-2025 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
     <PackageDescription>ASP.Net Core Enabler for C-DEngine</PackageDescription>
     <PackageIcon>toplogo-128.png</PackageIcon>
