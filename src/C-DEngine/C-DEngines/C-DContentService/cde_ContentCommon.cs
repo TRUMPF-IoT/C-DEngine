@@ -739,6 +739,12 @@ namespace nsCDEngine.Engines.ContentService
                             MyBaseThing.FireEvent(eEngineEvents.NewEventLogEntry, this, tLog, true);
                     }
                     break;
+                case "CDE_RED_ALERT":
+                    MyBaseThing.FireEvent(eEngineEvents.RedAlert, this, pMsg, true);
+                    break;
+                case "CDE_ALL_CLEAR":
+                    MyBaseThing.FireEvent(eEngineEvents.AllClear, this, pMsg, true);
+                    break;
                 default:
                     MyBaseThing.FireEvent(eEngineEvents.CustomTSMMessage, this, pMsg, true);
                     break;
