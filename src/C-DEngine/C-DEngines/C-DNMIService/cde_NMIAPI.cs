@@ -546,7 +546,7 @@ namespace nsCDEngine.Engines.NMIService
                     //intended
                 }
                 if (!(FaceMacros?.Count > 0))
-                    FaceMacros=new List<string> { "<%C20:", "<%C12:", "<%C21:", "<%V:", "<%S:", "<%C:", "<%I:", "<%SVG:" };
+                    FaceMacros=new List<string> { "<%C9:", "<%C20:", "<%C12:", "<%C21:", "<%V:", "<%S:", "<%C:", "<%P:", "<%I:", "<%SVG:", "<%ATT:" };
             }
             foreach (var tM in FaceMacros)
             {
