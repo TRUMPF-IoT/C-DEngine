@@ -370,7 +370,7 @@ namespace nsCDEngine.ViewModels
             OptScrRes4by3 = "width=1024;height=768";
             OptScrRes16by9 = "width=1376;height=768";
             DefaultLCID = 1033;
-            PortalPage = "NMIPortal";
+            PortalPage = "NMIAUTO";
             EntryDate = DateTimeOffset.Now;
             LastUpdate = DateTimeOffset.Now;
             CurrentVersion = 1.0;

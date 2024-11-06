@@ -1184,7 +1184,7 @@ namespace nsCDEngine.ISM
             else
             {
                 if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.DefHomePage))
-                    TheBaseAssets.MyServiceHostInfo.DefHomePage = "/NMIPortal";
+                    TheBaseAssets.MyServiceHostInfo.DefHomePage = "/NMIAUTO";
             }
 
             temp = GetArgOrEnv(CmdArgs, "RelayOnly");
