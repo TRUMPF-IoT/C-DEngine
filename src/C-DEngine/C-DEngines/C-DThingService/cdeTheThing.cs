@@ -368,7 +368,7 @@ namespace nsCDEngine.Engines.ThingService
                     int max = 100;
                     foreach (var t in tGS.GetAllGroupThings())
                     {
-                        var tn = CU.CInt(t.GetBaseThing().GetProperty($"FldStart_{CU.CGuid(MyLiveForm.cdeMID)}", false)?.GetValue());
+                        var tn = CU.CInt(t.GetBaseThing().GetProperty($"FldStart_{MyLiveForm.cdeMID}", false)?.GetValue());
                         if (tn > max)
                         {
                             max = tn;
@@ -434,26 +434,31 @@ namespace nsCDEngine.Engines.ThingService
             //FacePlate Render
             var tg = new nmiCtrlTileGroup { ParentFld = startFld, NoTE = true, PixelWidth = MyNMIFaceModel.XLen, DisallowEdit = true, PixelHeight = MyNMIFaceModel.YLen, IsAbsolute = true, Left = hasLeftPin ? 78 : 0, Top = 0 };
             startFld = MyLiveForm.FldPos;
+            while (NMI.GetFieldByFldOrder(MyLiveForm, startFld) != null)
+                startFld = MyLiveForm.FldPos;
             var gfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.TileGroup, startFld, 0, 0, null, null, tg);
-            if (pProperties != null)
-                gfld.PropertyBag = pProperties;
-            if (!hideBorder)
+            if (gfld != null)
             {
-                string tClassName = ThePropertyBag.PropBagGetValue(pProperties, "ClassName");
-                string tBorderName= ThePropertyBag.PropBagGetValue(pProperties, "BorderClass");
-                if (!string.IsNullOrEmpty(tBorderName))
+                if (pProperties != null)
+                    gfld.PropertyBag = pProperties;
+                if (!hideBorder)
                 {
-                    if (string.IsNullOrEmpty(tClassName)) tClassName = ""; else tClassName += " ";
-                    tClassName += tBorderName;
-                    gfld.PropertyBag = new nmiCtrlTileGroup { ClassName = tClassName };
+                    string tClassName = ThePropertyBag.PropBagGetValue(pProperties, "ClassName");
+                    string tBorderName = ThePropertyBag.PropBagGetValue(pProperties, "BorderClass");
+                    if (!string.IsNullOrEmpty(tBorderName))
+                    {
+                        if (string.IsNullOrEmpty(tClassName)) tClassName = ""; else tClassName += " ";
+                        tClassName += tBorderName;
+                        gfld.PropertyBag = new nmiCtrlTileGroup { ClassName = tClassName };
+                    }
+                    else
+                        gfld.PropertyBag = new nmiCtrlTileGroup { Style = "border: outset;" };
                 }
-                else
-                    gfld.PropertyBag = new nmiCtrlTileGroup { Style = "border: outset;" };
             }
             if (!string.IsNullOrEmpty(MyNMIFaceModel.FaceTemplate))
             {
                 var tp = new nmiCtrlFacePlate { ParentFld = startFld, NoTE = true, DisallowEdit = true, IsAbsolute = true, PixelWidth = MyNMIFaceModel.XLen, PixelHeight = MyNMIFaceModel.YLen };
-                if (MyNMIFaceModel.FaceTemplate.StartsWith("/"))
+                if (MyNMIFaceModel.FaceTemplate.StartsWith('/'))
                     tp.HTMLUrl = MyNMIFaceModel.FaceTemplate;
                 else
                     tp.HTML = $"<div class=\"{MyNMIFaceModel.FaceTemplate}\"></div>";

@@ -1461,7 +1461,7 @@ namespace nsCDEngine.ISM
                 }
                 catch (Exception e)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service responded with illegal Settings block", eMsgLevel.l1_Error));
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service responded with illegal Settings block: {e.Message}", eMsgLevel.l1_Error));
                     return $"Provisioning Service responded With illegal Settings block";
                 }
                 if (tSettings == null || tSettings.Count == 0 || (tSettings.ContainsKey("TryLater") && CU.CBool(tSettings["TryLater"])))
