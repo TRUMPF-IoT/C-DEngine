@@ -515,8 +515,6 @@ namespace nsCDEngine.Engines.NMIService
             return false;
         }
 
-
-
         private static void RegisterPublication(TheThing tThing, string pDataItem, Guid pRequestingNode)
         {
             if (tThing != null && !string.IsNullOrEmpty(pDataItem))
@@ -525,7 +523,9 @@ namespace nsCDEngine.Engines.NMIService
                 var OnUpdateName = pDataItem;
                 if (OnUpdateName.StartsWith("MyPropertyBag."))  
                     OnUpdateName = OnUpdateName.Split('.')[1];
-                tThing.GetProperty(OnUpdateName, true).SetPublication(true, pRequestingNode); //Guid.Empty uses PublishCentral - a specific node would use SYSTEMWIDE
+                var cdep = tThing.GetProperty(OnUpdateName, true);
+                cdep.cdeE |= 8; //New in 6.112.0: Makes sure all values are sent even unchanged values
+                cdep.SetPublication(true, pRequestingNode); //Guid.Empty uses PublishCentral - a specific node would use SYSTEMWIDE
             }
         }
 
