@@ -52,7 +52,9 @@ namespace nsCDEngine.BaseClasses
                 Dictionary<string, string> tL = new();
                 Assembly tCryptoAssembly = null;
                 string codeSignThumb;
-                if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
+                var types = AppDomain.CurrentDomain.GetAssemblies();
+                bool wasCryptoLoadedAlready = (types.FirstOrDefault(g => g.Location.Contains(pDLLName)) != null);//new way of detecting mobile devices
+                if (!wasCryptoLoadedAlready) // AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
                 {
                     TheSystemMessageLog.ToCo($"Starting CodeSign-Verifier in ({pDLLName}) with DVT:{bDontVerifyTrust} VTP:{bVerifyTrustPath} DVI:{bDontVerifyIntegrity}");
                     MyCodeSigner ??= new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
@@ -71,7 +73,6 @@ namespace nsCDEngine.BaseClasses
                 }
                 else
                 {
-                    var types = AppDomain.CurrentDomain.GetAssemblies();
                     tCryptoAssembly = types.FirstOrDefault(g => g.Location.Contains(pDLLName));
                     if (tCryptoAssembly != null)
                     {
