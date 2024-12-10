@@ -91,7 +91,7 @@ jobs:
         echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
 
     - name: Install AzureSignTool
-      run: dotnet tool install --global --version 6.0.0 AzureSignTool
+      run: dotnet tool install --global --version 5.0.0 AzureSignTool
 
     - name: Enable code signing for build
       run: |
