@@ -377,7 +377,7 @@ namespace nsCDEngine.Communication.HttpService
                         string Query = pRequestData.RequestUri.Query;
                         if (Query.StartsWith("?"))
                             Query = Query.Substring(1);
-                        if (string.IsNullOrEmpty(Query)) Query = "NMIPortal";
+                        if (string.IsNullOrEmpty(Query)) Query = "NMIAUTO";
                         TheBaseAssets.MySession.EndSession(pRequestData);
                         pRequestData.AllowStatePush = false;
                         pRequestData.ResponseMimeType = "text/html";

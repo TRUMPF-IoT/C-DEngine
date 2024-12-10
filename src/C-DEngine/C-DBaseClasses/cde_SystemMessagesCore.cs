@@ -168,6 +168,14 @@ namespace nsCDEngine.BaseClasses
         /// Any Message sent to the Content-Relay Service that was not handled by the Content Service will be forwarded to this event
         /// </summary>
         public const string CustomTSMMessage = "CustomTSMMessage";
+        /// <summary>
+        /// Sent by the content Engine if a sever alert is issued. All subscribers should do the appropriate response
+        /// </summary>
+        public const string RedAlert = "RedAlert";
+        /// <summary>
+        /// Sent by the content Engine once the alert has been cleared. All subscribers should do the appropriate response
+        /// </summary>
+        public const string AllClear = "AllClear";
 
         /// <summary>
         /// Engine received a Blob Object

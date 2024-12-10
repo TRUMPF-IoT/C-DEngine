@@ -86,9 +86,19 @@ namespace nsCDEngine.Engines.ThingService
         public string PinName { get; set; }
         public string PinType { get; set; } = ePinTypeName.Generic;
         public bool IsInbound { get; set; } = false;
-        public bool DrawLineAtTarget { get; set; } 
+        public int PinNumber { get; set; } 
+        public string PinConfig { get; set; }
         public bool PollsFromPin { get; set; } = false;
         public bool AllowsPolling { get; set; } = false;
+
+        /// <summary>
+        /// Quality of the Pin Value
+        /// 0 = unkown
+        /// 1 = good
+        /// 2 = cached
+        /// 3 = bad/disconnected
+        /// </summary>
+        public int Quality { get; set; } = 0;
         public int MaxConnections { get; set; } = 1;
         private List<ThePin> IsConnectedTo { get; set; } = new List<ThePin>();
         public List<string> CanConnectToPinType { get; set; } = new List<string>();

@@ -1184,7 +1184,7 @@ namespace nsCDEngine.ISM
             else
             {
                 if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.DefHomePage))
-                    TheBaseAssets.MyServiceHostInfo.DefHomePage = "/NMIPortal";
+                    TheBaseAssets.MyServiceHostInfo.DefHomePage = "/NMIAUTO";
             }
 
             temp = GetArgOrEnv(CmdArgs, "RelayOnly");
@@ -1454,12 +1454,16 @@ namespace nsCDEngine.ISM
             try
             {
                 //step 1: Decrypt buffer and check if valid
-                if (pBuffer[0]=='{')
+                Dictionary<string, string> tSettings = null;
+                try
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service responded: {CU.CArray2UTF8String(pBuffer)}", eMsgLevel.l1_Error));
-                    return $"Provisioning Service responded With: {CU.CArray2UTF8String(pBuffer)}";
+                    tSettings = TheBaseAssets.MyCrypto.DecryptKV(pBuffer);
                 }
-                var tSettings = TheBaseAssets.MyCrypto.DecryptKV(pBuffer);
+                catch (Exception e)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service responded with illegal Settings block: {e.Message}", eMsgLevel.l1_Error));
+                    return $"Provisioning Service responded With illegal Settings block";
+                }
                 if (tSettings == null || tSettings.Count == 0 || (tSettings.ContainsKey("TryLater") && CU.CBool(tSettings["TryLater"])))
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service responded but had no data", eMsgLevel.l1_Error));

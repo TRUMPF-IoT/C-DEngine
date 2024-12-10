@@ -20,6 +20,12 @@ namespace nsCDEngine.Communication
     /// </summary>
     public static class TheCommCore
     {
+        /// <summary>
+        /// Register new WebSocket hooks with the Path+Query
+        /// i.e: CustomWSHooks.RegisterEvent2("/mypath", sinkTelegrams);
+        /// </summary>
+        public static TheWebSocketHooks CustomWSHooks = new TheWebSocketHooks();
+
         internal static List<string> GetQueueInformation(bool ShowQueueDetails)
         {
             return TheQueuedSenderRegistry.ShowQSenderDetails(ShowQueueDetails);

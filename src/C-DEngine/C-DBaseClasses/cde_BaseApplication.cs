@@ -336,7 +336,7 @@ namespace nsCDEngine.BaseClasses
                             case cdeHostType.IIS: iis = " (Hosted in IIS)"; break;
                             case cdeHostType.ASPCore: iis = " (Hosted in ASP.NET Core)"; break;
                         }
-                        TheBaseAssets.MySYSLOG.WriteToLog(3, new TSM(TheBaseAssets.MyServiceHostInfo.ApplicationName, TheBaseAssets.MyServiceHostInfo.ApplicationTitle + iis + " Stopped at : " + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now), eMsgLevel.l4_Message)); //Log Entry that service has been started
+                        TheBaseAssets.MySYSLOG.WriteToLog(3, new TSM(TheBaseAssets.MyServiceHostInfo.ApplicationName,$"{TheBaseAssets.MyServiceHostInfo.ApplicationTitle}{iis} {(force?"forced":"")} Stopped at : {TheCommonUtils.GetDateTimeString(DateTimeOffset.Now)}", eMsgLevel.l4_Message)); //Log Entry that service has been started
                         TheBaseAssets.MySYSLOG.Shutdown();
                     }
                 }

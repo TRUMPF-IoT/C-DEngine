@@ -385,6 +385,93 @@ namespace nsCDEngine.Engines.ThingService
             return true;
         }
 
+        #region Thing Mapper for Group
+
+        protected List<string> MyPollingProps = new List<string>();
+        protected virtual void AddEditorControls(TheFormInfo pForm, int StartFld)
+        {
+            if (MyPollingProps?.Count > 0)
+            {
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SmartLabel, StartFld, 0, 0, null, null, new nmiCtrlSmartLabel { Text = "Poll-Mapper (Sim-Mode: Poll Only)", TileHeight = 1, TileFactorY = 2, NoTE = true, FontSize = 16, Foreground = "#008800" });
+                StartFld++;
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, StartFld, 0x2, 0x0, $"Select Thing-Source", $"MAIN_ThingSource", new nmiCtrlThingPicker() { NoTE = true, Value = $"{GetProperty($"MAIN_ThingSource", false)?.GetValue()}", TileWidth = 5 });
+                StartFld++;
+                var tBut2 = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, StartFld, 2, 0, null, null, new nmiCtrlTileButton { TileWidth = 1, NoTE = true, AreYouSure = "Are you sure you want to override all Thing-Sources for this Device?", Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
+                tBut2.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, $"MAIN_OVERRIDE", (sender, pObj) =>
+                {
+                    if (pObj is not TheProcessMessage pMsg || pMsg.Message == null) return;
+                    var t = pMsg.Message.PLS.Split(':');
+                    Guid MainTS = CU.CGuid(MyBaseThing.GetProperty("MAIN_ThingSource", false)?.GetValue());
+                    if (MainTS == Guid.Empty)
+                    {
+                        TheCommCore.PublishToOriginator(pMsg.Message, new TSM(eEngineName.NMIService, "NMI_INFO", "Please Select a Source-Thing First"));
+                        return;
+                    }
+                    foreach (var tp in MyPollingProps)
+                    {
+                        MyBaseThing.SetProperty($"PM_ThingSource_{tp}", MainTS);
+                        MyBaseThing.SetProperty($"PM_ThingProp_{tp}", tp);
+                        ResetMapper(tp);
+                    }
+                });
+                StartFld++;
+                foreach (var item in MyPollingProps)
+                {
+                    AddPropertyMapper(pForm, item, ref StartFld);
+                }
+            }
+        }
+
+        private Dictionary<string, TheFieldInfo> AddPropertyMapper(TheFormInfo pTargetForm, string propName, ref int StartFld)
+        {
+            var flds = new Dictionary<string, TheFieldInfo>();
+
+            if (string.IsNullOrEmpty(propName)) return flds;
+            cdeP tp = GetProperty(propName, true);
+
+            var tName = CU.CStr(tp.GetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), false));
+            if (string.IsNullOrEmpty(tName)) tName = tp.Name;
+            flds["GROUP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileGroup, 1 + StartFld, 0, 0, null, null, new nmiCtrlTileGroup { TileHeight = 1, TileWidth = 6 });
+            flds["THING"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ThingPicker, 3 + StartFld, 0x2, 0x0, $"{tName} Thing-Source", $"PM_ThingSource_{tp.Name}", new nmiCtrlThingPicker() { NoTE = true, Value = $"{GetProperty($"PM_ThingSource_{tp.Name}", false)?.GetValue()}", TileWidth = 3, ParentFld = 1 + StartFld });
+            flds["PROP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.PropertyPicker, 4 + StartFld, 0x2, 0x0, "Property", $"PM_ThingProp_{tp.Name}", new nmiCtrlPropertyPicker() { NoTE = true, Value = $"{GetProperty($"PM_ThingProp_{tp.Name}", false)?.GetValue()}", TileWidth = 2, ThingFld = 3 + StartFld, ParentFld = 1 + StartFld });
+            var tBut2 = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileButton, 5 + StartFld, 2, 0, null, null, new nmiCtrlTileButton { ParentFld = 1 + StartFld, TileWidth = 1, NoTE = true, Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
+            tBut2.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, $"RM_{tp.Name}", (sender, pObj) =>
+            {
+                if (pObj is not TheProcessMessage pMsg || pMsg.Message == null) return;
+                var t = pMsg.Message.PLS.Split(':');
+                ResetMapper(t[1].Substring(3));
+            });
+            flds["BUTTON"] = tBut2;
+            ResetMapper(tp.Name);
+            StartFld += 7;
+            return flds;
+        }
+        readonly Dictionary<string, Guid> mPropMapper = new();
+        void ResetMapper(string NameOfMapper)
+        {
+            Guid tg;
+            if (mPropMapper.ContainsKey(NameOfMapper))
+            {
+                tg = mPropMapper[NameOfMapper];
+                TheThingRegistry.UnmapPropertyMapper(tg);
+            }
+            tg = TheThingRegistry.PropertyMapper(TheThing.GetSafePropertyGuid(MyBaseThing, $"PM_ThingSource_{NameOfMapper}"), TheThing.GetSafePropertyString(MyBaseThing, $"PM_ThingProp_{NameOfMapper}"), MyBaseThing.cdeMID, $"{NameOfMapper}", false);
+            if (tg != Guid.Empty)
+                mPropMapper[NameOfMapper] = tg;
+        }
+
+        /// <summary>
+        /// Starts all Property Mappers of the Group. Should be called in the Group Init() function
+        /// </summary>
+        protected void RestartAllMapper()
+        {
+            foreach (var tp in MyBaseThing.GetPropertiesStartingWith("PM_ThingSource_").OrderBy(s => s.Name))
+            {
+                ResetMapper(tp.Name.Substring("PM_ThingSource_".Length));
+            }
+        }
+        #endregion
+
         /// <summary>
         /// Updates all Fld Positions
         /// </summary>
@@ -586,7 +673,7 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     foreach (var firstPin in gThing.GetBaseThing().GetAllPins())
                     {
-                        var tConnList = $"{gThing.GetProperty($"PINCON_{firstPin.PinName}", false).GetValue()}";
+                        var tConnList = $"{gThing.GetProperty($"PINCON_{firstPin.PinName}", false)?.GetValue()}";
                         if (!string.IsNullOrEmpty(tConnList))
                         {
                             var tList = tConnList.Split(';');
@@ -605,7 +692,7 @@ namespace nsCDEngine.Engines.ThingService
                     }
                 }
             }
-            catch (Exception ex) 
+            catch (Exception) 
             {
                 //
             }
@@ -657,6 +744,16 @@ namespace nsCDEngine.Engines.ThingService
 
             if (NMIEditorField != null)
                 NMIEditorField.PropertyBag = new nmiCtrlTileGroup { TileWidth = tw, TileHeight = th };
+        }
+
+        int calculateFlowLength(int LineWidth)
+        {
+            int flowlength = 150;
+            while (LineWidth > flowlength)
+            {
+                flowlength *= 2;
+            }
+            return flowlength;
         }
 
         /// <summary>
@@ -714,7 +811,7 @@ namespace nsCDEngine.Engines.ThingService
                                 int yl = Math.Abs(sTop - tTop);
                                 if (yl < lineWidth) yl = lineWidth;
 
-                                bool bDrawAtTarget = false;// sourcePin.DrawLineAtTarget;
+                                bool bDrawAtTarget = false;
                                 if (sourcePin.NMIPinLocation == ThePin.ePinLocation.Right && tLeft > sLeft)
                                     bDrawAtTarget = true;
                                 if (sourcePin.NMIPinLocation == ThePin.ePinLocation.Left && tLeft < sLeft)
@@ -733,7 +830,7 @@ namespace nsCDEngine.Engines.ThingService
                                     StringBuilder moveData = new();
                                     int movecnt = ((yl + lineWidth) / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {10 * 2}s;\"></div>");
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-name: flow-{dir}{calculateFlowLength(yl)}; animation-duration: {movecnt * 2}s;\"></div>");
                                     #endregion
 
                                     int x = sLeft;
@@ -766,7 +863,7 @@ namespace nsCDEngine.Engines.ThingService
                                     StringBuilder moveData = new();
                                     int movecnt = (xl / 100) + 1;
                                     for (int n = 0; n < movecnt; n++)
-                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-duration: {movecnt * 2}s;\"></div>");
+                                        moveData.Append($"<div class=\"cde{flowStyle}flow{dir}\" style=\"animation-delay: {n * 2}s; animation-name: flow-{dir}{calculateFlowLength(xl)}; animation-duration: {movecnt * 2}s;\"></div>");
                                     #endregion
 
                                     int x = sLeft;

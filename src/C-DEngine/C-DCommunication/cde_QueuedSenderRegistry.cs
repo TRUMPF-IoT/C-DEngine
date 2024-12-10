@@ -1186,6 +1186,32 @@ namespace nsCDEngine.Communication
             }
             TheCDEKPIs.DecrementKPI(eKPINames.KPI3);
         }
+
+        /// <summary>
+        /// new in CDE 6.0: Allows to intercept WebSocket Calls other than ISB requests
+        /// </summary>
+        /// <param name="wsSocket"></param>
+        /// <param name="pRequestData"></param>
+        /// <returns></returns>
+        public static async Task<string> ProcessWSRequest(System.Net.WebSockets.WebSocket wsSocket, TheRequestData pRequestData)
+        {
+            TheWSCustomProcessor tProcessor = null;
+            try
+            {
+                if (!TheCommCore.CustomWSHooks.IsEventRegistered(pRequestData.RequestUri.PathAndQuery))
+                    return null;
+
+                tProcessor = new TheWSCustomProcessor(wsSocket);
+                return await tProcessor.ProcessWS(pRequestData);
+            }
+            catch (Exception ex)
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(2828, new TSM("ASHXHandler", "Processing Error", ex.ToString()));
+                if (tProcessor != null)
+                    tProcessor.Shutdown(true, "ASHX Handler encountered Error");
+            }
+            return null;
+        }
 #endif
 
         /// <summary>

@@ -18,6 +18,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Xml.Linq;
 
 namespace nsCDEngine.BaseClasses
 {
@@ -52,7 +53,10 @@ namespace nsCDEngine.BaseClasses
                 Dictionary<string, string> tL = new();
                 Assembly tCryptoAssembly = null;
                 string codeSignThumb;
-                if (AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
+                var types = AppDomain.CurrentDomain.GetAssemblies();
+                if (pDLLName.ToLower().EndsWith(".dll"))
+                    tCryptoAssembly = types.FirstOrDefault(g => g.Location.Contains(pDLLName.Substring(0,pDLLName.Length-4)));//new way of detecting mobile devices
+                if (tCryptoAssembly == null) // AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
                 {
                     TheSystemMessageLog.ToCo($"Starting CodeSign-Verifier in ({pDLLName}) with DVT:{bDontVerifyTrust} VTP:{bVerifyTrustPath} DVI:{bDontVerifyIntegrity}");
                     MyCodeSigner ??= new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
@@ -71,25 +75,21 @@ namespace nsCDEngine.BaseClasses
                 }
                 else
                 {
-                    var types = AppDomain.CurrentDomain.GetAssemblies();
-                    tCryptoAssembly = types.FirstOrDefault(g => g.Location.Contains(pDLLName));
-                    if (tCryptoAssembly != null)
+                    TheSystemMessageLog.ToCo($"Crypto-Lib ({pDLLName}) preloaded with DVT:{bDontVerifyTrust} VTP:{bVerifyTrustPath} DVI:{bDontVerifyIntegrity}");
+                    var CDEPlugins = from t in tCryptoAssembly.GetTypes()
+                                     let ifs = t.GetInterfaces()
+                                     where ifs != null && ifs.Length > 0 && (ifs.Any(s => _KnownInterfaces.Contains(s.Name)))
+                                     select new { Type = t, t.Namespace, t.Name, t.FullName };
+                    foreach (var Plugin in CDEPlugins)
                     {
-                        var CDEPlugins = from t in tCryptoAssembly.GetTypes()
-                                         let ifs = t.GetInterfaces()
-                                         where ifs != null && ifs.Length > 0 && (ifs.Any(s => _KnownInterfaces.Contains(s.Name)))
-                                         select new { Type = t, t.Namespace, t.Name, t.FullName };
-                        foreach (var Plugin in CDEPlugins)
+                        if (Plugin?.Type?.IsAbstract == false)
                         {
-                            if (Plugin?.Type?.IsAbstract == false)
+                            var ints = Plugin.Type.GetInterfaces();
+                            foreach (var tI in ints)
                             {
-                                var ints = Plugin.Type.GetInterfaces();
-                                foreach (var tI in ints)
+                                if (_KnownInterfaces.Contains(tI.Name))
                                 {
-                                    if (_KnownInterfaces.Contains(tI.Name))
-                                    {
-                                        tL[tI.Name] = Plugin.FullName;
-                                    }
+                                    tL[tI.Name] = Plugin.FullName;
                                 }
                             }
                         }

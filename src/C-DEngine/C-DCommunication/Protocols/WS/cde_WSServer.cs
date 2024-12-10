@@ -106,9 +106,19 @@ namespace nsCDEngine.Communication
                         return;
                     }
                 }
-                TheWSProcessor8 tProcessor = new (wsc.WebSocket);
-                tProcessor.SetRequest(tRequestData);
-                await tProcessor.ProcessWS();
+                if (tRequestData.RequestUri.PathAndQuery.StartsWith("/ISB"))
+                {
+                    TheWSProcessor8 tProcessor = new(wsc.WebSocket);
+                    tProcessor.SetRequest(tRequestData);
+                    await tProcessor.ProcessWS();
+                }
+                else
+                {
+                    if (!TheCommCore.CustomWSHooks.IsEventRegistered(tRequestData.RequestUri.PathAndQuery))
+                        return;
+                    TheWSCustomProcessor tProcessor = new TheWSCustomProcessor(wsc.WebSocket);
+                    await tProcessor.ProcessWS(tRequestData);
+                }
             }
         }
 
