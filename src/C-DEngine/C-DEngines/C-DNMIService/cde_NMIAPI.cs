@@ -2282,7 +2282,7 @@ namespace nsCDEngine.Engines.NMIService
             int grpFld = 100 * pPageNumber;
             tFlds["Group"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld, 0, 0, null, null, new nmiCtrlTileGroup { TileWidth = 12, Visibility = (pPageNumber == 1), Group = $"WizarePage:{pPageNumber}" });
             if (pPageTitle != null)
-                tFlds["Caption"] = AddSmartControl(pBaseThing, pForm, eFieldType.SmartLabel, grpFld + 1, 0, 0, null, null, new nmiCtrlSmartLabel { ParentFld = grpFld, NoTE = true, Text = pPageTitle, TileWidth = 12, TileHeight = 1, ContainerClassName = "cdeWizardCaption" });
+                tFlds["Caption"] = AddSmartControl(pBaseThing, pForm, eFieldType.SmartLabel, grpFld + 1, 0, 0, null, null, new nmiCtrlSmartLabel { ParentFld = grpFld, NoTE = true, Text = pPageTitle, TileWidth = 12, TileHeight = 1, ClassName= "cdeWizardCaptionText", ContainerClassName = "cdeWizardCaption" });
 
             tFlds["LowerSpacerLine"] = AddWizardSpacer(pBaseThing, pForm, pPageNumber, 2, 12, 1, new nmiCtrlTileGroup { TileFactorY = 12, ClassName = "cdeWizardSpacer" });
 
@@ -2297,7 +2297,7 @@ namespace nsCDEngine.Engines.NMIService
 
             tFlds["BottomSpacerLine"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 89, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld, TileWidth = 12, TileHeight = 1, TileFactorY = 12, ClassName= "cdeWizardSpacer" });
 
-            tFlds["ButtonGroup"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 90, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld, TileWidth = 12, TileHeight = 1 });
+            tFlds["ButtonGroup"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 90, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld, TileWidth = 12, TileHeight = 1, ClassName = "cdeWizardButtonBack" });
             if (pPrevPage < 0 && pNextPage < 0)
             {
                 tFlds["Spacer"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 94, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld + 90, TileWidth = 8, TileHeight = 1 });
@@ -2309,14 +2309,14 @@ namespace nsCDEngine.Engines.NMIService
                     tCancel = $"TTS:{tCancel}";
                 else
                     tCancel = $"TTS:{pForm.TableReference}";
-                tFlds["CancelButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 92, 2, 0, "Cancel", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, TileWidth = 2, OnClick = tCancel, TileHeight = 1, NoTE = true });
+                tFlds["CancelButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 92, 2, 0, "Cancel", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, TileWidth = 2, OnClick = tCancel, TileHeight = 1, NoTE = true, ClassName = "cdeWizardCancel" });
 
                 tFlds["Spacer"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileGroup, grpFld + 94, 0, 0, null, null, new nmiCtrlTileGroup { ParentFld = grpFld + 90, TileWidth = 6, TileHeight = 1 });
-                tFlds["BackButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 96, pPrevPage > 0 ? 2 : 0, 0, "Back", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, OnClick = (pPageNumber > 1 ? $"GRP:WizarePage:{pPrevPage}" : ""), TileWidth = 2, TileHeight = 1, NoTE = true });
+                tFlds["BackButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 96, pPrevPage > 0 ? 2 : 0, 0, "Back", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, OnClick = (pPageNumber > 1 ? $"GRP:WizarePage:{pPrevPage}" : ""), TileWidth = 2, TileHeight = 1, NoTE = true, ClassName="cdeWizardBack" });
                 var tFinish = ThePropertyBag.PropBagGetValue(pForm.PropertyBag, "FinishScreenID", "=");
                 if (!string.IsNullOrEmpty(tFinish))
                     tFinish = $"TTS:{tFinish}";
-                tFlds["NextButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 98, 2, 0, pNextPage > 0 ? "Next" : "Finish", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, IsSubmit = (pNextPage <= 0), OnClick = (pNextPage > 0 ? $"GRP:WizarePage:{pNextPage}:{pDisplayCondition}" : tFinish), TileWidth = 2, TileHeight = 1, NoTE = true });
+                tFlds["NextButton"] = AddSmartControl(pBaseThing, pForm, eFieldType.TileButton, grpFld + 98, 2, 0, pNextPage > 0 ? "Next" : "Finish", null, new nmiCtrlTileButton { ParentFld = grpFld + 90, IsSubmit = (pNextPage <= 0), OnClick = (pNextPage > 0 ? $"GRP:WizarePage:{pNextPage}:{pDisplayCondition}" : tFinish), TileWidth = 2, TileHeight = 1, NoTE = true, ClassName = "cdeWizardFinish" });
             }
             return tFlds;
         }
