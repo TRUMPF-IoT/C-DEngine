@@ -298,6 +298,7 @@ namespace nsCDEngine.Engines.ThingService
         {
             bool DisallowAdd = CU.CBool(MyBaseThing.GetProperty("NMI_DisallowAdd", false)?.GetValue());
             bool ShowAllProperties = CU.CBool(MyBaseThing.GetProperty("NMI_ShowAllProperties", false)?.GetValue());
+            bool AllowAllPropertiesInCloud = CU.CBool(MyBaseThing.GetProperty("NMI_AllowAllPropertiesInCloud", false)?.GetValue());
             bool AddRefresh = CU.CBool(MyBaseThing.GetProperty("NMI_AddRefresh", false)?.GetValue());
 
             NMIEditorField = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileGroup, MyGroupForm.FldPos, 0, 0, null, null, new nmiCtrlTileGroup { NoTE = true });
@@ -379,7 +380,7 @@ namespace nsCDEngine.Engines.ThingService
 
             if (ShowAllProperties)
             {
-                pUXFlds["PropTableGroup"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2, 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
+                pUXFlds["PropTableGroup"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2 + (AllowAllPropertiesInCloud ? 0 : 128), 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
                 pUXFlds["PropTable"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.Table, 10010, 8, 0x80, null, "mypropertybag", new nmiCtrlTableView() { TileWidth = 12, TileHeight = 7, NoTE = true, ParentFld = 10000, ShowFilterField = true });
             }
             return true;
