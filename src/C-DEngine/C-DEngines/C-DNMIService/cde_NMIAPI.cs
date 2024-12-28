@@ -2519,6 +2519,8 @@ namespace nsCDEngine.Engines.NMIService
                 if (!string.IsNullOrEmpty(pCate))
                     pCate = $"{addDots}{pCate}";
             }
+            if (ThePropertyBag.PropBagHasValue(pProperties, "Title", "="))
+                pDashTileCaption = ThePropertyBag.PropBagGetValue(pProperties, "Title");
             int pFormSize = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "TileWidth"));
             int pMaxFormSize = TheCommonUtils.CInt(ThePropertyBag.PropBagGetValue(pProperties, "MaxTileWidth"));
             if (pMaxFormSize < 6 && pMaxFormSize > 0)
