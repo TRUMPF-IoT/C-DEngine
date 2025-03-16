@@ -1386,7 +1386,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             TSM tForward = TSM.Clone(pMsg, true);
                                             tForward.ENG = tTable.OwnerEngine;
-                                            tBase.ProcessMessage(tForward);
+                                            tBase.ProcessMessage(new TheProcessMessage() { Topic = TheBaseAssets.MyScopeManager.AddScopeID(tForward.ENG, ref tForward.SID, true), ClientInfo = pClientInfo, Message = tForward });
                                             return true;
                                         }
                                         return false; //No processing here
@@ -1588,6 +1588,17 @@ namespace nsCDEngine.Engines.NMIService
             }
             TheCommCore.PublishToOriginator(pMsg, tTsm);
             return true;
+        }
+
+        public static string AddModelUpdate(TheClientInfo pClientInfo, TheFormInfo tTable, bool ForceReload)
+        {
+            TheFormInfo tToSend = tTable.Clone(pClientInfo.WebPlatform);
+            CheckAddButtonPermission(pClientInfo, tToSend);
+            var tso = TheFormsGenerator.GetScreenOptions(tTable.cdeMID, pClientInfo, ForceReload ? tTable : null);
+            if (tso != null && tso.TileWidth > 0)
+                tToSend.TileWidth = tso.TileWidth;
+            tToSend.FormFields = TheFormsGenerator.GetPermittedFields(tTable.cdeMID, pClientInfo, tso, true);
+            return ":-MODELUPDATE-:" + TheCommonUtils.GenerateFinalStr(TheCommonUtils.SerializeObjectToJSONString(tToSend.GetLocalizedForm(pClientInfo.LCID)));
         }
 
         internal static void CheckAddButtonPermission(TheClientInfo pClientInfo, TheFormInfo tToSend)
