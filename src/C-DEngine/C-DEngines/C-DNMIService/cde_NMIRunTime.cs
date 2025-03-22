@@ -162,7 +162,8 @@ namespace nsCDEngine.Engines.NMIService
                                         }
                                         if (!bDontShowDefault)
                                         {
-                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2010, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new ThePropertyBag() { "NoTE=true", "TileHeight=8", "TileWidth=6" });
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.CollapsibleGroup, 2010, 2, 0, "Element Properties",null, new nmiCtrlCollapsibleGroup { IsSmall = true, DoClose = true, TileHeight=10, TileWidth=6 });
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2011, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new nmiCtrlTableView() { NoTE=true, ParentFld=2010, TileHeight=5, TileWidth=6 });
                                         }
                                         ReloadNMIEditor();
                                     }

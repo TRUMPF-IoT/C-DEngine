@@ -393,11 +393,14 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (MyPollingProps?.Count > 0)
             {
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SmartLabel, StartFld, 0, 0, null, null, new nmiCtrlSmartLabel { Text = "Poll-Mapper (Sim-Mode: Poll Only)", TileHeight = 1, TileFactorY = 2, NoTE = true, FontSize = 16, Foreground = "#008800" });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.CollapsibleGroup, StartFld, 2, 0, "Poll-Mapper (Sim-Mode: Poll Only)", null, new nmiCtrlCollapsibleGroup{ TileHeight = 20, TileWidth=6, DoClose=true, IsSmall=true });
                 StartFld++;
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, StartFld, 0x2, 0x0, $"Select Thing-Source", $"MAIN_ThingSource", new nmiCtrlThingPicker() { NoTE = true, Value = $"{GetProperty($"MAIN_ThingSource", false)?.GetValue()}", TileWidth = 5 });
+                int tParent = StartFld;
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileGroup, StartFld, 0, 0, null, null, new nmiCtrlTileGroup { TileHeight = 9, TileWidth = 6,ParentFld=tParent-1, IsVScrollable=true });
                 StartFld++;
-                var tBut2 = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, StartFld, 2, 0, null, null, new nmiCtrlTileButton { TileWidth = 1, NoTE = true, AreYouSure = "Are you sure you want to override all Thing-Sources for this Device?", Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, StartFld, 0x2, 0x0, $"Select Thing-Source", $"MAIN_ThingSource", new nmiCtrlThingPicker() { NoTE = true, ParentFld=tParent, Value = $"{GetProperty($"MAIN_ThingSource", false)?.GetValue()}", TileWidth = 5 });
+                StartFld++;
+                var tBut2 = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, StartFld, 2, 0, null, null, new nmiCtrlTileButton { ParentFld = tParent, TileWidth = 1, NoTE = true, AreYouSure = "Are you sure you want to override all Thing-Sources for this Device?", Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
                 tBut2.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, $"MAIN_OVERRIDE", (sender, pObj) =>
                 {
                     if (pObj is not TheProcessMessage pMsg || pMsg.Message == null) return;
@@ -418,12 +421,12 @@ namespace nsCDEngine.Engines.ThingService
                 StartFld++;
                 foreach (var item in MyPollingProps)
                 {
-                    AddPropertyMapper(pForm, item, ref StartFld);
+                    AddPropertyMapper(pForm, item, ref StartFld, tParent);
                 }
             }
         }
 
-        private Dictionary<string, TheFieldInfo> AddPropertyMapper(TheFormInfo pTargetForm, string propName, ref int StartFld)
+        private Dictionary<string, TheFieldInfo> AddPropertyMapper(TheFormInfo pTargetForm, string propName, ref int StartFld, int pParentFld)
         {
             var flds = new Dictionary<string, TheFieldInfo>();
 
@@ -432,7 +435,7 @@ namespace nsCDEngine.Engines.ThingService
 
             var tName = CU.CStr(tp.GetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), false));
             if (string.IsNullOrEmpty(tName)) tName = tp.Name;
-            flds["GROUP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileGroup, 1 + StartFld, 0, 0, null, null, new nmiCtrlTileGroup { TileHeight = 1, TileWidth = 6 });
+            flds["GROUP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileGroup, 1 + StartFld, 0, 0, null, null, new nmiCtrlTileGroup { TileHeight = 1, ParentFld=pParentFld, TileWidth = 6 });
             flds["THING"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ThingPicker, 3 + StartFld, 0x2, 0x0, $"{tName} Thing-Source", $"PM_ThingSource_{tp.Name}", new nmiCtrlThingPicker() { NoTE = true, Value = $"{GetProperty($"PM_ThingSource_{tp.Name}", false)?.GetValue()}", TileWidth = 3, ParentFld = 1 + StartFld });
             flds["PROP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.PropertyPicker, 4 + StartFld, 0x2, 0x0, "Property", $"PM_ThingProp_{tp.Name}", new nmiCtrlPropertyPicker() { NoTE = true, Value = $"{GetProperty($"PM_ThingProp_{tp.Name}", false)?.GetValue()}", TileWidth = 2, ThingFld = 3 + StartFld, ParentFld = 1 + StartFld });
             var tBut2 = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileButton, 5 + StartFld, 2, 0, null, null, new nmiCtrlTileButton { ParentFld = 1 + StartFld, TileWidth = 1, NoTE = true, Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
