@@ -930,12 +930,12 @@ namespace nsCDEngine.Engines.NMIService
         /// <summary>
         /// Maximum Value the number will accept
         /// </summary>
-        public int MaxValue { get; set; }
+        public double MaxValue { get; set; }
 
         /// <summary>
         /// Minimum Value the Number will accept
         /// </summary>
-        public int MinValue { get; set; }
+        public double MinValue { get; set; }
 
         /// <summary>
         /// if larger than zero the number will only show this amount of digits
@@ -952,8 +952,8 @@ namespace nsCDEngine.Engines.NMIService
     {
         public string SubTitle { get; set; }
 
-        public int LowerLimit { get; set; }
-        public int UpperLimit { get; set; }
+        public double LowerLimit { get; set; }
+        public double UpperLimit { get; set; }
     }
 
     /// <summary>
