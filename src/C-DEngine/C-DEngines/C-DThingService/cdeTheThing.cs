@@ -412,7 +412,7 @@ namespace nsCDEngine.Engines.ThingService
             bool hideBorder = ThePropertyBag.PropBagHasValue(pProperties, "HideBorder", "=");
             foreach (var pin in tPins)
             {
-                if (pin.NMIPinLocation < 0)
+                if (pin.NMIPinPosition < 0)
                     continue;
                 TheFieldInfo tfld = null;
                 if (pin.NMIPinLocation == ThePin.ePinLocation.Left)
