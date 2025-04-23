@@ -412,6 +412,8 @@ namespace nsCDEngine.Engines.ThingService
             bool hideBorder = ThePropertyBag.PropBagHasValue(pProperties, "HideBorder", "=");
             foreach (var pin in tPins)
             {
+                if (pin.NMIPinLocation < 0)
+                    continue;
                 TheFieldInfo tfld = null;
                 if (pin.NMIPinLocation == ThePin.ePinLocation.Left)
                     tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",

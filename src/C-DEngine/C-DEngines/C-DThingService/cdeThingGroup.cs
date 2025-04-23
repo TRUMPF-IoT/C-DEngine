@@ -782,6 +782,8 @@ namespace nsCDEngine.Engines.ThingService
                     var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList(); //Starting from "Out" pins as SourcePins
                     foreach (var sourcePin in sourceOutPins)
                     {
+                        if (sourcePin.NMIPinLocation < 0)
+                            continue;
                         string PinTypeFilter = ThePropertyBag.PropBagGetValue(pProperties, "PinTypeFilter");
                         if (!string.IsNullOrEmpty(PinTypeFilter) && sourcePin.PinType != PinTypeFilter) continue;
                         var targetInPins = sourcePin?.GetConnectedPins();   //To their connected Pins "In" Pins as TargetPins
@@ -791,6 +793,8 @@ namespace nsCDEngine.Engines.ThingService
                             bool sourceHasLeftPin = allSourcePins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
                             foreach (var targetPin in targetInPins)
                             {
+                                if (targetPin.NMIPinLocation < 0)
+                                    continue;
                                 var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
                                 var targetTB = targetT?.GetObject() as TheThingBase;
                                 var targetFace = targetTB?.MyNMIFaceModel;
