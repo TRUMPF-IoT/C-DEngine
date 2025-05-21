@@ -556,23 +556,23 @@ namespace nsCDEngine.Security
                             }
                             firstSignerCert ??= signedCms.SignerInfos[0].Certificate;
 
-                            if (false) //CM: as of 6.115.0 / 2025-05-21 we move to SHA386 - this algorithm is sha1 dependend and will no longer work
-                            {
-                                // Propertly parse the SpcIndirectDataContent structure per Authenticode Spec
-                                // For SHA1 the hash is always in the last 20 bytes of the content info: if another algorithm is used we will currently reject the signature
-                                var signedHash = new byte[20];
-                                byte[] contentBytes = signedCms.ContentInfo.Content;
-                                signedHash = contentBytes.Skip(contentBytes.Length - 20).ToArray();
+                            //if (false) //CM: as of 6.115.0 / 2025-05-21 we move to SHA386 - this algorithm is sha1 dependend and will no longer work
+                            //{
+                            //    // Propertly parse the SpcIndirectDataContent structure per Authenticode Spec
+                            //    // For SHA1 the hash is always in the last 20 bytes of the content info: if another algorithm is used we will currently reject the signature
+                            //    var signedHash = new byte[20];
+                            //    byte[] contentBytes = signedCms.ContentInfo.Content;
+                            //    signedHash = contentBytes.Skip(contentBytes.Length - 20).ToArray();
 
-                                // Compute the image hash, ignoring certain sections per Authenticode spec
-                                var fileHash = ComputePEHash(fileStream, optionalHeaderOffset, headerOffset, dataDirectoryOffset, certificateTableSize, certificateTableEntryOffset);
+                            //    // Compute the image hash, ignoring certain sections per Authenticode spec
+                            //    var fileHash = ComputePEHash(fileStream, optionalHeaderOffset, headerOffset, dataDirectoryOffset, certificateTableSize, certificateTableEntryOffset);
 
-                                if (fileHash?.SequenceEqual(signedHash) != true)
-                                {
-                                    TheSystemMessageLog.ToCo($"File hash doesn't match signature: file was tampered with or not using SHA1!");
-                                    return null;
-                                }
-                            }
+                            //    if (fileHash?.SequenceEqual(signedHash) != true)
+                            //    {
+                            //        TheSystemMessageLog.ToCo($"File hash doesn't match signature: file was tampered with or not using SHA1!");
+                            //        return null;
+                            //    }
+                            //}
                         }
                     }
                     if (!verifyIntegrity && firstSignerCert == null)
