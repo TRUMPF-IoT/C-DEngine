@@ -28,13 +28,6 @@ using TT = nsCDEngine.Engines.ThingService.TheThing;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
-#if CDE_NET4
-// .Net 4 does not have this, while Net 3.5 does: workaround to make this compile-time only feature work:
-namespace System.Runtime.CompilerServices {
-    sealed class CallerMemberNameAttribute : Attribute { }
-}
-#endif
-
 namespace nsCDEngine.Engines.ThingService
 {
     /// <summary>

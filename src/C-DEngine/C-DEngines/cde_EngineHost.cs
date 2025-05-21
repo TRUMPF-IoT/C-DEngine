@@ -356,11 +356,7 @@ namespace nsCDEngine.Engines
                         {
                             PluginType = mEng.GetType(),
                             ServiceName = mEng.GetType().FullName,
-#if CDE_NET35 || CDE_NET4
-                            PluginPath = mEng.GetType().Assembly.Location
-#else
                             PluginPath = mEng.GetType().GetTypeInfo().Assembly.Location
-#endif
                         });
                     }
                 }
@@ -373,7 +369,6 @@ namespace nsCDEngine.Engines
                 return;
             }
 
-#if !CDE_NET4
             if (!TheCommonUtils.IsFeather())
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4172, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files", eMsgLevel.l7_HostDebugMessage));
@@ -404,7 +399,6 @@ namespace nsCDEngine.Engines
                     }
                 });
             }
-#endif
             TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Starting Engines", eMsgLevel.l7_HostDebugMessage));
 
             IsHostReady = TheThingRegistry.RegisterHost();
@@ -1035,31 +1029,8 @@ namespace nsCDEngine.Engines
             DirectoryInfo di = new (UpdateDirectory);
             try
             {
-#if !CDE_NET35 && !CDE_STANDARD //Child Domains not supported on NET35
-                //Create separate AppDomain to probe for Plugin Types
-                var settings = new AppDomainSetup
-                {
-                    ApplicationBase = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash() // AppDomain.CurrentDomain.BaseDirectory,
-                };
-                if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.cdeHostingType!=cdeHostType.IIS)
-                {
-                    System.Security.Policy.Evidence adevidence = AppDomain.CurrentDomain.Evidence;
-                    var childDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), adevidence, settings);
-                    childDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
-                    var handle = Activator.CreateInstance(childDomain,
-                    typeof(ReferenceLoader).Assembly.FullName,
-                    typeof(ReferenceLoader).FullName,
-                    false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.CurrentCulture, new object[0]);
-                    var loader = (ReferenceLoader)handle.Unwrap();
-                    ProcessDirectory(di, "", UpdateDirectory, loader);
-                    AppDomain.Unload(childDomain);
-                }
-                else
-#endif
-                {
-                    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
-                    ProcessDirectory(di, "", UpdateDirectory, new ReferenceLoader());
-                }
+                AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
+                ProcessDirectory(di, "", UpdateDirectory, new ReferenceLoader());
             }
             catch (Exception e)
             {

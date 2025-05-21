@@ -1379,12 +1379,7 @@ namespace nsCDEngine.ISM
 
         ///New in V4.2 = Remote Provisioning
         ///
-
-        private static
-#if !CDE_NET4
-            async
-#endif
-        Task<string> GetProvisioningInfo(string pProvService, string pDeviceToken)
+        private static async Task<string> GetProvisioningInfo(string pProvService, string pDeviceToken)
         {
             if (string.IsNullOrEmpty(pDeviceToken))
             {
@@ -1418,11 +1413,7 @@ namespace nsCDEngine.ISM
             {
                 postCS.TrySetResult(r.ErrorDescription);
             });
-#if !CDE_NET4
             if (!string.IsNullOrEmpty(await postCS.Task.ConfigureAwait(false)))
-#else
-            if (!string.IsNullOrEmpty(postCS.Task.Result))
-#endif
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service ({pProvService}) did not respond", eMsgLevel.l1_Error, postCS.Task.Result));
                 return CU.TaskOrResult(postCS.Task.Result);

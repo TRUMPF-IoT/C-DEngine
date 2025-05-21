@@ -53,7 +53,6 @@ namespace nsCDEngine.BaseClasses
         /// <returns>True if running on .NET Core.</returns>
         public static bool IsNetCore()
         {
-#if !CDE_NET35 && !CDE_NET4
             try
             {
                 var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
@@ -63,7 +62,6 @@ namespace nsCDEngine.BaseClasses
             {
                 //intent
             }
-#endif
             return false;
         }
 
@@ -234,11 +232,7 @@ namespace nsCDEngine.BaseClasses
                 {
                     return cdeUUIDtoGuid(s1);
                 }
-#if CDE_NET35
-                retGuid = new Guid(CStr(inObj));
-#else
                 Guid.TryParse(CStr(inObj), out retGuid);
-#endif
             }
             catch
             {
@@ -392,15 +386,10 @@ namespace nsCDEngine.BaseClasses
             }
             else if (inObj is string s2)
             {
-#if !CDE_NET35
                 if (!TimeSpan.TryParse(s2, CultureInfo.InvariantCulture, out ret))
                 { 
                     //intent
                 }
-#else
-                if (!TimeSpan.TryParse((string)inObj, out ret))
-                { }
-#endif
             }
             return ret;
         }
@@ -1424,13 +1413,6 @@ namespace nsCDEngine.BaseClasses
                     }
                 }, pThreadName, defaultTaskCreationOptions | (longRunning ? TaskCreationOptions.LongRunning : 0));
 
-#if CDE_NET4 || CDE_NET35
-            // On Net4 and earlier a task with an unobserved exception takes down the process during garbage collection/finalization of the task object
-            // This continuation observes the exception and prevents that.
-            // On Net45 and newer, such unobserved task exception are ignored.
-            task.ContinueWith(c => { var ignored = c.Exception; }, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
-#endif
-
                 if (pendingTask != null)
                 {
                     pendingTask.task = task;
@@ -1456,15 +1438,6 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static Uri SetWSInfo(this Uri uri, int newPort, string pPath)
         {
-#if CDE_NET35
-            if (newPort == -1)
-            {
-                if (uri.Scheme == "wss")
-                {
-                    newPort = 443;
-                }
-            }
-#endif
             var builder = new UriBuilder(uri + pPath)
             {
                 Port = newPort

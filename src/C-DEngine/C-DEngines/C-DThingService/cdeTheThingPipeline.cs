@@ -19,8 +19,6 @@ namespace nsCDEngine.Engines.ThingService
     public sealed partial class TheThing : TheMetaDataBase, ICDEThing
     {
 
-#if !CDE_NET4
-
         public class ThePipelineConfiguration
         {
             public string FriendlyName;
@@ -571,9 +569,5 @@ namespace nsCDEngine.Engines.ThingService
             }
             return pipelineAnswerConfig;
         }
-
-#endif
-
     }
-
 }

@@ -613,9 +613,7 @@ namespace nsCDEngine.ViewModels
                     _myRSA = null;
                     try
                     {
-#if !CDE_NET35
                         myRSATemp.Dispose();
-#endif
                     }
                     catch { 
                     //intent
@@ -917,20 +915,7 @@ namespace nsCDEngine.ViewModels
             {
                 if (_postDataStream != null)
                 {
-#if !CDE_NET35
                     _postDataStream.CopyTo(stream);
-#else
-                    var buffer = new byte[4096];
-                    int bytesRead = 0;
-                    do
-                    {
-                        bytesRead = _postDataStream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead > 0)
-                        {
-                            stream.Write(buffer, 0, bytesRead);
-                        }
-                    } while (bytesRead > 0);
-#endif
                 }
             }
         }

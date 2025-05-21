@@ -137,11 +137,7 @@ namespace nsCDEngine.Communication
                 {
                     try
                     {
-#if CDE_NET35 || CDE_NET4
-                    System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)0x00000C00;
-#else
                         System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
-#endif
                     }
                     catch
                     {

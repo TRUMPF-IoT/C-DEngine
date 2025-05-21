@@ -621,7 +621,6 @@ namespace nsCDEngine.ISM
             if (!string.IsNullOrEmpty(pUpdateDir)) uDir += pUpdateDir;
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.IIS) uDir += "\\bin";
 
-#if !CDE_NET4 && !CDE_NET35    //TODO: Need to dynamically load the required ZipArchive dependencies
             if (TheCommonUtils.IsOnLinux() || !ShutdownRequired)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"Updating files: {pSourceFile} to: {uDir}"));
@@ -736,7 +735,6 @@ namespace nsCDEngine.ISM
                 UpdaterStarted = false;
             }
             else
-#endif
             {
                 if (ExtractUpdater(uDir))
                 {

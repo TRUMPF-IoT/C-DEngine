@@ -446,24 +446,11 @@ namespace nsCDEngine.BaseClasses
                     Stream imgStream = a.GetManifestResourceStream(t[i]);
                     if (imgStream != null)
                     {
-#if !CDE_NET35
                         using (MemoryStream ms = new ())
                         {
                             imgStream.CopyTo(ms);
                             return ms.ToArray();
                         }
-#else
-                    byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        int read;
-                        while ((read = imgStream.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            ms.Write(buffer, 0, read);
-                        }
-                        return ms.ToArray();
-                    }
-#endif
                     }
                 }
             }
@@ -916,22 +903,14 @@ namespace nsCDEngine.BaseClasses
                 {
                     var exeSinceStart = (now - tStartTime).TotalMilliseconds;
                     //CODE-REVIEW: this is very dangerous to WriteToLog here especially if this is happening during the systemlog already writing. We either need to exclude "RunAsync" by default from SystemLoggin and have it turned on or keep the log level hight to avoid collisions
-#if CDE_NET35 || CDE_NET4
-                     TheBaseAssets.MySYSLOG?.WriteToLog(TSM.L(eDEBUG_LEVELS.VERBOSE)?null: new TSM("RunAsync", $"DoFireEventTPM Async timed out {pFireEventTimeout} ms - elapsed: {exeSinceCreate}, since start: {exeSinceStart}", eMsgLevel.l2_Warning), 5002);
-#else
                     var outputMsg = innerAction.Method.Name;
                     TheBaseAssets.MySYSLOG?.WriteToLog(TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("RunAsync", $"DoFireEventTPM Async timed out {pFireEventTimeout} ms in Target:{outputMsg} - elapsed: {exeSinceCreate}, since start: {exeSinceStart}", eMsgLevel.l2_Warning), 5002);
-#endif
                     TheCDEKPIs.IncrementKPI(eKPINames.EventTimeouts);
                     TheCDEKPIs.IncrementKPI(eKPINames.TotalEventTimeouts);
                 }
             });
         }
-#if CDE_NET4 || CDE_NET35
-        private static readonly TaskCreationOptions defaultTaskCreationOptions = TaskCreationOptions.PreferFairness;
-#else
         private static readonly TaskCreationOptions defaultTaskCreationOptions = TaskCreationOptions.DenyChildAttach | TaskCreationOptions.PreferFairness;
-#endif
         private sealed class PendingTask
         {
             public Task task;
@@ -947,19 +926,9 @@ namespace nsCDEngine.BaseClasses
         /// <typeparam name="T">Type of the task being returned.</typeparam>
         /// <param name="task">Task to be returned from the conditionally compiled async function.</param>
         /// <returns></returns>
-        internal static
-#if !CDE_NET4
-        System.Threading.Tasks.Task<T>
-#else
-        T
-#endif
-            TaskOrResult<T>(System.Threading.Tasks.Task<T> task)
+        internal static Task<T>TaskOrResult<T>(Task<T> task)
         {
-#if !CDE_NET4
             return task;
-#else
-            return task.Result;
-#endif
         }
 
         /// <summary>
@@ -968,19 +937,9 @@ namespace nsCDEngine.BaseClasses
         /// <typeparam name="T">Type of the Task being returned.</typeparam>
         /// <param name="result">Value to be returned from the conditionally compiled async function.</param>
         /// <returns></returns>
-        internal static
-#if !CDE_NET4
-        T
-#else
-        System.Threading.Tasks.Task<T>
-#endif
-            TaskOrResult<T>(T result)
+        internal static T TaskOrResult<T>(T result)
         {
-#if !CDE_NET4
             return result;
-#else
-            return TaskFromResult<T>(result);
-#endif
         }
 
         internal static cdePlatform GetAssemblyPlatform(Assembly tAss, bool bAdjustForHostProcess, bool bDiagnostics, out string diagnosticsInfo)
@@ -1000,48 +959,19 @@ namespace nsCDEngine.BaseClasses
             }
             else
             {
-#if !CDE_NET35
-                // Net 4.x, including .Net Standard
-#if !CDE_NET4
                 var targetFrameworkData = tAss.GetCustomAttributesData()?.FirstOrDefault(at => at.AttributeType.FullName == typeof(System.Runtime.Versioning.TargetFrameworkAttribute).FullName);
                 var nameArg = targetFrameworkData?.ConstructorArguments[0];
                 targetFrameworkSku = nameArg?.Value?.ToString();
-#else
-                // No real need to distinguish on .Net4 hosts: all plug-ins on a .Net4 C-DEngine will be considered as .Net4 plug-ins
-                targetFrameworkSku = ".NETFramework,Version=v4.0";
-#endif
-#else
-                targetFrameworkSku = ".NETFramework,Version=v3.5";
-#endif
             }
             var targetFramework = new FrameworkName(targetFrameworkSku);
 
             if (bDiagnostics)
             {
                 diagnosticsInfo += $"AssemblyInfo: {new Uri(tAss.CodeBase).LocalPath},{runtimeVersion},{targetFrameworkSku},{assemblyPEKind},{assemblyPlatform}\r\n";
-#if !CDE_NET35
                 diagnosticsInfo += (Directory.EnumerateFiles(Path.GetDirectoryName(new Uri(tAss.CodeBase).LocalPath)).Aggregate("", (s, f) => $"{s} {f}"));
-#endif
             }
             return GetCDEPlatform(assemblyPlatform, targetFramework, assemblyPEKind, bAdjustForHostProcess);
         }
-
-#if CDE_NET35
-        // Just a stub for .Net35: we'll consider all plug-ins loaded into a .Net35 C-DEngine to be .Net35 plug-ins
-        class FrameworkName
-        {
-            public FrameworkName(string sku)
-            {
-                Identifier = ".NETFramework";
-                Version = new Version(3, 5);
-                SKU = sku;
-            }
-
-            public string Identifier { get; internal set; }
-            public Version Version { get; internal set; }
-            public string SKU { get; internal set; }
-        }
-#endif
 
         private static cdePlatform GetCDEPlatform(ImageFileMachine assemblyPlatform, FrameworkName targetFramework, PortableExecutableKinds pPEKind, bool bAdjustForHostProcess)
         {
@@ -1135,21 +1065,15 @@ namespace nsCDEngine.BaseClasses
         private static bool IsI386Image64Bit(PortableExecutableKinds pPEKind, bool bAdjustForHostProcess)
         {
             bool bIs64Bit;
-#if !CDE_NET35
             if (bAdjustForHostProcess)
             {
                 bIs64Bit = Environment.Is64BitProcess; // regardless of PEKind, if it's loaded in a 64bit process it's 64bit capable
             }
             else
-#endif
             {
                 if (
                     ((pPEKind & PortableExecutableKinds.ILOnly) != 0 || (pPEKind & PortableExecutableKinds.PE32Plus) != 0)
-                    && (pPEKind & PortableExecutableKinds.Required32Bit) == 0
-#if !CDE_NET35 && !CDE_NET4
-                                                    && (pPEKind & PortableExecutableKinds.Preferred32Bit) == 0
-#endif
-                                                )
+                    && (pPEKind & PortableExecutableKinds.Required32Bit) == 0 && (pPEKind & PortableExecutableKinds.Preferred32Bit) == 0)
                     bIs64Bit = true;
                 else
                     bIs64Bit = false;
@@ -1473,7 +1397,6 @@ namespace nsCDEngine.BaseClasses
             {
                 try
                 {
-#if !CDE_NET35
                     var firstFile = Directory.EnumerateFiles(TheBaseAssets.MyServiceHostInfo.BaseDirectory).FirstOrDefault();
                     if (firstFile != null)
                     {
@@ -1485,9 +1408,6 @@ namespace nsCDEngine.BaseClasses
                         TheBaseAssets.MySYSLOG?.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommonUtils", "Filesystem case-sensitivity: Unable to determine - assuming case-insensitive.", eMsgLevel.l2_Warning));
                         _fileSystemCaseSensitive = false;
                     }
-#else
-                    _fileSystemCaseSensitive = false;
-#endif
                 }
                 catch (Exception e)
                 {

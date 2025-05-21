@@ -567,7 +567,6 @@ namespace nsCDEngine.BaseClasses
             TheSystemMessageLog.ToCo(osInfoForLog);
             MyServiceHostInfo.OSInfo = osInfoForLog;
             string dotNetInfoForLog = string.Empty;
-#if !CDE_NET35 && !CDE_NET4
             try
             {
                 string frameworkDescription = null;
@@ -575,21 +574,10 @@ namespace nsCDEngine.BaseClasses
                 string processArchitecture = null;
                 string osArchitecture = null;
 
-#if CDE_STANDARD
                 frameworkDescription = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
                 osDescription = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
                 processArchitecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString();
                 osArchitecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString();
-#else
-                var rtInfoType = Type.GetType("System.Runtime.InteropServices.RuntimeInformation, System.Runtime.InteropServices.RuntimeInformation, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-                if (rtInfoType != null)
-                {
-                    frameworkDescription = rtInfoType.GetProperty("FrameworkDescription").GetValue(null).ToString();
-                    osDescription = rtInfoType.GetProperty("OSDescription").GetValue(null).ToString();
-                    processArchitecture = rtInfoType.GetProperty("ProcessArchitecture").GetValue(null).ToString();
-                    osArchitecture = rtInfoType.GetProperty("OSArchitecture").GetValue(null).ToString();
-                }
-#endif
                 if (!string.IsNullOrEmpty(frameworkDescription))
                 {
                     dotNetInfoForLog = $"NetFrameWork:{frameworkDescription} Processor:{processArchitecture} OS:{osDescription } OS Arch:{osArchitecture}";
@@ -601,22 +589,13 @@ namespace nsCDEngine.BaseClasses
             {
                 //intentionally blank
             }
-#endif
             if (TheCommonUtils.IsMono()) // CODE REVIEW: Need to clean this up - do we mean Mono or Linux or case-insensitive file systems? CM: No- here we need this to find out if we are running in the MONO Runtime
             {
                 MyServiceHostInfo.cdePlatform = cdePlatform.MONO_V3;
             }
             else
             {
-#if CDE_NET35
-                MyServiceHostInfo.cdePlatform = cdePlatform.X32_V3;
-#elif CDE_NET4
-                MyServiceHostInfo.cdePlatform = Environment.Is64BitProcess ? cdePlatform.NETV4_64 : cdePlatform.NETV4_32;
-#elif CDE_STANDARD
                 MyServiceHostInfo.cdePlatform = cdePlatform.NETSTD_V21;
-#else
-                MyServiceHostInfo.cdePlatform = TheCommonUtils.GetAssemblyPlatform(Assembly.GetEntryAssembly(), false, out var empty);// old: Environment.Is64BitProcess ? cdePlatform.X64_V3 : cdePlatform.X32_V4;
-#endif
             }
             TheSystemMessageLog.ToCo("BaseDir: " + MyServiceHostInfo.BaseDirectory);
             #endregion

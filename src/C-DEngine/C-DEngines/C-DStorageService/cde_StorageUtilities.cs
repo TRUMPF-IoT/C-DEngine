@@ -180,20 +180,12 @@ namespace nsCDEngine.Engines.StorageService
             if (pfinfo is FieldInfo p1)
             {
                 fName = p1.FieldType.FullName;
-#if CDE_NET35 || CDE_NET4
-                TypeArgs = ((FieldInfo)pfinfo).FieldType.GetGenericArguments().Where(t => !t.IsGenericParameter).ToArray();
-#else
                 TypeArgs = p1.FieldType.GenericTypeArguments;
-#endif
             }
             else if (pfinfo is PropertyInfo p2)
             {
                 fName = p2.PropertyType.FullName;
-#if CDE_NET35 || CDE_NET4
-                TypeArgs = ((PropertyInfo)pfinfo).PropertyType.GetGenericArguments().Where(t => !t.IsGenericParameter).ToArray();
-#else
                 TypeArgs = p2.PropertyType.GenericTypeArguments;
-#endif
             }
             else
                 return "";

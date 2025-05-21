@@ -1434,14 +1434,10 @@ namespace nsCDEngine.Engines.StorageService
                         int i = 0;
                         while (File.Exists(BackupFile))
                             BackupFile = $"{FileToReturn}_{TheCommonUtils.GetTimeStamp()}_{i++}.CDEB";
-#if !CDE_NET35 && !CDE_NET4
                         using (System.IO.Compression.ZipArchive newFile = System.IO.Compression.ZipFile.Open(BackupFile, System.IO.Compression.ZipArchiveMode.Create))
                         {
                             newFile.CreateEntry(FileToReturn);
                         }
-#else
-                            System.IO.File.Move(FileToReturn, $"{BackupFile}AK");
-#endif
                     }
                 }
                 catch (Exception e)

@@ -996,22 +996,9 @@ namespace nsCDEngine.BaseClasses
             }
             if (imgStream != null)
             {
-#if !CDE_NET35
                 using MemoryStream ms = new();
                 imgStream.CopyTo(ms);
                 tBlobBuffer = ms.ToArray();
-#else
-                    byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        int read;
-                        while ((read = imgStream.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            ms.Write(buffer, 0, read);
-                        }
-                        tBlobBuffer=ms.ToArray();
-                    }
-#endif
             }
             return tBlobBuffer;
         }
@@ -1029,11 +1016,7 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         public static bool IsNullOrWhiteSpace(string str)
         {
-#if !CDE_NET35
             return string.IsNullOrWhiteSpace(str);
-#else
-            return string.IsNullOrEmpty(str) || str.Trim().Length == 0;
-#endif
         }
 
         /// <summary>
@@ -1056,17 +1039,9 @@ namespace nsCDEngine.BaseClasses
                 return true;
             }
             bool isGuid = true;
-#if !CDE_NET35 // No Guid.TryParse
             isGuid = Guid.TryParse(CStr(inObj), out _);
             if (!isGuid)
                 isGuid = false;
-#else
-            try
-            {
-                Guid tGuid = new Guid(CStr(inObj));
-            }
-            catch { isGuid = false; }
-#endif
             return isGuid;
         }
 
@@ -1241,16 +1216,7 @@ namespace nsCDEngine.BaseClasses
                     {
                         using (var mStream = new MemoryStream(CUTF8String2Array(sourceString)))
                         {
-#if !CDE_NET35
                             mStream.CopyTo(tinyStream);
-#else
-                            byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
-                            int read;
-                            while ((read = mStream.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                tinyStream.Write(buffer, 0, read);
-                            }
-#endif
                         }
                     }
                     compressed = outStream.ToArray();
@@ -1334,16 +1300,7 @@ namespace nsCDEngine.BaseClasses
                 using (var bigStream = new GZipStream(inStream, CompressionMode.Decompress))
                 using (var bigStreamOut = new MemoryStream())
                 {
-#if !CDE_NET35
                     bigStream.CopyTo(bigStreamOut);
-#else
-                    byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
-                    int read;
-                    while ((read = bigStream.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        bigStreamOut.Write(buffer, 0, read);
-                    }
-#endif
 
                     return CArray2UTF8String(bigStreamOut.ToArray());
                 }
@@ -1629,12 +1586,6 @@ namespace nsCDEngine.BaseClasses
                 }
             }, pThreadName, defaultTaskCreationOptions | (longRunning ? TaskCreationOptions.LongRunning : 0));
 
-#if CDE_NET4 || CDE_NET35
-            // On Net4 and earlier a task with an unobserved exception takes down the process during garbage collection/finalization of the task object
-            // This continuation observes the exception and prevents that.
-            // On Net45 and newer, such unobserved task exception are ignored.
-            task.ContinueWith(c => { var ignored = c.Exception; }, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
-#endif
             taskInfo?.Add("wrapperTask", task2);
 
             if (pendingTask != null)
@@ -1869,17 +1820,6 @@ namespace nsCDEngine.BaseClasses
                     {
                         uri = new Uri(CStr(inObj));
                     }
-#if CDE_NET35
-                    // NET35 does not know about wss and hence does not default the port correctly
-                    if (uri != null && uri.Port == -1 && uri.Scheme == "wss")
-                    {
-                        var builder = new UriBuilder(uri)
-                        {
-                            Port = 443
-                        };
-                        uri = builder.Uri;
-                    }
-#endif
                     return uri;
                 }
                 catch
@@ -2007,9 +1947,7 @@ namespace nsCDEngine.BaseClasses
                     mre.WaitOne((int)minPeriod);
                 }
             }
-#if !CDE_NET35
             mre.Dispose();
-#endif
         }
 
         /// <summary>
@@ -2056,9 +1994,7 @@ namespace nsCDEngine.BaseClasses
                     }
                 }
             }
-#if !CDE_NET35
             mre.Dispose();
-#endif
         }
 
         /// <summary>
@@ -2088,7 +2024,6 @@ namespace nsCDEngine.BaseClasses
         /// cancels (faults with TaskCanceledException) if TheBaseAssets.MASTERSWICH
         /// indicates that the app was closed during this period.
         /// </remarks>
-#if !(CDE_NET35 || CDE_NET4)
         public static Task TaskDelayOneEye(int ms, uint minPeriod)
         {
             return TaskDelayOneEye(ms, minPeriod, null);
@@ -2132,59 +2067,15 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        #elif CDE_NET35
-        public static System.Threading.Tasks.Task TaskDelayOneEye(int ms, uint minPeriod)
-        {
-            return TaskDelayOneEye(ms, minPeriod, null);
-        }
-        public static System.Threading.Tasks.Task TaskDelayOneEye(int ms, uint minPeriod, CancellationToken? cancelToken)
-        {
-            // Use Async Target package (Microsoft.Bcl.Async) - this bubbles up to all plug-ins and requires a QFE to Net40, which is too impactful for now
-            return System.Threading.Tasks.TaskEx.Delay(ms, !cancelToken.HasValue ? TheBaseAssets.MasterSwitchCancelationToken : CancellationTokenSource.CreateLinkedTokenSource(cancelToken.Value, TheBaseAssets.MasterSwitchCancelationToken).Token).ContinueWith(t => { });
-        }
-
-#else
-        public static System.Threading.Tasks.Task TaskDelayOneEye(int ms, uint minPeriod)
-        {
-            return System.Threading.Tasks.Task.Factory.StartNew(() =>
-            {
-                SleepOneEye((uint)ms, minPeriod);
-            });
-        }
-        public static System.Threading.Tasks.Task TaskDelayOneEye(int ms, uint minPeriod, CancellationToken? cancelToken)
-        {
-            if (!cancelToken.HasValue)
-            {
-                return TaskDelayOneEye(ms, minPeriod);
-            }
-            return System.Threading.Tasks.Task.Factory.StartNew(() =>
-                {
-                    SleepOneEye((uint)ms, minPeriod);
-                }, cancelToken.Value).ContinueWith(t => { });
-        }
-#endif
 
         /// <summary>
         /// Creates a task that completes when any of the provided tasks completes.
         /// </summary>
         /// <param name="tasks">A collection with one or more tasks.</param>
         /// <returns>The task that completed.</returns>
-        public static System.Threading.Tasks.Task<System.Threading.Tasks.Task> TaskWhenAny(IEnumerable<System.Threading.Tasks.Task> tasks)
+        public static Task<Task> TaskWhenAny(IEnumerable<Task> tasks)
         {
-#if !(CDE_NET35 || CDE_NET4)
-            return System.Threading.Tasks.Task.WhenAny(tasks);
-#elif CDE_NET35
-            // No Task.Delay in Net4: Use Async Target package (Microsoft.Bcl.Async)
-            return System.Threading.Tasks.TaskEx.WhenAny(tasks);
-#else
-            // No dependency on Bcl.Async: Fall back to WaitAny (block a thread  - inefficient but current usage in plug-ins does not create many of theses)
-            var taskArray = tasks.ToArray();
-            return System.Threading.Tasks.Task.Factory.StartNew(() =>
-            {
-                var completedTask = taskArray[System.Threading.Tasks.Task.WaitAny(taskArray)];
-                return completedTask;
-            });
-#endif
+            return Task.WhenAny(tasks);
         }
 
         /// <summary>
@@ -2192,59 +2083,35 @@ namespace nsCDEngine.BaseClasses
         /// </summary>
         /// <param name="tasks"></param>
         /// <returns>A task that represents the completion of all the supplied tasks.</returns>
-        public static System.Threading.Tasks.Task TaskWhenAll(IEnumerable<System.Threading.Tasks.Task> tasks)
+        public static Task TaskWhenAll(IEnumerable<Task> tasks)
         {
-#if !(CDE_NET35 || CDE_NET4)
-            return System.Threading.Tasks.Task.WhenAll(tasks);
-#elif CDE_NET35
-            // No Task.Delay in Net4: Use Async Target package (Microsoft.Bcl.Async)
-            return System.Threading.Tasks.TaskEx.WhenAll(tasks);
-#else
-            // No dependency on Bcl.Async: Fall back to WaitAny (block a thread - inefficient but current usage in plug-ins does not create many of theses)
-            var taskArray = tasks.ToArray();
-            var aggregateCS = new System.Threading.Tasks.TaskCompletionSource<bool>();
-            System.Threading.Tasks.Task.Factory.StartNew(() =>
-            {
-                try
-                {
-                    System.Threading.Tasks.Task.WaitAll(taskArray);
-                }
-                catch (Exception e)
-                {
-                    aggregateCS.TrySetException(e);
-                }
-                aggregateCS.TrySetResult(true);
-            });
-
-            return aggregateCS.Task;
-#endif
+            return Task.WhenAll(tasks);
         }
 
         /// <summary>
-        /// Returns a task that completes when the task completes or a timeout occurrs.
+        /// Returns a task that completes when the task completes or a timeout occurs.
         /// </summary>
         /// <param name="task">Task to be timed out.</param>
         /// <param name="timeout">Timeout interval.</param>
         /// <returns>The completed task.</returns>
-        public static Task TaskWaitTimeout(System.Threading.Tasks.Task task, TimeSpan timeout)
+        public static Task TaskWaitTimeout(Task task, TimeSpan timeout)
         {
             return TaskWaitTimeout(task, timeout, null);
         }
 
         /// <summary>
-        /// Returns a task that completes when the task completes or a timeout occurrs.
+        /// Returns a task that completes when the task completes or a timeout occurs.
         /// </summary>
         /// <param name="task">Task to be timed out.</param>
         /// <param name="timeout">Timeout interval.</param>
         /// <param name="cancelToken">Cancel token for the task</param>
         /// <returns>The completed task.</returns>
-        public static Task TaskWaitTimeout(System.Threading.Tasks.Task task, TimeSpan timeout, CancellationToken? cancelToken)
+        public static Task TaskWaitTimeout(Task task, TimeSpan timeout, CancellationToken? cancelToken)
         {
             if (timeout < TimeSpan.Zero)
             {
                 timeout = TimeSpan.Zero;
             }
-#if !CDE_NET35 && !CDE_NET4
             var timeoutCancelTokenSource = new CancellationTokenSource(timeout);
             var combinedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancelToken ?? TheBaseAssets.MasterSwitchCancelationToken, timeoutCancelTokenSource.Token);
             var combinedTask = task.ContinueWith(t =>
@@ -2265,17 +2132,6 @@ namespace nsCDEngine.BaseClasses
                         //intent
                     }
                 });
-#else
-            var timeoutInMs = timeout.TotalMilliseconds;
-            if (timeout.TotalMilliseconds > int.MaxValue)
-            {
-                timeoutInMs = int.MaxValue;
-            }
-
-            // TODO Improve disposal of timeoutTasks (right now the task remains until it times out)
-            var timeoutTask = TaskDelayOneEye((int)timeoutInMs, 100, cancelToken);
-            var combinedTask = TaskWhenAny(new System.Threading.Tasks.Task[] { task, timeoutTask }).ContinueWith(t => { });
-#endif
             return combinedTask;
         }
 

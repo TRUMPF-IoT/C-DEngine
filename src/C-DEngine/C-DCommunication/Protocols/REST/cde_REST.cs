@@ -75,9 +75,7 @@ namespace nsCDEngine.Communication
                 if (response != null)
                 {
                     response?.Close();
-#if !CDE_NET35 && ! CDE_NET4
                     response?.Dispose();
-#endif
                 }
                 if (streamResponse != null)
                 {
@@ -182,9 +180,7 @@ namespace nsCDEngine.Communication
                                 case "Connection":
                                     break;
                                 case "Host":
-#if !CDE_NET35
                                     myRequestState.request.Host = pData.Header[key];
-#endif
                                     break;
                                 case "Accept":
                                     myRequestState.request.Accept = pData.Header[key];
@@ -605,9 +601,7 @@ namespace nsCDEngine.Communication
                             case "Connection":
                                 break;
                             case "Host":
-#if !CDE_NET35
                                 myRequestState.request.Host = pRequest.Header[key];
-#endif
                                 break;
                             case "Accept":
                                 myRequestState.request.Accept = pRequest.Header[key];
