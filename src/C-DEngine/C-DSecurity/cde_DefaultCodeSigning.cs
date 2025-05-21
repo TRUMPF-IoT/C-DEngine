@@ -556,7 +556,7 @@ namespace nsCDEngine.Security
                             }
                             firstSignerCert ??= signedCms.SignerInfos[0].Certificate;
 
-                            if (false) //CM: as of 2025-04-19 we move to SHA386 - this algorithm is sha1 dependend and will no longer work
+                            if (false) //CM: as of 6.115.0 / 2025-05-21 we move to SHA386 - this algorithm is sha1 dependend and will no longer work
                             {
                                 // Propertly parse the SpcIndirectDataContent structure per Authenticode Spec
                                 // For SHA1 the hash is always in the last 20 bytes of the content info: if another algorithm is used we will currently reject the signature
