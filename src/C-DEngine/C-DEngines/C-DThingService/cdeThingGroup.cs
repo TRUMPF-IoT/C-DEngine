@@ -477,6 +477,18 @@ namespace nsCDEngine.Engines.ThingService
         #endregion
 
         /// <summary>
+        /// Starts all Property Mappers of the Group. Should be called in the Group Init() function
+        /// </summary>
+        protected void RestartAllMapper()
+        {
+            foreach (var tp in MyBaseThing.GetPropertiesStartingWith("PM_ThingSource_").OrderBy(s => s.Name))
+            {
+                ResetMapper(tp.Name.Substring("PM_ThingSource_".Length));
+            }
+        }
+        #endregion
+
+        /// <summary>
         /// Updates all Fld Positions
         /// </summary>
         /// <param name="pScene"></param>
