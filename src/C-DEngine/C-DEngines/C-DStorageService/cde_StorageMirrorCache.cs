@@ -810,7 +810,14 @@ namespace nsCDEngine.Engines.StorageService
                         }
                         catch
                         {
-                            storeData = TheCommonUtils.DeserializeJSONStringToObject<StoreData<T>>(pLoadContent);
+                            //New in 6.116: The next line crashes on linux/docker unrecoverable! 
+                            if (!TheCommonUtils.IsOnLinux())
+                                storeData = TheCommonUtils.DeserializeJSONStringToObject<StoreData<T>>(pLoadContent);
+                            else
+                            {
+                                TheBaseAssets.MySYSLOG.WriteToLog(4814, new TSM("TheMirrorCache", $"Fatal error during Deserialize for Mirror {typeof(T)} {MyStoreID}", eMsgLevel.l1_Error));
+                                return false;
+                            }
                         }
                     }
                     else
