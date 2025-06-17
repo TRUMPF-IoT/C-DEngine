@@ -115,7 +115,7 @@ namespace nsCDEngine.Communication
             }
             return tHead;
         }
-        internal static string InfoHeader(bool IsSmall)
+        internal static string InfoHeader(bool IsSmall, TheRequestData pReq)
         {
             StringBuilder ret2 = new($"<h3>{TheBaseAssets.MyServiceHostInfo.MyAppPresenter}</h3>"); //<div id=\"mainBox\" style=\"width-fixed:90%;display:flex; flex-flow: column wrap\">
             ret2.Append($"<h1 id=\"title\">{TheBaseAssets.MyServiceHostInfo.ApplicationTitle} V{TheBaseAssets.MyServiceHostInfo.CurrentVersion}</h1>");
@@ -142,6 +142,8 @@ namespace nsCDEngine.Communication
             ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Client Cert Thumbprint:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{(TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb?.Length > 3 ? $"{TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb.Substring(0, 4)}" : $"No client certificate specified")}</td><tr>");
             ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Node Started at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDateTimeString(TheBaseAssets.MyServiceHostInfo.cdeCTIM, -1)}</td><tr>");
             ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Last Update at:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{TheCommonUtils.GetDateTimeString(DateTimeOffset.Now, -1)}</td><tr>");
+            if (pReq != null)
+                ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">Browser User-Agent:</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">{pReq?.UserAgent}</td><tr>");
             ret2.Append("</table>");
 
             if (!IsSmall)
@@ -153,7 +155,7 @@ namespace nsCDEngine.Communication
                 if (CNs.Count > 0)
                 {
                     foreach (var tQ in CNs)
-                        ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">{tQ.MyTargetNodeChannel.TargetUrl}</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">Connected: {(tQ.IsConnected ? "Yes, all is good" : (tQ.IsConnecting ? "Not, yet - trying to connect" : "No, and not trying to connect!"))}{(!string.IsNullOrEmpty(tQ.GetLastError())?$" Last Error: {tQ.GetLastError()}":"")}</td><tr>");
+                        ret2.Append($"<tr><th scope=\"rowgroup;\" style=\"background-color:rgba(90,90,90, 0.15); padding:3px; text-align:right\">{tQ.MyTargetNodeChannel.TargetUrl}</th><td style=\"border-bottom:1px solid rgba(90, 90, 90, 0.25);padding:3px;text-align:left \">Connected: {(tQ.IsConnected ? "Yes, all is good" : (tQ.IsConnecting ? "Not, yet - trying to connect" : "No, and not trying to connect!"))}{(!string.IsNullOrEmpty(tQ.GetLastError()) ? $" Last Error: {tQ.GetLastError()}" : "")}</td><tr>");
                 }
                 ret2.Append("</table>");
             }
@@ -161,11 +163,11 @@ namespace nsCDEngine.Communication
             return ret2.ToString();
         }
 
-        internal static string ShowKPIs(bool DoReset)
+        internal static string ShowKPIs(bool DoReset, TheRequestData pData)
         {
             string outText = AddHTMLHeader();
 
-            outText += InfoHeader(true);
+            outText += InfoHeader(true, pData);
             outText += "<br>" + TheCDEKPIs.GetKPIs(DoReset).Replace(" ", "<br>");
             return outText;
         }
@@ -210,7 +212,7 @@ namespace nsCDEngine.Communication
             return true;
         }
 
-        internal static string ShowSubscriptionsStatus(bool AddHeader, TheCdeStatusOptions statusOptions)
+        internal static string ShowSubscriptionsStatus(bool AddHeader, TheCdeStatusOptions statusOptions, TheRequestData pData=null)
         {
             string headerInfo = "";
             if (AddHeader)
@@ -222,7 +224,7 @@ namespace nsCDEngine.Communication
             }
             lock (lockSubscribers)
             {
-                headerInfo += InfoHeader(false);
+                headerInfo += InfoHeader(false, pData);
                 if (eventEventLogRequested != null)
                 {
                     eventEventLogRequested(sinkAddCustomText);
@@ -402,14 +404,14 @@ namespace nsCDEngine.Communication
             return outText.ToString();
         }
 
-        internal static string GetDiagReport(bool ShowHeader)
+        internal static string GetDiagReport(bool ShowHeader, TheRequestData pData=null)
         {
             StringBuilder outText = new();
 
             if (ShowHeader)
             {
                 outText.Append(AddHTMLHeader());
-                outText.Append(InfoHeader(false));
+                outText.Append(InfoHeader(false, pData));
             }
 
             string tColor = "black";
@@ -535,14 +537,14 @@ namespace nsCDEngine.Communication
             return outText.ToString();
         }
 
-        internal static string RenderHostServiceInfo(bool ShowHeader)
+        internal static string RenderHostServiceInfo(bool ShowHeader, TheRequestData pData=null)
         {
             string outText = "";
 
             if (ShowHeader)
             {
                 outText += AddHTMLHeader();
-                outText += InfoHeader(false);
+                outText += InfoHeader(false, pData);
                 if (TheBaseAssets.MyScopeManager.IsScopingEnabled)
                     outText += " A ScopeID is SET!";
                 outText += "<br>Last Update at :" + TheCommonUtils.GetDateTimeString(DateTimeOffset.Now) + "</h3>";

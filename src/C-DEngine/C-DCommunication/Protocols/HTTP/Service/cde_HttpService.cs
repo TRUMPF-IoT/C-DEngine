@@ -511,7 +511,7 @@ namespace nsCDEngine.Communication.HttpService
                                     }
                                 }
                             }
-                            pRequestData.ResponseBufferStr = cdeStatus.GetDiagReport(true);
+                            pRequestData.ResponseBufferStr = cdeStatus.GetDiagReport(true, pRequestData);
                             pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
@@ -524,7 +524,7 @@ namespace nsCDEngine.Communication.HttpService
                         {
                             if (!IsTokenValid(pRequestData, tQ))
                                 break;
-                            pRequestData.ResponseBufferStr = cdeStatus.RenderHostServiceInfo(true);
+                            pRequestData.ResponseBufferStr = cdeStatus.RenderHostServiceInfo(true, pRequestData);
                             pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
@@ -542,7 +542,7 @@ namespace nsCDEngine.Communication.HttpService
                             {
                                 DoReset = tQ.TryGetValue("RESET", out string InTopicRes);
                             }
-                            pRequestData.ResponseBufferStr = cdeStatus.ShowKPIs(DoReset);
+                            pRequestData.ResponseBufferStr = cdeStatus.ShowKPIs(DoReset, pRequestData);
                             pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
@@ -615,13 +615,13 @@ namespace nsCDEngine.Communication.HttpService
                                     }
 
                                     LastCdeStatusTime = DateTimeOffset.Now;
-                                    LastCdeStatus = cdeStatus.ShowSubscriptionsStatus(true, statusOptions);
+                                    LastCdeStatus = cdeStatus.ShowSubscriptionsStatus(true, statusOptions, pRequestData);
                                     if (statusOptions.ShowHSI)
                                         LastCdeStatus += cdeStatus.RenderHostServiceInfo(false);
                                     if (statusOptions.ShowDiag)
                                     {
                                         sinkGetStatus?.Invoke(pRequestData);
-                                        LastCdeStatus += cdeStatus.GetDiagReport(false);
+                                        LastCdeStatus += cdeStatus.GetDiagReport(false, pRequestData);
                                     }
                                     if(statusOptions.ShowSesLog)
                                         LastCdeStatus += TheBaseAssets.MySession.GetSessionLog();
