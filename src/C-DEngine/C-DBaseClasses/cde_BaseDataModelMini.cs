@@ -189,6 +189,10 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         Bot = 8,
         /// <summary>
+        /// The Page is viewed inside a Phone App
+        /// </summary>
+        InApp=9,
+        /// <summary>
         /// Undefined or all platforms
         /// </summary>
         Any = 99,

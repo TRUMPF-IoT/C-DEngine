@@ -888,6 +888,8 @@ namespace nsCDEngine.BaseClasses
                 return eWebPlatform.TizenFamilyHub;
             if (userAgent.Contains("tizen"))
                 return eWebPlatform.TizenTV;
+            if (TheBaseAssets.MySettings?.HasSetting("AppUserAgent")==true && userAgent.Contains(TheBaseAssets.MySettings.GetSetting("AppUserAgent").ToLower()))
+                return eWebPlatform.InApp;
             if (mobileDevices.Any(x => userAgent.Contains(x)))
                 return eWebPlatform.Mobile;
             if (holoDevices.Any(x => userAgent.Contains(x)))

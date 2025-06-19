@@ -387,7 +387,7 @@ namespace nsCDEngine.Communication.HttpService
                             tRefsh = $"<meta http-equiv=\"refresh\" content=\"{ts};URL='{Query}'\" /> ";
                         pRequestData.ResponseBufferStr = $"<html><head><meta http-equiv=\"Expires\" content=\"0\" />{tRefsh}<meta http-equiv=\"Cache-Control\" content=\"no-cache\" /><meta http-equiv=\"Pragma\" content=\"no-cache\" /></html><body style=\"background-color: {TheBaseAssets.MyServiceHostInfo.BaseBackgroundColor};\">";
                         pRequestData.ResponseBufferStr += $"<table width=\"100%\" style=\"height:100%;\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr><td style=\"text-align:center;\"><p style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor}; font-family: Arial; font-size: 36px\">Your Session has ended</p><p style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor}; font-family: Arial; font-size: 36px\">";
-                        pRequestData.ResponseBufferStr += $"<a style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor};\" href=\"{Query}\">Touch here to get back to the Portal</a>";  //TODO: Make Customizable
+                        pRequestData.ResponseBufferStr += $"<a style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor};\" href=\"{Query}\">Tap here to get back to the Portal</a>";  //TODO: Make Customizable
                         pRequestData.ResponseBufferStr += "</p></td></tr></table></body></HTML>";
 
                         pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);

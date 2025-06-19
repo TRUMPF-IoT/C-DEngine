@@ -207,6 +207,10 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public bool? Draggable { get; set; }
         /// <summary>
+        /// Adds a Margin around the control
+        /// </summary>
+        public bool? UseMargin { get; set; }
+        /// <summary>
         /// Allows to drag and drop a form
         /// </summary>
         public bool? AllowDrag { get; set; }
