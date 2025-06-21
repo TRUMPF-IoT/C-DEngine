@@ -2366,7 +2366,10 @@ namespace nsCDEngine.BaseClasses
                     List<cdeP> tProps = pThing.GetBaseThing().GetAllProperties();
                     foreach (cdeP p in tProps)
                     {
-                        gfsoutStr = gfsoutStr.Replace(string.Format("%{0}%", p.Name), CStr(p.GetValue()));
+                        while (gfsoutStr.IndexOf($"%{p.Name}%") >= 0)
+                        {
+                            gfsoutStr = gfsoutStr.Replace($"%{p.Name}%", CStr(p.GetValue()));
+                        }
                     }
                 }
 
