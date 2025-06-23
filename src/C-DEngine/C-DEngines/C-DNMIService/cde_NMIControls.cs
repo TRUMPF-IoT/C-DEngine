@@ -121,10 +121,6 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public string TemplateID { get; set; }
 
-        /// <summary>
-        /// Adds Margin to all groups in the form
-        /// </summary>
-        public bool? UseMargin { get; set; }
     }
 
     public class nmiCtrlFormTemplate : nmiCtrlFormView
@@ -207,7 +203,7 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public bool? Draggable { get; set; }
         /// <summary>
-        /// Adds a Margin around the control
+        /// Creates a quarter-tilesize margin around the control
         /// </summary>
         public bool? UseMargin { get; set; }
         /// <summary>
@@ -254,7 +250,10 @@ namespace nsCDEngine.Engines.NMIService
         /// Sets the width of the control. (1 tile = 78px)
         /// </summary>
         public int TileWidth { get; set; }
-
+        /// <summary>
+        /// This can be set to change the size of a control in portrait mode. 
+        /// </summary>
+        public int TileWidthPortrait { get; set; }
         /// <summary>
         /// Control will always size as its parent
         /// </summary>
@@ -1693,11 +1692,6 @@ namespace nsCDEngine.Engines.NMIService
         /// if set, the Collapsible group will add arrows to allow expanding the group to the left and right. No smaller than 6 Tiles and no wider than MaxTileWidth
         /// </summary>
         public bool? AllowHorizontalExpand { get; set; }
-
-        /// <summary>
-        /// Creates a quarter-tilesize margin around the collapsible groups
-        /// </summary>
-        public bool? UseMargin { get; set; }
     }
 
     /// <summary>
@@ -2124,9 +2118,5 @@ namespace nsCDEngine.Engines.NMIService
         /// Category the form should be listed under
         /// </summary>
         public string Category { get; set; }
-        /// <summary>
-        /// If true, the form will use margins between the fields
-        /// </summary>
-        public bool? UseMargin { get; set; }
     }
 }
