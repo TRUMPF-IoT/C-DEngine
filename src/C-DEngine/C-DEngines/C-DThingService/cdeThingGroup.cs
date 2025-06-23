@@ -268,18 +268,18 @@ namespace nsCDEngine.Engines.ThingService
                     if (!IsGroupVisible)
                     {
                         ScanThings();
-                        InitDynamicNMI();
+                        InitDynamicNMI(pmsg);
                     }
                     IsGroupVisible = true;
                 });
                 MyGroupForm.RegisterEvent2(eUXEvents.OnShow, (pmsg, sender) =>
                 {
-                    CalculateFormSize();
+                    CalculateFormSize(pmsg);
                 });
                 block["Form"] = MyGroupForm;
                 block["DashIcon"] = NMI.AddFormToThingUX(MyBaseThing, MyGroupForm, "CMyForm", MyBaseThing.FriendlyName, 1, 3, 0, "..Overview", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" });
                 mIsUXInitialized = DoCreateUX(block);
-                CalculateFormSize();
+                CalculateFormSize(null);
             }
             return true;
         }
@@ -336,7 +336,7 @@ namespace nsCDEngine.Engines.ThingService
                                 TheThingBase tB = tN?.GetObject() as TheThingBase;
                                 if (tB != null && AddOrUpdateThingInGroup(tB))
                                 {
-                                    ReloadForm();
+                                    ReloadForm(tMsg);
                                     TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Control added: {tN.FriendlyName}"));
                                 }
                             }
@@ -348,7 +348,7 @@ namespace nsCDEngine.Engines.ThingService
                             if (tMsg != null)
                             {
                                 ResetAllThings();
-                                ReloadForm();
+                                ReloadForm(tMsg);
                                 TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"All Controls Removed"));
                             }
                         });
@@ -357,7 +357,7 @@ namespace nsCDEngine.Engines.ThingService
                         {
                             var tMsg = para as TheProcessMessage;
                             if (tMsg != null)
-                                ReloadForm();
+                                ReloadForm(tMsg);
                         });
                         NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2013, 0xA2, 0x80, "X", "GroupSizeX", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
                         NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2014, 0xA2, 0x80, "Y", "GroupSizeY", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
@@ -373,7 +373,8 @@ namespace nsCDEngine.Engines.ThingService
                 var tBut = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, RenderTarget=$"PINT{CU.cdeGuidToString(MyGroupForm.cdeMID)}", TileWidth = 1, TileHeight = 1, TileFactorY=2, Left = 38, Top = 0, NoTE = true, ClassName = "enTransBut" });
                 tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, pmsg) =>
                 {
-                    ReloadForm();
+                    var tMsg = pmsg as TheProcessMessage;
+                    ReloadForm(tMsg);
                 });
                 pUXFlds["RefreshButton"] = tBut;
             }
@@ -480,7 +481,7 @@ namespace nsCDEngine.Engines.ThingService
         /// Updates all Fld Positions
         /// </summary>
         /// <param name="pScene"></param>
-        public virtual void UpdateFldPositions(TheFOR pScene)
+        public virtual void UpdateFldPositions(TheFOR pScene, TheProcessMessage pMsg)
         {
             foreach (var tf in pScene.Flds)
             {
@@ -498,28 +499,28 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Delets all Fld Positions
         /// </summary>
-        public virtual void DeleteAllFldPositions()
+        public virtual void DeleteAllFldPositions(TheProcessMessage pMsg)
         {
             foreach (var t in MyGroupThings.Values)
             {
                 t.GetBaseThing().SetProperty($"FldStart_{CU.CGuid(MyScreenGuid)}", "0");
             }
-            ReloadForm();
+            ReloadForm(pMsg);
         }
 
         /// <summary>
         /// Reloads the Form with updated Dynamic Fields
         /// </summary>
-        public virtual void ReloadForm()
+        public virtual void ReloadForm(TheProcessMessage pMsg)
         {
-            InitDynamicNMI();
+            InitDynamicNMI(pMsg);
             if (MyGroupForm != null)
                 TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{CU.cdeGuidToString(MyGroupForm.cdeMID)}:CMyForm:{CU.cdeGuidToString(MyGroupForm.cdeMID)}:{CU.cdeGuidToString(ModelGuid)}:true:true"));
         }
         /// <summary>
         /// Initializes the dynamic part of the form
         /// </summary>
-        public virtual void InitDynamicNMI()
+        public virtual void InitDynamicNMI(TheProcessMessage pMsg)
         {
             InitGTP();
             UpdatePinConnections(false);
@@ -532,7 +533,7 @@ namespace nsCDEngine.Engines.ThingService
                     t?.AddDeviceFace(MyGroupForm, 0, 0);
                 }
                 DrawPinLines(MyGroupForm, MyGroupThings.Values.ToList());
-                CalculateFormSize();
+                CalculateFormSize(pMsg);
             }
         }
 
@@ -706,7 +707,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Calculates the form size required for the screen
         /// </summary>
-        public virtual void CalculateFormSize()
+        public virtual void CalculateFormSize(TheProcessMessage pMsg)
         {
             int maxh = 0;
             int maxw = 0;

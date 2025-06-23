@@ -77,7 +77,7 @@ namespace nsCDEngine.Engines.NMIService
                                     var tGroupMThing = TheThingRegistry.GetThingByMID(tForm.cdeO);
                                     var tGroupThing = tGroupMThing?.GetObject() as TheThingGroup;
                                     if (tGroupThing?.RemoveThingMIDFromGroup(TheCommonUtils.CGuid(tLocParts[2]))==true)
-                                        tGroupThing.ReloadForm();                                }
+                                        tGroupThing.ReloadForm(pMsg);                                }
                             }
                         }
                         catch {
@@ -1034,7 +1034,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (group != null)
                         {
                             var tGS = group.GetObject() as TheThingGroup;
-                            tGS?.UpdateFldPositions(tNewScene);
+                            tGS?.UpdateFldPositions(tNewScene, pMsg);
                         }
                     }
                     break;
@@ -1056,7 +1056,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (group != null)
                         {
                             var tGS = group.GetObject() as TheThingGroup;
-                            tGS?.DeleteAllFldPositions();
+                            tGS?.DeleteAllFldPositions(pMsg);
                         }
                     }
                     break;
