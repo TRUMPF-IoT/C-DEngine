@@ -507,7 +507,7 @@ namespace nsCDEngine.Communication
         }
         internal void FlushQueue()
         {
-            MyCoreQueue.RemoveAllItems();
+            MyCoreQueue.FlushCache(false);
         }
         internal void RemoveOrphanFromQueue(Guid pUri)
         {

@@ -203,7 +203,14 @@ namespace nsCDEngine.Engines.StorageService
 #endregion
         public bool IsReady { get; internal set; } // CODE REVIEW: Should this be internal set? CM: YES!
         public bool AllowFireUpdates { get; set; }
+
+        /// <summary>
+        /// The StorageMirror will use a RAM Cache for all operations. This is the default setting false
+        /// </summary>
         public bool IsCached { get; set; }
+        /// <summary>
+        /// If IsCachePersistent is set to true, the StorageMirror will store the cache to disk and reload it on startup.
+        /// </summary>
         public bool IsCachePersistent
         {
             get { return MyMirrorCache.IsCachePersistent; }
@@ -544,7 +551,7 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(473, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", $"Ignoring Save Count {storeParams.SaveCount} for {FriendlyName ?? CacheTableName} because MaxAge has been specified.", eMsgLevel.l1_Error));
                 }
-                if (storeParams.ExpirationCallback!= null && storeParams.ExpirationCallback is not Action<T> )
+                if (storeParams.ExpirationCallback != null && storeParams.ExpirationCallback is not Action<T>)
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(473, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", $"Invalid ExpirationCallback - must be of Type Action<T> for {FriendlyName ?? CacheTableName}. Callback will not be called.", eMsgLevel.l1_Error));
                 }
@@ -555,7 +562,7 @@ namespace nsCDEngine.Engines.StorageService
                 {
                     // Error!! Log?
                 }
-                CacheStoreInterval = (int) storeParams.CacheStoreInterval.Value.TotalSeconds;
+                CacheStoreInterval = (int)storeParams.CacheStoreInterval.Value.TotalSeconds;
                 IsStoreIntervalInSeconds = true;
             }
             else if (storeParams.SaveCount.HasValue)
@@ -580,17 +587,25 @@ namespace nsCDEngine.Engines.StorageService
             {
                 BlockWriteIfIsolated = storeParams.BlockWriteIfIsolated.Value;
             }
-            if (storeParams.IsCached.HasValue)
+            if (storeParams.PreferDBCache.HasValue)
             {
-                IsCached = storeParams.IsCached.Value;
+                IsCached = true;
+                IsCachePersistent = true;
             }
-            if (storeParams.IsCacheEncrypted.HasValue)
+            else
             {
-                IsCacheEncrypted = storeParams.IsCacheEncrypted.Value;
-            }
-            if (storeParams.IsCachePersistent.HasValue)
-            {
-                IsCachePersistent = storeParams.IsCachePersistent.Value;
+                if (storeParams.IsCached.HasValue)
+                {
+                    IsCached = storeParams.IsCached.Value;
+                }
+                if (storeParams.IsCacheEncrypted.HasValue)
+                {
+                    IsCacheEncrypted = storeParams.IsCacheEncrypted.Value;
+                }
+                if (storeParams.IsCachePersistent.HasValue)
+                {
+                    IsCachePersistent = storeParams.IsCachePersistent.Value;
+                }
             }
             if (storeParams.IsUpdateSubscriptionEnabled.HasValue)
             {
@@ -627,7 +642,8 @@ namespace nsCDEngine.Engines.StorageService
                 }
                 if ((IsCachePersistent || (AppendOnly && MyMirrorCache.TracksInsertionOrder)) && !TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
                 {
-                    MyMirrorCache.IsCachePersistent = IsCachePersistent;
+                    if (storeParams.PreferDBCache.HasValue)
+                        MyMirrorCache.PreferDBCache = storeParams.PreferDBCache.Value;
                     MyMirrorCache.IsCacheEncrypted = IsCacheEncrypted;
                     MyMirrorCache.IsStoreIntervalInSeconds = IsStoreIntervalInSeconds;
                     MyMirrorCache.CacheStoreInterval = CacheStoreInterval;
@@ -638,15 +654,15 @@ namespace nsCDEngine.Engines.StorageService
                     }
                     else
                     {
-                        if (!string.IsNullOrEmpty(storeParams.ImportFile) && !File.Exists(TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')),true)))
+                        if (!string.IsNullOrEmpty(storeParams.ImportFile) && !File.Exists(TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true)))
                         {
                             try
                             {
-                                File.Copy(TheCommonUtils.cdeFixupFileName(storeParams.ImportFile), TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')),true));
+                                File.Copy(TheCommonUtils.cdeFixupFileName(storeParams.ImportFile), TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true));
                             }
                             catch (Exception e)
                             {
-                                TheBaseAssets.MySYSLOG.WriteToLog(471, new TSM("StorageMirror", $"File Import for {storeParams.ImportFile} failed", eMsgLevel.l1_Error,TSM.L(eDEBUG_LEVELS.VERBOSE)?"": e.ToString()));
+                                TheBaseAssets.MySYSLOG.WriteToLog(471, new TSM("StorageMirror", $"File Import for {storeParams.ImportFile} failed", eMsgLevel.l1_Error, TSM.L(eDEBUG_LEVELS.VERBOSE) ? "" : e.ToString()));
                             }
                         }
                         //if (HasRegisteredEvents(eStoreEvents.StoreReady))
@@ -864,12 +880,12 @@ namespace nsCDEngine.Engines.StorageService
 
         public string GetCacheStoreCount()
         {
-            return string.Format("{0}/{1}/{2}", MyMirrorCache.mCacheCounter,MyMirrorCache.CacheStoreInterval,MyMirrorCache.mTotalCacheCounter);
+            return MyMirrorCache.GetCacheStatistics();
         }
 
         public DateTimeOffset GetLastCacheStore()
         {
-            return MyMirrorCache.mLastStore;
+            return MyMirrorCache.LastCacheStoreTime;
         }
 
         public bool StoreCanBeFlushed()
@@ -2988,6 +3004,7 @@ namespace nsCDEngine.Engines.StorageService
         public int? MaxCount;
         public bool? TrackInsertionOrder;
         public bool? AppendOnly;
+        public bool? PreferDBCache;
         public int? MaxCacheFileSize;
         public int? MaxCacheFileCount;
 
