@@ -315,7 +315,7 @@ namespace nsCDEngine.Discovery
         public List<TheUPnPDeviceInfo> GetAllUPnPDeviceInfo()
         {
             if (MyUPnPDiscoveryPast?.MyMirrorCache?.Count > 0)
-                return MyUPnPDiscoveryPast.MyMirrorCache.MyRecords.Values.ToList();
+                return MyUPnPDiscoveryPast.MyMirrorCache.TheValues;
             return new();
         }
         public List<TheUPnPDeviceInfo> GetAllUPnPDeviceInfo(Func<TheUPnPDeviceInfo, bool> pFunc)
