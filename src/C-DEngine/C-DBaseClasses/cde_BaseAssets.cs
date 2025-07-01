@@ -434,11 +434,11 @@ namespace nsCDEngine.BaseClasses
 
         internal static TheSessionStateManager MySession;
         internal static Dictionary<string, ThePluginInfo> MyCDEPlugins = new ();       //DIC-Allowed   STRING
-        internal static TheMirrorCache<TheReceivedParts> MyReceivedParts;
+        internal static TheMirrorCacheCore<TheReceivedParts> MyReceivedParts;
         internal static ThePluginInfo MyAppInfo;
         internal static bool IsStarting;
         internal static bool IsInitialized;
-        internal static TheMirrorCache<TheBlobData> MyBlobCache;
+        internal static TheMirrorCacheCore<TheBlobData> MyBlobCache;
         internal static TheQueuedSender LocalHostQSender;
 
         class TheDummyClass { } // For version check only
@@ -614,8 +614,8 @@ namespace nsCDEngine.BaseClasses
             TheDiagnostics.SetThreadName("MAIN THREAD");
             TheQueuedSenderRegistry.Startup();
 
-            MyBlobCache = new TheMirrorCache<TheBlobData>(MyServiceHostInfo.TO.StorageCleanCycle);
-            MyReceivedParts = new TheMirrorCache<TheReceivedParts>(MyServiceHostInfo.TO.StorageCleanCycle);
+            MyBlobCache = new TheMirrorCacheCore<TheBlobData>(MyServiceHostInfo.TO.StorageCleanCycle);
+            MyReceivedParts = new TheMirrorCacheCore<TheReceivedParts>(MyServiceHostInfo.TO.StorageCleanCycle);
             MyServiceTypes.Add(typeof(TheBaseAssets));
 
             MyServiceHostInfo.TO.MakeHeartNormal();

@@ -590,7 +590,18 @@ namespace nsCDEngine.Engines.StorageService
             if (storeParams.PreferDBCache.HasValue)
             {
                 IsCached = true;
-                IsCachePersistent = true;
+                if (TheCDEngines.MyICacheStore != null)
+                {
+                    IsCachePersistent = false;
+                }
+                else
+                {
+                    IsCachePersistent = true;
+                    if (storeParams.IsCacheEncrypted.HasValue)
+                    {
+                        IsCacheEncrypted = storeParams.IsCacheEncrypted.Value;
+                    }
+                }
             }
             else
             {
@@ -640,9 +651,9 @@ namespace nsCDEngine.Engines.StorageService
                     if (storeParams.MaxCacheFileSize.HasValue)
                         MyMirrorCache.MaxCacheFileSize = storeParams.MaxCacheFileSize.Value;
                 }
-                if ((IsCachePersistent || (AppendOnly && MyMirrorCache.TracksInsertionOrder)) && !TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
+                if ((IsCachePersistent || (storeParams.PreferDBCache.HasValue && storeParams.PreferDBCache.Value) || (AppendOnly && MyMirrorCache.TracksInsertionOrder)) && !TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
                 {
-                    if (storeParams.PreferDBCache.HasValue)
+                    if (storeParams.PreferDBCache.HasValue && storeParams.PreferDBCache.Value && TheCDEngines.MyICacheStore!=null)
                         MyMirrorCache.PreferDBCache = storeParams.PreferDBCache.Value;
                     MyMirrorCache.IsCacheEncrypted = IsCacheEncrypted;
                     MyMirrorCache.IsStoreIntervalInSeconds = IsStoreIntervalInSeconds;
@@ -654,7 +665,7 @@ namespace nsCDEngine.Engines.StorageService
                     }
                     else
                     {
-                        if (!string.IsNullOrEmpty(storeParams.ImportFile) && !File.Exists(TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true)))
+                        if (!MyMirrorCache.PreferDBCache && !string.IsNullOrEmpty(storeParams.ImportFile) && !File.Exists(TheCommonUtils.cdeFixupFileName(string.Format("cache\\{0}", MyStoreID.Replace('&', 'n')), true)))
                         {
                             try
                             {
@@ -1671,7 +1682,7 @@ namespace nsCDEngine.Engines.StorageService
             }
             if ((IsRAMStore || IsCached) && !AppendOnly)
             {
-                MyMirrorCache.MyRecordsRWLock.RunUnderReadLock(() =>    //LOCK-REVIEW: New reader lock for result consitency
+                MyMirrorCache.MyRecordsRWLock.RunUnderReadLock(() =>    //LOCK-REVIEW: New reader lock for result consistency
                 {
                     try
                     {

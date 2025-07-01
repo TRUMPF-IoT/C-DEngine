@@ -119,7 +119,11 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Contains support for ICDELoggerEngine to provide logging support
         /// </summary>
-        LoggerEngine = 49
+        LoggerEngine = 49,
+        /// <summary>
+        /// Contains support for ICDEIssueLog to manage and store issues
+        /// </summary>
+        IssueLog = 50
     }
     #endregion
 

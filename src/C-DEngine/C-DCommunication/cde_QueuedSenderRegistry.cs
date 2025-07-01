@@ -57,7 +57,7 @@ namespace nsCDEngine.Communication
         {
             if (MyQueuedSenderList == null)
             {
-                MyQueuedSenderList = new TheMirrorCache<TheQueuedSender>(0);
+                MyQueuedSenderList = new TheMirrorCacheCore<TheQueuedSender>(0);
                 MyTSMHistorySet1 = new HashSet<TheSentRegistryItemHS>();
                 MyTSMHistorySet2 = new HashSet<TheSentRegistryItemHS>();
                 MyTSMHistorySet3 = new HashSet<TheSentRegistryItemHS>();
@@ -317,7 +317,7 @@ namespace nsCDEngine.Communication
         #endregion
 
         #region QueuedSender List Management
-        private static TheMirrorCache<TheQueuedSender> MyQueuedSenderList;
+        private static TheMirrorCacheCore<TheQueuedSender> MyQueuedSenderList;
 
         internal static TheQueuedSender GetSenderByGuid(Guid pGuid)
         {

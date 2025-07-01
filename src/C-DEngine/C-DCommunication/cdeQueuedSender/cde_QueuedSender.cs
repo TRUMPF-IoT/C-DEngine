@@ -25,10 +25,10 @@ namespace nsCDEngine.Communication
     {
         public TheQueuedSender()
         {
-            MySubscriptions = new TheMirrorCache<TheSubscriptionInfo>();
-            MyCoreQueue = new TheMirrorCache<TheCoreQueueContent>();
+            MySubscriptions = new TheMirrorCacheCore<TheSubscriptionInfo>();
+            MyCoreQueue = new TheMirrorCacheCore<TheCoreQueueContent>();
             MyJSKnownThings = new cdeConcurrentDictionary<Guid, byte>();
-            MyJSKnownFields = new TheMirrorCache<TheMetaDataBase>();
+            MyJSKnownFields = new TheMirrorCacheCore<TheMetaDataBase>();
             IsAlive = true;
         }
 
@@ -514,8 +514,8 @@ namespace nsCDEngine.Communication
             List<TheCoreQueueContent> tErasers = MyCoreQueue.TheValues.Where(s => s == null || s.OrgMessage == null || s.OrgMessage.GetOriginator().Equals(pUri)).ToList();
             MyCoreQueue.RemoveItems(tErasers, null);
         }
-        private readonly TheMirrorCache<TheCoreQueueContent> MyCoreQueue;
-        private readonly TheMirrorCache<TheMetaDataBase> MyJSKnownFields;
+        private readonly TheMirrorCacheCore<TheCoreQueueContent> MyCoreQueue;
+        private readonly TheMirrorCacheCore<TheMetaDataBase> MyJSKnownFields;
         private readonly cdeConcurrentDictionary<Guid, byte> MyJSKnownThings;
 
 #region Cleanup and Excption Handling

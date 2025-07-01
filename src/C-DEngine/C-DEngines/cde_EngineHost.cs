@@ -36,7 +36,11 @@ namespace nsCDEngine.Engines
         /// </summary>
         //[Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
         //public static IStorageService MyStorageService;
-
+        private static ICacheStore _MyICacheStore = null;
+        public static ICacheStore MyICacheStore
+        {
+            get { return _MyICacheStore; }
+        }
         private static IStorageService _MyIStorageService = null;
         /// <summary>
         /// Interface to the Current StorageService
@@ -288,6 +292,7 @@ namespace nsCDEngine.Engines
                 tStorageEngine = CreatePlugin(tStore.Key);
                 if (tStorageEngine != null && !SetStorageService((IStorageService)tStorageEngine?.AssociatedPlugin))
                     tStorageEngine = null;
+                _MyICacheStore = tStorageEngine?.AssociatedPlugin as ICacheStore;
             }
             TheBaseAssets.MyApplication?.MyUserManager?.Init(!TheBaseAssets.MyServiceHostInfo.IsUserManagerInStorage || MyIStorageService == null, false);
             TheBaseAssets.MySYSLOG.WriteToLog(4143, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "UserManager Started", eMsgLevel.l3_ImportantMessage));
