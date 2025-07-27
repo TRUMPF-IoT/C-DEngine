@@ -270,23 +270,13 @@ namespace nsCDEngine.Security
             X509Certificate2 cert;
             try
             {
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                    return CertOnUnixCheck(filePath, verifyIntegrity);
                 cert = new X509Certificate2(filePath);
             }
             catch (Exception) // Unable to read certificate using X509Certificate2 class: read ourselves if on Linux
             {
-                if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    try
-                    {
-                        return ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity);
-                    }
-                    catch (Exception ex)
-                    {
-                        TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (on linux) excepted: {ex.Message}");
-                        return null;
-                    }
-                }
-                return null;
+                return CertOnUnixCheck(filePath, verifyIntegrity);
             }
             if (!verifyCertificateTrust && verifyIntegrity)
             {
@@ -305,6 +295,23 @@ namespace nsCDEngine.Security
                 }
             }
             return cert;
+        }
+
+        private static X509Certificate2 CertOnUnixCheck(string filePath, bool verifyIntegrity)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                try
+                {
+                    return ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity);
+                }
+                catch (Exception ex)
+                {
+                    TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (on linux) excepted: {ex.Message}");
+                    return null;
+                }
+            }
+            return null;
         }
 
         private static X509Certificate2 ReadPECertificateFromBinaryImage(string filePath, bool verifyCertificateTrust, bool verifyIntegrity)
