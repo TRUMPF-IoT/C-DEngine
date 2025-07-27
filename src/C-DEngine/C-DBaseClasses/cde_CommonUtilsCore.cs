@@ -196,7 +196,12 @@ namespace nsCDEngine.BaseClasses
                     if (inObj is cdeP)
                         retVal = Convert.ToInt32(CFloor(Convert.ToDouble(inObjStr, CultureInfo.InvariantCulture)), CultureInfo.InvariantCulture);
                     else
-                        retVal = Convert.ToInt32(CFloor(Convert.ToDouble(inObj, CultureInfo.InvariantCulture)), CultureInfo.InvariantCulture);
+                    {
+                        var dv = Convert.ToDouble(inObj, CultureInfo.InvariantCulture);
+                        if (Double.IsNaN(dv))
+                            return 0;
+                        retVal = Convert.ToInt32(CFloor(dv), CultureInfo.InvariantCulture);
+                    }
                 }
             }
             catch (Exception)

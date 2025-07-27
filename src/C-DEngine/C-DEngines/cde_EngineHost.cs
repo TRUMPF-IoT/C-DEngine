@@ -1049,7 +1049,6 @@ namespace nsCDEngine.Engines
             return System.Reflection.Assembly.ReflectionOnlyLoad(name);
         }
 
-        static bool _platformDoesNotSupportReflectionOnlyLoadFrom;
         internal class ReferenceLoader : MarshalByRefObject
         {
             public List<string> ScanForCDEPlugins(string assemblyPath, out TSM resTSM) //,ref Dictionary<string, Type> pCDEPlugins)
@@ -1058,7 +1057,7 @@ namespace nsCDEngine.Engines
                 List<string> mList = new ();
 
                 Assembly tAss = null;
-                if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (!TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
                     {
@@ -1066,10 +1065,10 @@ namespace nsCDEngine.Engines
                     }
                     catch (PlatformNotSupportedException) //No Assembly.ReflectionOnlyLoadFrom
                     {
-                        _platformDoesNotSupportReflectionOnlyLoadFrom = true;
+                        TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom = true;
                     }
                 }
-                if (_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     tAss = Assembly.LoadFrom(assemblyPath);
                 }

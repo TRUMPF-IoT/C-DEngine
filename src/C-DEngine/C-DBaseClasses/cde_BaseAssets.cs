@@ -149,7 +149,7 @@ namespace nsCDEngine.BaseClasses
         /// <value> A message describing the crypto load. if null loading was successful </value>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         public static string CryptoLoadMessage { private set; get; } = null; //if not null, loading of crypto failed and node must decide what to do
-        static bool _platformDoesNotSupportReflectionOnlyLoadFrom;
+        internal static bool PlatformDoesNotSupportReflectionOnlyLoadFrom;
         static readonly List<string> _KnownInterfaces = new () { "ICDECrypto", "ICDESecrets", "ICDEScopeManager", "ICDECodeSigning", "ICDEActivation" };
         internal class CryptoReferenceLoader : MarshalByRefObject
         {
@@ -163,7 +163,7 @@ namespace nsCDEngine.BaseClasses
                 Dictionary<string, string> mList = new ();
 
                 tAss = null;
-                if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (!PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
                     {
@@ -171,10 +171,10 @@ namespace nsCDEngine.BaseClasses
                     }
                     catch (PlatformNotSupportedException) //No Assembly.ReflectionOnlyLoadFrom
                     {
-                        _platformDoesNotSupportReflectionOnlyLoadFrom = true;
+                        PlatformDoesNotSupportReflectionOnlyLoadFrom = true;
                     }
                 }
-                if (_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
                     {
