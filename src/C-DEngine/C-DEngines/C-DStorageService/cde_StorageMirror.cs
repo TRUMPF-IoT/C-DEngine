@@ -2179,7 +2179,7 @@ namespace nsCDEngine.Engines.StorageService
                                         {
                                             var tOld = tTargetP.GetValue();
                                             var tNewVal = tSourceP.GetValue();
-                                            if ((tInfo.Flags & 1) != 0)
+                                            if ((tInfo.Flags & 1) != 0 || tInfo.Type==eFieldType.Password)
                                             {
                                                 //TODO: NMI will use RSA to encrypt value. We need the session here to decrypt:
                                                 tNewVal = TheCommonUtils.CStr(tSourceP.Value);
