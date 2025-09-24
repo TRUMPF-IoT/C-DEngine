@@ -18,7 +18,7 @@
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>C-Labs Distributed Engine</Description>
 		<PackageDescription>C-Labs Distributed Engine</PackageDescription>
-		<Copyright>Copyright © 2017-2025 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+		<Copyright>Copyright © 2017-2025 TRUMPF Laser GmbH, authors: C-Labs, Hyviva</Copyright>
 		<PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
