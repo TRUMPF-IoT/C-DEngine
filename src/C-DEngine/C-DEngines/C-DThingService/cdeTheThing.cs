@@ -1434,6 +1434,10 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(7691, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingService", "Switching IThingObject", eMsgLevel.l2_Warning, $"{this.EngineName} {this.FriendlyName}: IThingObject replaced with a different one. Race condition in plug-in instance creation?"));
                 }
+                if (pObj?.GetType() == typeof(TheThingBase))
+                {
+                    MyThingBase = pObj as TheThingBase;
+                }
                 ThingObject = pObj;
             }
         }

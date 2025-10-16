@@ -1,8 +1,10 @@
-﻿using nsCDEngine.ViewModels;
+﻿// SPDX-FileCopyrightText: Copyright (c) 2009-2025 TRUMPF Laser GmbH, authors: C-Labs, Hyviva
+//
+// SPDX-License-Identifier: MPL-2.0
+using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace nsCDEngine.Engines.ThingService
 {
