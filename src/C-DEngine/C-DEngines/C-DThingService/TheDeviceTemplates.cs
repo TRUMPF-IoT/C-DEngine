@@ -16,6 +16,7 @@ namespace nsCDEngine.Engines.ThingService
 {
     public class TheDeviceDescription
     {
+        public List<string> Variables { get; set; }
         public Dictionary<string, object> Properties { get; set; }
         public Dictionary<string, TheDeviceTagMapping> TagMappings { get; set; }
 

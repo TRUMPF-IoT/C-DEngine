@@ -318,6 +318,51 @@ namespace nsCDEngine.Engines.ThingService
         }
         #endregion
 
+        #region DeviceTempate
+        public TheDeviceDescription MyDeviceTemplate = null;
+        public void DTApplyDeviceTemplate()
+        {
+            if (MyDeviceTemplate != null)
+            {
+                if (MyDeviceTemplate.Properties?.Count > 0)
+                    MyBaseThing.SetProperties(MyDeviceTemplate.Properties, DateTimeOffset.Now);
+                MyBaseThing.SetProperty("ParentOwned", CU.CListToString(MyDeviceTemplate.Variables, ";"));
+            }
+        }
+        protected void DTPushToParent(Dictionary<string, object> dict, DateTimeOffset timestamp, bool ApplyToChild=false)
+        {
+            if (ApplyToChild)
+                MyBaseThing.SetProperties(dict, timestamp);
+            if (!string.IsNullOrEmpty(MyBaseThing.Parent))
+            {
+                var t = TheThingRegistry.GetThingByMID(CU.CGuid(MyBaseThing.Parent));
+                if (t != null)
+                    t.SetProperties(dict, timestamp);
+            }
+        }
+        public void DTPushToParent(DateTimeOffset timestamp)
+        {
+            if (!string.IsNullOrEmpty(MyBaseThing.Parent))
+            {
+                var t = TheThingRegistry.GetThingByMID(CU.CGuid(MyBaseThing.Parent));
+                if (t != null)
+                {
+                    List<string> propList = CU.CStringToList($"{MyBaseThing.GetProperty("ParentOwned", false)}", ';');
+                    if (propList?.Count > 0)
+                    {
+                        foreach (var prop in propList)
+                        {
+                            var tPParts = prop.Split(':');
+                            var tprop = tPParts.Length > 1 ? tPParts[1] : prop;
+                            var sprop = tPParts.Length > 1 ? tPParts[0] : prop;
+                            t.SetProperty(tprop, MyBaseThing.GetProperty(sprop, false));
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+
         #region NMI FacePlates for Group-Screens
         public virtual int AddDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, ThePropertyBag pProperties = null)
         {
@@ -2084,6 +2129,24 @@ namespace nsCDEngine.Engines.ThingService
             if (EventAction < 0 || (EventAction & 0x10) == 0)
             {
                 tProp.SetValue(tInternalValue, originator, sourceTimeStamp);
+                var parent=GetProperty(nameof(Parent));
+                //Stores the property in a designated parent thing's property
+                if (!string.IsNullOrEmpty($"{parent?.GetValue()}"))
+                {
+                    string pol = $"{GetProperty(nameof(ParentOwned))?.GetValue()}";
+                    if (pol?.Contains(tProp.Name)==true)
+                    {
+                        List<string> propList = CU.CStringToList(pol, ';');
+                        var targetProp = propList?.Find(s => s.StartsWith(tProp.Name));
+                        if (targetProp != null)
+                        {
+                            var tPParts = targetProp.Split(':');
+                            var tprop = tPParts.Length > 1 ? tPParts[1] : targetProp;
+                            var t = TheThingRegistry.GetThingByMID(CU.CGuid(parent.GetValue()));
+                            t?.SetProperty(tprop, tProp.Value);
+                        }
+                    }
+                }
             }
             UpdatePropertyInBag(tProp, WasOk);
 
@@ -2102,7 +2165,7 @@ namespace nsCDEngine.Engines.ThingService
                 tPB = pProp.cdeOP.cdePB;
             }
             if (MustUpdate && tPB.ContainsKey(pProp.Name) && tPB[pProp.Name].cdeMID != pProp.cdeMID)
-                    return;
+                return;
             cdeP tOldProp = null;
             if (tPB.ContainsKey(pProp.Name))
                 tOldProp = tPB[pProp.Name];
@@ -2557,6 +2620,13 @@ namespace nsCDEngine.Engines.ThingService
         {
             get { return GetSafePropertyString(this, "Parent"); }
             set { SetSafePropertyString(this, "Parent", value); }
+        }
+
+        [IgnoreDataMember]
+        public string ParentOwned
+        {
+            get { return GetSafePropertyString(this, "ParentOwned"); }
+            set { SetSafePropertyString(this, "ParentOwned", value); }
         }
 
         /// <summary>
