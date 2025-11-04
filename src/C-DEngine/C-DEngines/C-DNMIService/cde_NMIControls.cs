@@ -507,6 +507,10 @@ namespace nsCDEngine.Engines.NMIService
         public string GreyCondition { get; set; }
 
         /// <summary>
+        /// Script executed during control init
+        /// </summary>
+        public string InitScript { get; set; }
+        /// <summary>
         /// This text will be shown instead of the control if the control could not be started or is still being retrieved from the mesh
         /// </summary>
         public string PlaceHolder { get; set; }
