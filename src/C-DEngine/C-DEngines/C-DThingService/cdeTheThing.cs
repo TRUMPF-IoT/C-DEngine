@@ -2496,7 +2496,7 @@ namespace nsCDEngine.Engines.ThingService
         /// 2=warning
         /// 3=Failure
         /// 4=Ramp Up
-        /// 5=Engineering
+        /// 5=Engineering/Simulation/Maintenance
         /// 6=Shutdown
         /// 7=Unknown/not visible
         /// </summary>
