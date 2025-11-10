@@ -801,6 +801,7 @@ namespace nsCDEngine.Security
 
             // Check to see if thumbprints on file and c-labs file are the same
             bool match = MyAppHostCert?.Thumbprint.Equals(cert?.Thumbprint, StringComparison.OrdinalIgnoreCase) == true ||
+                    "DEE334FF9466AA158D92574F52C4F3A2779ABBCA".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2026 cert
                     "770421C26FFA756E0551018D66AB0DDFB8DBCC9C".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2025 cert
                     "A99B91578F275D44BE365BA0BD6AF29D49FCA159".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2024 cert
                     "C8F244B6856C3A16604E7C00A0DD645C15EBE05A".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2023 Cert
