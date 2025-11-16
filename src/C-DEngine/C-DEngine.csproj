@@ -11,7 +11,7 @@
 		<PackageId>C-DEngine</PackageId>
 		<PackageIcon>toplogo-128.png</PackageIcon>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>		
-		<Version>6.104.0</Version>
+		<Version>6.121.0</Version>
 		<Authors>Chris Muench</Authors>
 		<Company>C-Labs</Company>
 		<Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
@@ -68,7 +68,7 @@
 
 	<Import Project="..\Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems" Label="Shared" Condition="$(DefineConstants.Contains('CDE_INTNEWTON'))" />
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.JSON" Version="13.0.3" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))" />
+		<PackageReference Include="Newtonsoft.JSON" Version="13.0.4" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))" />
 		<PackageReference Include="System.Text.Json" Version="8.0.0" Condition="$(DefineConstants.Contains('CDE_MEADOW'))" />
 	</ItemGroup>
 
@@ -88,6 +88,10 @@
     <Exec Command="move $(TargetDir)merged\$(AssemblyName).pdb $(TargetDir)" />-->
 		<Exec Command="call &quot;$(ProjectDir)..\..\BuildTools\signMeSha.bat&quot; &quot;$(TargetDir)$(TargetFileName)&quot;" />
 	</Target>
+
+	<ItemGroup>
+	  <PackageReference Update="GitVersion.MsBuild" Version="6.5.0" />
+	</ItemGroup>
 
 </Project>
 
