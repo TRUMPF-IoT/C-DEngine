@@ -155,11 +155,7 @@ namespace nsCDEngine.BaseClasses
                     //intentionally
                 }
 
-#if CDE_STANDARD
                 var largeObjectHeapCompactionMode = System.Runtime.GCSettings.LargeObjectHeapCompactionMode;
-#else
-                const string largeObjectHeapCompactionMode = "n/a";
-#endif
                 TheBaseAssets.MySYSLOG.WriteToLog(4144, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM(eEngineName.ContentService, $"CLR Info", eMsgLevel.l4_Message, $"Server GC: {System.Runtime.GCSettings.IsServerGC}. GC Latency Mode: {System.Runtime.GCSettings.LatencyMode}. LOHC Mode: {largeObjectHeapCompactionMode}. Bitness: {System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) * 8}. Threads Min W/CP, Max W/CP: {minWorker}/{minCompletionPort},{maxWorker}/{maxCompletionPort}. GC TotalMemory: {GC.GetTotalMemory(false)}"));
 
                 if (!TheBaseAssets.MyActivationManager.InitializeLicenses())
@@ -350,20 +346,6 @@ namespace nsCDEngine.BaseClasses
         /// A Website that wants to store data in the web.config
         /// </summary>
         /// <returns></returns>
-#if !CDE_STANDARD
-        public virtual Configuration GetApplicationConfig()
-        {
-            Configuration tConfig = null;
-            try
-            {
-                tConfig = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            }
-            catch {
-                //ignored
-            }
-            return tConfig;
-        }
-#else
         public virtual dynamic GetApplicationConfig()
         {
             dynamic tConfig = null;
@@ -386,7 +368,6 @@ namespace nsCDEngine.BaseClasses
             }
             return tConfig;
         }
-#endif
         /// <summary>
         /// This event is fired when the scope was changed
         /// </summary>

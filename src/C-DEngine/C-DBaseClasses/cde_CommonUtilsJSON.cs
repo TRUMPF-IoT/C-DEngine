@@ -134,9 +134,6 @@ namespace nsCDEngine.BaseClasses
                     };
                 _fileSerializer.Serialize(writeFile, tData);
                 writeFile.Flush();
-#if !CDE_STANDARD
-                writeFile.Close();
-#endif
             }
         }
 #endregion

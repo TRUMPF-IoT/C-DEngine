@@ -1180,11 +1180,7 @@ namespace nsCDEngine.BaseClasses
 
                     FileStream _FileStream = new (FileToReturn, FileMode.Create, FileAccess.Write);
                     _FileStream.Write(fileBytes, 0, fileBytes.Length);
-#if CDE_STANDARD   //Core uses Dispose not CLose
                     _FileStream.Dispose();
-#else
-                    _FileStream.Close();
-#endif
                     if (IsImage)
                     {
 #if !CDE_STANDARD   //No System.Drawing

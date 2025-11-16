@@ -90,16 +90,12 @@ namespace nsCDEngine.ISM
                 return settingsValue;
             }
 
-#if !CDE_STANDARD //No App.Config
-            string tUID = CU.CStr(ConfigurationManager.AppSettings[pSetting]);
-#else
             string tUID = alt;
             var appSettings = GetAppSettingsObject();
             if (appSettings != null)
             {
                 tUID = CU.CStr(appSettings[pSetting]);
             }
-#endif
             if (IsEncrypted && !string.IsNullOrEmpty(tUID))
             {
                 tUID = CU.cdeDecrypt(tUID, TheBaseAssets.MySecrets.GetAI());
@@ -150,11 +146,7 @@ namespace nsCDEngine.ISM
                 if (tSettings != null)
                 {
                     tSettings.Settings.Remove(pKeyname);
-#if !CDE_STANDARD
-                    tConfig.Save(ConfigurationSaveMode.Modified);
-#else
                     tConfig.Save(0);
-#endif
                 }
                 if (pOwner != null && TheBaseAssets.MyCmdArgs.ContainsKey(pKeyname))
                 {
@@ -391,15 +383,11 @@ namespace nsCDEngine.ISM
 
             if (CU.IsFeather())
                 return false;
-#if !CDE_STANDARD
-            var appSettings = ConfigurationManager.AppSettings;
-#else
             dynamic appSettings = GetAppSettingsObject();
             if (appSettings == null)
             {
                 return false;
             }
-#endif
             string[] Keys = appSettings.AllKeys;
             for (int i = 0; i < appSettings.Count; i++)
             {
@@ -471,7 +459,6 @@ namespace nsCDEngine.ISM
             return temp;
         }
 
-#if CDE_STANDARD
         static dynamic GetAppSettingsObject()
         {
             dynamic appSettings = null;
@@ -536,7 +523,6 @@ namespace nsCDEngine.ISM
             }
             return appSettings;
         }
-#endif
         internal static void SetDeviceInfo()
         {
             TheBaseAssets.MyServiceHostInfo.IsNewDevice = !TheBaseAssets.MyServiceHostInfo.IsIsolated;

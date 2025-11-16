@@ -1356,22 +1356,7 @@ namespace cdeNewtonsoft.Json.Serialization
             // warning - this method use to cause errors with Intellitrace. Retest in VS Ultimate after changes
             IValueProvider valueProvider;
 
-#if !(PORTABLE40 || PORTABLE || DOTNET || NETSTANDARD2_0 || NETSTANDARD2_1)
-#if !(CDE_IOS && !HAVE_DYNAMIC)
-            if (DynamicCodeGeneration)
-            {
-                valueProvider = new DynamicValueProvider(member);
-            }
-            else
-#endif
-            {
-                valueProvider = new ReflectionValueProvider(member);
-            }
-#elif !(PORTABLE40)
             valueProvider = new ExpressionValueProvider(member);
-#else
-            valueProvider = new ReflectionValueProvider(member);
-#endif
 
             return valueProvider;
         }
