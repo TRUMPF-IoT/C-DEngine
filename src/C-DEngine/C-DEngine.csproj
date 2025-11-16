@@ -88,10 +88,5 @@
     <Exec Command="move $(TargetDir)merged\$(AssemblyName).pdb $(TargetDir)" />-->
 		<Exec Command="call &quot;$(ProjectDir)..\..\BuildTools\signMeSha.bat&quot; &quot;$(TargetDir)$(TargetFileName)&quot;" />
 	</Target>
-
-	<ItemGroup>
-	  <PackageReference Update="GitVersion.MsBuild" Version="6.5.0" />
-	</ItemGroup>
-
 </Project>
 
