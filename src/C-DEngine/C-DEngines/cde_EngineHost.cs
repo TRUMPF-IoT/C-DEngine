@@ -223,8 +223,8 @@ namespace nsCDEngine.Engines
         /// Fires when All Engines have been started
         /// RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V5
         /// </summary>
+        [Obsolete("RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V6.130 (Jan 2026)")]
         public static Action eventAllEnginesStarted;
-
         /// <summary>
         /// Fires when all Engines are Ready
         /// RETIRED in V4: please do not use anymore. Will be removed in V5
@@ -524,7 +524,7 @@ namespace nsCDEngine.Engines
                 }
                 catch (Exception e)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(4134, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "Some Plugin Crashed during AllengineStarted event", eMsgLevel.l2_Warning, e.ToString()));
+                    TheBaseAssets.MySYSLOG.WriteToLog(4134, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "Some Plugin Crashed during AllEngineStarted event", eMsgLevel.l2_Warning, e.ToString()));
                 }
             }
             if (TheBaseAssets.MyApplication.MyCommonDisco != null)

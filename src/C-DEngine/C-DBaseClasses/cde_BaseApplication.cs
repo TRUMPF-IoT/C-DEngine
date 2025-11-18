@@ -219,7 +219,7 @@ namespace nsCDEngine.BaseClasses
                     MyCommonDisco = new TheCommonDisco(); // Initialized the Discovery Service
                 }
 
-                TheCDEngines.eventAllEnginesStarted += sinkEnginesStarted;
+                TheBaseEngine.WaitForEnginesStarted(sinkEnginesStarted);
                 if (!TheCDEngines.StartEngines(pPlugInLst, null))                                           //Starts all SubEngines and Plugins. MyCmdArgs is a copy of the tParas sent to the Init Assets Function and can be used to set parameters for each engine during startup
                 {
                     TheSystemMessageLog.ToCo($"Failed to Start Engines. Exiting...", true);
@@ -235,7 +235,7 @@ namespace nsCDEngine.BaseClasses
             }
         }
 
-        void sinkEnginesStarted()
+        void sinkEnginesStarted(ICDEThing t, object para)
         {
             if (MyCommonDisco != null)
                 MyCommonDisco.StartDiscoDevice();   //MSU-OK Starts the Discovery Service -  as Device AND scanning for other relays/services
