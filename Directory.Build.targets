@@ -83,7 +83,7 @@
         <SmartPackageReference Include="@(PackageReference)">
           <PackageName>%(Identity)</PackageName> 
           <InSolution>false</InSolution>
-          <InSolution Condition = " '$(PackageReferenceFilter)' == '' OR '$(PackageReferenceFilter.Contains(%(Identity)))' == 'True' ">$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('%(Identity).csproj'))</InSolution>
+          <InSolution Condition = " '$(PackageReferenceFilter)' == '' OR '$(PackageReferenceFilter.Contains(%(Identity)))' == 'True' ">$([System.IO.File]::ReadAllText($(SolutionPath)).Replace('/','\').Contains('\%(Identity).csproj'))</InSolution>
         </SmartPackageReference>
 
         <!-- Filter them by mapping them to another itemGroup using the WithMetadataValue item function -->
