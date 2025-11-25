@@ -56,13 +56,17 @@
   <PropertyGroup Condition=" ('$(SolutionPath)' == '' OR !Exists('$(SolutionPath)'))AND  '$(SolutionDir)' != '' AND '$(SolutionDir)' != '*undefined*' ">
 	  <SolutionPath>$(SolutionDir)$(SolutionName).SLN</SolutionPath>
   </PropertyGroup>
+  <PropertyGroup>
+    <IsSLNX>$(SolutionPath.ToLower().EndsWith('.slnx'))</IsSLNX>
+  </PropertyGroup>
 
   <Choose>
     <When Condition="'$(SolutionPath)' != '' AND '$(SolutionPath)' != '*undefined*' AND Exists('$(SolutionPath)') AND '$(GitVersionTaskExcluded)' != 'True'" >
       <PropertyGroup>
         <!-- <SolutionFileContent>$([System.IO.File]::ReadAllText($(SolutionPath)))</SolutionFileContent> --> <!-- Markush: 2020/02/10: This exhausts memory for large SLN files: read multiple times - less efficient but preserves memory-->
         <SmartSolutionDir>$([System.IO.Path]::GetDirectoryName( $(SolutionPath) ))</SmartSolutionDir>
-        <RegexPattern>(?&lt;="[PackageName]", ")(.*)(?=", ")</RegexPattern>
+        <RegexPattern Condition=" '$(IsSLNX)' != 'True' ">(?&lt;="[PackageName]", ")(.*)(?=", ")</RegexPattern>
+        <RegexPattern Condition=" '$(IsSLNX)' == 'True' ">(?&lt;=Project Path=")(.*)([PackageName].csproj)</RegexPattern>
         <HasSolution>true</HasSolution>
       </PropertyGroup>
     </When>
@@ -79,7 +83,7 @@
         <SmartPackageReference Include="@(PackageReference)">
           <PackageName>%(Identity)</PackageName> 
           <InSolution>false</InSolution>
-          <InSolution Condition = " '$(PackageReferenceFilter)' == '' OR '$(PackageReferenceFilter.Contains(%(Identity)))' == 'True' ">$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\%(Identity).csproj'))</InSolution>
+          <InSolution Condition = " '$(PackageReferenceFilter)' == '' OR '$(PackageReferenceFilter.Contains(%(Identity)))' == 'True' ">$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('%(Identity).csproj'))</InSolution>
         </SmartPackageReference>
 
         <!-- Filter them by mapping them to another itemGroup using the WithMetadataValue item function -->
