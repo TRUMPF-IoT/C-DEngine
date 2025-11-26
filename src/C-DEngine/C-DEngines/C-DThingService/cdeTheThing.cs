@@ -320,13 +320,40 @@ namespace nsCDEngine.Engines.ThingService
 
         #region DeviceTempate
         public TheDeviceDescription MyDeviceTemplate = null;
-        public void DTApplyDeviceTemplate()
+       
+        public int DeviceHealthInterval
+        {
+            get { return (int)TT.MemberGetSafePropertyNumber(MyBaseThing); }
+            set { TT.MemberSetSafePropertyNumber(MyBaseThing, value); }
+        }
+        public void DTApplyDeviceTemplate(int healthInterval)
         {
             if (MyDeviceTemplate != null)
             {
                 if (MyDeviceTemplate.Properties?.Count > 0)
                     MyBaseThing.SetProperties(MyDeviceTemplate.Properties, DateTimeOffset.Now);
                 MyBaseThing.SetProperty("ParentOwned", CU.CListToString(MyDeviceTemplate.Variables, ";"));
+                if (!string.IsNullOrEmpty(TT.GetSafePropertyString(MyBaseThing, "ParentID")))
+                {
+                    DeviceHealthInterval = healthInterval;
+                    TheQueuedSenderRegistry.RegisterHealthTimer(sinkSendDeviceHealth);
+                }
+            }
+        }
+
+        void sinkSendDeviceHealth(long ticks)
+        {
+            if (DeviceHealthInterval > 0 && (ticks % DeviceHealthInterval) == 0)
+            {
+                var parentID = TT.GetSafePropertyString(MyBaseThing, "ParentID");
+                if (!string.IsNullOrEmpty(parentID))
+                {
+                    DTPushToParent(new Dictionary<string, object> {
+                                    { $"{parentID}_LastUpdate", DateTimeOffset.Now },
+                                    { $"{parentID}_StatusLevel", MyBaseThing.StatusLevel },
+                                    { $"{parentID}_LastMessage", MyBaseThing.LastMessage }
+                                    }, DateTimeOffset.Now, false);
+                }
             }
         }
         protected void DTPushToParent(Dictionary<string, object> dict, DateTimeOffset timestamp, bool ApplyToChild=false)

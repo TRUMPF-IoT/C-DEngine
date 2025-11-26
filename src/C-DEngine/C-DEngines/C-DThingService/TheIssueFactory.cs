@@ -1,6 +1,7 @@
 ﻿// SPDX-FileCopyrightText: Copyright (c) 2009-2025 TRUMPF Laser GmbH, authors: C-Labs, Hyviva
 //
 // SPDX-License-Identifier: MPL-2.0
+using nsCDEngine.BaseClasses;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -13,8 +14,9 @@ namespace nsCDEngine.Engines.ThingService
         public void ClearIssue(string pDevId, string pSensorId);
         public void ClearIssues(string pDevId, List<string> pSensorIds);
         public bool HasIssue(string pDevId, string pSensorId);
-        public void FileIssue(TheThing pBaseThing, string pSensorId, string pMessage);
-        public void FileIssue(string pDevId, string pSensorId, string pDevName, string pCategory, string pMessage);
+        public void FileIssue(TheIssue pIssue);
+        public void FileIssue(TheThing pBaseThing, string pSensorId, eMsgLevel msgLevel, string pMessage);
+        public void FileIssue(string pDevId, string pSensorId, string pDevName, string pCategory, eMsgLevel msgLevel, string pMessage);
     }
 
     /// <summary>
@@ -38,6 +40,8 @@ namespace nsCDEngine.Engines.ThingService
         /// Full message of the log entry
         /// </summary>
         public string full_message { get; set; }
+
+        public int msg_level { get; set; }
 
         public DateTimeOffset clear_time { get; set; }
         public DateTimeOffset ack_time { get; set; }
