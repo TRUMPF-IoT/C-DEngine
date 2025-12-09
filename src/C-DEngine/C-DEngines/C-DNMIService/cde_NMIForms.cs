@@ -550,7 +550,7 @@ namespace nsCDEngine.Engines.NMIService
             (s.Flags == 0 ||
              (((s.Flags & 2) != 0 || !pClientInfo.IsOnCloud || pClientInfo.IsUserTrusted) &&
               ((s.Flags & 4) == 0 || !pClientInfo.IsMobile) &&
-              ((s.Flags & 128) == 0 || pClientInfo.IsFirstNode || pClientInfo.IsUserTrusted)))
+              ((s.Flags & 128) == 0 || !pClientInfo.IsOnCloud || pClientInfo.IsUserTrusted)))
              ).OrderBy(s => s.Category).ThenBy(s => s.FldOrder).ToList();
             if (tInfo.MyDashPanels != null)
             {
