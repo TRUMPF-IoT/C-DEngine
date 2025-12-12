@@ -1335,11 +1335,11 @@ namespace nsCDEngine.Engines
             void innerCallback()
             {
                 pCallback(null, true);
-                TheCDEngines.eventAllEnginesStarted -= innerCallback;
+                TheCDEngines.eventAllEnginesStarted2 -= innerCallback;
             }
 
-            TheCDEngines.eventAllEnginesStarted -= innerCallback;
-            TheCDEngines.eventAllEnginesStarted += innerCallback;
+            TheCDEngines.eventAllEnginesStarted2 -= innerCallback;
+            TheCDEngines.eventAllEnginesStarted2 += innerCallback;
             if (TheBaseAssets.MyServiceHostInfo.AreAllEnginesStarted)
             {
                 innerCallback();

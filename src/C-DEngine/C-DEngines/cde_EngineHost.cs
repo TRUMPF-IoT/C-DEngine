@@ -224,7 +224,14 @@ namespace nsCDEngine.Engines
         /// RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V5
         /// </summary>
         [Obsolete("RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V6.130 (Jan 2026)")]
-        public static Action eventAllEnginesStarted;
+        public static Action eventAllEnginesStarted 
+        {
+            get { return eventAllEnginesStarted2; }
+            set { eventAllEnginesStarted2 = value; }
+        }
+
+        internal static Action eventAllEnginesStarted2;
+
         /// <summary>
         /// Fires when all Engines are Ready
         /// RETIRED in V4: please do not use anymore. Will be removed in V5
@@ -516,11 +523,11 @@ namespace nsCDEngine.Engines
             StartIsolatedPlugins();
             TheBaseAssets.MyServiceHostInfo.AreAllEnginesStarted = true;
             TheBaseAssets.MySYSLOG.WriteToLog(4133, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "All Engines Started", eMsgLevel.l3_ImportantMessage));
-            if (eventAllEnginesStarted != null)
+            if (eventAllEnginesStarted2 != null)
             {
                 try
                 {
-                    eventAllEnginesStarted();
+                    eventAllEnginesStarted2.Invoke();
                 }
                 catch (Exception e)
                 {
