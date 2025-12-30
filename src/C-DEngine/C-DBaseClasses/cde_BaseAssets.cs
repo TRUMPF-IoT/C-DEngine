@@ -563,7 +563,11 @@ namespace nsCDEngine.BaseClasses
 
             #region step 3: analyse os environment information
             OperatingSystem os = Environment.OSVersion;
-            var osInfoForLog = $"C-DEngine version: {BuildVersion} OS:{Environment.OSVersion} OS Version:{os.VersionString} OS Version Numbers: {os.Version.Major}.{os.Version.Minor}.{os.Version.Build}.{os.Version.Revision} Platform:{os.Platform} SP:{os.ServicePack} Processor Count: {Environment.ProcessorCount} IsMono:{(Type.GetType("Mono.Runtime") != null)} IsNetCore:{TheCommonUtils.IsNetCore()} Product: {TheCommonUtils.GetAssemblyProduct(typeof(TheBaseAssets))} ";
+            string jsonIncluded = "JSON:Nuget ";
+#if CDE_INTNEWTON
+            jsonIncluded = "JSON:Internal ";
+#endif
+            var osInfoForLog = $"C-DEngine version: {BuildVersion} OS:{Environment.OSVersion} OS Version:{os.VersionString} OS Version Numbers: {os.Version.Major}.{os.Version.Minor}.{os.Version.Build}.{os.Version.Revision} {jsonIncluded}Platform:{os.Platform} SP:{os.ServicePack} Processor Count: {Environment.ProcessorCount} IsMono:{(Type.GetType("Mono.Runtime") != null)} IsNetCore:{TheCommonUtils.IsNetCore()} Product: {TheCommonUtils.GetAssemblyProduct(typeof(TheBaseAssets))} ";
             TheSystemMessageLog.ToCo(osInfoForLog);
             MyServiceHostInfo.OSInfo = osInfoForLog;
             string dotNetInfoForLog = string.Empty;
