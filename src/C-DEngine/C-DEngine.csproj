@@ -48,7 +48,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<NewtonsoftSharedInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\cdeNewtonsoft.JSON'))</NewtonsoftSharedInSolution>
+		<NewtonsoftSharedInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('cdeNewtonsoft.JSON'))</NewtonsoftSharedInSolution>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(NewtonsoftSharedInSolution)' == 'True'">
 		<DefineConstants>CDE_INTNEWTON;$(DefineConstants)</DefineConstants>
