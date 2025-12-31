@@ -4,6 +4,7 @@
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using nsCDEngine.BaseClasses;
 using nsCDEngine.Communication;
 using nsCDEngine.ViewModels;
@@ -32,10 +33,10 @@ namespace cdeASPNetMiddleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (context.WebSockets.IsWebSocketRequest)
+            if (context.WebSockets.IsWebSocketRequest && (context.Request.Path.ToString().StartsWith("/ISB") || TheCommCore.CustomWSHooks?.IsEventRegistered(TheCommonUtils.CUri(UriHelper.GetDisplayUrl(context.Request), false).PathAndQuery)==true))
             {
                 using WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                if (await ProcessWSRequest(context, webSocket, context.Request.Path.ToString().StartsWith("/ISB")) == null)
+                if (await ProcessWSRequest(context, webSocket, context.Request.Path.ToString().StartsWith("/ISB")) != null)
                     return;
             }
             await _next(context);
@@ -62,7 +63,7 @@ namespace cdeASPNetMiddleware
                 else
                 {
                     await TheQueuedSenderRegistry.ProcessCloudRequest(ws, tRequestData);
-                    return null;
+                    return "ISBConnected";
                 }
             }
             catch (Exception ex)

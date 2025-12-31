@@ -8,7 +8,10 @@ using nsCDEngine.BaseClasses;
 using nsCDEngine.Communication;
 using nsCDEngine.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace cdeASPNetMiddleware
@@ -25,20 +28,29 @@ namespace cdeASPNetMiddleware
     {
         private readonly RequestDelegate _next;
         public static string ExpiredText;
+        private List<string> IgnoredPaths = null; //New in 6.131.0 (January 2026): required for private paths used by other middleware
         public cdeASPNetRestHandler(RequestDelegate next)
         {
             _next = next;
+            var tp=TheBaseAssets.MySettings?.GetSetting("CDEIgnorePath");
+            if (!string.IsNullOrEmpty(tp))
+            {
+                IgnoredPaths = new List<string>(tp.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+            }
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
-            await ProcessRESTRequest(context);
+            if (context.Request.Method == "CONNECT" || IgnoredPaths?.Any(s => context.Request?.Path.Value.ToLower().StartsWith(s.ToLower()) == true) == true)
+                await _next.Invoke(context);
+            else
+                await ProcessRESTRequest(context);
         }
 
         public async Task ProcessRESTRequest(HttpContext pContext)
         {
-            var Response = pContext.Response;
             var Request = pContext.Request;
+            var Response = pContext.Response;
             if (ExpiredText != null)
             {
                 await Response.WriteAsync(ExpiredText);
@@ -75,7 +87,7 @@ namespace cdeASPNetMiddleware
             if (tReq == null)
                 return;
 
-            using (MemoryStream ms = new ())
+            using (MemoryStream ms = new())
             {
                 await Request.Body.CopyToAsync(ms);
                 tReq.PostData = ms.ToArray();
