@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2025 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -149,7 +149,7 @@ namespace nsCDEngine.BaseClasses
         /// <value> A message describing the crypto load. if null loading was successful </value>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         public static string CryptoLoadMessage { private set; get; } = null; //if not null, loading of crypto failed and node must decide what to do
-        static bool _platformDoesNotSupportReflectionOnlyLoadFrom;
+        internal static bool PlatformDoesNotSupportReflectionOnlyLoadFrom;
         static readonly List<string> _KnownInterfaces = new () { "ICDECrypto", "ICDESecrets", "ICDEScopeManager", "ICDECodeSigning", "ICDEActivation" };
         internal class CryptoReferenceLoader : MarshalByRefObject
         {
@@ -163,7 +163,7 @@ namespace nsCDEngine.BaseClasses
                 Dictionary<string, string> mList = new ();
 
                 tAss = null;
-                if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (!PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
                     {
@@ -171,10 +171,10 @@ namespace nsCDEngine.BaseClasses
                     }
                     catch (PlatformNotSupportedException) //No Assembly.ReflectionOnlyLoadFrom
                     {
-                        _platformDoesNotSupportReflectionOnlyLoadFrom = true;
+                        PlatformDoesNotSupportReflectionOnlyLoadFrom = true;
                     }
                 }
-                if (_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
                     {
@@ -434,11 +434,11 @@ namespace nsCDEngine.BaseClasses
 
         internal static TheSessionStateManager MySession;
         internal static Dictionary<string, ThePluginInfo> MyCDEPlugins = new ();       //DIC-Allowed   STRING
-        internal static TheMirrorCache<TheReceivedParts> MyReceivedParts;
+        internal static TheMirrorCacheCore<TheReceivedParts> MyReceivedParts;
         internal static ThePluginInfo MyAppInfo;
         internal static bool IsStarting;
         internal static bool IsInitialized;
-        internal static TheMirrorCache<TheBlobData> MyBlobCache;
+        internal static TheMirrorCacheCore<TheBlobData> MyBlobCache;
         internal static TheQueuedSender LocalHostQSender;
 
         class TheDummyClass { } // For version check only
@@ -567,7 +567,6 @@ namespace nsCDEngine.BaseClasses
             TheSystemMessageLog.ToCo(osInfoForLog);
             MyServiceHostInfo.OSInfo = osInfoForLog;
             string dotNetInfoForLog = string.Empty;
-#if !CDE_NET35 && !CDE_NET4
             try
             {
                 string frameworkDescription = null;
@@ -575,21 +574,10 @@ namespace nsCDEngine.BaseClasses
                 string processArchitecture = null;
                 string osArchitecture = null;
 
-#if CDE_STANDARD
                 frameworkDescription = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
                 osDescription = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
                 processArchitecture = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture.ToString();
                 osArchitecture = System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToString();
-#else
-                var rtInfoType = Type.GetType("System.Runtime.InteropServices.RuntimeInformation, System.Runtime.InteropServices.RuntimeInformation, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
-                if (rtInfoType != null)
-                {
-                    frameworkDescription = rtInfoType.GetProperty("FrameworkDescription").GetValue(null).ToString();
-                    osDescription = rtInfoType.GetProperty("OSDescription").GetValue(null).ToString();
-                    processArchitecture = rtInfoType.GetProperty("ProcessArchitecture").GetValue(null).ToString();
-                    osArchitecture = rtInfoType.GetProperty("OSArchitecture").GetValue(null).ToString();
-                }
-#endif
                 if (!string.IsNullOrEmpty(frameworkDescription))
                 {
                     dotNetInfoForLog = $"NetFrameWork:{frameworkDescription} Processor:{processArchitecture} OS:{osDescription } OS Arch:{osArchitecture}";
@@ -601,22 +589,13 @@ namespace nsCDEngine.BaseClasses
             {
                 //intentionally blank
             }
-#endif
             if (TheCommonUtils.IsMono()) // CODE REVIEW: Need to clean this up - do we mean Mono or Linux or case-insensitive file systems? CM: No- here we need this to find out if we are running in the MONO Runtime
             {
                 MyServiceHostInfo.cdePlatform = cdePlatform.MONO_V3;
             }
             else
             {
-#if CDE_NET35
-                MyServiceHostInfo.cdePlatform = cdePlatform.X32_V3;
-#elif CDE_NET4
-                MyServiceHostInfo.cdePlatform = Environment.Is64BitProcess ? cdePlatform.NETV4_64 : cdePlatform.NETV4_32;
-#elif CDE_STANDARD
                 MyServiceHostInfo.cdePlatform = cdePlatform.NETSTD_V21;
-#else
-                MyServiceHostInfo.cdePlatform = TheCommonUtils.GetAssemblyPlatform(Assembly.GetEntryAssembly(), false, out var empty);// old: Environment.Is64BitProcess ? cdePlatform.X64_V3 : cdePlatform.X32_V4;
-#endif
             }
             TheSystemMessageLog.ToCo("BaseDir: " + MyServiceHostInfo.BaseDirectory);
             #endregion
@@ -635,8 +614,8 @@ namespace nsCDEngine.BaseClasses
             TheDiagnostics.SetThreadName("MAIN THREAD");
             TheQueuedSenderRegistry.Startup();
 
-            MyBlobCache = new TheMirrorCache<TheBlobData>(MyServiceHostInfo.TO.StorageCleanCycle);
-            MyReceivedParts = new TheMirrorCache<TheReceivedParts>(MyServiceHostInfo.TO.StorageCleanCycle);
+            MyBlobCache = new TheMirrorCacheCore<TheBlobData>(MyServiceHostInfo.TO.StorageCleanCycle);
+            MyReceivedParts = new TheMirrorCacheCore<TheReceivedParts>(MyServiceHostInfo.TO.StorageCleanCycle);
             MyServiceTypes.Add(typeof(TheBaseAssets));
 
             MyServiceHostInfo.TO.MakeHeartNormal();

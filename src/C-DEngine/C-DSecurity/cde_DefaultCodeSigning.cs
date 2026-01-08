@@ -270,23 +270,13 @@ namespace nsCDEngine.Security
             X509Certificate2 cert;
             try
             {
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                    return CertOnUnixCheck(filePath, verifyIntegrity);
                 cert = new X509Certificate2(filePath);
             }
             catch (Exception) // Unable to read certificate using X509Certificate2 class: read ourselves if on Linux
             {
-                if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    try
-                    {
-                        return ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity);
-                    }
-                    catch (Exception ex)
-                    {
-                        TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (on linux) excepted: {ex.Message}");
-                        return null;
-                    }
-                }
-                return null;
+                return CertOnUnixCheck(filePath, verifyIntegrity);
             }
             if (!verifyCertificateTrust && verifyIntegrity)
             {
@@ -305,6 +295,23 @@ namespace nsCDEngine.Security
                 }
             }
             return cert;
+        }
+
+        private static X509Certificate2 CertOnUnixCheck(string filePath, bool verifyIntegrity)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                try
+                {
+                    return ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity);
+                }
+                catch (Exception ex)
+                {
+                    TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (on linux) excepted: {ex.Message}");
+                    return null;
+                }
+            }
+            return null;
         }
 
         private static X509Certificate2 ReadPECertificateFromBinaryImage(string filePath, bool verifyCertificateTrust, bool verifyIntegrity)
@@ -556,20 +563,23 @@ namespace nsCDEngine.Security
                             }
                             firstSignerCert ??= signedCms.SignerInfos[0].Certificate;
 
-                            // Propertly parse the SpcIndirectDataContent structure per Authenticode Spec
-                            // For SHA1 the hash is always in the last 20 bytes of the content info: if another algorithm is used we will currently reject the signature
-                            var signedHash = new byte[20];
-                            byte[] contentBytes = signedCms.ContentInfo.Content;
-                            signedHash = contentBytes.Skip(contentBytes.Length - 20).ToArray();
+                            //if (false) //CM: as of 6.115.0 / 2025-05-21 we move to SHA386 - this algorithm is sha1 dependend and will no longer work
+                            //{
+                            //    // Propertly parse the SpcIndirectDataContent structure per Authenticode Spec
+                            //    // For SHA1 the hash is always in the last 20 bytes of the content info: if another algorithm is used we will currently reject the signature
+                            //    var signedHash = new byte[20];
+                            //    byte[] contentBytes = signedCms.ContentInfo.Content;
+                            //    signedHash = contentBytes.Skip(contentBytes.Length - 20).ToArray();
 
-                            // Compute the image hash, ignoring certain sections per Authenticode spec
-                            var fileHash = ComputePEHash(fileStream, optionalHeaderOffset, headerOffset, dataDirectoryOffset, certificateTableSize, certificateTableEntryOffset);
+                            //    // Compute the image hash, ignoring certain sections per Authenticode spec
+                            //    var fileHash = ComputePEHash(fileStream, optionalHeaderOffset, headerOffset, dataDirectoryOffset, certificateTableSize, certificateTableEntryOffset);
 
-                            if (fileHash?.SequenceEqual(signedHash) != true)
-                            {
-                                TheSystemMessageLog.ToCo($"File hash doesn't match signature: file was tampered with or not using SHA1!");
-                                return null;
-                            }
+                            //    if (fileHash?.SequenceEqual(signedHash) != true)
+                            //    {
+                            //        TheSystemMessageLog.ToCo($"File hash doesn't match signature: file was tampered with or not using SHA1!");
+                            //        return null;
+                            //    }
+                            //}
                         }
                     }
                     if (!verifyIntegrity && firstSignerCert == null)

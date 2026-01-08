@@ -1,11 +1,11 @@
 <!--
- SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-FileCopyrightText: Copyright (c) 2009-2025 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <Authors>Chris Muench</Authors>
     <Company>C-Labs</Company>
     <Description>ASP.Net Core Enabler for C-DEngine on ($(TargetFramework))</Description>
@@ -26,18 +26,16 @@
 	</ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="C-DEngine" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="C-DEngine" Version="6.*-*" />
   </ItemGroup>
   
   <ItemGroup>
     <None Include="..\C-DEngine\toplogo-128.png" Pack="true" PackagePath="" />
 	<None Include="..\..\readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Update="GitVersion.MsBuild" Version="6.5.0" />
   </ItemGroup>
   
 </Project>

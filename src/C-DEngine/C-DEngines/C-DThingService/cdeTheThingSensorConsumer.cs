@@ -452,19 +452,13 @@ namespace nsCDEngine.Engines.ThingService
                     case nameof(TheThing.MsgSubscribeToThings):
                         {
                             TheCommRequestResponse.DoHandleMessage<MsgSubscribeToThings<TSubscription>, MsgSubscribeToThingsResponse>(message,
-#if !CDE_NET4
                                 async
-#endif
                                 (request, response) => 
                                 {
                                     response.SubscriptionStatus = new List<TheThing.TheThingSubscriptionStatus>();
                                     foreach (var subscription in request.SubscriptionRequests)
                                     {
-#if !CDE_NET4
                                         response.SubscriptionStatus.Add(await _subscribeHandler(subscription));
-#else
-                                        response.SubscriptionStatus.Add(_subscribeHandler(subscription).Result);
-#endif
                                     }
                                     _refreshSubscriptionStateHandler();
                                 }

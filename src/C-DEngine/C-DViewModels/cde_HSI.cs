@@ -385,7 +385,7 @@ namespace nsCDEngine.ViewModels
             DISCOMX = 3;
             DISCOSubnet = "";
             HeartbeatDelay = 5;
-            StatusColors = "gray;green;yellow;red;blue;brown;purple;black";
+            StatusColors = "gray;green;yellow;red;blue;purple;brown;black";
             CacheMaxAge = 10;
             TokenLifeTime = 3; //By default Token Lifetime is only 3 seconds
 

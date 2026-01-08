@@ -121,10 +121,6 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public string TemplateID { get; set; }
 
-        /// <summary>
-        /// Adds Margin to all groups in the form
-        /// </summary>
-        public bool? UseMargin { get; set; }
     }
 
     public class nmiCtrlFormTemplate : nmiCtrlFormView
@@ -207,6 +203,10 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public bool? Draggable { get; set; }
         /// <summary>
+        /// Creates a quarter-tilesize margin around the control
+        /// </summary>
+        public bool? UseMargin { get; set; }
+        /// <summary>
         /// Allows to drag and drop a form
         /// </summary>
         public bool? AllowDrag { get; set; }
@@ -250,7 +250,10 @@ namespace nsCDEngine.Engines.NMIService
         /// Sets the width of the control. (1 tile = 78px)
         /// </summary>
         public int TileWidth { get; set; }
-
+        /// <summary>
+        /// This can be set to change the size of a control in portrait mode. 
+        /// </summary>
+        public int TileWidthPortrait { get; set; }
         /// <summary>
         /// Control will always size as its parent
         /// </summary>
@@ -503,6 +506,10 @@ namespace nsCDEngine.Engines.NMIService
         /// </summary>
         public string GreyCondition { get; set; }
 
+        /// <summary>
+        /// Script executed during control init
+        /// </summary>
+        public string InitScript { get; set; }
         /// <summary>
         /// This text will be shown instead of the control if the control could not be started or is still being retrieved from the mesh
         /// </summary>
@@ -930,12 +937,12 @@ namespace nsCDEngine.Engines.NMIService
         /// <summary>
         /// Maximum Value the number will accept
         /// </summary>
-        public int MaxValue { get; set; }
+        public double MaxValue { get; set; }
 
         /// <summary>
         /// Minimum Value the Number will accept
         /// </summary>
-        public int MinValue { get; set; }
+        public double MinValue { get; set; }
 
         /// <summary>
         /// if larger than zero the number will only show this amount of digits
@@ -952,8 +959,8 @@ namespace nsCDEngine.Engines.NMIService
     {
         public string SubTitle { get; set; }
 
-        public int LowerLimit { get; set; }
-        public int UpperLimit { get; set; }
+        public double LowerLimit { get; set; }
+        public double UpperLimit { get; set; }
     }
 
     /// <summary>
@@ -1689,11 +1696,6 @@ namespace nsCDEngine.Engines.NMIService
         /// if set, the Collapsible group will add arrows to allow expanding the group to the left and right. No smaller than 6 Tiles and no wider than MaxTileWidth
         /// </summary>
         public bool? AllowHorizontalExpand { get; set; }
-
-        /// <summary>
-        /// Creates a quarter-tilesize margin around the collapsible groups
-        /// </summary>
-        public bool? UseMargin { get; set; }
     }
 
     /// <summary>
@@ -2120,9 +2122,5 @@ namespace nsCDEngine.Engines.NMIService
         /// Category the form should be listed under
         /// </summary>
         public string Category { get; set; }
-        /// <summary>
-        /// If true, the form will use margins between the fields
-        /// </summary>
-        public bool? UseMargin { get; set; }
     }
 }

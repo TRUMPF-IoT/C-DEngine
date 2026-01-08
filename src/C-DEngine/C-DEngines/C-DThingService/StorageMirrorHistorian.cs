@@ -645,10 +645,7 @@ namespace nsCDEngine
 
         TimeSpan _minimumConsumerCooldown = TimeSpan.Zero;
 
-#if !CDE_NET4
-        async
-#endif
-        private Task<TheHistoryResponse> GetHistoryInternalAsync(ConsumerRegistration consumer, int maxCount, int minCount, TimeSpan timeout, CancellationToken? cancelToken, bool clearHistory)
+        async private Task<TheHistoryResponse> GetHistoryInternalAsync(ConsumerRegistration consumer, int maxCount, int minCount, TimeSpan timeout, CancellationToken? cancelToken, bool clearHistory)
         {
             TheHistoryResponse response = null;
             TaskCompletionSource<bool> taskCS = null;
@@ -904,7 +901,6 @@ namespace nsCDEngine
                             }
                             taskCS = new TaskCompletionSource<bool>();
                             thingStream.RegisterEvent(eStoreEvents.HasUpdates, storeUpdated);
-#if !CDE_NET4
                             CancellationTokenRegistration? cancelRegistration = null;
                             try
                             {
@@ -929,14 +925,6 @@ namespace nsCDEngine
                                     cancelRegistration.Value.Dispose();
                                 }
                             }
-#else
-                            try
-                            {
-                                TheCommonUtils.TaskWaitTimeout(taskCS.Task, timeout, cancelToken).Wait();
-                            }
-                            catch (TimeoutException) { } // Expected on timeout
-                            catch (TaskCanceledException) { } // Expected on shutdown
-#endif
                         }
                     }
                 } while (bRetry && TheBaseAssets.MasterSwitch);
@@ -951,11 +939,7 @@ namespace nsCDEngine
                 _thingStream?.UnregisterEvent(eStoreEvents.HasUpdates, storeUpdated);
             }
             LogHistorianOutput(consumer, response);
-#if !CDE_NET4
             return response;
-#else
-            return TheCommonUtils.TaskFromResult(response);
-#endif
         }
 
         public TheStorageMirror<T> GetHistoryStore<T>(Guid token) where T : TheDataBase, INotifyPropertyChanged, new()

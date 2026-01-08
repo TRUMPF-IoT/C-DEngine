@@ -116,7 +116,6 @@ namespace nsCDEngine.PluginManagement
             }
         }
     }
-#if !CDE_NET35 && !CDE_NET4
     public class ThePluginPackager
     {
         /// <summary>
@@ -330,5 +329,4 @@ namespace nsCDEngine.PluginManagement
         }
 
     }
-#endif
 }

@@ -451,7 +451,6 @@ namespace nsCDEngine.Engines.ThingService
 
         }
 
-#if !CDE_NET4
         public Task<TheThingConfiguration> GetThingConfigurationAsync(bool bGeneralize)
         {
             return GetThingConfigurationAsync(bGeneralize, false);
@@ -595,7 +594,6 @@ namespace nsCDEngine.Engines.ThingService
             }
             return thingConfig;
         }
-#endif
         private TheThingReference GeneralizeThingReference(TheThingReference thingReference)
         {
             // TODO also generalize other parts of the reference (Address?)
@@ -654,8 +652,6 @@ namespace nsCDEngine.Engines.ThingService
         {
             public string Error;
         }
-
-#if !CDE_NET4
 
         public async Task<bool> ApplyThingConfigurationAsync(TheThingConfiguration thingConfig)
         {
@@ -1028,8 +1024,6 @@ namespace nsCDEngine.Engines.ThingService
 
             return thingID;
         }
-#endif
-
         #endregion
 
     }

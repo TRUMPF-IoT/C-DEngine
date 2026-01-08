@@ -36,7 +36,11 @@ namespace nsCDEngine.Engines
         /// </summary>
         //[Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
         //public static IStorageService MyStorageService;
-
+        private static ICacheStore _MyICacheStore = null;
+        public static ICacheStore MyICacheStore
+        {
+            get { return _MyICacheStore; }
+        }
         private static IStorageService _MyIStorageService = null;
         /// <summary>
         /// Interface to the Current StorageService
@@ -219,8 +223,8 @@ namespace nsCDEngine.Engines
         /// Fires when All Engines have been started
         /// RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V5
         /// </summary>
+        [Obsolete("RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V6.130 (Jan 2026)")]
         public static Action eventAllEnginesStarted;
-
         /// <summary>
         /// Fires when all Engines are Ready
         /// RETIRED in V4: please do not use anymore. Will be removed in V5
@@ -288,6 +292,7 @@ namespace nsCDEngine.Engines
                 tStorageEngine = CreatePlugin(tStore.Key);
                 if (tStorageEngine != null && !SetStorageService((IStorageService)tStorageEngine?.AssociatedPlugin))
                     tStorageEngine = null;
+                _MyICacheStore = tStorageEngine?.AssociatedPlugin as ICacheStore;
             }
             TheBaseAssets.MyApplication?.MyUserManager?.Init(!TheBaseAssets.MyServiceHostInfo.IsUserManagerInStorage || MyIStorageService == null, false);
             TheBaseAssets.MySYSLOG.WriteToLog(4143, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "UserManager Started", eMsgLevel.l3_ImportantMessage));
@@ -356,11 +361,7 @@ namespace nsCDEngine.Engines
                         {
                             PluginType = mEng.GetType(),
                             ServiceName = mEng.GetType().FullName,
-#if CDE_NET35 || CDE_NET4
-                            PluginPath = mEng.GetType().Assembly.Location
-#else
                             PluginPath = mEng.GetType().GetTypeInfo().Assembly.Location
-#endif
                         });
                     }
                 }
@@ -373,7 +374,6 @@ namespace nsCDEngine.Engines
                 return;
             }
 
-#if !CDE_NET4
             if (!TheCommonUtils.IsFeather())
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4172, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files", eMsgLevel.l7_HostDebugMessage));
@@ -404,7 +404,6 @@ namespace nsCDEngine.Engines
                     }
                 });
             }
-#endif
             TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Starting Engines", eMsgLevel.l7_HostDebugMessage));
 
             IsHostReady = TheThingRegistry.RegisterHost();
@@ -525,7 +524,7 @@ namespace nsCDEngine.Engines
                 }
                 catch (Exception e)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(4134, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "Some Plugin Crashed during AllengineStarted event", eMsgLevel.l2_Warning, e.ToString()));
+                    TheBaseAssets.MySYSLOG.WriteToLog(4134, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "Some Plugin Crashed during AllEngineStarted event", eMsgLevel.l2_Warning, e.ToString()));
                 }
             }
             if (TheBaseAssets.MyApplication.MyCommonDisco != null)
@@ -1035,31 +1034,8 @@ namespace nsCDEngine.Engines
             DirectoryInfo di = new (UpdateDirectory);
             try
             {
-#if !CDE_NET35 && !CDE_STANDARD //Child Domains not supported on NET35
-                //Create separate AppDomain to probe for Plugin Types
-                var settings = new AppDomainSetup
-                {
-                    ApplicationBase = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash() // AppDomain.CurrentDomain.BaseDirectory,
-                };
-                if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.cdeHostingType!=cdeHostType.IIS)
-                {
-                    System.Security.Policy.Evidence adevidence = AppDomain.CurrentDomain.Evidence;
-                    var childDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), adevidence, settings);
-                    childDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
-                    var handle = Activator.CreateInstance(childDomain,
-                    typeof(ReferenceLoader).Assembly.FullName,
-                    typeof(ReferenceLoader).FullName,
-                    false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.CurrentCulture, new object[0]);
-                    var loader = (ReferenceLoader)handle.Unwrap();
-                    ProcessDirectory(di, "", UpdateDirectory, loader);
-                    AppDomain.Unload(childDomain);
-                }
-                else
-#endif
-                {
-                    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
-                    ProcessDirectory(di, "", UpdateDirectory, new ReferenceLoader());
-                }
+                AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
+                ProcessDirectory(di, "", UpdateDirectory, new ReferenceLoader());
             }
             catch (Exception e)
             {
@@ -1073,7 +1049,6 @@ namespace nsCDEngine.Engines
             return System.Reflection.Assembly.ReflectionOnlyLoad(name);
         }
 
-        static bool _platformDoesNotSupportReflectionOnlyLoadFrom;
         internal class ReferenceLoader : MarshalByRefObject
         {
             public List<string> ScanForCDEPlugins(string assemblyPath, out TSM resTSM) //,ref Dictionary<string, Type> pCDEPlugins)
@@ -1082,7 +1057,7 @@ namespace nsCDEngine.Engines
                 List<string> mList = new ();
 
                 Assembly tAss = null;
-                if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (!TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     try
                     {
@@ -1090,10 +1065,10 @@ namespace nsCDEngine.Engines
                     }
                     catch (PlatformNotSupportedException) //No Assembly.ReflectionOnlyLoadFrom
                     {
-                        _platformDoesNotSupportReflectionOnlyLoadFrom = true;
+                        TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom = true;
                     }
                 }
-                if (_platformDoesNotSupportReflectionOnlyLoadFrom)
+                if (TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom)
                 {
                     tAss = Assembly.LoadFrom(assemblyPath);
                 }

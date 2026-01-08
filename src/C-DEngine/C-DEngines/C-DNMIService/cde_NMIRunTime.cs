@@ -77,7 +77,7 @@ namespace nsCDEngine.Engines.NMIService
                                     var tGroupMThing = TheThingRegistry.GetThingByMID(tForm.cdeO);
                                     var tGroupThing = tGroupMThing?.GetObject() as TheThingGroup;
                                     if (tGroupThing?.RemoveThingMIDFromGroup(TheCommonUtils.CGuid(tLocParts[2]))==true)
-                                        tGroupThing.ReloadForm();                                }
+                                        tGroupThing.ReloadForm(pMsg);                                }
                             }
                         }
                         catch {
@@ -162,7 +162,8 @@ namespace nsCDEngine.Engines.NMIService
                                         }
                                         if (!bDontShowDefault)
                                         {
-                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2010, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new ThePropertyBag() { "NoTE=true", "TileHeight=8", "TileWidth=6" });
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.CollapsibleGroup, 2010, 2, 0, "Element Properties",null, new nmiCtrlCollapsibleGroup { IsSmall = true, DoClose = true, TileHeight=10, TileWidth=6 });
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2011, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new nmiCtrlTableView() { NoTE=true, ParentFld=2010, TileHeight=5, TileWidth=6 });
                                         }
                                         ReloadNMIEditor();
                                     }
@@ -1033,7 +1034,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (group != null)
                         {
                             var tGS = group.GetObject() as TheThingGroup;
-                            tGS?.UpdateFldPositions(tNewScene);
+                            tGS?.UpdateFldPositions(tNewScene, pMsg);
                         }
                     }
                     break;
@@ -1055,7 +1056,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (group != null)
                         {
                             var tGS = group.GetObject() as TheThingGroup;
-                            tGS?.DeleteAllFldPositions();
+                            tGS?.DeleteAllFldPositions(pMsg);
                         }
                     }
                     break;
@@ -1386,7 +1387,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             TSM tForward = TSM.Clone(pMsg, true);
                                             tForward.ENG = tTable.OwnerEngine;
-                                            tBase.ProcessMessage(tForward);
+                                            tBase.ProcessMessage(new TheProcessMessage() { Topic = TheBaseAssets.MyScopeManager.AddScopeID(tForward.ENG, ref tForward.SID, true), ClientInfo = pClientInfo, Message = tForward });
                                             return true;
                                         }
                                         return false; //No processing here
@@ -1588,6 +1589,17 @@ namespace nsCDEngine.Engines.NMIService
             }
             TheCommCore.PublishToOriginator(pMsg, tTsm);
             return true;
+        }
+
+        public static string AddModelUpdate(TheClientInfo pClientInfo, TheFormInfo tTable, bool ForceReload)
+        {
+            TheFormInfo tToSend = tTable.Clone(pClientInfo.WebPlatform);
+            CheckAddButtonPermission(pClientInfo, tToSend);
+            var tso = TheFormsGenerator.GetScreenOptions(tTable.cdeMID, pClientInfo, ForceReload ? tTable : null);
+            if (tso != null && tso.TileWidth > 0)
+                tToSend.TileWidth = tso.TileWidth;
+            tToSend.FormFields = TheFormsGenerator.GetPermittedFields(tTable.cdeMID, pClientInfo, tso, true);
+            return ":-MODELUPDATE-:" + TheCommonUtils.GenerateFinalStr(TheCommonUtils.SerializeObjectToJSONString(tToSend.GetLocalizedForm(pClientInfo.LCID)));
         }
 
         internal static void CheckAddButtonPermission(TheClientInfo pClientInfo, TheFormInfo tToSend)

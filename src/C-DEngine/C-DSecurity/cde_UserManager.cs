@@ -1080,9 +1080,7 @@ namespace nsCDEngine.Security
             return false;
         }
 
-#if !CDE_NET35 && !CDE_NET4
         readonly bool bMapUsersByRole = false; // TODO Decide if we want this functionality, and if so expose as setting etc.
-#endif
         internal TheUserDetails GetUserFromClaims(Dictionary<string, object> idTokenClaims)
         {
             TheUserDetails tUser = null;
@@ -1111,7 +1109,6 @@ namespace nsCDEngine.Security
                 }
             }
 
-#if !CDE_NET35 && !CDE_NET4
             if (idTokenClaims.TryGetValue("role", out dynamic roles) && roles is string)
             {
                 roles = new List<string> { roles as string };
@@ -1151,7 +1148,6 @@ namespace nsCDEngine.Security
                     return tUser;
                 }
             }
-#endif
 
             tUser = new TheUserDetails();
 
@@ -1181,7 +1177,6 @@ namespace nsCDEngine.Security
                 tUser.Name = $"External{tUser.cdeMID}";
             }
 
-#if !CDE_NET35 && !CDE_NET4
             if (roles != null)
             {
                 foreach (var role in roles)
@@ -1235,7 +1230,6 @@ namespace nsCDEngine.Security
                     }
                 }
             }
-#endif
 
             if (GetClaimAsString(idTokenClaims, "locale", out string locale))
             {

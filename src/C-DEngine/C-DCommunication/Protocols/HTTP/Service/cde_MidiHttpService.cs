@@ -43,11 +43,7 @@ namespace nsCDEngine.Communication.HttpService
                 try
                 {
                     mHttpListener = new HttpListener();
-#if !CDE_NET35
                     Uri tUri = new (TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false));
-#else
-                Uri tUri = TheCommonUtils.CUri(TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false), false);
-#endif
                     MyHttpUrl = tUri.Scheme + "://*"; 
                     if ((tUri.Scheme.Equals("https") && tUri.Port != 443) || (tUri.Scheme.Equals("http") && tUri.Port != 80))
                         MyHttpUrl += ":" + pPort; 

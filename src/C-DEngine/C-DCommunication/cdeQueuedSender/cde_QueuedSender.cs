@@ -25,10 +25,10 @@ namespace nsCDEngine.Communication
     {
         public TheQueuedSender()
         {
-            MySubscriptions = new TheMirrorCache<TheSubscriptionInfo>();
-            MyCoreQueue = new TheMirrorCache<TheCoreQueueContent>();
+            MySubscriptions = new TheMirrorCacheCore<TheSubscriptionInfo>();
+            MyCoreQueue = new TheMirrorCacheCore<TheCoreQueueContent>();
             MyJSKnownThings = new cdeConcurrentDictionary<Guid, byte>();
-            MyJSKnownFields = new TheMirrorCache<TheMetaDataBase>();
+            MyJSKnownFields = new TheMirrorCacheCore<TheMetaDataBase>();
             IsAlive = true;
         }
 
@@ -441,11 +441,7 @@ namespace nsCDEngine.Communication
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(IsConnected ? "<span style='color:green; font-weight:bold;'>YES</span>" : "<span style='color:red; font-weight:bold;'>NO</span>")}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{GetLastError()}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : $"{TheCommonUtils.GetDateTimeString(lastConnectTime, -1)}")}</td>");
-#if CDE_NET35
-            ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : $"{(DateTimeOffset.Now - lastConnectTime)}")}</td>");
-#else
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : (DateTimeOffset.Now - lastConnectTime).ToString(@"dd\.hh\:mm\:ss"))}</td>");
-#endif
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{TheCommonUtils.GetDateTimeString(GetLastHeartBeat(), -1)}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{HasWebSockets()}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{IsInPost}</td>");
@@ -511,15 +507,15 @@ namespace nsCDEngine.Communication
         }
         internal void FlushQueue()
         {
-            MyCoreQueue.RemoveAllItems();
+            MyCoreQueue.FlushCache(false);
         }
         internal void RemoveOrphanFromQueue(Guid pUri)
         {
             List<TheCoreQueueContent> tErasers = MyCoreQueue.TheValues.Where(s => s == null || s.OrgMessage == null || s.OrgMessage.GetOriginator().Equals(pUri)).ToList();
             MyCoreQueue.RemoveItems(tErasers, null);
         }
-        private readonly TheMirrorCache<TheCoreQueueContent> MyCoreQueue;
-        private readonly TheMirrorCache<TheMetaDataBase> MyJSKnownFields;
+        private readonly TheMirrorCacheCore<TheCoreQueueContent> MyCoreQueue;
+        private readonly TheMirrorCacheCore<TheMetaDataBase> MyJSKnownFields;
         private readonly cdeConcurrentDictionary<Guid, byte> MyJSKnownThings;
 
 #region Cleanup and Excption Handling

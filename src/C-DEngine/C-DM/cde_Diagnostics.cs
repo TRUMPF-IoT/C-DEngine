@@ -50,11 +50,7 @@ namespace nsCDEngine.ISM
                     System.Threading.Thread.CurrentThread.IsBackground = IsBackGround;
                 if (TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.ESSENTIALS)
                 {
-#if !CDE_STANDARD
-                    ThreadID = NativeMethods.GetCurrentThreadId();
-#else
                     System.Threading.Interlocked.Increment(ref ThreadID);
-#endif
                     string t = System.Threading.Thread.CurrentThread.Name;
                     if (string.IsNullOrEmpty(t))
                     {
@@ -77,8 +73,7 @@ namespace nsCDEngine.ISM
         internal static List<TheThreadInfo> GetThreadInfo()
         {
             List<TheThreadInfo> tList = new ();
-#if CDE_STANDARD //No Thread Name Diagnostics
-#else
+#if !CDE_STANDARD //No Thread Name Diagnostics
             try
             {
                 int cid = NativeMethods.GetCurrentThreadId();

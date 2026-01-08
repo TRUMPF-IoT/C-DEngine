@@ -268,18 +268,18 @@ namespace nsCDEngine.Engines.ThingService
                     if (!IsGroupVisible)
                     {
                         ScanThings();
-                        InitDynamicNMI();
+                        InitDynamicNMI(pmsg);
                     }
                     IsGroupVisible = true;
                 });
                 MyGroupForm.RegisterEvent2(eUXEvents.OnShow, (pmsg, sender) =>
                 {
-                    CalculateFormSize();
+                    CalculateFormSize(pmsg);
                 });
                 block["Form"] = MyGroupForm;
                 block["DashIcon"] = NMI.AddFormToThingUX(MyBaseThing, MyGroupForm, "CMyForm", MyBaseThing.FriendlyName, 1, 3, 0, "..Overview", null, new ThePropertyBag() { "RenderTarget=HomeCenterStage" });
                 mIsUXInitialized = DoCreateUX(block);
-                CalculateFormSize();
+                CalculateFormSize(null);
             }
             return true;
         }
@@ -336,7 +336,7 @@ namespace nsCDEngine.Engines.ThingService
                                 TheThingBase tB = tN?.GetObject() as TheThingBase;
                                 if (tB != null && AddOrUpdateThingInGroup(tB))
                                 {
-                                    ReloadForm();
+                                    ReloadForm(tMsg);
                                     TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"Control added: {tN.FriendlyName}"));
                                 }
                             }
@@ -348,7 +348,7 @@ namespace nsCDEngine.Engines.ThingService
                             if (tMsg != null)
                             {
                                 ResetAllThings();
-                                ReloadForm();
+                                ReloadForm(tMsg);
                                 TheCommCore.PublishToOriginator(tMsg.Message, new TSM(eEngineName.NMIService, "NMI_TOAST", $"All Controls Removed"));
                             }
                         });
@@ -357,7 +357,7 @@ namespace nsCDEngine.Engines.ThingService
                         {
                             var tMsg = para as TheProcessMessage;
                             if (tMsg != null)
-                                ReloadForm();
+                                ReloadForm(tMsg);
                         });
                         NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2013, 0xA2, 0x80, "X", "GroupSizeX", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
                         NMI.AddSmartControl(MyBaseThing, tMyForm, eFieldType.Number, 2014, 0xA2, 0x80, "Y", "GroupSizeY", new nmiCtrlNumber() { NoTE = true, TileWidth = 1 });
@@ -373,14 +373,15 @@ namespace nsCDEngine.Engines.ThingService
                 var tBut = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.TileButton, 10020, 2, 0x0, null, null, new nmiCtrlTileButton() { IsAbsolute = true, RenderTarget=$"PINT{CU.cdeGuidToString(MyGroupForm.cdeMID)}", TileWidth = 1, TileHeight = 1, TileFactorY=2, Left = 38, Top = 0, NoTE = true, ClassName = "enTransBut" });
                 tBut.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, "refresh", (sender, pmsg) =>
                 {
-                    ReloadForm();
+                    var tMsg = pmsg as TheProcessMessage;
+                    ReloadForm(tMsg);
                 });
                 pUXFlds["RefreshButton"] = tBut;
             }
 
             if (ShowAllProperties)
             {
-                pUXFlds["PropTableGroup"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2 + (AllowAllPropertiesInCloud ? 0 : 128), 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { DoClose = true, IsSmall = true, TileWidth = 12 });
+                pUXFlds["PropTableGroup"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.CollapsibleGroup, 10000, 2 + (AllowAllPropertiesInCloud ? 0 : 128), 0x80, "All Properties", null, new nmiCtrlCollapsibleGroup { HideCondition = "cde.MyBaseAssets.MyServiceHostInfo.HidePinsInApp===true", DoClose = true, IsSmall = true, TileWidth = 12 });
                 pUXFlds["PropTable"] = NMI.AddSmartControl(MyBaseThing, MyGroupForm, eFieldType.Table, 10010, 8, 0x80, null, "mypropertybag", new nmiCtrlTableView() { TileWidth = 12, TileHeight = 7, NoTE = true, ParentFld = 10000, ShowFilterField = true });
             }
             return true;
@@ -393,11 +394,14 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (MyPollingProps?.Count > 0)
             {
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.SmartLabel, StartFld, 0, 0, null, null, new nmiCtrlSmartLabel { Text = "Poll-Mapper (Sim-Mode: Poll Only)", TileHeight = 1, TileFactorY = 2, NoTE = true, FontSize = 16, Foreground = "#008800" });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.CollapsibleGroup, StartFld, 2, 0, "Poll-Mapper (Sim-Mode: Poll Only)", null, new nmiCtrlCollapsibleGroup{ TileHeight = 20, TileWidth=6, DoClose=true, IsSmall=true });
                 StartFld++;
-                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, StartFld, 0x2, 0x0, $"Select Thing-Source", $"MAIN_ThingSource", new nmiCtrlThingPicker() { NoTE = true, Value = $"{GetProperty($"MAIN_ThingSource", false)?.GetValue()}", TileWidth = 5 });
+                int tParent = StartFld;
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileGroup, StartFld, 0, 0, null, null, new nmiCtrlTileGroup { TileHeight = 9, TileWidth = 6,ParentFld=tParent-1, IsVScrollable=true });
                 StartFld++;
-                var tBut2 = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, StartFld, 2, 0, null, null, new nmiCtrlTileButton { TileWidth = 1, NoTE = true, AreYouSure = "Are you sure you want to override all Thing-Sources for this Device?", Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
+                NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.ThingPicker, StartFld, 0x2, 0x0, $"Select Thing-Source", $"MAIN_ThingSource", new nmiCtrlThingPicker() { NoTE = true, ParentFld=tParent, Value = $"{GetProperty($"MAIN_ThingSource", false)?.GetValue()}", TileWidth = 5 });
+                StartFld++;
+                var tBut2 = NMI.AddSmartControl(MyBaseThing, pForm, eFieldType.TileButton, StartFld, 2, 0, null, null, new nmiCtrlTileButton { ParentFld = tParent, TileWidth = 1, NoTE = true, AreYouSure = "Are you sure you want to override all Thing-Sources for this Device?", Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
                 tBut2.RegisterUXEvent(MyBaseThing, eUXEvents.OnClick, $"MAIN_OVERRIDE", (sender, pObj) =>
                 {
                     if (pObj is not TheProcessMessage pMsg || pMsg.Message == null) return;
@@ -418,12 +422,12 @@ namespace nsCDEngine.Engines.ThingService
                 StartFld++;
                 foreach (var item in MyPollingProps)
                 {
-                    AddPropertyMapper(pForm, item, ref StartFld);
+                    AddPropertyMapper(pForm, item, ref StartFld, tParent);
                 }
             }
         }
 
-        private Dictionary<string, TheFieldInfo> AddPropertyMapper(TheFormInfo pTargetForm, string propName, ref int StartFld)
+        private Dictionary<string, TheFieldInfo> AddPropertyMapper(TheFormInfo pTargetForm, string propName, ref int StartFld, int pParentFld)
         {
             var flds = new Dictionary<string, TheFieldInfo>();
 
@@ -432,7 +436,7 @@ namespace nsCDEngine.Engines.ThingService
 
             var tName = CU.CStr(tp.GetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), false));
             if (string.IsNullOrEmpty(tName)) tName = tp.Name;
-            flds["GROUP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileGroup, 1 + StartFld, 0, 0, null, null, new nmiCtrlTileGroup { TileHeight = 1, TileWidth = 6 });
+            flds["GROUP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileGroup, 1 + StartFld, 0, 0, null, null, new nmiCtrlTileGroup { TileHeight = 1, ParentFld=pParentFld, TileWidth = 6 });
             flds["THING"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.ThingPicker, 3 + StartFld, 0x2, 0x0, $"{tName} Thing-Source", $"PM_ThingSource_{tp.Name}", new nmiCtrlThingPicker() { NoTE = true, Value = $"{GetProperty($"PM_ThingSource_{tp.Name}", false)?.GetValue()}", TileWidth = 3, ParentFld = 1 + StartFld });
             flds["PROP"] = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.PropertyPicker, 4 + StartFld, 0x2, 0x0, "Property", $"PM_ThingProp_{tp.Name}", new nmiCtrlPropertyPicker() { NoTE = true, Value = $"{GetProperty($"PM_ThingProp_{tp.Name}", false)?.GetValue()}", TileWidth = 2, ThingFld = 3 + StartFld, ParentFld = 1 + StartFld });
             var tBut2 = NMI.AddSmartControl(MyBaseThing, pTargetForm, eFieldType.TileButton, 5 + StartFld, 2, 0, null, null, new nmiCtrlTileButton { ParentFld = 1 + StartFld, TileWidth = 1, NoTE = true, Thumbnail = "FA4:f021", ClassName = "cdeGoodActionButton" });
@@ -476,8 +480,9 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Updates all Fld Positions
         /// </summary>
-        /// <param name="pScene"></param>
-        public virtual void UpdateFldPositions(TheFOR pScene)
+        /// <param name="pScene">Form OverRide Scene</param>
+        /// <param name="pMsg">Incoming Process Message to process ClientInfo</param>
+        public virtual void UpdateFldPositions(TheFOR pScene, TheProcessMessage pMsg)
         {
             foreach (var tf in pScene.Flds)
             {
@@ -495,28 +500,28 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Delets all Fld Positions
         /// </summary>
-        public virtual void DeleteAllFldPositions()
+        public virtual void DeleteAllFldPositions(TheProcessMessage pMsg)
         {
             foreach (var t in MyGroupThings.Values)
             {
                 t.GetBaseThing().SetProperty($"FldStart_{CU.CGuid(MyScreenGuid)}", "0");
             }
-            ReloadForm();
+            ReloadForm(pMsg);
         }
 
         /// <summary>
         /// Reloads the Form with updated Dynamic Fields
         /// </summary>
-        public virtual void ReloadForm()
+        public virtual void ReloadForm(TheProcessMessage pMsg)
         {
-            InitDynamicNMI();
+            InitDynamicNMI(pMsg);
             if (MyGroupForm != null)
                 TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH:", $"{CU.cdeGuidToString(MyGroupForm.cdeMID)}:CMyForm:{CU.cdeGuidToString(MyGroupForm.cdeMID)}:{CU.cdeGuidToString(ModelGuid)}:true:true"));
         }
         /// <summary>
         /// Initializes the dynamic part of the form
         /// </summary>
-        public virtual void InitDynamicNMI()
+        public virtual void InitDynamicNMI(TheProcessMessage pMsg)
         {
             InitGTP();
             UpdatePinConnections(false);
@@ -529,7 +534,7 @@ namespace nsCDEngine.Engines.ThingService
                     t?.AddDeviceFace(MyGroupForm, 0, 0);
                 }
                 DrawPinLines(MyGroupForm, MyGroupThings.Values.ToList());
-                CalculateFormSize();
+                CalculateFormSize(pMsg);
             }
         }
 
@@ -703,7 +708,7 @@ namespace nsCDEngine.Engines.ThingService
         /// <summary>
         /// Calculates the form size required for the screen
         /// </summary>
-        public virtual void CalculateFormSize()
+        public virtual void CalculateFormSize(TheProcessMessage pMsg)
         {
             int maxh = 0;
             int maxw = 0;
@@ -779,6 +784,8 @@ namespace nsCDEngine.Engines.ThingService
                     var sourceOutPins = allSourcePins.Where(s => !s.IsInbound).ToList(); //Starting from "Out" pins as SourcePins
                     foreach (var sourcePin in sourceOutPins)
                     {
+                        if (sourcePin.NMIPinPosition < 0)
+                            continue;
                         string PinTypeFilter = ThePropertyBag.PropBagGetValue(pProperties, "PinTypeFilter");
                         if (!string.IsNullOrEmpty(PinTypeFilter) && sourcePin.PinType != PinTypeFilter) continue;
                         var targetInPins = sourcePin?.GetConnectedPins();   //To their connected Pins "In" Pins as TargetPins
@@ -788,6 +795,8 @@ namespace nsCDEngine.Engines.ThingService
                             bool sourceHasLeftPin = allSourcePins.Exists(p => p.NMIPinLocation == ThePin.ePinLocation.Left);
                             foreach (var targetPin in targetInPins)
                             {
+                                if (targetPin.NMIPinPosition < 0)
+                                    continue;
                                 var targetT = TheThingRegistry.GetThingByMID(targetPin.cdeO);
                                 var targetTB = targetT?.GetObject() as TheThingBase;
                                 var targetFace = targetTB?.MyNMIFaceModel;

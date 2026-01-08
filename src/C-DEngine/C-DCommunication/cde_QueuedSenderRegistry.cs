@@ -57,7 +57,7 @@ namespace nsCDEngine.Communication
         {
             if (MyQueuedSenderList == null)
             {
-                MyQueuedSenderList = new TheMirrorCache<TheQueuedSender>(0);
+                MyQueuedSenderList = new TheMirrorCacheCore<TheQueuedSender>(0);
                 MyTSMHistorySet1 = new HashSet<TheSentRegistryItemHS>();
                 MyTSMHistorySet2 = new HashSet<TheSentRegistryItemHS>();
                 MyTSMHistorySet3 = new HashSet<TheSentRegistryItemHS>();
@@ -317,7 +317,7 @@ namespace nsCDEngine.Communication
         #endregion
 
         #region QueuedSender List Management
-        private static TheMirrorCache<TheQueuedSender> MyQueuedSenderList;
+        private static TheMirrorCacheCore<TheQueuedSender> MyQueuedSenderList;
 
         internal static TheQueuedSender GetSenderByGuid(Guid pGuid)
         {
@@ -719,16 +719,16 @@ namespace nsCDEngine.Communication
             outText.Append("</div>");
 
             int count = 0;
-            foreach (KeyValuePair<string, TheQueuedSender> mkey in MyQueuedSenderList.MyRecords)
+            foreach (var mkey in MyQueuedSenderList.TheValues)
             {
                 if (pNodeType == cdeSenderType.NOTSET && ShowDetails)
                 {
-                    outText.Append(mkey.Value?.ShowHeader());
+                    outText.Append(mkey?.ShowHeader());
                     count++;
                 }
                 else
                 {
-                    if (mkey.Value?.MyTargetNodeChannel.SenderType == pNodeType)
+                    if (mkey?.MyTargetNodeChannel.SenderType == pNodeType)
                     {
                         if (count == 0)
                         {
@@ -754,7 +754,7 @@ namespace nsCDEngine.Communication
                             outText.Append("<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; width:300px;\">SEID</th>");
                             outText.Append("<th style=\"background-color:rgba(90,90,90, 0.25);font-size:small; width:150px;\">Version</th><tr>");
                         }
-                        outText.Append(mkey.Value?.GetQueDiagML(ShowQueueContent, count % 2 == 0));
+                        outText.Append(mkey?.GetQueDiagML(ShowQueueContent, count % 2 == 0));
                         count++;
                     }
                 }

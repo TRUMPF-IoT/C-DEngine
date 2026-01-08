@@ -107,11 +107,17 @@ namespace nsCDEngine.Engines.ThingService
                 HasOPCConnection = true;
             }
         }
+        public TheUATwinBase() { }
         public TheUATwinBase(TheThing pThing, string pID)
         {
             MyBaseThing = pThing ?? new TheThing();
             if (string.IsNullOrEmpty(MyBaseThing.ID))
-                MyBaseThing.ID = pID;
+            {
+                if (string.IsNullOrEmpty(pID))
+                    MyBaseThing.ID = Guid.NewGuid().ToString();
+                else
+                    MyBaseThing.ID = pID;
+            }
             MyBaseThing.SetIThingObject(this);
         }
         public bool HasOPCConnection
