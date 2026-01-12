@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 using nsCDEngine.BaseClasses;
+using nsCDEngine.Engines.NMIService;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,8 @@ namespace nsCDEngine.Engines.ThingService
         public void FileIssue(TheIssue pIssue);
         public void FileIssue(TheThing pBaseThing, string pSensorId, eMsgLevel msgLevel, string pMessage);
         public void FileIssue(string pDevId, string pSensorId, string pDevName, string pCategory, eMsgLevel msgLevel, string pMessage);
+
+        TheFormInfo AddCurrentIssuesTable(TheThing pBaseThing, TheBaseEngine pBaseEngine, Guid IssueTableID, bool AddToDash, int TH = 3, string pCategory = null);
     }
 
     /// <summary>
