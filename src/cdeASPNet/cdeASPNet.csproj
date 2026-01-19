@@ -37,7 +37,7 @@
   <ItemGroup>
     <PackageReference Update="GitVersion.MsBuild" Version="6.5.0" />
 	  <PackageReference Include="System.Drawing.Common">
-		  <Version>10.0.1</Version>
+		  <Version>10.0.2</Version>
 	  </PackageReference>
   </ItemGroup>
   
