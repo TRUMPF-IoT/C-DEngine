@@ -349,9 +349,9 @@ namespace nsCDEngine.Engines.ThingService
                 if (!string.IsNullOrEmpty(parentID))
                 {
                     DTPushToParent(new Dictionary<string, object> {
-                                    { $"{parentID}_LastUpdate", DateTimeOffset.Now },
-                                    { $"{parentID}_StatusLevel", MyBaseThing.StatusLevel },
-                                    { $"{parentID}_LastMessage", MyBaseThing.LastMessage }
+                                    { $"Child_{MyBaseThing.ID}_LastUpdate", DateTimeOffset.Now },
+                                    { $"Child_{MyBaseThing.ID}_StatusLevel", MyBaseThing.StatusLevel },
+                                    { $"Child_{MyBaseThing.ID}_LastMessage", MyBaseThing.LastMessage }
                                     }, DateTimeOffset.Now, false);
                 }
             }
@@ -364,7 +364,10 @@ namespace nsCDEngine.Engines.ThingService
             {
                 var t = TheThingRegistry.GetThingByMID(CU.CGuid(MyBaseThing.Parent));
                 if (t != null)
+                {
                     t.SetProperties(dict, timestamp);
+                    t.SetProperty($"Child_{MyBaseThing.ID}_DataUpdate", timestamp);
+                }
             }
         }
         public void DTPushToParent(DateTimeOffset timestamp)
@@ -384,6 +387,7 @@ namespace nsCDEngine.Engines.ThingService
                             var sprop = tPParts.Length > 1 ? tPParts[0] : prop;
                             t.SetProperty(tprop, MyBaseThing.GetProperty(sprop, false));
                         }
+                        t.SetProperty($"Child_{MyBaseThing.ID}_DataUpdate", timestamp);
                     }
                 }
             }
