@@ -42,11 +42,11 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static bool IsFeather()
         {
-            if (mIsFeather != null) return mIsFeather==true;
-            mIsFeather=CBool(TheBaseAssets.MySettings?.GetSetting("IsFeatherBoard")) || AppDomain.CurrentDomain?.FriendlyName == "Meadow.dll";
-            return mIsFeather==true;
+            if (mIsFeather != null) return mIsFeather == true;
+            mIsFeather = CBool(TheBaseAssets.MySettings?.GetSetting("IsFeatherBoard")) || AppDomain.CurrentDomain?.FriendlyName == "Meadow.dll";
+            return mIsFeather == true;
         }
-        private static bool? mIsFeather=null;
+        private static bool? mIsFeather = null;
         /// <summary>
         /// Detect the presence of the portable .NET Core platform.
         /// </summary>
@@ -148,7 +148,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is ushort s1) return s1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             ushort retVal;
             try
             {
@@ -185,7 +185,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is int i1) return i1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             int retVal;
             try
             {
@@ -281,7 +281,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is float f1) return f1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             float retVal;
             try
             {
@@ -333,7 +333,7 @@ namespace nsCDEngine.BaseClasses
                         milis = milis.Substring(0, offsetIndex);
                     }
 
-                    DateTimeOffset origin = new (1970, 1, 1, 0, 0, 0, offset);
+                    DateTimeOffset origin = new(1970, 1, 1, 0, 0, 0, offset);
                     return origin.AddMilliseconds(CLng(milis));
                 }
             }
@@ -350,7 +350,7 @@ namespace nsCDEngine.BaseClasses
             long ticks = tDate.Subtract(DateTime.UnixEpoch).Ticks / 10000; //Epoch no need for Offset
             return string.Format("Date({0})", ticks);
         }
-        private static DateTimeOffset iEpochTimeOffsetUtc = new (DateTime.UnixEpoch, new TimeSpan(0));
+        private static DateTimeOffset iEpochTimeOffsetUtc = new(DateTime.UnixEpoch, new TimeSpan(0));
 
         /// <summary>
         /// Converts an incoming object to a TimeSpan
@@ -374,7 +374,8 @@ namespace nsCDEngine.BaseClasses
                 {
                     ret = (d1 - iEpochTimeOffsetUtc);
                 }
-                catch { 
+                catch
+                {
                     //intent
                 }
             }
@@ -384,14 +385,15 @@ namespace nsCDEngine.BaseClasses
                 {
                     ret = (t1.ToUniversalTime() - iEpochTimeOffsetUtc);
                 }
-                catch { 
+                catch
+                {
                     //intent
                 }
             }
             else if (inObj is string s2)
             {
                 if (!TimeSpan.TryParse(s2, CultureInfo.InvariantCulture, out ret))
-                { 
+                {
                     //intent
                 }
             }
@@ -442,7 +444,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is Byte b1) return b1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             Byte retVal;
             try
             {
@@ -473,7 +475,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is SByte b1) return b1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             SByte retVal;
             try
             {
@@ -507,7 +509,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is short c1) return c1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             short retVal;
             try
             {
@@ -653,7 +655,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is double d1) return d1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             double retVal;
             try
             {
@@ -703,7 +705,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is uint u1) return u1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             uint retVal;
             try
             {
@@ -742,7 +744,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is ulong u1) return u1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             ulong retVal;
             try
             {
@@ -790,7 +792,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is long l1) return l1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             long retVal;
             try
             {
@@ -873,7 +875,8 @@ namespace nsCDEngine.BaseClasses
                     return Convert.ToBase64String(ar);
                 }
             }
-            catch { 
+            catch
+            {
                 //intent
             }
             return inObj.ToString(); // ToString() OK - last resort, all culture invariant ways to convert to string exhausted
@@ -1025,7 +1028,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>The converted string.</returns>
         public static string CArray2UTF8String(byte[] pIn, int index, int count)
         {
-            UTF8Encoding enc = new ();
+            UTF8Encoding enc = new();
             return enc.GetString(pIn, index, count);
         }
 
@@ -1036,7 +1039,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A byte array.</returns>
         public static byte[] CUTF8String2Array(string strIn)
         {
-            UTF8Encoding enc = new ();
+            UTF8Encoding enc = new();
             return enc.GetBytes(strIn);
         }
 
@@ -1049,7 +1052,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A string.</returns>
         public static string CArray2UnicodeString(byte[] pIn, int index, int count)
         {
-            UnicodeEncoding enc = new ();
+            UnicodeEncoding enc = new();
             return enc.GetString(pIn, index, count);
         }
 
@@ -1061,7 +1064,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A byte array.</returns>
         public static byte[] CUnicodeString2Array(string strIn)
         {
-            UnicodeEncoding enc = new ();
+            UnicodeEncoding enc = new();
             return enc.GetBytes(strIn);
         }
 
@@ -1211,7 +1214,7 @@ namespace nsCDEngine.BaseClasses
         public static string CListToString(List<string> pList, string Sep)
         {
             if (pList == null) return null;
-            StringBuilder AllTopics = new (512);
+            StringBuilder AllTopics = new(512);
             foreach (string t in pList)
             {
                 if (string.IsNullOrEmpty(t)) continue;
@@ -1487,7 +1490,7 @@ namespace nsCDEngine.BaseClasses
             };
             if (newPort == 443)
                 builder.Scheme = "https";
-            else 
+            else
                 builder.Scheme = "http";
             return builder.Uri;
         }
