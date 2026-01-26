@@ -19,7 +19,7 @@ namespace nsCDEngine.Engines.ThingService
         public void FileIssue(TheThing pBaseThing, string pSensorId, eMsgLevel msgLevel, string pMessage);
         public void FileIssue(string pDevId, string pSensorId, string pDevName, string pCategory, eMsgLevel msgLevel, string pMessage);
 
-        TheFormInfo AddCurrentIssuesTable(TheThing pBaseThing, TheBaseEngine pBaseEngine, Guid IssueTableID, bool AddToDash, int TH = 3, string pCategory = null);
+        TheFormInfo AddCurrentIssuesTable(TheThing pBaseThing, TheBaseEngine pBaseEngine, Guid IssueTableID, bool AddToDash, int TW = 12, int TH = 3, string pCategory = null);
     }
 
     /// <summary>
@@ -76,7 +76,8 @@ namespace nsCDEngine.Engines.ThingService
         private static ICDEIssueLog _issueLog = null;
         public static ICDEIssueLog MyIssueLog
         {
-            get { 
+            get
+            {
                 if (_issueLog == null)
                 {
                     InitIssueLog();
@@ -95,7 +96,7 @@ namespace nsCDEngine.Engines.ThingService
                     var issueLogFac = EngineThing?.GetObject() as ICDEIssueLogFactory;
                     if (EngineThing != null && issueLogFac != null)
                     {
-                        _issueLog=issueLogFac.InitIssueLog();
+                        _issueLog = issueLogFac.InitIssueLog();
                     }
                 }
             }
