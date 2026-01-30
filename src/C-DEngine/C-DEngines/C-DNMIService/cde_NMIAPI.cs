@@ -330,6 +330,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 foreach (var t in tFldInfo.PropertyBag.ToList())
                 {
+                    if (t == null) continue;
                     var ts = t.Split('=');
                     if (ts.Length > 1 && ts[1].StartsWith("$"))
                     {

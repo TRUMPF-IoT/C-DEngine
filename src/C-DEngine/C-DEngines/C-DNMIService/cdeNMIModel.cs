@@ -2785,7 +2785,7 @@ namespace nsCDEngine.Engines.NMIService
                 string tName = tEnt.Split('=')[0];  
                 if (bIgnoreNodeSettings && (tName == "EngineName" || TheCommonUtils.IsPropertyOfClass(tName, typeof(nmiPlatBag))))
                     continue;
-                if (this.Exists(s => s.StartsWith(tName, StringComparison.OrdinalIgnoreCase)))
+                if (this.Exists(s => s?.StartsWith(tName, StringComparison.OrdinalIgnoreCase)==true))
                 {
                     if (CreateFastCache)
                         _FastCache?.RemoveNoCare(tName);
@@ -3003,7 +3003,7 @@ namespace nsCDEngine.Engines.NMIService
                 try
                 {
                     string toInser = pName.Trim() + Seperator;
-                    if ((retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
+                    if ((retStr = pQ.Find(s => s?.StartsWith(toInser, StringComparison.OrdinalIgnoreCase)==true)) != null)
                     {
                         retStr = PropBagGetValue(retStr, Seperator);
                     }
@@ -3043,6 +3043,7 @@ namespace nsCDEngine.Engines.NMIService
                 {
                     foreach (string t in pQ)
                     {
+                        if (t == null) continue;
                         var tP = t.IndexOf(Seperator);
                         if (tP < 0)
                             retStr.TryAdd(t, true.ToString());
@@ -3184,7 +3185,7 @@ namespace nsCDEngine.Engines.NMIService
                 string retStr = "";
                 try
                 {
-                    if (!AllowDuplicates && (retStr = pQ.Find(s => s.StartsWith(toInser, StringComparison.OrdinalIgnoreCase))) != null)
+                    if (!AllowDuplicates && (retStr = pQ.Find(s => s?.StartsWith(toInser, StringComparison.OrdinalIgnoreCase)==true)) != null)
                     {
                         pQ.Remove(retStr);
                         if (pQ._FastCache != null)
