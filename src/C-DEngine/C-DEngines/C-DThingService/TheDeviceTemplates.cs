@@ -77,7 +77,7 @@ namespace nsCDEngine.Engines.ThingService
             try
             {
                 var temp2 = CU.DeserializeJSONStringToObject<TheDeviceDescription>(pMsg.PLS);
-                var tt = TheThingRegistry.GetThingByFunc(MyBaseThing.EngineName, s => s.DeviceType == CU.CStr(temp2.Properties["DeviceType"]) && s.Parent == CU.CStr(temp2.Properties["Parent"]));
+                var tt = TheThingRegistry.GetThingByFunc(MyBaseThing.EngineName, s => s.DeviceType == CU.CStr(temp2.Properties["DeviceType"]) && TT.GetSafePropertyString(s,"ParentID") == CU.CStr(temp2.Properties["ParentID"]));
                 if (tt == null)
                     return temp2;
             }
