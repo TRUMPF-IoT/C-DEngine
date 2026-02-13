@@ -83,7 +83,7 @@ namespace nsCDEngine.Engines.ThingService
             }
             catch (Exception ee)
             {
-                MyBaseThing?.MyThingBase?.SetMessage($"Error during Modbus Template:{ee}", DateTimeOffset.Now);
+                MyBaseThing?.MyThingBase?.SetMessage($"Error during Check for Template:{ee}", DateTimeOffset.Now);
             }
             return null;
         }
