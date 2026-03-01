@@ -198,6 +198,18 @@ namespace nsCDEngine.Engines.ThingService
                             }
                         }
                     }
+                    OPCUAFolderAttribute[] psetsFO = (OPCUAFolderAttribute[])pThingType.GetCustomAttributes(typeof(OPCUAFolderAttribute), true);
+                    if (psetsFO?.Any() == true)
+                    {
+                        foreach (var pset in psetsFO)
+                        {
+                            if (!string.IsNullOrEmpty(pset?.cdePName))
+                            {
+                                SetUABase(pset, pThing.GetProperty(pset.cdePName, true));
+                                pThing.GetProperty(pset.cdePName, true).cdeM = OPCUAFolderAttribute.Meta;
+                            }
+                        }
+                    }
 
                     var thingTypeProps = pThingType.GetProperties();
                     foreach (var prop in thingTypeProps)
@@ -245,6 +257,12 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     SetUAHAVariable(uaHAVariAttribute, pThing.GetProperty(prop.Name, uaHAVariAttribute.UAMandatory));
                 }
+                OPCUAFolderAttribute uaFolderAttribute = prop.GetCustomAttributes(typeof(OPCUAFolderAttribute), true).FirstOrDefault() as OPCUAFolderAttribute;
+                if (uaFolderAttribute != null)
+                {
+                    SetUABase(uaFolderAttribute, pThing.GetProperty(prop.Name, true));
+                    pThing.GetProperty(prop.Name, true).cdeM = OPCUAFolderAttribute.Meta;
+                }
             }
             catch
             {
@@ -281,19 +299,12 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (tProp != null && uaAttribute != null)
             {
+                SetUABase(uaAttribute, tProp);
                 tProp.cdeM = OPCUAPropertyAttribute.Meta;
-                if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
-                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
                 if (!string.IsNullOrEmpty(uaAttribute?.UASourceType))
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UASourceType), uaAttribute.UASourceType);
                 if (!string.IsNullOrEmpty(uaAttribute?.UAUnits))
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUnits), uaAttribute.UAUnits);
-                if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
-                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
-                if (!string.IsNullOrEmpty(uaAttribute?.UATypeNodeId))
-                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UATypeNodeId), uaAttribute.UATypeNodeId);
-                if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
-                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
                 if (uaAttribute.UARangeMin != 0)
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UARangeMin), uaAttribute.UARangeMin);
                 if (uaAttribute.UARangeMax != 0)
@@ -304,10 +315,27 @@ namespace nsCDEngine.Engines.ThingService
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAUserWriteMask), uaAttribute.UAUserWriteMask);
                 if (uaAttribute.AllowWrites)
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.AllowWrites), uaAttribute.AllowWrites);
-                if (uaAttribute.HideFromAnonymous)
-                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.HideFromAnonymous), uaAttribute.HideFromAnonymous);
                 if (uaAttribute.UAMandatory)
                     tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAMandatory), uaAttribute.UAMandatory);
+            }
+        }
+        private static void SetUABase(OPCUABaseAttribute uaAttribute, cdeP tProp)
+        {
+            if (tProp != null && uaAttribute != null)
+            {
+                tProp.cdeM = OPCUABaseAttribute.Meta;
+                if (!string.IsNullOrEmpty(uaAttribute?.UABrowseName))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UABrowseName), uaAttribute.UABrowseName);
+                if (!string.IsNullOrEmpty(uaAttribute?.UADescription))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADescription), uaAttribute.UADescription);
+                if (!string.IsNullOrEmpty(uaAttribute?.UATypeNodeId))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UATypeNodeId), uaAttribute.UATypeNodeId);
+                if (!string.IsNullOrEmpty(uaAttribute?.UADisplayName))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UADisplayName), uaAttribute.UADisplayName);
+                if (uaAttribute.HideFromAnonymous)
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.HideFromAnonymous), uaAttribute.HideFromAnonymous);
+                if (!string.IsNullOrEmpty(uaAttribute?.UAParent))
+                    tProp?.SetProperty(nameof(OPCUAPropertyAttribute.UAParent), uaAttribute.UAParent);
             }
         }
     }
@@ -321,6 +349,7 @@ namespace nsCDEngine.Engines.ThingService
         public string UADescription;
         public string UADisplayName;
         public string UATypeNodeId;
+        public string UAParent;
         public bool HideFromAnonymous;
     }
 
