@@ -121,6 +121,8 @@ namespace nsCDEngine.BaseClasses
                 }
                 else
                 {
+                    if (inObj is cdeP)
+                        return CBool($"{(inObj as cdeP).GetValue()}");
                     retVal = false;
                 }
             }
