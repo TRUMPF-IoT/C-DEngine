@@ -11,14 +11,14 @@
 		<PackageId>C-DEngine</PackageId>
 		<PackageIcon>toplogo-128.png</PackageIcon>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>		
-		<Version>6.122.0</Version>
+		<Version>6.135.0</Version>
 		<Authors>Chris Muench</Authors>
 		<Company>C-Labs</Company>
 		<Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>C-Labs Distributed Engine</Description>
 		<PackageDescription>C-Labs Distributed Engine</PackageDescription>
-		<Copyright>Copyright © 2017-2025 TRUMPF Laser GmbH, authors: C-Labs, Hyviva</Copyright>
+		<Copyright>Copyright © 2017-2026 TRUMPF Laser GmbH, authors: C-Labs, Hyviva</Copyright>
 		<PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
