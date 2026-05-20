@@ -147,6 +147,8 @@ namespace nsCDEngine.Security
                         NodeScope = (tu.LNO ? $"{TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID}" : "ALL"),
                         AccessMask = tu.ACL,
                         HomeScreen = tu.HS,
+                        ThemeName = tu.ThemeName,
+                        LCID = tu.LCID,
                         IsReadOnly = tu.RO,
                         Name = tu.Name
                     };
