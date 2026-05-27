@@ -1954,6 +1954,10 @@ namespace nsCDEngine.Engines.NMIService
         public string TableClassName { get; set; }
 
         /// <summary>
+        /// Container of the table. Default style is "cdeTableContainer"
+        /// </summary>
+        public string TableContainerClassName { get; set; }
+        /// <summary>
         /// Style Class for the Table Name in the Header
         /// </summary>
         public string TNClassName { get; set; }
