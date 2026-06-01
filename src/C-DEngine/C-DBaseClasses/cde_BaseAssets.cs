@@ -601,7 +601,7 @@ namespace nsCDEngine.BaseClasses
             {
                 MyServiceHostInfo.cdePlatform = cdePlatform.NETSTD_V21;
             }
-            TheSystemMessageLog.ToCo("BaseDir: " + MyServiceHostInfo.BaseDirectory);
+            TheSystemMessageLog.ToCo($"BaseDir: {MyServiceHostInfo.BaseDirectory} ClientBinRootDirectory: {MyServiceHostInfo.ClientBinRootDirectory}");
             #endregion
 
             #region step 4: Prepare essential Subsystems (Syslog, ScopeManager, Diagnostics, Caches, AppInfo)
@@ -691,7 +691,7 @@ namespace nsCDEngine.BaseClasses
             {
                 MySYSLOG.WriteToLog(4152, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseAssets", dotNetInfoForLog, eMsgLevel.l4_Message));
             }
-            MySYSLOG.WriteToLog(4153, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheBaseAssets", "BaseDir: " + MyServiceHostInfo.BaseDirectory, eMsgLevel.l4_Message));
+            MySYSLOG.WriteToLog(4153, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheBaseAssets", $"BaseDir: {MyServiceHostInfo.BaseDirectory} ClientBinRootDirectory: {MyServiceHostInfo.ClientBinRootDirectory}", eMsgLevel.l4_Message));
             #endregion
 
             #region step 6: determine WebSocket8 vs. WebSocketsSharp

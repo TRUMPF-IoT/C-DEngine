@@ -278,7 +278,7 @@ namespace nsCDEngine.ISM
                     if (string.IsNullOrEmpty(ISMUpdateDirectory)) ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory;
                     if (string.IsNullOrEmpty(ISMUpdateDirectory))
                     {
-                        ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory.Substring(0, TheBaseAssets.MyServiceHostInfo.BaseDirectory.Length - 1);
+                        ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory.Substring(0, TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory.Length - 1);
                         TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory = ISMUpdateDirectory;
                     }
                 }
@@ -909,7 +909,7 @@ namespace nsCDEngine.ISM
             try
             {
                 List<string> tList = new ();
-                DirectoryInfo di = new (TheBaseAssets.MyServiceHostInfo.BaseDirectory);
+                DirectoryInfo di = new (TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory);
                 ProcessDirectory(di, ref tList, "", ".tmp", false, false);
                 if (tList.Count > 0)
                 {

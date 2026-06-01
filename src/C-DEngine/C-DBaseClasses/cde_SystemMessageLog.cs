@@ -358,9 +358,9 @@ namespace nsCDEngine.BaseClasses
                     if (string.IsNullOrEmpty(value))
                     {
                         mLogFilePath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                        if (String.IsNullOrEmpty(mLogFilePath))
+                        if (string.IsNullOrEmpty(mLogFilePath))
                         {
-                            mLogFilePath = Path.Combine(Path.Combine(TheBaseAssets.MyServiceHostInfo.BaseDirectory, "ClientBin"), "Logs") + Path.DirectorySeparatorChar;  //CODE-REVIEW: path must be validated with cdeFixupFileName
+                            mLogFilePath = TheCommonUtils.cdeFixupFileName("Logs") + Path.DirectorySeparatorChar;  
                             TheCommonUtils.CreateDirectories(mLogFilePath);
                         }
                         else
@@ -374,9 +374,9 @@ namespace nsCDEngine.BaseClasses
                         if (!Path.IsPathRooted(mLogFilePath))
                         {
                             var root = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                            if (String.IsNullOrEmpty(root))
+                            if (string.IsNullOrEmpty(root))
                             {
-                                root = Path.Combine(Path.Combine(TheBaseAssets.MyServiceHostInfo.BaseDirectory, "ClientBin"), "Logs"); //CODE-REVIEW: path must be validated with cdeFixupFileName
+                                root = TheCommonUtils.cdeFixupFileName("Logs"); 
                             }
                             mLogFilePath = Path.Combine(root, mLogFilePath);
                         }

@@ -1339,11 +1339,11 @@ namespace nsCDEngine.BaseClasses
 
         internal static string cdeFixupFileName(string pFilePath, bool AllowCacheAccess)
         {
-            if (pFilePath == null || string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.BaseDirectory))
+            if (pFilePath == null || string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory))
             {
                 return null;
             }
-            string fileToReturn = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
+            string fileToReturn = TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory;
             if (!pFilePath.StartsWith("clientbin", StringComparison.CurrentCultureIgnoreCase))
             {
                 fileToReturn = Path.Combine(fileToReturn, "ClientBin");

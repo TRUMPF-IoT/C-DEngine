@@ -361,6 +361,10 @@ namespace nsCDEngine.ISM
             {
                 TheBaseAssets.MyServiceHostInfo.BaseDirectory = CU.GetCurrentAppDomainBaseDirWithTrailingSlash();
             }
+            if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory))
+            {
+                TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
+            }
             if (!TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
             {
                 var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);

@@ -2324,6 +2324,20 @@ namespace nsCDEngine.Engines.NMIService
         }
 
         /// <summary>
+        /// Request Reload of a Form or Table
+        /// </summary>
+        /// <param name="ModelGuid">Model (Thing Dashboard) that owns the Form</param>
+        /// <param name="ContainerControlGuid">Container Control that hosts the table/form if Guid.Empty the cdeMID of the form will be used</param>
+        /// <param name="bForceLoad">Sends the full data Set and flags the UX to destroy and recreate the form/table</param>
+        /// <param name="FilterToken">Adds a filter token to the Request</param>
+        /// <returns></returns>
+        public bool RequestReload(Guid ModelGuid, Guid ContainerControlGuid, bool bForceLoad = false, string FilterToken = null)
+        {
+            Communication.TheCommCore.PublishCentral(new TSM(eEngineName.NMIService, $"NMI_REQ_DASH{(string.IsNullOrEmpty(FilterToken) ? "" : $":{FilterToken}")}", $"{TheCommonUtils.cdeGuidToString(ContainerControlGuid == Guid.Empty ? cdeMID : ContainerControlGuid)}:{(DefaultView == eDefaultView.Form ? "CMyForm" : "CMyTable")}:{TheCommonUtils.cdeGuidToString(cdeMID)}:{TheCommonUtils.CGuid(ModelGuid)}"));
+            return false;
+        }
+
+        /// <summary>
         /// Removes a field by its order Number
         /// </summary>
         /// <param name="OrderNumber"></param>
