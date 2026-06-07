@@ -1430,15 +1430,17 @@ namespace nsCDEngine.Engines.StorageService
 
             if (IsRAMStore || IsCached)
             {
-                Dictionary<string, T> ResList = new ();
+                Dictionary<string, T> ResList = new();
                 foreach (T tItem in pDetails.Values)
                 {
                     if (tItem.cdeMID == Guid.Empty)
                         tItem.cdeMID = Guid.NewGuid();
                     MyMirrorCache.AddOrUpdateItem(tItem.cdeMID, tItem, null);
-                    ResList.Add(tItem.cdeMID.ToString(), tItem);
+                    if (AllowFireUpdates || CallBack != null)
+                        ResList.Add(tItem.cdeMID.ToString(), tItem);
                 }
-                tResponse.MyRecords = ResList.Values.ToList();
+                if (AllowFireUpdates || CallBack != null)
+                    tResponse.MyRecords = ResList.Values.ToList();
                 CallBack?.Invoke(tResponse);
                 NotifyOfUpdate(tResponse);
             }
