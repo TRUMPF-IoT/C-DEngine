@@ -10,11 +10,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 
-#if !CDE_NET35
 namespace CDEngine.BaseClasses.Net45.Tests
-#else
-namespace CDEngine.BaseClasses.Net35.Tests
-#endif
 {
 
     [TestFixture]

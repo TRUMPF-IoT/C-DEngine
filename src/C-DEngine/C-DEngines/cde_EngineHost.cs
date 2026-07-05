@@ -34,8 +34,6 @@ namespace nsCDEngine.Engines
         /// Interface to the Current StorageService
         /// NOTE: This will be replace by MyIStorageService in V5- please migrate your code to use MyIStorageService
         /// </summary>
-        //[Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
-        //public static IStorageService MyStorageService;
         private static ICacheStore _MyICacheStore = null;
         public static ICacheStore MyICacheStore
         {
@@ -58,9 +56,6 @@ namespace nsCDEngine.Engines
         {
             if (pService == null)
                 return false;
-#pragma warning disable CS0618 // Type or member is obsolete
-            //MyStorageService = pService;
-#pragma warning restore CS0618 // Type or member is obsolete
             if (MyIStorageService == null)
             {
                 _MyIStorageService = pService;
@@ -69,9 +64,6 @@ namespace nsCDEngine.Engines
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(4138, new TSM("TheCDEngines", "Distributed StorageService could not be started. Node falls back to local storage only", eMsgLevel.l2_Warning));
                     _MyIStorageService = null;
-#pragma warning disable CS0618 // Type or member is obsolete
-                    //MyStorageService = null;
-#pragma warning restore CS0618 // Type or member is obsolete
                 }
                 return Succes;
             }
@@ -150,7 +142,7 @@ namespace nsCDEngine.Engines
         /// <returns></returns>
         public static List<object> GetStorageDefinitions()
         {
-            return MyStorageMirrorRepository?.Values?.ToList().FindAll(sm => sm != null && sm is TheStorageMirror<StorageDefinition>);
+            return MyStorageMirrorRepository?.Values?.ToList().FindAll(sm => sm is TheStorageMirror<StorageDefinition>);
         }
 
         /// <summary>
@@ -219,16 +211,6 @@ namespace nsCDEngine.Engines
         /// </summary>
         public static Action<string> eventPluginStarted;
 
-        /// <summary>
-        /// Fires when All Engines have been started
-        /// RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V5
-        /// </summary>
-        [Obsolete("RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V6.130 (Jan 2026)")]
-        public static Action eventAllEnginesStarted 
-        {
-            get { return eventAllEnginesStarted2; }
-            set { eventAllEnginesStarted2 = value; }
-        }
 
         internal static Action eventAllEnginesStarted2;
 
@@ -1041,19 +1023,12 @@ namespace nsCDEngine.Engines
             DirectoryInfo di = new (UpdateDirectory);
             try
             {
-                AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
                 ProcessDirectory(di, "", UpdateDirectory, new ReferenceLoader());
             }
             catch (Exception e)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(418, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "DeserializeStationInfo:FindPlugins", eMsgLevel.l1_Error, e.ToString()));
             }
-        }
-
-        static Assembly CurrentDomain_ReflectionOnlyAssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            var name = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
-            return System.Reflection.Assembly.ReflectionOnlyLoad(name);
         }
 
         internal class ReferenceLoader : MarshalByRefObject
@@ -1063,22 +1038,7 @@ namespace nsCDEngine.Engines
                 resTSM = null;
                 List<string> mList = new ();
 
-                Assembly tAss = null;
-                if (!TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom)
-                {
-                    try
-                    {
-                        tAss = Assembly.ReflectionOnlyLoadFrom(assemblyPath);
-                    }
-                    catch (PlatformNotSupportedException) //No Assembly.ReflectionOnlyLoadFrom
-                    {
-                        TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom = true;
-                    }
-                }
-                if (TheBaseAssets.PlatformDoesNotSupportReflectionOnlyLoadFrom)
-                {
-                    tAss = Assembly.LoadFrom(assemblyPath);
-                }
+                Assembly tAss = Assembly.LoadFrom(assemblyPath);
 
                 if (tAss != null)
                 {
@@ -1563,60 +1523,6 @@ namespace nsCDEngine.Engines
                 //ignored
             }
         }
-
-        private static void ApplySensorPropertyExtensionAttributes(Type thingType, TheDeviceTypeInfo dt, PropertyInfo[] thingTypeProps)
-        {
-            foreach (var prop in thingTypeProps)
-            {
-                SensorPropertyExtensionAttribute sensorExtensionAttribute = null;
-                try
-                {
-                    sensorExtensionAttribute = prop.GetCustomAttributes(typeof(SensorPropertyExtensionAttribute), true).FirstOrDefault() as SensorPropertyExtensionAttribute;
-                }
-                catch { 
-                    //ignored
-                }
-                if (sensorExtensionAttribute != null)
-                {
-                    var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == prop.Name);
-                    if (sensorProp != null)
-                    {
-                        sensorProp.ExtensionData ??= new Dictionary<string, object>();
-                        sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
-                    }
-                }
-            }
-            try
-            {
-                foreach (var sensorExtensionAttribute in thingType.GetCustomAttributes(typeof(SensorPropertyExtensionAttribute), true).Select(a => a as SensorPropertyExtensionAttribute))
-                {
-                    if (sensorExtensionAttribute != null)
-                    {
-                        if (!string.IsNullOrEmpty(sensorExtensionAttribute.NameOverride))
-                        {
-                            var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == sensorExtensionAttribute.NameOverride);
-                            if (sensorProp != null)
-                            {
-                                sensorProp.ExtensionData ??= new Dictionary<string, object>();
-                                sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
-                            }
-                            else
-                            {
-                                TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorPropertyExtension attribute without a SensorProperty attribute", eMsgLevel.l1_Error, $"{thingType.FullName}: {sensorExtensionAttribute.NameOverride}"));
-                            }
-                        }
-                        else
-                        {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorPropertyExtension attribute without NameOverride", eMsgLevel.l1_Error, thingType.FullName));
-                        }
-                    }
-                }
-            }
-            catch { 
-                //ignored
-            }
-        }
-
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]

@@ -328,9 +328,13 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         NETSTD_V21 = 17,
         /// <summary>
+        /// .NET 10
+        /// </summary>
+        NETCORE = 18,
+        /// <summary>
         /// Max Terminator
         /// </summary>
-        MAX = 18
+        MAX = 19
     }
 
     /// <summary>

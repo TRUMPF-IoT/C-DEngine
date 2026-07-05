@@ -9,6 +9,7 @@ using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace nsCDEngine.Engines.ThingService
@@ -206,6 +207,7 @@ namespace nsCDEngine.Engines.ThingService
             }
         }
 
+        private readonly object bmapLock = new object();
         /// <summary>
         /// Sets a new Value to the Property
         /// if cdeE|1 is set, the value will be automatically encrypted
@@ -231,25 +233,28 @@ namespace nsCDEngine.Engines.ThingService
             mOldValue = mValue;
 
             object pVal = pValue;
-#if !CDE_STANDARD   //No System.Drawing
-            //else
-            if (pValue is System.Drawing.Bitmap)
+            if (pValue is System.Drawing.Bitmap bmap)
             {
-                lock (pValue)
+                lock (bmapLock)
                 {
-                    System.Drawing.Bitmap tBitmap = pValue as System.Drawing.Bitmap;
-                    cdeT = (int)ePropertyTypes.TBinary;
-                    byte[] TargetBytes;
-                    ThePlanarImage Img = new ThePlanarImage();
-                    using (System.IO.MemoryStream memstream = new System.IO.MemoryStream())
+                    try
                     {
-                        tBitmap.Save(memstream, System.Drawing.Imaging.ImageFormat.Jpeg);
-                        TargetBytes = memstream.ToArray();
+                        System.Drawing.Bitmap tBitmap = bmap;
+                        cdeT = (int)ePropertyTypes.TBinary;
+                        byte[] TargetBytes;
+                        using (System.IO.MemoryStream memstream = new System.IO.MemoryStream())
+                        {
+                            tBitmap.Save(memstream, System.Drawing.Imaging.ImageFormat.Jpeg);
+                            TargetBytes = memstream.ToArray();
+                        }
+                        pVal = TargetBytes;
                     }
-                    pVal = TargetBytes;
+                    catch (Exception)
+                    {
+                        //intended
+                    }
                 }
             }
-#endif
 
             if ((cdeE & 1) != 0)
             {
@@ -1114,14 +1119,11 @@ namespace nsCDEngine.Engines.ThingService
             {
                 lock (cdePB.MyLock)
                 {
-                    foreach (cdeP key in cdePB.Values)
+                    foreach (cdeP key in cdePB.Values.Where(k => !string.IsNullOrEmpty(k.cdeM) && k.cdeM.StartsWith(pName, StringComparison.OrdinalIgnoreCase)))
                     {
-                        if (!string.IsNullOrEmpty(key.cdeM) && key.cdeM.StartsWith(pName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            bool bNoFire = false;
-                            var prop = GetPropertyInternal(key.Name, true, ref bNoFire);
-                            Keys.Add(prop);
-                        }
+                        bool bNoFire = false;
+                        var prop = GetPropertyInternal(key.Name, true, ref bNoFire);
+                        Keys.Add(prop);
                     }
                 }
             }
@@ -1432,7 +1434,7 @@ namespace nsCDEngine.Engines.ThingService
 
             cdePB ??= new cdeConcurrentDictionary<string, cdeP>();
 
-            if (!pName.StartsWith("["))
+            if (!pName.StartsWith('['))
                 return GetPropertyRoot(pName, DoCreate, ref NoFireAdded);
 
 

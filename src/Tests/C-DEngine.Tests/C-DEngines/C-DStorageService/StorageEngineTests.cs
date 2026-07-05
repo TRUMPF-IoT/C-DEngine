@@ -16,11 +16,7 @@ using nsCDEngine.Engines;
 using nsCDEngine.Engines.StorageService;
 using nsCDEngine.ViewModels;
 
-#if !CDE_NET35
 namespace CDEngine.StorageService.Net45.Tests
-#else
-namespace CDEngine.StorageService.Net35.Tests
-#endif
 {
     [TestFixture]
     public class StorageEngineTests : TestHost
@@ -93,7 +89,6 @@ namespace CDEngine.StorageService.Net35.Tests
             #region ASSERT
 
             Assert.That(mirror, Is.Not.EqualTo(null));
-            mirror?.Dispose();
             mirror = null;
 
             #endregion
@@ -405,7 +400,6 @@ namespace CDEngine.StorageService.Net35.Tests
 
             countdown.Wait();
             countdown?.Dispose();
-            mirror?.Dispose();
 
             #endregion
 
@@ -502,8 +496,6 @@ namespace CDEngine.StorageService.Net35.Tests
                 counter++;
             }
 
-            mirror?.Dispose();
-
             #endregion
 
             #region ASSERT
@@ -529,7 +521,7 @@ namespace CDEngine.StorageService.Net35.Tests
             var data = Enumerable.Range(1, totalCandidates).OrderBy(i => random.Next(1, totalCandidates));
             ManualResetEventSlim gate = new ManualResetEventSlim();
             CountdownEvent countdown = new CountdownEvent(1);
-            TheMirrorCache<TheStorageEngineTSM> mirror;
+            TheMirrorCacheCore<TheStorageEngineTSM> mirror;
             TheStorageEngineTSM tsmCurrent = null;
             TheStorageEngineTSM tsmMiddle = null;
             TheStorageEngineTSM tsmRemoved = null;
@@ -554,7 +546,7 @@ namespace CDEngine.StorageService.Net35.Tests
             if (tsmMiddle == null) Assert.Fail("Unable to cache the middle TSM!");
 
             // Spin up your mirror
-            mirror = new TheMirrorCache<TheStorageEngineTSM>(10)
+            mirror = new TheMirrorCacheCore<TheStorageEngineTSM>(10)
             {
                 CacheStoreInterval = 1,
                 IsStoreIntervalInSeconds = true,
@@ -594,8 +586,6 @@ namespace CDEngine.StorageService.Net35.Tests
 
             // Attempt to retrieve your middle item
             tsmMatch = mirror.GetEntryByID(tsmMiddle.cdeMID);
-
-            mirror?.Dispose();
 
             #endregion
 

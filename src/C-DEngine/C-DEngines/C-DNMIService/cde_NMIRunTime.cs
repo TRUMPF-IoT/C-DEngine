@@ -347,11 +347,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             case "NMI_UPD_DATA":
                                                 {
-#if CDE_STANDARD  //Metro Style Reflection
-                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("UpdateFromJSON");
-#else
                                                     magicMethod = magicType.GetMethod("UpdateFromJSON", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                                     if (magicMethod != null)
                                                     {
                                                         string tDirtyMask = "*";
@@ -380,11 +376,7 @@ namespace nsCDEngine.Engines.NMIService
                                                 break;
                                             case "NMI_DEL_ID":
                                                 {
-#if CDE_STANDARD  //Metro Style Reflection
-                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("DeleteByID"); 
-#else
                                                     magicMethod = magicType.GetMethod("DeleteByID", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                                     if (magicMethod != null)
                                                     {
                                                         object tRes = magicMethod.Invoke(MyStorageMirror, new[] { tTable, (object)cmd[2], tClientInfo, null });
@@ -468,11 +460,7 @@ namespace nsCDEngine.Engines.NMIService
                                         if (cmd.Length > 3)
                                             tClientInfo.FormID = TheCommonUtils.CGuid(cmd[3]);
                                         Type magicType = MyStorageMirror.GetType();
-#if CDE_STANDARD  //Metro Style Reflection
-                                        var magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("InsertFromJSON");
-#else
                                         var magicMethod = magicType.GetMethod("InsertFromJSON", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                         if (magicMethod != null)
                                         {
                                             var tRes = magicMethod.Invoke(MyStorageMirror, new[] { tTableInsert, (object)pMsg.Message.PLS, tClientInfo, null });
@@ -1402,11 +1390,7 @@ namespace nsCDEngine.Engines.NMIService
                                         if (MyStorageMirror != null && !(tTable.IsNotAutoLoading && IsInitialLoad))
                                         {
                                             Type magicType = MyStorageMirror.GetType();
-#if CDE_STANDARD //Metro Style Reflection
-                                            MethodInfo magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("SerializeToJSON");
-#else
                                             MethodInfo magicMethod = magicType.GetMethod("SerializeToJSON", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                             if (magicMethod != null)
                                             {
                                                 TheJSONLoaderDefinition tJSON = new ()
@@ -1829,11 +1813,7 @@ namespace nsCDEngine.Engines.NMIService
             if (MyStorageMirror != null)
             {
                 Type magicType = MyStorageMirror.GetType();
-#if CDE_STANDARD  //Metro Style Reflection
-                var magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("ReturnAsString");
-#else
                 var magicMethod = magicType.GetMethod("ReturnAsString");
-#endif
                 if (magicMethod != null)
                     res = magicMethod.Invoke(MyStorageMirror, new[] { pName, (object)pItem }).ToString();
             }

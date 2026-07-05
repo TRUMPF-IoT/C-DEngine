@@ -196,7 +196,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static bool Check4ValidEmail(string userName)
         {
-            if (String.IsNullOrEmpty(userName))
+            if (string.IsNullOrEmpty(userName))
             {
                 return false;
             }
@@ -205,11 +205,11 @@ namespace nsCDEngine.BaseClasses
                 return false;
             }
             // TODO Do RegEx validation (like in NMI/.TS)
-            //var RegExp = new RegexStringValidator("[a-z0-9!#$%&'*+\\=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?");
-            ////var filter:RegExp = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-            ////var filter:RegExp = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:[A-Z]{2}|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)/;
-            //if (!email || !filter.test(email.toLowerCase()) || email.substring(0, 1) === '.' || email.substring(email.length - 1, 1) === '.')
-            //    return false;
+            //var RegExp = new RegexStringValidator("[a-z0-9!#$%&'*+\\=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+            ////var filter:RegExp = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/
+            ////var filter:RegExp = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:[A-Z]{2}|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)/
+            // !email || !filter.test(email.toLowerCase()) || email.substring(0, 1) === '.' || email.substring(email.length - 1, 1) === '.'
+            //    return false
             return true;
         }
         #endregion
@@ -967,8 +967,8 @@ namespace nsCDEngine.BaseClasses
 
             if (bDiagnostics)
             {
-                diagnosticsInfo += $"AssemblyInfo: {new Uri(tAss.CodeBase).LocalPath},{runtimeVersion},{targetFrameworkSku},{assemblyPEKind},{assemblyPlatform}\r\n";
-                diagnosticsInfo += (Directory.EnumerateFiles(Path.GetDirectoryName(new Uri(tAss.CodeBase).LocalPath)).Aggregate("", (s, f) => $"{s} {f}"));
+                diagnosticsInfo += $"AssemblyInfo: {tAss.Location},{runtimeVersion},{targetFrameworkSku},{assemblyPEKind},{assemblyPlatform}\r\n";
+                diagnosticsInfo += (Directory.EnumerateFiles(Path.GetDirectoryName(tAss.Location)).Aggregate("", (s, f) => $"{s} {f}"));
             }
             return GetCDEPlatform(assemblyPlatform, targetFramework, assemblyPEKind, bAdjustForHostProcess);
         }
@@ -1183,7 +1183,6 @@ namespace nsCDEngine.BaseClasses
                     _FileStream.Dispose();
                     if (IsImage)
                     {
-#if !CDE_STANDARD   //No System.Drawing
                         System.Drawing.Imaging.ImageFormat tFormat = System.Drawing.Imaging.ImageFormat.Jpeg;
                         if (Extension.Equals(".PNG"))
                             tFormat = System.Drawing.Imaging.ImageFormat.Png;
@@ -1193,7 +1192,6 @@ namespace nsCDEngine.BaseClasses
                         _FileStream = new System.IO.FileStream(ThumbLink, System.IO.FileMode.Create, System.IO.FileAccess.Write);
                         _FileStream.Write(tThumb, 0, tThumb.Length);
                         _FileStream.Close();
-#endif
                     }
                     if (IsAnUpdate && TheBaseAssets.MyApplication.MyISMRoot != null)
                     {
@@ -1414,52 +1412,49 @@ namespace nsCDEngine.BaseClasses
             return _fileSystemCaseSensitive.Value;
         }
 
-#if !CDE_STANDARD   //No System.Drawing
         private static byte[] CreateImageThumbnail(byte[] byteArrayIn, float pWidth, float pHeight, System.Drawing.Imaging.ImageFormat pFormat)
         {
-            MemoryStream ms = new MemoryStream(byteArrayIn);
-            System.Drawing.Image imgToResize = System.Drawing.Image.FromStream(ms);
+            try
+            {
+                MemoryStream ms = new MemoryStream(byteArrayIn);
+                System.Drawing.Image imgToResize = System.Drawing.Image.FromStream(ms);
 
-            int sourceWidth = imgToResize.Width;
-            int sourceHeight = imgToResize.Height;
-            float nPercentW = pWidth / sourceWidth;
-            float nPercentH = pHeight / sourceHeight;
-            float nPercent;
-            if (nPercentH < nPercentW)
-                nPercent = nPercentH;
-            else
-                nPercent = nPercentW;
+                int sourceWidth = imgToResize.Width;
+                int sourceHeight = imgToResize.Height;
+                float nPercentW = pWidth / sourceWidth;
+                float nPercentH = pHeight / sourceHeight;
+                float nPercent;
+                if (nPercentH < nPercentW)
+                    nPercent = nPercentH;
+                else
+                    nPercent = nPercentW;
 
-            int destWidth = (int)(sourceWidth * nPercent);
-            int destHeight = (int)(sourceHeight * nPercent);
+                int destWidth = (int)(sourceWidth * nPercent);
+                int destHeight = (int)(sourceHeight * nPercent);
 
-            System.Drawing.Bitmap b = new System.Drawing.Bitmap(destWidth, destHeight);
-            System.Drawing.Graphics g = System.Drawing.Graphics.FromImage((System.Drawing.Image)b);
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                System.Drawing.Bitmap b = new System.Drawing.Bitmap(destWidth, destHeight);
+                System.Drawing.Graphics g = System.Drawing.Graphics.FromImage((System.Drawing.Image)b);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
 
-            g.DrawImage(imgToResize, 0, 0, destWidth, destHeight);
-            g.Dispose();
+                g.DrawImage(imgToResize, 0, 0, destWidth, destHeight);
+                g.Dispose();
 
-            ms = new MemoryStream();
-            ((System.Drawing.Image)b).Save(ms, pFormat);
-            return ms.ToArray();
+                ms = new MemoryStream();
+                ((System.Drawing.Image)b).Save(ms, pFormat);
+                b.Dispose();
+                return ms.ToArray();
+            }
+            catch (Exception e)
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(454, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, "Error Creating Thumbnail", eMsgLevel.l1_Error, e.ToString()), true);
+                return null;
+            }
         }
 
-        [System.Runtime.InteropServices.DllImport("Shlwapi.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private extern static bool PathFileExists(StringBuilder path);
-
-        internal static bool cdeFileExists(string pName)
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(pName);
-            return PathFileExists(builder);
-        }
-#else
         internal static bool cdeFileExists(string pName)
         {
             return File.Exists(pName);
         }
-#endif
         #endregion
     }
 }

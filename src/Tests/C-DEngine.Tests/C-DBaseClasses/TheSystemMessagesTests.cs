@@ -12,11 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-#if !CDE_NET35
 namespace CDEngine.BaseClasses.Net45.Tests
-#else
-namespace CDEngine.BaseClasses.Net35.Tests
-#endif
 {
     [TestFixture]
     class TheSystemMessagesTests : TestHost

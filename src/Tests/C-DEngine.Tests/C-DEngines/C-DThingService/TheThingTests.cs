@@ -14,11 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-#if !CDE_NET35
 namespace CDEngine.ThingService.Net45.Tests
-#else
-namespace CDEngine.ThingService.Net35.Tests
-#endif
 {
     [TestFixture]
     public class TheThingTests : TestHost

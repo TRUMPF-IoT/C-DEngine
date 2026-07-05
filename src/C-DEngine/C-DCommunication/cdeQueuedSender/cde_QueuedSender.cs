@@ -128,7 +128,6 @@ namespace nsCDEngine.Communication
                     eventSenderThreadRunning += sinkSTRunning;
                     if (!TheBaseAssets.MyServiceHostInfo.DisableWebSockets && MyTargetNodeChannel.TargetUrl.StartsWith("ws", StringComparison.CurrentCultureIgnoreCase))
                     {
-#if CDE_USEWSS8
                         if (TheBaseAssets.MyServiceHostInfo.IsWebSocket8Active)
                         {
                             TheWSProcessor8 tWS = new (null);
@@ -142,21 +141,8 @@ namespace nsCDEngine.Communication
                             }
                         }
                         else
-#endif
                         {
-#if CDE_USECSWS
-                            TheWSProcessor tWS = new (null);
-                            tWS.eventConnected += sinkWSconnected;
-                            tWS.SetRequest(new TheRequestData());
-                            SetWebSocketProcessor(tWS);
-                            if (!tWS.Connect(this))
-                            {
-                                TheBaseAssets.MySYSLOG.WriteToLog(2302, new TSM("QueuedSender", $"Could not create WSCS QS:{myTargetNodeChannel.ToMLString()}", eMsgLevel.l1_Error), true);
-                                return false;
-                            }
-#else
                             TheBaseAssets.MySYSLOG.WriteToLog(2302, new TSM("QueuedSender", $"No WebSocket Stack available therefore could not create WSCS QS:{myTargetNodeChannel.ToMLString()}", eMsgLevel.l1_Error), true);
-#endif
                         }
                     }
                     else

@@ -17,11 +17,7 @@ using System.Threading.Tasks;
 using System.Globalization;
 using System.Threading;
 
-#if !CDE_NET35
 namespace CDEngine.ThingService.Net45.Tests
-#else
-namespace CDEngine.ThingService.Net35.Tests
-#endif
 {
     [TestFixture]
     public class HistorianTests : TestHost

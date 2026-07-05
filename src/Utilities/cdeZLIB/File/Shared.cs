@@ -36,9 +36,6 @@ namespace CDEngine.CDUtils.Zlib
     /// </summary>
     internal static class SharedUtilities
     {
-        /// private null constructor
-        //private SharedUtilities() { }
-
         // workitem 8423
         public static Int64 GetFileLength(string fileName)
         {
@@ -173,16 +170,6 @@ namespace CDEngine.CDUtils.Zlib
         {
             return StringToByteArray(value, ibm437);
         }
-
-        //internal static byte[] Utf8StringToByteArray(string value)
-        //{
-        //    return StringToByteArray(value, utf8);
-        //}
-
-        //internal static string StringFromBuffer(byte[] buf, int maxlength)
-        //{
-        //    return StringFromBuffer(buf, maxlength, ibm437);
-        //}
 
         internal static string Utf8StringFromBuffer(byte[] buf)
         {
@@ -415,7 +402,6 @@ namespace CDEngine.CDUtils.Zlib
 
             int hour = (packedTime & 0xF800) >> 11;
             int minute = (packedTime & 0x07E0) >> 5;
-            //int second = packedTime & 0x001F;
             int second = (packedTime & 0x001F) * 2;
 
             // validation and error checking.
@@ -481,7 +467,6 @@ namespace CDEngine.CDUtils.Zlib
 
             }
             // workitem 6191
-            //d = AdjustTime_Reverse(d);
             d = DateTime.SpecifyKind(d, DateTimeKind.Local);
             return d;
         }
@@ -495,8 +480,6 @@ namespace CDEngine.CDUtils.Zlib
             // since the time is being written out, it needs to be adjusted.
 
             time = time.ToLocalTime();
-            // workitem 7966
-            //time = AdjustTime_Forward(time);
 
             // see http://www.vsft.com/hal/dostime.htm for the format
             UInt16 packedDate = (UInt16)((time.Day & 0x0000001F) | ((time.Month << 5) & 0x000001E0) | (((time.Year - 1980) << 9) & 0x0000FE00));
@@ -592,81 +575,14 @@ namespace CDEngine.CDUtils.Zlib
         {
             int n = 0;
             bool done = false;
-#if OLD_DOTNET // !NETCF && !SILVERLIGHT && !CDE_STANDARD
-            int retries = 0;
-#endif
             do
             {
-                try
-                {
-                    n = s.Read(buffer, offset, count);
-                    done = true;
-                }
-#if !OLD_DOTNET // NETCF || SILVERLIGHT || CDE_STANDARD
-                catch (System.IO.IOException)
-                {
-                    throw;
-                }
-#else
-                catch (System.IO.IOException ioexc1)
-                {
-                    // Check if we can call GetHRForException,
-                    // which makes unmanaged code calls.
-                    var p = new SecurityPermission(SecurityPermissionFlag.UnmanagedCode);
-                    if (p.IsUnrestricted())
-                    {
-                        uint hresult = _HRForException(ioexc1);
-                        if (hresult != 0x80070021)  // ERROR_LOCK_VIOLATION
-                            throw new System.IO.IOException(String.Format("Cannot read file {0}", FileName), ioexc1);
-                        retries++;
-                        if (retries > 10)
-                            throw new System.IO.IOException(String.Format("Cannot read file {0}, at offset 0x{1:X8} after 10 retries", FileName, offset), ioexc1);
-
-                        // max time waited on last retry = 250 + 10*550 = 5.75s
-                        // aggregate time waited after 10 retries: 250 + 55*550 = 30.5s
-                        System.Threading.Thread.Sleep(250 + retries * 550);
-                    }
-                    else
-                    {
-                        // The permission.Demand() failed. Therefore, we cannot call
-                        // GetHRForException, and cannot do the subtle handling of
-                        // ERROR_LOCK_VIOLATION.  Just bail.
-                        throw;
-                    }
-                }
-#endif
+                n = s.Read(buffer, offset, count);
+                done = true;
             }
             while (!done);
-
             return n;
         }
-
-
-#if !NETCF
-        // workitem 8009
-        //
-        // This method must remain separate.
-        //
-        // Marshal.GetHRForException() is needed to do special exception handling for
-        // the read.  But, that method requires UnmanagedCode permissions, and is marked
-        // with LinkDemand for UnmanagedCode.  In an ASP.NET medium trust environment,
-        // where UnmanagedCode is restricted, will generate a SecurityException at the
-        // time of JIT of the method that calls a method that is marked with LinkDemand
-        // for UnmanagedCode. The SecurityException, if it is restricted, will occur
-        // when this method is JITed.
-        //
-        // The Marshal.GetHRForException() is factored out of ReadWithRetry in order to
-        // avoid the SecurityException at JIT compile time. Because _HRForException is
-        // called only when the UnmanagedCode is allowed.  This means .NET never
-        // JIT-compiles this method when UnmanagedCode is disallowed, and thus never
-        // generates the JIT-compile time exception.
-        //
-#endif
-        private static uint _HRForException(System.Exception ex1)
-        {
-            return unchecked((uint)System.Runtime.InteropServices.Marshal.GetHRForException(ex1));
-        }
-
     }
 
 

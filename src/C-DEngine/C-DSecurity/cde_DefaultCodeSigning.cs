@@ -11,9 +11,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-#if !CDE_STANDARD // PKCS on .Net Standard requires additional nuget package: must allow running without dependency
-using System.Security.Cryptography.Pkcs;
-#endif
 
 namespace nsCDEngine.Security
 {
@@ -491,9 +488,6 @@ namespace nsCDEngine.Security
                     }
                     if (verifyIntegrity)
                     {
-#if !CDE_STANDARD
-                        var signedCms = new SignedCms();
-#else
                         // .Net Standard requires System.Security.Cryptography.Pkcs NuGet package for this functionality (also part of Microsoft.Windows.Compatibility): make this optional
                         dynamic signedCms = null;
                         System.Reflection.Assembly pkcsAssembly = null;
@@ -535,7 +529,6 @@ namespace nsCDEngine.Security
                         {
                             return null;
                         }
-#endif
                         if (verifyIntegrity)
                         {
                             try
@@ -728,7 +721,7 @@ namespace nsCDEngine.Security
         private static bool DontVerifyTrust;
         private static bool VerifyTrustPath;
         private static bool DontVerifyIntegrity;
-        private static ICDESystemLog MySYSLOG = null;
+        private ICDESystemLog MySYSLOG = null;
 
         public string GetAppCert(bool bDontVerifyTrust = false, string pFromFile = null, bool bVerifyTrustPath = true, bool bDontVerifyIntegrity = false)
         {

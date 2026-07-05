@@ -1150,8 +1150,6 @@ namespace nsCDEngine.Communication
 
         #region Cloud Handling
 
-#if CDE_USEWSS8
-
         /// <summary>
         /// Processes requests coming from IIS/Cloud based nodes
         /// </summary>
@@ -1212,7 +1210,6 @@ namespace nsCDEngine.Communication
             }
             return null;
         }
-#endif
 
         /// <summary>
         /// Register Events to determine if a cloud node is up or down

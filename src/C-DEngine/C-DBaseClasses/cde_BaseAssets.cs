@@ -67,7 +67,6 @@ namespace nsCDEngine.BaseClasses
                     }
                     if (!pDLLName.Contains(Path.DirectorySeparatorChar))
                         pDLLName = Path.Combine(AppDomain.CurrentDomain.RelativeSearchPath ?? AppDomain.CurrentDomain.BaseDirectory, pDLLName);
-                    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
                     var pLoader = new CryptoReferenceLoader();
 
                     tL = pLoader.ScanLibrary(pDLLName, out TSM tTSM, out tCryptoAssembly);
@@ -137,11 +136,6 @@ namespace nsCDEngine.BaseClasses
             }
             return null;
         }
-        static Assembly CurrentDomain_ReflectionOnlyAssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            var name = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
-            return Assembly.ReflectionOnlyLoad(name);
-        }
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         /// <summary>   Gets or sets a message describing the crypto load status. </summary>
@@ -149,7 +143,6 @@ namespace nsCDEngine.BaseClasses
         /// <value> A message describing the crypto load. if null loading was successful </value>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         public static string CryptoLoadMessage { private set; get; } = null; //if not null, loading of crypto failed and node must decide what to do
-        internal static bool PlatformDoesNotSupportReflectionOnlyLoadFrom;
         static readonly List<string> _KnownInterfaces = new () { "ICDECrypto", "ICDESecrets", "ICDEScopeManager", "ICDECodeSigning", "ICDEActivation" };
         internal class CryptoReferenceLoader : MarshalByRefObject
         {
@@ -163,54 +156,40 @@ namespace nsCDEngine.BaseClasses
                 Dictionary<string, string> mList = new ();
 
                 tAss = null;
-                if (!PlatformDoesNotSupportReflectionOnlyLoadFrom)
+                try
                 {
-                    try
-                    {
-                        tAss = Assembly.ReflectionOnlyLoadFrom(assemblyPath);
-                    }
-                    catch (PlatformNotSupportedException) //No Assembly.ReflectionOnlyLoadFrom
-                    {
-                        PlatformDoesNotSupportReflectionOnlyLoadFrom = true;
-                    }
+                    tAss = Assembly.LoadFrom(assemblyPath);
                 }
-                if (PlatformDoesNotSupportReflectionOnlyLoadFrom)
+                catch (PlatformNotSupportedException)
                 {
-                    try
+                    //If we end up here, the assembly was compiled with the Native Tool Chain (i.e. XBox Store)
+                    //all names are stripped out and identification of a assembly can only be made by its "interface footprint"
+                    var t = AppDomain.CurrentDomain.GetAssemblies();
+                    foreach (var assembly in t)
                     {
-                        tAss = Assembly.LoadFrom(assemblyPath);
-                    }
-                    catch (PlatformNotSupportedException)
-                    {
-                        //If we end up here, the assembly was compiled with the Native Tool Chain (i.e. XBox Store)
-                        //all names are stripped out and identification of a assembly can only be made by its "interface footprint"
-                        var t = AppDomain.CurrentDomain.GetAssemblies();
-                        foreach (var assembly in t)
+                        try
                         {
-                            try
+                            var CDEPlugins = from tt in assembly.GetTypes()
+                                             let ifs = tt.GetInterfaces()
+                                             where ifs != null && ifs.Length > 0 && (ifs.Any(s => _KnownInterfaces.Contains(s.Name)))
+                                             select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
+                            if (CDEPlugins?.Any() == true)
                             {
-                                var CDEPlugins = from tt in assembly.GetTypes()
-                                                 let ifs = tt.GetInterfaces()
-                                                 where ifs != null && ifs.Length > 0 && (ifs.Any(s => _KnownInterfaces.Contains(s.Name)))
-                                                 select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
-                                if (CDEPlugins?.Any() == true)
-                                {
-                                    var IsCDEAss = from tt in assembly.GetTypes()
-                                                   let ifs = tt.GetInterfaces()
-                                                   where ifs != null && ifs.Length > 0 && (ifs.Any(s => "IBaseEngine".Equals(s.Name)))
-                                                   select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
+                                var IsCDEAss = from tt in assembly.GetTypes()
+                                               let ifs = tt.GetInterfaces()
+                                               where ifs != null && ifs.Length > 0 && (ifs.Any(s => "IBaseEngine".Equals(s.Name)))
+                                               select new { Type = t, tt.Namespace, tt.Name, tt.FullName };
 
-                                    if (!IsCDEAss.Any()) //Contains Crypto interfaces but no IBaseEngines 
-                                    {
-                                        tAss = assembly;
-                                        break;
-                                    }
+                                if (!IsCDEAss.Any()) //Contains Crypto interfaces but no IBaseEngines 
+                                {
+                                    tAss = assembly;
+                                    break;
                                 }
                             }
-                            catch (Exception)
-                            {
-                                //ignore
-                            }
+                        }
+                        catch (Exception)
+                        {
+                            //ignore
                         }
                     }
                 }
@@ -273,6 +252,7 @@ namespace nsCDEngine.BaseClasses
                 if (!value)
                 {
                     MasterSwitchCancelationTokenSource.Cancel();
+                    MasterSwitchCancelationTokenSource.Dispose();
                 }
             }
         }
@@ -395,7 +375,7 @@ namespace nsCDEngine.BaseClasses
                     int revision = int.Parse(fullversion.Split('.')[3]);
                     if (revision > 0)
                     {
-                        DateTime buildDate = new DateTime(2000, 1, 1).AddDays(build).AddSeconds(revision * 2);  //CM: DateTime OK - zone irellevant
+                        DateTime buildDate = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(build).AddSeconds(revision * 2);  //CM: DateTime OK - zone irellevant
                         ret += $"{fullversion} ({buildDate})";
                     }
                     else
@@ -563,11 +543,12 @@ namespace nsCDEngine.BaseClasses
 
             #region step 3: analyse os environment information
             OperatingSystem os = Environment.OSVersion;
-            string jsonIncluded = "JSON:Nuget ";
 #if CDE_INTNEWTON
-            jsonIncluded = "JSON:Internal ";
+            string jsonIncluded = "JSON:Internal ";
+#else
+            string jsonIncluded = "JSON:Nuget ";
 #endif
-            var osInfoForLog = $"C-DEngine version: {BuildVersion} OS:{Environment.OSVersion} OS Version:{os.VersionString} OS Version Numbers: {os.Version.Major}.{os.Version.Minor}.{os.Version.Build}.{os.Version.Revision} {jsonIncluded}Platform:{os.Platform} SP:{os.ServicePack} Processor Count: {Environment.ProcessorCount} IsMono:{(Type.GetType("Mono.Runtime") != null)} IsNetCore:{TheCommonUtils.IsNetCore()} Product: {TheCommonUtils.GetAssemblyProduct(typeof(TheBaseAssets))} ";
+            var osInfoForLog = $"C-DEngine version: {BuildVersion} OS:{Environment.OSVersion} OS Version:{os.VersionString} OS Version Numbers: {os.Version.Major}.{os.Version.Minor}.{os.Version.Build}.{os.Version.Revision} {jsonIncluded}Platform:{os.Platform} SP:{os.ServicePack} Processor Count: {Environment.ProcessorCount} IsNetCore:{TheCommonUtils.IsNetCore()} Product: {TheCommonUtils.GetAssemblyProduct(typeof(TheBaseAssets))} ";
             TheSystemMessageLog.ToCo(osInfoForLog);
             MyServiceHostInfo.OSInfo = osInfoForLog;
             string dotNetInfoForLog = string.Empty;
@@ -593,14 +574,7 @@ namespace nsCDEngine.BaseClasses
             {
                 //intentionally blank
             }
-            if (TheCommonUtils.IsMono()) // CODE REVIEW: Need to clean this up - do we mean Mono or Linux or case-insensitive file systems? CM: No- here we need this to find out if we are running in the MONO Runtime
-            {
-                MyServiceHostInfo.cdePlatform = cdePlatform.MONO_V3;
-            }
-            else
-            {
-                MyServiceHostInfo.cdePlatform = cdePlatform.NETSTD_V21;
-            }
+            MyServiceHostInfo.cdePlatform = cdePlatform.NETCORE;
             TheSystemMessageLog.ToCo($"BaseDir: {MyServiceHostInfo.BaseDirectory} ClientBinRootDirectory: {MyServiceHostInfo.ClientBinRootDirectory}");
             #endregion
 

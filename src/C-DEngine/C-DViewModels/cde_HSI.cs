@@ -394,10 +394,6 @@ namespace nsCDEngine.ViewModels
             CacheMaxAge = 10;
             TokenLifeTime = 3; //By default Token Lifetime is only 3 seconds
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            //StationRoles = new List<string>();
-            //ApplicationRoles = new List<string>();
-#pragma warning restore CS0618 // Type or member is obsolete
             StartupEngines = new List<string>();
             IgnoredEngines = new List<string>();
             IsoEngines = new List<string>();
@@ -1960,15 +1956,7 @@ namespace nsCDEngine.ViewModels
         /// If set to true during startup, this node will try to find Cloud nodes using Bing Search.
         /// </summary>
         public bool EnableBingScan { get; set; }
-        /// <summary>
-        /// True of the C-DEngine is running inside the Mono-Runtime
-        /// </summary>
-        [Obsolete("Consider using TheCommonUtils.cdeIsFileSystemCaseSensitive or IsOnLinux instead", false)] // CODE REVIEW Is this really still needed/encouraged?
-        public bool MonoDetected
-        {
-            get;
-            internal set;
-        }
+
         /// <summary>
         /// True if the C-Dengine is running on Mono
         /// </summary>

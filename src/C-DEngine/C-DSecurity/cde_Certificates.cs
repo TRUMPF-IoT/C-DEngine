@@ -8,9 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-#if !CDE_STANDARD // PKCS on .Net Standard requires additional nuget package: must allow running without dependency
-using System.Security.Cryptography.Pkcs;
-#endif
 
 namespace nsCDEngine.Security
 {
@@ -31,7 +28,7 @@ namespace nsCDEngine.Security
             {
                 TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb = pCertThumb;
                 TheBaseAssets.MyServiceHostInfo.ClientCerts = GetClientCertificatesByThumbprint(pCertThumb);
-                if (TheBaseAssets.MyServiceHostInfo.ClientCerts == null || TheBaseAssets.MyServiceHostInfo.ClientCerts?.Count == 0) //No valid client certifcate found
+                if (TheBaseAssets.MyServiceHostInfo.ClientCerts?.Count == 0) //No valid client certifcate found
                 {
                     TheBaseAssets.MyServiceHostInfo.ClientCertificateThumb = null;
                     TheBaseAssets.MyServiceHostInfo.ClientCerts = null;
@@ -185,19 +182,11 @@ namespace nsCDEngine.Security
                             TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommonUtils", $"Certificate with Thumbprint {cert.Thumbprint} has no PrivateKey", eMsgLevel.l1_Error));
                             continue;
                         }
-#if !CDE_STANDARD
                         var rsa = cert.PrivateKey as RSACryptoServiceProvider;
                         if (rsa != null)
                         {
                             var signed = rsa.SignData(System.Text.Encoding.UTF8.GetBytes("Hello World"), SHA1.Create());
                         }
-#else
-                        if (cert.PrivateKey is RSA rsa)
-                        {
-                            rsa.SignData(System.Text.Encoding.UTF8.GetBytes("Hello World"), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                        }
-
-#endif
                         else
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommonUtils", $"Certificate with Thumbprint {cert.Thumbprint}: unable to verify if private key is usable", eMsgLevel.l1_Error));

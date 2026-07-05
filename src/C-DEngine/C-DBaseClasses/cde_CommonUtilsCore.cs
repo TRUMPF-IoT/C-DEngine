@@ -65,27 +65,6 @@ namespace nsCDEngine.BaseClasses
             return false;
         }
 
-        /// <summary>
-        /// Only use this method if you need to know if you are running in the MONO Runtime. If you want to find out if you are running on Linux use TheCommonUtils.cdeIsFileSystemCaseSensitive or IsOnLinux insted
-        /// </summary>
-        /// <returns>true if CDE runs inside Mono Runtime</returns>
-        public static bool IsMono()
-        {
-            return IsMonoRT();
-        }
-        /// <summary>
-        /// Only use this method if you need to know if you are running in the MONO Runtime. If you want to find out if you are running on Linux use TheCommonUtils.cdeIsFileSystemCaseSensitive or IsOnLinux insted
-        /// </summary>
-        /// <returns>true if CDE runs inside Mono Runtime</returns>
-        public static bool IsMonoRT()
-        {
-            if (TheBaseAssets.MyServiceHostInfo.MonoRTDetected)
-                return TheBaseAssets.MyServiceHostInfo.MonoRTActive;
-            TheBaseAssets.MyServiceHostInfo.MonoRTActive = (Type.GetType("Mono.Runtime") != null);
-            TheBaseAssets.MyServiceHostInfo.MonoRTDetected = true;
-            TheBaseAssets.MySYSLOG?.WriteToLog(new TSM("CommonUtilsCore", $"Is MonoRT Active:{TheBaseAssets.MyServiceHostInfo.MonoRTActive}", eMsgLevel.l6_Debug), 5019);
-            return TheBaseAssets.MyServiceHostInfo.MonoRTActive;
-        }
         #endregion
 
         #region Conversion helpers

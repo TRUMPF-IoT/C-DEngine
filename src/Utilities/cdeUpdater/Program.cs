@@ -107,7 +107,6 @@ namespace cdeUpdater
                         {
                             StartupLog($"Wiping Node: {processDirectory}/ClientBin");
                             Directory.Delete($"{processDirectory}/ClientBin", true);
-#if !CDE_NET35
                             StartupLog($"Wiping Plugins from {processDirectory}");
                             var dir = new DirectoryInfo(processDirectory);
                             foreach (var file in dir.EnumerateFiles("CDMy*.dll"))
@@ -118,7 +117,6 @@ namespace cdeUpdater
                             {
                                 file.Delete();
                             }
-#endif
                         }
                         catch (Exception)
                         {

@@ -5,13 +5,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>cdePackager</RootNamespace>
     <AssemblyName>cdePackager</AssemblyName>
     <Product>cdePackager for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
-    <Copyright>Copyright © 2017-2025 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <Copyright>Copyright © 2017-2026 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
     <PackageDescription>cdePackager for C-DEngine plugins</PackageDescription>
     <PackageIcon>toplogo-128.png</PackageIcon>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>

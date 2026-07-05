@@ -81,7 +81,7 @@ namespace nsCDEngine.Discovery
         /// <param name="e"></param>
         public delegate void InterfaceHandler(object sender, TheIPDef e); //TheNetworkInfo
 
-        internal static string MyHostName;
+        internal static string MyHostName= cdeGetHostName();
         internal static cdeConcurrentDictionary<IPAddress, TheIPDef> AddressTable = new ();
         /// <summary>
         /// Returns all iP addresses of this host hardware
@@ -104,7 +104,6 @@ namespace nsCDEngine.Discovery
             TheBaseAssets.MySYSLOG.WriteToLog(138, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("UPnP", "Enter NetworkInfo"));
 
             TheQueuedSenderRegistry.RegisterHealthTimer(PollInterface);
-            MyHostName = cdeGetHostName();
             TheBaseAssets.MySYSLOG.WriteToLog(139, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("UPnP", "NetworkInfo - HostName :" + MyHostName));
             GetLocalIPs(true);
             if (onNewInterfaceSink != null)

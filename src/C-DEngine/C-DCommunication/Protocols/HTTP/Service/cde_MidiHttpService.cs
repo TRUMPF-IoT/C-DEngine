@@ -94,7 +94,6 @@ namespace nsCDEngine.Communication.HttpService
                         if (mHttpListener != null)
                         {
                             HttpListenerContext context = mHttpListener.GetContext();
-#if CDE_USEWSS8
                             TheBaseAssets.MySYSLOG.WriteToLog(4343, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("HttpMidiServer", $"Incoming Request. IsWebSocketRequest:{context.Request.IsWebSocketRequest}", eMsgLevel.l3_ImportantMessage));
                             if (!TheBaseAssets.MyServiceHostInfo.DisableWebSockets && TheBaseAssets.MyServiceHostInfo.MyStationWSPort > 0 && TheBaseAssets.MyServiceHostInfo.MyStationWSPort == TheBaseAssets.MyServiceHostInfo.MyStationPort
                                && context.Request.IsWebSocketRequest)
@@ -116,7 +115,6 @@ namespace nsCDEngine.Communication.HttpService
                                 }
                             }
                             else
-#endif
                             {
                                 TheCommonUtils.cdeRunAsync("MidiWebServer-HttpProcessing", false, (p) =>
                                 {

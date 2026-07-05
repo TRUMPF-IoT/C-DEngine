@@ -990,9 +990,7 @@ namespace nsCDEngine.Engines
         public void ProcessMessage(TheProcessMessage pMessage)
         {
             if (pMessage == null || pMessage.Message == null || string.IsNullOrEmpty(pMessage.Topic)|| EngineState.IsUnloaded) return;
-            string nCommand = pMessage.Topic;
-            //if (!(GetEngineName().Equals(eEngineName.StorageService) && EngineState.IsService))   //This is for neutral storage REVISIT IN V4 - should be covered by IsAllowedForeinScopeProcessing and IsAllowedUnscopedProcessing Storage needs to have this set in app.config
-                nCommand = TheBaseAssets.MyScopeManager.RemoveScopeID(pMessage.Topic,
+            string nCommand = TheBaseAssets.MyScopeManager.RemoveScopeID(pMessage.Topic,
                     EngineState.IsAllowedUnscopedProcessing ||
                         //Allow Unscoped processing ONLY for Update of Admin Account if request comes from FirstNode subscribers and not into cloud nodes
                         (pMessage.Message != null && !TheBaseAssets.MyServiceHostInfo.IsCloudService && pMessage.Message.IsFirstNode() && eEngineName.ContentService.Equals(pMessage.Message.ENG) && pMessage.Message.TXT?.StartsWith("CDE_UPD_ADMIN")==true),
@@ -1204,7 +1202,6 @@ namespace nsCDEngine.Engines
                                     }
                                 }
                                 break;
-#if !CDE_NET4
                             case nameof(TheThing.MsgApplyPipelineConfig):
                                 {
                                     var originator = pMessage.Message.GetOriginator();
@@ -1239,7 +1236,6 @@ namespace nsCDEngine.Engines
                                     }
                                 }
                                 break;
-#endif
                         }
                         break;
                 }

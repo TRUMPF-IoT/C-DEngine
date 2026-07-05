@@ -73,10 +73,9 @@ namespace nsCDEngine.ISM
         internal static List<TheThreadInfo> GetThreadInfo()
         {
             List<TheThreadInfo> tList = new ();
-#if !CDE_STANDARD //No Thread Name Diagnostics
             try
             {
-                int cid = NativeMethods.GetCurrentThreadId();
+                int cid = Environment.CurrentManagedThreadId;
                 foreach (ProcessThread pt in Process.GetCurrentProcess().Threads)
                 {
                     TheThreadInfo t = new TheThreadInfo()
@@ -87,7 +86,6 @@ namespace nsCDEngine.ISM
                     if (t.ID < MAX_IDS)
                     {
                         t.Name = MyThreadNames[t.ID];
-                        //t.StackFrame = MyThreadStacks[t.ID];
                         if (t.ID == cid)
                         {
                             t.Name = "GETTHREADINFO";
@@ -98,11 +96,6 @@ namespace nsCDEngine.ISM
                             {
                                 t.IsBackground = MyThreadStacks[t.ID].IsBackground;
                                 t.IsPooled = MyThreadStacks[t.ID].IsThreadPoolThread;
-#pragma warning disable CS0618 // System.Diagnostics.StrackTrace requires the thread to be suspended
-                                MyThreadStacks[t.ID].Suspend();
-                                t.StackFrame = TheCommonUtils.GetStackInfo(new System.Diagnostics.StackTrace(MyThreadStacks[t.ID], true));
-                                MyThreadStacks[t.ID].Resume();
-#pragma warning restore CS0618
                             }
                         }
                     }
@@ -121,7 +114,6 @@ namespace nsCDEngine.ISM
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(999, new TSM("Diagnostics", "Thread Diagnostics Failed", eMsgLevel.l1_Error, e.ToString()));
             }
-#endif
             return tList;
         }
 

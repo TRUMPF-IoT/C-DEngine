@@ -161,7 +161,7 @@ namespace nsCDEngine.Communication
                         }
                     }
 
-                    if (myRequestState.MyRequestData.HttpVersion == 1)
+                    if (myRequestState.MyRequestData.HttpVersion == 1.0)
                         myRequestState.request.ProtocolVersion = HttpVersion.Version10;
                     myRequestState.request.AllowAutoRedirect = false;
                     if (!string.IsNullOrEmpty(pData.UserAgent))
@@ -553,7 +553,7 @@ namespace nsCDEngine.Communication
                         TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheREST", "Error setting Proxy credentials:", eMsgLevel.l1_Error, e.ToString()));
                     }
                 }
-                if (myRequestState.MyRequestData.HttpVersion == 1)
+                if (myRequestState.MyRequestData.HttpVersion == 1.0)
                     myRequestState.request.ProtocolVersion = HttpVersion.Version10;
                 myRequestState.request.AllowAutoRedirect = false;
                 myRequestState.request.Accept = "*/*";
@@ -677,7 +677,6 @@ namespace nsCDEngine.Communication
                 finally
                 {
                     CleanUp(myRequestState);
-                    myRequestState = null;
                     TheCommonUtils.CloseOrDispose(tResult?.AsyncWaitHandle);
                 }
             }
@@ -702,7 +701,6 @@ namespace nsCDEngine.Communication
                 finally
                 {
                     CleanUp(myRequestState);
-                    myRequestState = null;
                     TheCommonUtils.CloseOrDispose(tResult?.AsyncWaitHandle);
                 }
             }
@@ -751,7 +749,6 @@ namespace nsCDEngine.Communication
                     finally
                     {
                         CleanUp(tRequestState);
-                        tRequestState = null;
                         TheCommonUtils.CloseOrDispose(asynchronousResult?.AsyncWaitHandle);
                     }
                 }
