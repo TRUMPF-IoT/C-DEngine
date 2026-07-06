@@ -5,7 +5,12 @@
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 using nsCDEngine.BaseClasses;
@@ -948,6 +953,39 @@ namespace nsCDEngine.Engines.ThingService
         }
     }
 
+#if CDE_JSONET
+    internal class ThingPropertyBagConverter : JsonConverter<cdeConcurrentDictionary<string, cdeP>>
+    {
+        public override cdeConcurrentDictionary<string, cdeP> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            // Deserializes the target object using the current options configuration
+            return JsonSerializer.Deserialize<cdeConcurrentDictionary<string, cdeP>>(ref reader, options);
+        }
+
+        public override void Write(Utf8JsonWriter writer, cdeConcurrentDictionary<string, cdeP> value, JsonSerializerOptions options)
+        {
+            if (value == null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            var propBagToWrite = new Dictionary<string, cdePjson>();
+
+            // Strongly typed value allows you to read .GetDynamicEnumerable() directly
+            foreach (var prop in value.GetDynamicEnumerable())
+            {
+                if ((prop.Value.cdeE & 0x10) == 0)
+                {
+                    propBagToWrite.Add(prop.Key, cdePjson.CloneTo(prop.Value));
+                }
+            }
+
+            // Serializes the filtered dictionary to the writer
+            JsonSerializer.Serialize(writer, propBagToWrite, options);
+        }
+    }
+#else
     internal class ThingPropertyBagConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
@@ -973,6 +1011,7 @@ namespace nsCDEngine.Engines.ThingService
             serializer.Serialize(writer, propBagToWrite);
         }
     }
+#endif
 
     /// <summary>
     /// Specifies the algorithm for Throttling of SETP calls

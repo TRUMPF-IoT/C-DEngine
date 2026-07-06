@@ -3,7 +3,11 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #if !CDE_INTNEWTON //JSON.NET from Nuget
+#if !CDE_JSONET
 using Newtonsoft.Json;
+#else
+using System.Text.Json.Serialization;
+#endif
 #else
 using cdeNewtonsoft.Json;
 #endif

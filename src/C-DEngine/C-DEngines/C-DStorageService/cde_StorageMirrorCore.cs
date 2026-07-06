@@ -16,7 +16,11 @@ using nsCDEngine.Engines.StorageService.Model;
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 #pragma warning disable 1591
@@ -2225,7 +2229,75 @@ namespace nsCDEngine.Engines.StorageService
                         {
                             List<SQLFilter> filterList = TheStorageUtilities.CreateFilter(filter);
                             Func<T, bool> deleg = ExpressionBuilder.GetExpression<T>(filterList).Compile();
+#if CDE_JSONET
+                            using (FileStream fileStream = new(cacheFile, FileMode.Open, FileAccess.Read))
+                            {
+                                if (fileStream.Length > 0)
+                                {
+                                    // Options to handle flexible naming (e.g., camelCase in JSON vs PascalCase in C#)
+                                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
+                                    // Read the stream efficiently into a rented buffer or array
+                                    byte[] buffer = new byte[fileStream.Length];
+                                    fileStream.Read(buffer);
+
+                                    Utf8JsonReader reader = new Utf8JsonReader(buffer);
+
+                                    // Advance to the start of the collection
+                                    if (reader.Read() && reader.TokenType == JsonTokenType.StartArray)
+                                    {
+                                        while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+                                        {
+                                            T record = null;
+
+                                            if (reader.TokenType == JsonTokenType.StartObject)
+                                            {
+                                                // Check if we need to filter/skip before fully parsing
+                                                if (deleg != null)
+                                                {
+                                                    // Using JsonDocument lets us look inside or parse on the fly 
+                                                    // while keeping memory low and allowing the reader to skip ahead naturally
+                                                    using (JsonDocument doc = JsonDocument.ParseValue(ref reader))
+                                                    {
+                                                        T candidate = doc.Deserialize<T>(options);
+                                                        if (candidate != null && deleg.Invoke(candidate))
+                                                        {
+                                                            records.Add(candidate);
+                                                        }
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    // Parse directly if there is no delegate filter
+                                                    record = JsonSerializer.Deserialize<T>(ref reader, options);
+                                                    if (record != null) records.Add(record);
+                                                }
+                                            }
+                                            else if (reader.TokenType == JsonTokenType.String && IsCacheEncrypted)
+                                            {
+                                                string encryptedItem = reader.GetString();
+                                                if (!string.IsNullOrEmpty(encryptedItem))
+                                                {
+                                                    byte[] itemAsBytes = Convert.FromBase64String(encryptedItem);
+                                                    string decryptedItem = TheCommonUtils.Decrypt(itemAsBytes, TheBaseAssets.MySecrets.GetNodeKey());
+                                                    record = JsonSerializer.Deserialize<T>(decryptedItem, options);
+
+                                                    if (record != null && (deleg == null || deleg.Invoke(record)))
+                                                    {
+                                                        records.Add(record);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    tResponse.HasErrors = true;
+                                    tResponse.ErrorMsg = "Cache file is empty";
+                                }
+                            }
+#else
                             // Avoids loading entire file into memory at once if possible
                             using (FileStream fileStream = new(cacheFile, FileMode.Open, FileAccess.Read))
                             using (StreamReader streamReader = new(fileStream))
@@ -2268,6 +2340,7 @@ namespace nsCDEngine.Engines.StorageService
                                     tResponse.ErrorMsg = "Cache file is empty";
                                 }
                             }
+#endif
                         }
                         else
                         {

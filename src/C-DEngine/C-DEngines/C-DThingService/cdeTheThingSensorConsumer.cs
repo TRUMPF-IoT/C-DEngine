@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-﻿using nsCDEngine.Communication;
+using nsCDEngine.Communication;
 using nsCDEngine.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,12 @@ using nsCDEngine.BaseClasses;
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
@@ -61,7 +66,11 @@ namespace nsCDEngine.Engines.ThingService
             /// </summary>
             public bool? ReplaceExistingThing { get; set; }
 
+#if CDE_JSONET
+            [JsonExtensionData]
+#else
             [JsonExtensionData(ReadData = true, WriteData = true)]
+#endif
             public Dictionary<string, object> ExtensionData { get; set; }
             public object GetValueFromExtensionData(string name)
             {

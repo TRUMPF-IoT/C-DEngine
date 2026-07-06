@@ -50,7 +50,7 @@
 		<NewtonsoftSharedInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('cdeNewtonsoft.JSON'))</NewtonsoftSharedInSolution>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(NewtonsoftSharedInSolution)' == 'True'">
-		<DefineConstants>CDE_INTNEWTON;$(DefineConstants)</DefineConstants>
+		<DefineConstants>CDE_INTNEWTON;nCDE_JSONET;$(DefineConstants)</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup>
 	  <NoWarn>1701;1702;CS1591</NoWarn>

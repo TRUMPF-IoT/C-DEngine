@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -11,8 +10,10 @@ using System.Text;
 using cdeNewtonsoft.Json;
 using jsonNet = cdeNewtonsoft.Json;
 #else
+#if !CDE_JSONET
 using Newtonsoft.Json;
 using jsonNet = Newtonsoft.Json;
+#endif
 #endif
 
 namespace nsCDEngine.BaseClasses
@@ -22,7 +23,10 @@ namespace nsCDEngine.BaseClasses
     /// </summary>
     public static partial class TheCommonUtils
     {
-#region Serialization Helpers
+        #region Serialization Helpers
+#if CDE_JSONET
+        internal static JsonSerializerOptions cdeJsonEtConfig = new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace };
+#else
         internal static JsonSerializerSettings cdeNewtonJSONConfig = new ()
         {
             ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
@@ -32,6 +36,8 @@ namespace nsCDEngine.BaseClasses
             ObjectCreationHandling = ObjectCreationHandling.Replace,
             MissingMemberHandling = MissingMemberHandling.Ignore,
         };
+        static JsonSerializer _objectSerializer;
+#endif
 
         /// <summary>
         /// Serializes an object/class to JSON.
@@ -41,13 +47,10 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static string SerializeObjectToJSONString<T>(T tData)
         {
-#if CDE_MEADOW
-            if (IsMeadowFeather())
-            {
-                string t = System.Text.Json.JsonSerializer.Serialize(tData);
-                return t;
-            }
-#endif
+#if CDE_JSONET
+            string t = System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfig);
+            return t;
+#else
             if (_objectSerializer == null)
             {
                 var jsonSerializer = JsonSerializer.CreateDefault(cdeNewtonJSONConfig);
@@ -65,8 +68,8 @@ namespace nsCDEngine.BaseClasses
             }
 
             return sw.ToString();
+#endif
         }
-        static JsonSerializer _objectSerializer;
         /// <summary>
         /// Deserializes an object from a JSON string
         /// </summary>
@@ -76,15 +79,13 @@ namespace nsCDEngine.BaseClasses
         public static T DeserializeJSONStringToObject<T>(string json)
         {
             if (json == null) return default;
-#if CDE_MEADOW
-            if (IsMeadowFeather())
-            {
-                T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json);
-                return tDataf;
-            }
-#endif
+#if CDE_JSONET
+            T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json);
+            return tDataf;
+#else
             T tData = JsonConvert.DeserializeObject<T>(json, cdeNewtonJSONConfig);
             return tData;
+#endif
         }
 
         /// <summary>
@@ -95,12 +96,20 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static string JsonConvertSerializeObject<T>(T tData)
         {
+#if CDE_JSONET
+            return System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfig);
+#else
             return JsonConvert.SerializeObject(tData);
+#endif
         }
 
         internal static string SerializeObjectToJSONStringM<T>(T tData)
         {
+#if CDE_JSONET
+            return System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfig);
+#else
             return JsonConvert.SerializeObject(tData, Formatting.None, cdeNewtonJSONConfig);
+#endif
         }
 
         /// <summary>
@@ -111,10 +120,23 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static object GetJSONValueByPath(object parsedJson, string jsonPath)
         {
+#if CDE_JSONET
+            JObject jsonJObject = parsedJson as JObject;
+#else
             var jsonJObject = parsedJson as jsonNet.Linq.JObject;
+#endif
             return jsonJObject?.SelectToken(jsonPath);
         }
 
+#if CDE_JSONET
+        internal static void SerializeObjectToJSONFileInternal<T>(string fileName, T tData)
+        {
+            using (FileStream fs = File.Create(fileName))
+            {
+                JsonSerializer.Serialize(fs, tData, cdeJsonEtConfig);
+            }
+        }
+#else
         static JsonSerializer _fileSerializer;
         // This function does not verify that the fileName is under the ClientBin directory. Internal use only and only when fileName is known to be under ClientBin!
         internal static void SerializeObjectToJSONFileInternal<T>(string fileName, T tData)
@@ -136,6 +158,7 @@ namespace nsCDEngine.BaseClasses
                 writeFile.Flush();
             }
         }
+#endif
 #endregion
 
     }

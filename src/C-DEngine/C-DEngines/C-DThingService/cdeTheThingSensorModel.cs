@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-﻿using nsCDEngine.BaseClasses;
+using nsCDEngine.BaseClasses;
 using nsCDEngine.ViewModels;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +11,12 @@ using System;
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
@@ -36,7 +41,11 @@ namespace nsCDEngine.Engines.ThingService
             public string FriendlyName { get; set; }
             public string SemanticTypes { get; set; }
 
+#if CDE_JSONET
+            [JsonExtensionData]
+#else
             [JsonExtensionData(ReadData = true, WriteData = true)]
+#endif
             public Dictionary<string, object> ExtensionData { get; set; }
 
             public TheSensorMeta() { }

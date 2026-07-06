@@ -15,7 +15,12 @@ using System.Threading.Tasks;
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 // ReSharper disable All
@@ -192,7 +197,11 @@ namespace nsCDEngine.Engines.ThingService
             /// <summary>
             /// Contains additional, provider specific meta data about the sensor.
             /// </summary>
+#if CDE_JSONET
+            [JsonExtensionData]
+#else
             [JsonExtensionData(ReadData = true, WriteData = true)]
+#endif
             public Dictionary<string, object> ExtensionData { get; set; }
 
             public TheSensorSourceInfo() { }
@@ -248,7 +257,11 @@ namespace nsCDEngine.Engines.ThingService
             public TheThingReference TargetThing { get; set; } // can be null on subscribe request (defaults to reference in the subscribe message)
             public string TargetProperty { get; set; }
 
+#if CDE_JSONET
+            [JsonExtensionData]
+#else
             [JsonExtensionData(ReadData = true, WriteData = true)]
+#endif
             public Dictionary<string, object> ExtensionData { get; set; }
 
             public TheSensorSubscription() { }

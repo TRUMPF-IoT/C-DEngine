@@ -15,7 +15,12 @@ using System.IO;
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 using System.Threading.Tasks;
@@ -349,7 +354,11 @@ namespace nsCDEngine.Engines.ThingService
             public string Units { get; set; }
             public double? RangeMin { get; set; }
             public double? RangeMax { get; set; }
+#if CDE_JSONET
+            [JsonExtensionData]
+#else
             [JsonExtensionData(ReadData = true, WriteData = true)]
+#endif
             public Dictionary<string, object> ExtensionData { get; set; }
 
             public TheConfigurationProperty()
@@ -1024,7 +1033,7 @@ namespace nsCDEngine.Engines.ThingService
 
             return thingID;
         }
-        #endregion
+#endregion
 
     }
 
