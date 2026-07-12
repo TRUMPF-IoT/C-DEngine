@@ -1,10 +1,9 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
 
-using System.Globalization;
+using System;
 using System.IO;
-using System.Text;
 
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
@@ -29,7 +28,119 @@ namespace nsCDEngine.BaseClasses
     {
         #region Serialization Helpers
 #if CDE_JSONET
-        internal static JsonSerializerOptions cdeJsonEtConfig = new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull, PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace };
+        internal static JsonSerializerOptions cdeJsonEtConfig = new JsonSerializerOptions 
+        { 
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, 
+            PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+            PropertyNameCaseInsensitive = true,
+            IncludeFields =true,
+            MaxDepth=64,
+            AllowTrailingCommas=true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString ,
+            Converters = { new ObjectToInferredTypesConverter() }
+        };
+        internal static JsonSerializerOptions cdeJsonEtConfigNoCon = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+            PropertyNameCaseInsensitive = true,
+            IncludeFields = true,
+            RespectNullableAnnotations=false,
+            MaxDepth = 64,
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        };
+
+        internal class ObjectToInferredTypesConverter : JsonConverter<object>
+        {
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                // Check if the current JSON token is explicitly null
+                if (reader.TokenType == JsonTokenType.Null)
+                {
+                    return null; // Directly returns C# null, avoiding JsonElement creation
+                }
+
+                if (typeToConvert == typeof(string))
+                {
+                    return reader.TokenType switch
+                    {
+                        JsonTokenType.String => reader.GetString(),
+                        _ => JsonDocument.ParseValue(ref reader).RootElement.GetRawText()
+                    };
+                }
+                else
+                {
+                    return reader.TokenType switch
+                    {
+                        JsonTokenType.String => reader.GetString(),
+                        JsonTokenType.True => true,
+                        JsonTokenType.False => false,
+                        JsonTokenType.Number => reader.TryGetInt64(out long l) ? l : reader.GetDouble(),
+                        _ => JsonDocument.ParseValue(ref reader).RootElement.Clone()
+                    };
+                }
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) =>
+                JsonSerializer.Serialize(writer, value, value.GetType(), cdeJsonEtConfigNoCon);
+        }
+        internal class cdeStringConverter : JsonConverter<string>
+        {
+            public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                // If it's a number, convert it to a string directly
+                if (reader.TokenType == JsonTokenType.Number)
+                {
+                    using (var doc = JsonDocument.ParseValue(ref reader))
+                    {
+                        return doc.RootElement.ToString();
+                    }
+                }
+
+                // If it's a boolean, null, or other primitive, you can expand this block if needed
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    return reader.GetString();
+                }
+
+                // Fallback default behavior
+                using (var doc = JsonDocument.ParseValue(ref reader))
+                {
+                    return doc.RootElement.ToString();
+                }
+            }
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+            {
+                writer.WriteStringValue(value);
+            }
+        }
+        extension(JsonNode node)
+        {
+            private JsonNode? SelectToken(string path)
+            {
+                if (node == null || string.IsNullOrWhiteSpace(path)) return null;
+
+                string[] parts = path.Split('.');
+                JsonNode? current = node;
+
+                foreach (var part in parts)
+                {
+                    // Safely navigate into the JsonObject using the indexer
+                    current = current?[part];
+
+                    if (current == null) return null; // Path segment does not exist
+                }
+
+                return current;
+            }
+        }
+
 #else
         internal static JsonSerializerSettings cdeNewtonJSONConfig = new ()
         {
@@ -62,8 +173,8 @@ namespace nsCDEngine.BaseClasses
                 _objectSerializer = jsonSerializer;
             }
 
-            StringBuilder sb = new (256);
-            StringWriter sw = new (sb, CultureInfo.InvariantCulture);
+            System.Text.StringBuilder sb = new (256);
+            StringWriter sw = new (sb, System.Globalization.CultureInfo.InvariantCulture);
             using (var jsonWriter = new JsonTextWriter(sw))
             {
                 jsonWriter.Formatting = _objectSerializer.Formatting;
@@ -84,7 +195,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (json == null) return default;
 #if CDE_JSONET
-            T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json);
+            T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json, cdeJsonEtConfig);
             return tDataf;
 #else
             T tData = JsonConvert.DeserializeObject<T>(json, cdeNewtonJSONConfig);

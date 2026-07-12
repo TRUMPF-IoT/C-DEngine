@@ -1269,6 +1269,9 @@ namespace nsCDEngine.Engines
     {
         public string EngineName;
         public string FriendlyName;
+#if CDE_JSONET
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
         public Type EngineType;
         public string EngineID;
         public double Version;

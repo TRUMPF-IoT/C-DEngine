@@ -25,10 +25,6 @@ using System.Linq;
 // ReSharper disable StringIndexOfIsCultureSpecific.2
 #pragma warning disable CS1591    //TODO: Remove and document public methods
 
-#if CDE_USEZLIB
-using CDEngine.CDUtils.Zlib;
-#endif
-
 namespace nsCDEngine.BaseClasses
 {
     /// <summary>
@@ -1209,7 +1205,6 @@ namespace nsCDEngine.BaseClasses
         public static byte[] cdeCompressString(string sourceString)
         {
             byte[] compressed = null;
-#if !CDE_USEZLIB
             try
             {
                 using (var outStream = new MemoryStream())
@@ -1225,18 +1220,8 @@ namespace nsCDEngine.BaseClasses
                 }
             }
             catch (EntryPointNotFoundException)
-#endif
             {
-#if CDE_USEZLIB
-                using (var outStream = new MemoryStream())
-                {
-                    using (var tinyStream = new CDEngine.CDUtils.Zlib.GZipStream(outStream, CDEngine.CDUtils.Zlib.CompressionMode.Compress))
-                    using (var mStream = new MemoryStream(CUTF8String2Array(sourceString)))
-                        mStream.CopyTo(tinyStream);
-
-                    compressed = outStream.ToArray();
-                }
-#endif
+                //intended
             }
             return compressed;
         }
@@ -1251,7 +1236,6 @@ namespace nsCDEngine.BaseClasses
         public static byte[] cdeCompressBuffer(byte[] pBuffer, int index, int count)
         {
             byte[] bRes = null;
-#if !CDE_USEZLIB
             try
             {
                 using (var ms = new MemoryStream())
@@ -1262,16 +1246,8 @@ namespace nsCDEngine.BaseClasses
                 }
             }
             catch (EntryPointNotFoundException)
-#endif
             {
-#if CDE_USEZLIB
-                using (var ms = new MemoryStream())
-                {
-                    using (var zip = new CDEngine.CDUtils.Zlib.GZipStream(ms, CDEngine.CDUtils.Zlib.CompressionMode.Compress, true))
-                        zip.Write(pBuffer, pBufPos, pBufLen);
-                    bRes = ms.ToArray();
-                }
-#endif
+                //intended
             }
             return bRes;
         }
@@ -1295,7 +1271,6 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static string cdeDecompressToString(byte[] sourceArray, int index, int count)
         {
-#if !CDE_USEZLIB
             try
             {
                 using (var inStream = new MemoryStream(sourceArray, index, count))
@@ -1308,20 +1283,10 @@ namespace nsCDEngine.BaseClasses
                 }
             }
             catch (EntryPointNotFoundException)
-#endif
             {
-#if CDE_USEZLIB
-                using (var inStream = new MemoryStream(sourceArray, index, count))
-                using (var bigStream = new CDEngine.CDUtils.Zlib.GZipStream(inStream, CDEngine.CDUtils.Zlib.CompressionMode.Decompress))
-                using (var bigStreamOut = new MemoryStream())
-                {
-                    bigStream.CopyTo(bigStreamOut);
-                    return CArray2UTF8String(bigStreamOut.ToArray());
-                }
-#else
-                return null;
-#endif
+                //intended
             }
+            return null;
         }
         #endregion
 

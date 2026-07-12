@@ -25,11 +25,9 @@
 		<ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
 		<!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
 		<PackageOutputPath>$(SolutionDir)Nugets</PackageOutputPath>
-		<DefineConstants>TRACE;CDE_SYSLOG;$(DefineConstants)</DefineConstants>
+		<DefineConstants>TRACE;CDE_SYSLOG;CDE_JSONET</DefineConstants>
 		<LangVersion>preview</LangVersion>
 		<DocumentationFile>$(OutputPath)C-DEngine.xml</DocumentationFile>
-		<cdeNewtonSoftDefineConstants>HAVE_ADO_NET;HAVE_APP_DOMAIN;HAVE_ASYNC;HAVE_BIG_INTEGER;HAVE_BINARY_FORMATTER;HAVE_BINARY_SERIALIZATION;HAVE_BINARY_EXCEPTION_SERIALIZATION;HAVE_CHAR_TO_LOWER_WITH_CULTURE;HAVE_CHAR_TO_STRING_WITH_CULTURE;HAVE_COM_ATTRIBUTES;HAVE_COMPONENT_MODEL;HAVE_CONCURRENT_COLLECTIONS;HAVE_COVARIANT_GENERICS;HAVE_DATA_CONTRACTS;HAVE_DATE_TIME_OFFSET;HAVE_DB_NULL_TYPE_CODE;HAVE_DYNAMIC;HAVE_EMPTY_TYPES;HAVE_ENTITY_FRAMEWORK;HAVE_EXPRESSIONS;HAVE_FAST_REVERSE;HAVE_FSHARP_TYPES;HAVE_FULL_REFLECTION;HAVE_GUID_TRY_PARSE;HAVE_HASH_SET;HAVE_ICLONEABLE;HAVE_ICONVERTIBLE;HAVE_IGNORE_DATA_MEMBER_ATTRIBUTE;HAVE_INOTIFY_COLLECTION_CHANGED;HAVE_INOTIFY_PROPERTY_CHANGING;HAVE_ISET;HAVE_LINQ;HAVE_MEMORY_BARRIER;HAVE_METHOD_IMPL_ATTRIBUTE;HAVE_NON_SERIALIZED_ATTRIBUTE;HAVE_READ_ONLY_COLLECTIONS;HAVE_SECURITY_SAFE_CRITICAL_ATTRIBUTE;HAVE_SERIALIZATION_BINDER_BIND_TO_NAME;HAVE_STREAM_READER_WRITER_CLOSE;HAVE_STRING_JOIN_WITH_ENUMERABLE;HAVE_TIME_SPAN_PARSE_WITH_CULTURE;HAVE_TIME_SPAN_TO_STRING_WITH_CULTURE;HAVE_TIME_ZONE_INFO;HAVE_TRACE_WRITER;HAVE_TYPE_DESCRIPTOR;HAVE_UNICODE_SURROGATE_DETECTION;HAVE_VARIANT_TYPE_PARAMETERS;HAVE_VERSION_TRY_PARSE;HAVE_XLINQ;HAVE_XML_DOCUMENT;HAVE_XML_DOCUMENT_TYPE;HAVE_CONCURRENT_DICTIONARY</cdeNewtonSoftDefineConstants>
-		<DefineConstants>$(DefineConstants);$(cdeNewtonSoftDefineConstants)</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -47,12 +45,6 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<NewtonsoftSharedInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('cdeNewtonsoft.JSON'))</NewtonsoftSharedInSolution>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(NewtonsoftSharedInSolution)' == 'True'">
-		<DefineConstants>CDE_INTNEWTON;nCDE_JSONET;$(DefineConstants)</DefineConstants>
-	</PropertyGroup>
-	<PropertyGroup>
 	  <NoWarn>1701;1702;CS1591</NoWarn>
 	  <NoWarn>1701;1702;CS1591</NoWarn>
 	</PropertyGroup>
@@ -65,9 +57,7 @@
 
 	<Target Name="GetPackagingOutputs" />
 
-	<Import Project="..\Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems" Label="Shared" Condition="$(DefineConstants.Contains('CDE_INTNEWTON'))" />
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.JSON" Version="13.0.4" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))" />
 		<PackageReference Include="System.Drawing.Common" Version="10.0.9" />
 	</ItemGroup>
 
@@ -79,12 +69,6 @@
 	</Target>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<!--<Exec Command="if not exist $(TargetDir)merged\ md $(TargetDir)merged\" />
-    <Exec Command="$(ILMergeConsolePath) $(TargetPath) /out:$(TargetDir)merged\$(AssemblyName).dll $(PkgNewtonsoft_JSON)\lib\$(TargetFramework)\Newtonsoft.Json.dll /internalize" />
-    <Exec Command="del $(TargetPath)" />
-    <Exec Command="del $(TargetDir)$(AssemblyName).pdb" />
-    <Exec Command="move $(TargetDir)merged\$(AssemblyName).dll $(TargetDir)" />
-    <Exec Command="move $(TargetDir)merged\$(AssemblyName).pdb $(TargetDir)" />-->
 		<Exec Command="call &quot;$(ProjectDir)..\..\BuildTools\signMeSha.bat&quot; &quot;$(TargetDir)$(TargetFileName)&quot;" />
 	</Target>
 </Project>

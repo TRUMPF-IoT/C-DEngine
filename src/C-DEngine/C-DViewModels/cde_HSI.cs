@@ -2482,6 +2482,9 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Full Type name of the Plugin Type - Required to load resources from the Plugin
         /// </summary>
+#if CDE_JSONET
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
         public Type EngineType { get; set; }  //This should not be public or deserializing of this property will crash during CDE_GET_SYSTEMINFO. Alternative TheEngineStateClone has to be used for deserialization
         /// <summary>
         /// Station URL of this service
