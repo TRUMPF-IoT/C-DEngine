@@ -163,7 +163,7 @@ namespace nsCDEngine.PluginManagement
                         string tFinalFile = tFile;
                         try
                         {
-                            if (tFile.StartsWith("@"))  //If a Manifest file starts with @ this function expects this syntax: "@<platform>@<FileName>"
+                            if (tFile.StartsWith('@'))  //If a Manifest file starts with @ this function expects this syntax: "@<platform>@<FileName>"
                             {
                                 var tC = tFile.Split('@');
                                 if (tC.Length < 3)

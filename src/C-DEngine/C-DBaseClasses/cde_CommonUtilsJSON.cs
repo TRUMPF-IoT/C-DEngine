@@ -10,7 +10,11 @@ using System.Text;
 using cdeNewtonsoft.Json;
 using jsonNet = cdeNewtonsoft.Json;
 #else
-#if !CDE_JSONET
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
 using jsonNet = Newtonsoft.Json;
 #endif
@@ -121,11 +125,12 @@ namespace nsCDEngine.BaseClasses
         public static object GetJSONValueByPath(object parsedJson, string jsonPath)
         {
 #if CDE_JSONET
-            JObject jsonJObject = parsedJson as JObject;
+            JsonObject jsonJObject = parsedJson as JsonObject;
+            return jsonJObject?.SelectToken(jsonPath);
 #else
             var jsonJObject = parsedJson as jsonNet.Linq.JObject;
-#endif
             return jsonJObject?.SelectToken(jsonPath);
+#endif
         }
 
 #if CDE_JSONET

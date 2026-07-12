@@ -744,7 +744,6 @@ namespace nsCDEngine.ViewModels
 
     /// <summary>
     /// Defines a Thread-Safe Concurrent Directory
-    /// On Silverlight and .NET35 this uses a normal Directory that can be locked with the MyLock object inside this class
     /// </summary>
     /// <typeparam name="TKey">Type of the Key</typeparam>
     /// <typeparam name="TValue">Type of the Value</typeparam>

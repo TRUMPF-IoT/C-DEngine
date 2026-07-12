@@ -545,15 +545,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static void CloseOrDispose(WaitHandle asyncWaitHandle)
         {
-#if !NET35
             asyncWaitHandle?.Dispose();
-#else
-            try
-            {
-                asyncWaitHandle?.Close();
-            }
-            catch { }
-#endif
         }
 
         internal class TaskKPIs
