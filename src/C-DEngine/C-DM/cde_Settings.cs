@@ -218,6 +218,7 @@ namespace nsCDEngine.ISM
                 if (!tSettings.ContainsKey(nameof(TheServiceHostInfo.RequireCDEActivation)) || !CU.CBool(tSettings.ContainsKey(nameof(TheServiceHostInfo.RequireCDEActivation)))) //If DontVerifyTrust was previously set to true - do not allow reset!
                     tSettings[nameof(TheServiceHostInfo.RequireCDEActivation)] = TheBaseAssets.MyServiceHostInfo.RequireCDEActivation.ToString();
                 tSettings["IsTLSEnforced"] = TheBaseAssets.MyServiceHostInfo.IsSSLEnforced.ToString();
+                tSettings["UseStrictJSON"]= TheBaseAssets.MyServiceHostInfo.UseStrictJSON.ToString();
                 tSettings["AllowRemoteAdministration"] = TheBaseAssets.MyServiceHostInfo.AllowRemoteAdministration.ToString();
                 tSettings["AllowRemoteThingCreation"] = TheBaseAssets.MyServiceHostInfo.AllowRemoteThingCreation.ToString();
                 tSettings["BlockCloudNMI"] = TheBaseAssets.MyServiceHostInfo.IsCloudNMIBlocked.ToString();
@@ -802,6 +803,9 @@ namespace nsCDEngine.ISM
             if (TheBaseAssets.MyScopeManager.IsScopingEnabled)
                 TheBaseAssets.MyServiceHostInfo.RequiresConfiguration = false;
 
+            temp = GetArgOrEnv(CmdArgs, "UseStrictJSON");
+            if (!string.IsNullOrEmpty(temp))
+                TheBaseAssets.MyServiceHostInfo.UseStrictJSON = CU.CBool(temp);
             temp = GetArgOrEnv(CmdArgs, "IsTLSEnforced");
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.IsSSLEnforced = CU.CBool(temp);

@@ -28,7 +28,20 @@ namespace nsCDEngine.BaseClasses
     {
         #region Serialization Helpers
 #if CDE_JSONET
-        internal static JsonSerializerOptions cdeJsonEtConfig = new JsonSerializerOptions 
+        internal static JsonSerializerOptions cdeJsonEtConfig = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+            PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+            PropertyNameCaseInsensitive = true,
+            IncludeFields = true,
+            MaxDepth = 64,
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString|JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            Converters = { new ObjectToInferredTypesConverter(), new cdeGuidConverter(), new cdeStringConverter(), new cdeBooleanConverter() }
+        };
+        internal static JsonSerializerOptions cdeJsonEtConfigStrict = new JsonSerializerOptions 
         { 
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, 
             PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
@@ -38,8 +51,8 @@ namespace nsCDEngine.BaseClasses
             MaxDepth=64,
             AllowTrailingCommas=true,
             ReadCommentHandling = JsonCommentHandling.Skip,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString ,
-            Converters = { new ObjectToInferredTypesConverter() }
+            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            Converters = { new ObjectToInferredTypesConverter() } 
         };
         internal static JsonSerializerOptions cdeJsonEtConfigNoCon = new JsonSerializerOptions
         {
@@ -52,8 +65,57 @@ namespace nsCDEngine.BaseClasses
             MaxDepth = 64,
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
         };
+        internal static JsonSerializerOptions cdeJsonEtConfigNMI = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, //Must send defaults to NMI to avoid undefined errors
+            PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+            PropertyNameCaseInsensitive = true,
+            IncludeFields = true,
+            RespectNullableAnnotations = false,
+            MaxDepth = 64,
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+        };
+
+        internal class cdeBooleanConverter : JsonConverter<bool>
+        {
+            public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                // Handle native JSON boolean literals: true or false
+                if (reader.TokenType == JsonTokenType.True) return true;
+                if (reader.TokenType == JsonTokenType.False) return false;
+
+                // Handle string values: "true" or "false"
+                if (reader.TokenType == JsonTokenType.String)
+                {
+                    string? value = reader.GetString();
+
+                    if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    if (string.Equals(value, "false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+
+                    throw new JsonException($"Cannot convert string value '{value}' to a boolean.");
+                }
+
+                // Fallback for unexpected token types
+                throw new JsonException($"Unexpected token type '{reader.TokenType}' when parsing a boolean.");
+            }
+
+            public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
+            {
+                // Always write out standard JSON boolean literals
+                writer.WriteBooleanValue(value);
+            }
+        }
 
         internal class ObjectToInferredTypesConverter : JsonConverter<object>
         {
@@ -89,7 +151,7 @@ namespace nsCDEngine.BaseClasses
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options) =>
                 JsonSerializer.Serialize(writer, value, value.GetType(), cdeJsonEtConfigNoCon);
         }
-        internal class cdeStringConverter : JsonConverter<string>
+        public class cdeStringConverter : JsonConverter<string>
         {
             public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
@@ -140,7 +202,32 @@ namespace nsCDEngine.BaseClasses
                 return current;
             }
         }
+        public class cdeGuidConverter : JsonConverter<Guid>
+        {
+            public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                // Try reading it via default behavior first for optimal performance
+                if (reader.TryGetGuid(out Guid guid))
+                {
+                    return guid;
+                }
 
+                // Fallback: Parse the raw string value (handles braces, spaces, etc.)
+                string? rawValue = reader.GetString();
+                if (Guid.TryParse(rawValue, out Guid parsedGuid))
+                {
+                    return parsedGuid;
+                }
+
+                throw new JsonException($"The JSON value '{rawValue}' cannot be converted to a System.Guid.");
+            }
+
+            public override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
+            {
+                // Writes it back as a standard hyphenated string (without braces)
+                writer.WriteStringValue(value.ToString());
+            }
+        }
 #else
         internal static JsonSerializerSettings cdeNewtonJSONConfig = new ()
         {
@@ -163,8 +250,7 @@ namespace nsCDEngine.BaseClasses
         public static string SerializeObjectToJSONString<T>(T tData)
         {
 #if CDE_JSONET
-            string t = System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfig);
-            return t;
+            return System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfigNMI);
 #else
             if (_objectSerializer == null)
             {
@@ -185,6 +271,15 @@ namespace nsCDEngine.BaseClasses
             return sw.ToString();
 #endif
         }
+
+        internal static string SerializeObjectToJSONStringM<T>(T tData)
+        {
+#if CDE_JSONET
+            return System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfigNoCon);
+#else
+            return JsonConvert.SerializeObject(tData, Formatting.None, cdeNewtonJSONConfig);
+#endif
+        }
         /// <summary>
         /// Deserializes an object from a JSON string
         /// </summary>
@@ -195,7 +290,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (json == null) return default;
 #if CDE_JSONET
-            T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json, cdeJsonEtConfig);
+            T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json, TheBaseAssets.MyServiceHostInfo.UseStrictJSON ? cdeJsonEtConfigStrict : cdeJsonEtConfig);
             return tDataf;
 #else
             T tData = JsonConvert.DeserializeObject<T>(json, cdeNewtonJSONConfig);
@@ -203,29 +298,7 @@ namespace nsCDEngine.BaseClasses
 #endif
         }
 
-        /// <summary>
-        /// Uses JsonConvert.SerializeObject to serialize an object to JSON. (New in V4).
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="tData"></param>
-        /// <returns></returns>
-        public static string JsonConvertSerializeObject<T>(T tData)
-        {
-#if CDE_JSONET
-            return System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfig);
-#else
-            return JsonConvert.SerializeObject(tData);
-#endif
-        }
 
-        internal static string SerializeObjectToJSONStringM<T>(T tData)
-        {
-#if CDE_JSONET
-            return System.Text.Json.JsonSerializer.Serialize(tData, cdeJsonEtConfig);
-#else
-            return JsonConvert.SerializeObject(tData, Formatting.None, cdeNewtonJSONConfig);
-#endif
-        }
 
         /// <summary>
         /// Retrieves a value from a parsed JSON data structure based on a JSON path lookup/query. Obtain the parsed JSON using TheCommonUtils.DeserializeJSONStringToObject(). JSON Path details follow those in NewtonSoft's JObject.SelectToken().

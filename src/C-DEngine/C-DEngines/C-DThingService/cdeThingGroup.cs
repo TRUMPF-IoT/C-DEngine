@@ -205,7 +205,7 @@ namespace nsCDEngine.Engines.ThingService
         /// </summary>
         /// <param name="pType"></param>
         /// <returns></returns>
-        public TheThingBase GetFirstThingsOfType(Type pType)
+        public TheThingBase GetFirstThingOfType(Type pType)
         {
             return MyGroupThings.Values.FirstOrDefault(s => s?.GetType() == pType || s?.GetType()?.IsSubclassOf(pType) == true);
         }
@@ -726,8 +726,8 @@ namespace nsCDEngine.Engines.ThingService
                 if (t.MyNMIFaceModel.YPos + t.MyNMIFaceModel.YLen > maxh)
                     maxh = t.MyNMIFaceModel.YPos + t.MyNMIFaceModel.YLen;
             }
-            int th = ((maxh + 39) / 78)+1;
-            int tw = ((maxw + 39) / 78)+1;
+            int th = ((maxh + 39) / 78) + 1;
+            int tw = ((maxw + 39) / 78) + 1;
             if (tw < 6) tw = 6;
             if (GetProperty("GroupSizeX", false) != null)
             {

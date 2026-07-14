@@ -1724,7 +1724,14 @@ namespace nsCDEngine.ViewModels
             internal set;
         }
 
-
+        /// <summary>
+        /// new in V7: If true, JSON Parser requires strict JSON string to parse. this is faster but less compatible with upgraded version of the CDE
+        /// </summary>
+        public bool UseStrictJSON
+        {
+            get;
+            set;
+        }
 
         public int TLDCGs
         {
