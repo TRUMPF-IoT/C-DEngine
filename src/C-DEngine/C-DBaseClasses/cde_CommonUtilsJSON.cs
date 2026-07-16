@@ -288,7 +288,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static T DeserializeJSONStringToObject<T>(string json)
         {
-            if (json == null) return default;
+            if (string.IsNullOrEmpty(json)) return default;
 #if CDE_JSONET
             T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json, TheBaseAssets.MyServiceHostInfo.UseStrictJSON ? cdeJsonEtConfigStrict : cdeJsonEtConfig);
             return tDataf;
