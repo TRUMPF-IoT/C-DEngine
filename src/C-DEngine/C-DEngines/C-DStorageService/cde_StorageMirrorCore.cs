@@ -1071,7 +1071,8 @@ namespace nsCDEngine.Engines.StorageService
 
                                 try
                                 {
-                                    System.IO.File.Move(fileToReturn, fileToReturn + ".1");
+                                    if (System.IO.File.Exists(fileToReturn))
+                                        System.IO.File.Move(fileToReturn, fileToReturn + ".1");
                                 }
                                 catch
                                 {

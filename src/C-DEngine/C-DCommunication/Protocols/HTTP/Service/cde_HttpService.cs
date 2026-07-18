@@ -438,7 +438,14 @@ namespace nsCDEngine.Communication.HttpService
 
         internal static void GetAnyFile(TheRequestData pRequestData, bool ProcessWRIntercept)
         {
-            if (pRequestData == null) return; 
+            if (pRequestData == null) return;
+            if (!TheBaseAssets.MasterSwitch)
+            {
+                pRequestData.StatusCode = 404;
+                pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array("Engine not running");
+                return;
+            }
+
             if (pRequestData.cdeRealPage.Length == 1 && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.DefHomePage))
             {
                 pRequestData.cdeRealPage = $"{(TheBaseAssets.MyServiceHostInfo.DefHomePage.StartsWith("/") ? "" : "/")}{TheBaseAssets.MyServiceHostInfo.DefHomePage}";
@@ -589,7 +596,7 @@ namespace nsCDEngine.Communication.HttpService
                     case "/CDESTATUS.ASPX":
                         {
                             bool Force = false;
-                            cdeStatus.TheCdeStatusOptions statusOptions = new ();
+                            cdeStatus.TheCdeStatusOptions statusOptions = new();
                             if (tQ != null)
                             {
                                 statusOptions.ShowManyDetails = tQ.ContainsKey("SUBDET");
@@ -623,20 +630,20 @@ namespace nsCDEngine.Communication.HttpService
                                         sinkGetStatus?.Invoke(pRequestData);
                                         LastCdeStatus += cdeStatus.GetDiagReport(false, pRequestData);
                                     }
-                                    if(statusOptions.ShowSesLog)
+                                    if (statusOptions.ShowSesLog)
                                         LastCdeStatus += TheBaseAssets.MySession.GetSessionLog();
-                                    if(statusOptions.ShowSysLog)
+                                    if (statusOptions.ShowSysLog)
                                         LastCdeStatus += TheBaseAssets.MySYSLOG.GetNodeLog(pRequestData.SessionState, TheCommonUtils.cdeStripHTML(InTopic), true);
                                     LastCdeStatus += cdeStatus.AddHTMLFooter;
                                 }
-                                if (LastCdeStatus!=null)
+                                if (LastCdeStatus != null)
                                     pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(LastCdeStatus);
                             }
                             pRequestData.ResponseBufferStr = "";
                             pRequestData.ResponseMimeType = "text/html";
                             pRequestData.AllowStatePush = false;
-                            break;
                         }
+                        break;
                     case "/LOG.ASPX":
                         if (!IsTokenValid(pRequestData, tQ))
                             break;

@@ -252,7 +252,6 @@ namespace nsCDEngine.BaseClasses
                 if (!value)
                 {
                     MasterSwitchCancelationTokenSource.Cancel();
-                    MasterSwitchCancelationTokenSource.Dispose();
                 }
             }
         }

@@ -390,7 +390,7 @@ namespace nsCDEngine.Engines.ThingService
                             var tPParts = prop.Split(':');
                             var tprop = tPParts.Length > 1 ? tPParts[1] : prop;
                             var sprop = tPParts.Length > 1 ? tPParts[0] : prop;
-                            t.SetProperty(tprop, MyBaseThing.GetProperty(sprop, false));
+                            t.SetProperty(tprop, MyBaseThing.GetProperty(sprop, false)?.GetValue());
                         }
                         t.SetProperty($"Child_{MyBaseThing.ID}_DataUpdate", timestamp);
                     }

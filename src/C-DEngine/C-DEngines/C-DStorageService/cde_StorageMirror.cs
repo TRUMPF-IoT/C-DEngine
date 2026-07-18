@@ -163,7 +163,7 @@ namespace nsCDEngine.Engines.StorageService
                     if (!MyStoreRequests.ContainsKey(tReq.MagicID.ToString())) return;
                 }
 
-                TheBaseAssets.MySYSLOG.WriteToLog(472, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("StorageMirror", "Storage-Request Timed Out", eMsgLevel.l2_Warning));
+                TheBaseAssets.MySYSLOG.WriteToLog(472, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("StorageMirror", "Storage-Request Timed Out", eMsgLevel.l2_Warning));
                 StoreResponse tResponse = new ()
                 {
                     ErrorMsg = "Call Timed out",
