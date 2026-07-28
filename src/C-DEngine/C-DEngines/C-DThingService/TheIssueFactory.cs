@@ -20,7 +20,7 @@ namespace nsCDEngine.Engines.ThingService
         public void FileIssue(string pDevId, string pSensorId, string pDevName, string pCategory, eMsgLevel msgLevel, string pMessage);
 
         TheFormInfo AddCurrentIssuesTable(TheThing pBaseThing, TheBaseEngine pBaseEngine, Guid IssueTableID, bool AddToDash, int TW = 12, int TH = 3, string pCategory = null);
-        int CurrentOpenIssues(string pDevId);
+        int CurrentOpenIssues(string pDevId, int level);
     }
 
     /// <summary>
