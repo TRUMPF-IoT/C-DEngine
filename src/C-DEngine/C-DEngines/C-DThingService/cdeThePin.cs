@@ -63,6 +63,44 @@ namespace nsCDEngine.Engines.ThingService
             Left=0, Right=1, Top=2, Bottom=3
         }
 
+        public object PollPinValue
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(PinProperty) && cdeO != Guid.Empty)
+                {
+                    var tThing = TheThingRegistry.GetThingByMID(cdeO);
+                    switch (PollType)
+                    {
+                        case 1:
+                            {
+                                double pinv = CU.CDbl(tThing?.GetProperty(PinProperty)?.GetValue());
+                                if (IsConnectedTo?.Count > 0)
+                                {
+                                    int goodPins = CU.CInt(IsConnectedTo?.Count(s => s.Quality != ThePin.ePinQuality.BadDisconnected));
+                                    if (goodPins > 0)
+                                        return pinv / goodPins;
+                                    else
+                                        return 0;
+                                }
+                                return pinv;
+                            }
+                        default:
+                            return tThing?.GetProperty(PinProperty)?.GetValue();
+                    }
+                }
+                return null;
+            }
+        }
+
+        public enum ePinQuality : int
+        {
+            Unknown = 0,
+            Good = 1,
+            Cached = 2,
+            BadDisconnected = 3
+        }
+
         public object PinValue
         {
             get
@@ -88,6 +126,7 @@ namespace nsCDEngine.Engines.ThingService
         public bool IsInbound { get; set; } = false;
         public int PinNumber { get; set; } 
         public string PinConfig { get; set; }
+        public int? PollType { get; set; } = 0;
         public bool PollsFromPin { get; set; } = false;
         public bool AllowsPolling { get; set; } = false;
 
@@ -98,7 +137,7 @@ namespace nsCDEngine.Engines.ThingService
         /// 2 = cached
         /// 3 = bad/disconnected
         /// </summary>
-        public int Quality { get; set; } = 0;
+        public ePinQuality Quality { get; set; } = ePinQuality.Unknown;
         public int MaxConnections { get; set; } = 1;
         private List<ThePin> IsConnectedTo { get; set; } = new List<ThePin>();
         public List<string> CanConnectToPinType { get; set; } = new List<string>();
@@ -307,7 +346,7 @@ namespace nsCDEngine.Engines.ThingService
             if (tThing == null) return;
             flowStyle = GetMapperStyle(flowStyle);
             SetPinValue(tThing);
-            if (!ForceOff && CU.CDbl(PinValue) > 0)
+            if (!ForceOff && Quality!=ePinQuality.BadDisconnected && CU.CDbl(PollPinValue) > 0)
                 TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}line");
             else
                 TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}linenf");
@@ -317,10 +356,15 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (PollsFromPin && IsConnectedTo?.Count > 0)
             {
-                double pinv = 0;
-                foreach (var pin in IsConnectedTo)
-                    pinv += CU.CDbl(pin.PinValue);
-                PinValue = pinv;
+                if (Quality == ePinQuality.BadDisconnected)
+                    PinValue = 0;
+                else
+                {
+                    double pinv = 0;
+                    foreach (var pin in IsConnectedTo.Where(s => s.Quality != ePinQuality.BadDisconnected))
+                        pinv += CU.CDbl(pin.PollPinValue);
+                    PinValue = pinv;
+                }
             }
             else
                 PinValue = pDevs?.GetProperty(PinProperty, false)?.GetValue();

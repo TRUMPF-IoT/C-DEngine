@@ -922,7 +922,7 @@ namespace nsCDEngine.Engines.ThingService
                             {
                                 var stylev = $"cdevert{flowStyle}line";
                                 var styleh = $"cdehori{flowStyle}line";
-                                if (CU.CDbl(targetPin.PinValue) == 0)
+                                if (CU.CDbl(targetPin.PinValue) == 0 || targetPin.Quality==ThePin.ePinQuality.BadDisconnected || sourcePin.Quality==ThePin.ePinQuality.BadDisconnected)
                                 {
                                     stylev += "nf";
                                     styleh += "nf";
