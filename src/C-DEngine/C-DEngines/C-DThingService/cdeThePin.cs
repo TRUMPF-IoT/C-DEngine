@@ -77,7 +77,7 @@ namespace nsCDEngine.Engines.ThingService
                                 double pinv = CU.CDbl(tThing?.GetProperty(PinProperty)?.GetValue());
                                 if (IsConnectedTo?.Count > 0)
                                 {
-                                    int goodPins = CU.CInt(IsConnectedTo?.Count(s => s.Quality != ThePin.ePinQuality.BadDisconnected));
+                                    int goodPins = CU.CInt(IsConnectedTo?.Count(s => s.Quality != ThePin.ePinQuality.ClosedBadDisconnected));
                                     if (goodPins > 0)
                                         return pinv / goodPins;
                                     else
@@ -98,7 +98,7 @@ namespace nsCDEngine.Engines.ThingService
             Unknown = 0,
             Good = 1,
             Cached = 2,
-            BadDisconnected = 3
+            ClosedBadDisconnected = 3
         }
 
         public object PinValue
@@ -346,7 +346,7 @@ namespace nsCDEngine.Engines.ThingService
             if (tThing == null) return;
             flowStyle = GetMapperStyle(flowStyle);
             SetPinValue(tThing);
-            if (!ForceOff && Quality!=ePinQuality.BadDisconnected && CU.CDbl(PollPinValue) > 0)
+            if (!ForceOff && Quality!=ePinQuality.ClosedBadDisconnected && CU.CDbl(PollPinValue) > 0)
                 TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}line");
             else
                 TT.SetSafePropertyString(tThing, $"{PinProperty}_css", $"cdehori{flowStyle}linenf");
@@ -356,12 +356,12 @@ namespace nsCDEngine.Engines.ThingService
         {
             if (PollsFromPin && IsConnectedTo?.Count > 0)
             {
-                if (Quality == ePinQuality.BadDisconnected)
+                if (Quality == ePinQuality.ClosedBadDisconnected)
                     PinValue = 0;
                 else
                 {
                     double pinv = 0;
-                    foreach (var pin in IsConnectedTo.Where(s => s.Quality != ePinQuality.BadDisconnected))
+                    foreach (var pin in IsConnectedTo.Where(s => s.Quality != ePinQuality.ClosedBadDisconnected))
                         pinv += CU.CDbl(pin.PollPinValue);
                     PinValue = pinv;
                 }
