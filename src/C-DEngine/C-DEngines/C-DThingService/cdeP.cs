@@ -233,6 +233,7 @@ namespace nsCDEngine.Engines.ThingService
             mOldValue = mValue;
 
             object pVal = pValue;
+#if CDE_GRAPHICS
             if (pValue is System.Drawing.Bitmap bmap)
             {
                 lock (bmapLock)
@@ -255,6 +256,7 @@ namespace nsCDEngine.Engines.ThingService
                     }
                 }
             }
+#endif
 
             if ((cdeE & 1) != 0)
             {

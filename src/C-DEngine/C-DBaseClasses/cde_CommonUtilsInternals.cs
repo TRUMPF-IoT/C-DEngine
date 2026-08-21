@@ -1175,6 +1175,7 @@ namespace nsCDEngine.BaseClasses
                     _FileStream.Dispose();
                     if (IsImage)
                     {
+#if CDE_GRAPHICS
                         System.Drawing.Imaging.ImageFormat tFormat = System.Drawing.Imaging.ImageFormat.Jpeg;
                         if (Extension.Equals(".PNG"))
                             tFormat = System.Drawing.Imaging.ImageFormat.Png;
@@ -1184,6 +1185,7 @@ namespace nsCDEngine.BaseClasses
                         _FileStream = new System.IO.FileStream(ThumbLink, System.IO.FileMode.Create, System.IO.FileAccess.Write);
                         _FileStream.Write(tThumb, 0, tThumb.Length);
                         _FileStream.Close();
+#endif
                     }
                     if (IsAnUpdate && TheBaseAssets.MyApplication.MyISMRoot != null)
                     {
@@ -1404,6 +1406,7 @@ namespace nsCDEngine.BaseClasses
             return _fileSystemCaseSensitive.Value;
         }
 
+#if CDE_GRAPHICS
         private static byte[] CreateImageThumbnail(byte[] byteArrayIn, float pWidth, float pHeight, System.Drawing.Imaging.ImageFormat pFormat)
         {
             try
@@ -1442,11 +1445,12 @@ namespace nsCDEngine.BaseClasses
                 return null;
             }
         }
+#endif
 
         internal static bool cdeFileExists(string pName)
         {
             return File.Exists(pName);
         }
-        #endregion
+#endregion
     }
 }

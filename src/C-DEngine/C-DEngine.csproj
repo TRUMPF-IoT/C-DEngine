@@ -57,10 +57,6 @@
 
 	<Target Name="GetPackagingOutputs" />
 
-	<ItemGroup>
-		<PackageReference Include="System.Drawing.Common" Version="10.0.9" />
-	</ItemGroup>
-
 	<Target Name="CopyUpdaterEXEBeforeBuild" BeforeTargets="BeforeBuild">
 		<MSBuild Projects="@(ProjectReference)" Targets="GetTargetPath" BuildInParallel="false" Condition="'%(Name)'=='cdeUpdater'">
 			<Output TaskParameter="TargetOutputs" ItemName="DependentAssemblies" />
