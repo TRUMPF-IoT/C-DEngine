@@ -1,7 +1,6 @@
-# SPDX-FileCopyrightText: 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+# SPDX-FileCopyrightText: 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
 # SPDX-License-Identifier: MPL-2.0
 
-mode: ContinuousDelivery
 assembly-informational-format: '{SemVer}+{env:cdeBuildDate ?? private}.{FullBuildMetaData}'
 ignore:
   sha: []
@@ -58,4 +57,3 @@ branches:
     tracks-release-branches: false
     is-release-branch: false
     is-mainline: false
-    pre-release-weight: 30000
