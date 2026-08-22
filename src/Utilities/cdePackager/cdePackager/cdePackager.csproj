@@ -43,14 +43,9 @@
     <None Include="..\..\..\C-DEngine\toplogo-128.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
-  <!--<PropertyGroup Condition="EXISTS('$(ProjectDir)..\..\..\BuildTools')">
-    <PostBuildEvent>xcopy "$(TargetDir)*.*" "$(ProjectDir)..\..\..\..\BuildTools\cdePackager" /C /R /Y /I /F</PostBuildEvent>
-  </PropertyGroup>-->
-
   <!-- Copy to BuildTools and package the C-DEngine -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="EXISTS('$(ProjectDir)..\..\..\..\BuildTools')">
     <Exec Command="xcopy &quot;$(TargetDir)*.*&quot; &quot;$(ProjectDir)..\..\..\..\BuildTools\cdePackager&quot; /C /R /Y /I /F" />
-    <Exec Command="$(ProjectDir)..\..\..\C-DEngine\packagecde.cmd $(Configuration)" Condition="'$(BuildingInsideVisualStudio)' == 'true'" />
   </Target>
 
 </Project>
