@@ -28,6 +28,11 @@
 		<DefineConstants>TRACE;CDE_SYSLOG;CDE_JSONET</DefineConstants>
 		<LangVersion>preview</LangVersion>
 		<DocumentationFile>$(OutputPath)C-DEngine.xml</DocumentationFile>
+		<!-- Debugging into the NuGet package: embed the PDB in the DLL and strip the drive letter
+			 from source paths so they resolve as \github\... on whichever drive the debugger runs from. -->
+		<DebugType>embedded</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		<PathMap>$([System.IO.Path]::GetPathRoot($(MSBuildThisFileDirectory)))=\</PathMap>
 	</PropertyGroup>
 
 	<ItemGroup>
