@@ -3247,7 +3247,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 foreach (var t in pConnectedTo)
                 {
-                    MyPins[pPinID.PinName].RemoveConnection(t);
+                    MyPins[pPinID.PinName].RemovePinConnection(t);
                     TT targetThing = TheThingRegistry.GetThingByMID(MyPins[pPinID.PinName].cdeO);
                     if (targetThing!=null)
                         targetThing.UpdatePinProperty(MyPins[pPinID.PinName]);

@@ -289,7 +289,12 @@ namespace nsCDEngine.Engines.ThingService
             return false;
         }
 
-        internal bool RemoveConnection(ThePin pPin)
+        /// <summary>
+        /// Removes an existing Pin Connection
+        /// </summary>
+        /// <param name="pPin">Pin to be removed</param>
+        /// <returns></returns>
+        public bool RemovePinConnection(ThePin pPin)
         {
             lock (lockPinConnection)
             {
