@@ -1095,11 +1095,7 @@ namespace nsCDEngine.BaseClasses
             if (pMessage.PLB != null && pMessage.PLB.Length > 0)
             {
                 fileBytes = pMessage.PLB;
-#if PORTABLE
-                        if (!tTargetFileName.Contains("\\") && !tTargetFileName.Contains("/"))
-#else
                 if (!tTargetFileName.Contains(Path.DirectorySeparatorChar) && !tTargetFileName.Contains(Path.AltDirectorySeparatorChar))
-#endif
                 {
                     // CODE REVIEW: While this is more correct than tTargetFileName.ToUpper().EndsWith("PNG") it is also more stricts (i.e. foo.myPNG will not longer match). ARe there use cases for the less stringent match?
                     var extension = Path.GetExtension(tTargetFileName).ToUpper();
