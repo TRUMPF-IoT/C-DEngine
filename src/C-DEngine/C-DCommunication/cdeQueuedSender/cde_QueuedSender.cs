@@ -886,6 +886,11 @@ namespace nsCDEngine.Communication
                                                     {
                                                         if (tSend.MySubscriptionContains(tTopicNameOnly, tTopicRealScope, true))
                                                         {
+                                                            if (!string.IsNullOrEmpty(pMessage.PLS) && pMessage.IsPLSEncrypted())
+                                                            {
+                                                                pMessage.PLS = TheCommonUtils.cdeDecrypt(pMessage.PLS, TheBaseAssets.MySecrets.GetAI());
+                                                                pMessage.ResetPLSEncryption();
+                                                            }
                                                             tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                                                             bFoundISB = true;
                                                         }
