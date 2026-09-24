@@ -13,6 +13,8 @@ using jsonNet = cdeNewtonsoft.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using System.Runtime.Serialization;
 #else
 using Newtonsoft.Json;
 using jsonNet = Newtonsoft.Json;
@@ -28,8 +30,51 @@ namespace nsCDEngine.BaseClasses
     {
         #region Serialization Helpers
 #if CDE_JSONET
+        /// <summary>
+        /// System.Text.Json does not honor [IgnoreDataMember]. This resolver removes any member carrying that attribute
+        /// from serialization and deserialization so that shortcut properties (e.g. TheThing.Address) do not overwrite MyPropertyBag.
+        /// </summary>
+        internal static readonly IJsonTypeInfoResolver cdeJsonEtTypeInfoResolver = new DefaultJsonTypeInfoResolver
+        {
+            Modifiers = { IgnoreDataMemberModifier, NullToDefaultModifier }
+        };
+
+        private static void IgnoreDataMemberModifier(JsonTypeInfo typeInfo)
+        {
+            if (typeInfo.Kind != JsonTypeInfoKind.Object)
+                return;
+            for (int i = typeInfo.Properties.Count - 1; i >= 0; i--)
+            {
+                var prop = typeInfo.Properties[i];
+                if (prop.AttributeProvider?.IsDefined(typeof(IgnoreDataMemberAttribute), true) == true)
+                    typeInfo.Properties.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// A JSON null must not overwrite a member: the member keeps its constructor/initializer default.
+        /// Non-nullable value types never reach the setter with null; they are handled by cdeNullToDefaultConverterFactory.
+        /// </summary>
+        private static void NullToDefaultModifier(JsonTypeInfo typeInfo)
+        {
+            if (typeInfo.Kind != JsonTypeInfoKind.Object)
+                return;
+            foreach (var prop in typeInfo.Properties)
+            {
+                var set = prop.Set;
+                if (set == null)
+                    continue;
+                prop.Set = (obj, value) =>
+                {
+                    if (value != null)
+                        set(obj, value);
+                };
+            }
+        }
+
         internal static JsonSerializerOptions cdeJsonEtConfig = new JsonSerializerOptions
         {
+            TypeInfoResolver = cdeJsonEtTypeInfoResolver,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
@@ -39,10 +84,11 @@ namespace nsCDEngine.BaseClasses
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
             NumberHandling = JsonNumberHandling.AllowReadingFromString|JsonNumberHandling.AllowNamedFloatingPointLiterals,
-            Converters = { new ObjectToInferredTypesConverter(), new cdeGuidConverter(), new cdeStringConverter(), new cdeBooleanConverter() }
+            Converters = { new ObjectToInferredTypesConverter(), new cdeGuidConverter(), new cdeStringConverter(), new cdeBooleanConverter(), new cdeNullToDefaultConverterFactory() }
         };
         internal static JsonSerializerOptions cdeJsonEtConfigStrict = new JsonSerializerOptions 
         { 
+            TypeInfoResolver = cdeJsonEtTypeInfoResolver,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, 
             PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
@@ -56,6 +102,7 @@ namespace nsCDEngine.BaseClasses
         };
         internal static JsonSerializerOptions cdeJsonEtConfigNoCon = new JsonSerializerOptions
         {
+            TypeInfoResolver = cdeJsonEtTypeInfoResolver,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
             PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
@@ -66,10 +113,12 @@ namespace nsCDEngine.BaseClasses
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
             NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            Converters = { new cdeNullToDefaultConverterFactory() }
         };
         internal static JsonSerializerOptions cdeJsonEtConfigNMI = new JsonSerializerOptions
         {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, //Must send defaults to NMI to avoid undefined errors
+            TypeInfoResolver = cdeJsonEtTypeInfoResolver,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
             PropertyNameCaseInsensitive = true,
@@ -79,7 +128,70 @@ namespace nsCDEngine.BaseClasses
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
             NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            Converters = { new cdeNullToDefaultConverterFactory() }
         };
+
+        /// <summary>
+        /// Makes non-nullable value types (int, double, DateTimeOffset, enums, ...) tolerate a JSON null by returning default(T)
+        /// instead of throwing. All other tokens are delegated to the built-in converter.
+        /// </summary>
+        internal class cdeNullToDefaultConverterFactory : JsonConverterFactory
+        {
+            private static readonly JsonSerializerOptions BuiltInOptions = new JsonSerializerOptions
+            {
+                NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals
+            };
+
+            private static readonly System.Collections.Generic.HashSet<Type> SupportedTypes = new()
+            {
+                typeof(decimal), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), typeof(Guid),
+                typeof(DateOnly), typeof(TimeOnly), typeof(Half), typeof(Int128), typeof(UInt128)
+            };
+
+            public override bool CanConvert(Type typeToConvert)
+            {
+                // Only built-in scalar value types; user-defined structs (e.g. StorageGetRequest) must go through the regular object converter
+                return typeToConvert.IsPrimitive || typeToConvert.IsEnum || SupportedTypes.Contains(typeToConvert);
+            }
+
+            public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+            {
+                var inner = BuiltInOptions.GetConverter(typeToConvert);
+                return (JsonConverter)Activator.CreateInstance(typeof(NullToDefaultConverter<>).MakeGenericType(typeToConvert), inner);
+            }
+
+            private class NullToDefaultConverter<T> : JsonConverter<T> where T : struct
+            {
+                private readonly JsonConverter<T> _inner;
+
+                public NullToDefaultConverter(JsonConverter inner)
+                {
+                    _inner = (JsonConverter<T>)inner;
+                }
+
+                public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType == JsonTokenType.Null)
+                        return default;
+                    return _inner.Read(ref reader, typeToConvert, options);
+                }
+
+                public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                {
+                    _inner.Write(writer, value, options);
+                }
+
+                public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    return _inner.ReadAsPropertyName(ref reader, typeToConvert, options);
+                }
+
+                public override void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+                {
+                    _inner.WriteAsPropertyName(writer, value, options);
+                }
+            }
+        }
 
         internal class cdeBooleanConverter : JsonConverter<bool>
         {
@@ -88,6 +200,7 @@ namespace nsCDEngine.BaseClasses
                 // Handle native JSON boolean literals: true or false
                 if (reader.TokenType == JsonTokenType.True) return true;
                 if (reader.TokenType == JsonTokenType.False) return false;
+                if (reader.TokenType == JsonTokenType.Null) return default;
 
                 // Handle string values: "true" or "false"
                 if (reader.TokenType == JsonTokenType.String)
@@ -155,6 +268,11 @@ namespace nsCDEngine.BaseClasses
         {
             public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
+                if (reader.TokenType == JsonTokenType.Null)
+                {
+                    return null;
+                }
+
                 // If it's a number, convert it to a string directly
                 if (reader.TokenType == JsonTokenType.Number)
                 {
@@ -206,6 +324,11 @@ namespace nsCDEngine.BaseClasses
         {
             public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
+                if (reader.TokenType == JsonTokenType.Null)
+                {
+                    return default;
+                }
+
                 // Try reading it via default behavior first for optimal performance
                 if (reader.TryGetGuid(out Guid guid))
                 {

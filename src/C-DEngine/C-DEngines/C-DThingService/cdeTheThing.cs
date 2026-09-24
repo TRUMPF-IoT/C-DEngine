@@ -1647,7 +1647,6 @@ namespace nsCDEngine.Engines.ThingService
         /// Returns a count of all current Properties
         /// Only properties on TheThing will be counted.
         /// </summary>
-        [IgnoreDataMember]
         public int PropertyCount
         {
             get { return MyPropertyBag.Count; }
