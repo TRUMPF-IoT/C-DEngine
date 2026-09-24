@@ -730,6 +730,7 @@ namespace nsCDEngine.BaseClasses
 
         
         private static readonly object _thingHarvestLock = new ();
+        private static bool FirstKPIRun = true;
         internal static void ToThingProperties(TheThing pThing, bool bReset, bool force = true)
         {
             if (!EnableKpis || pThing == null) return;
@@ -826,7 +827,8 @@ namespace nsCDEngine.BaseClasses
                             kpiPropTotal ??= pThing.GetProperty($"{keyVal.Key}Total", true);
 
                             var totalKpisJson = kpiPropTotal.GetProperty(LabeledKpisPropertyName)?.GetValue() as string;
-
+                            if (FirstKPIRun)
+                                totalKpisJson = null;
                             var totalKpis = !string.IsNullOrWhiteSpace(totalKpisJson)
                                 ? TheCommonUtils.DeserializeJSONStringToObject<List<LabeledKpi>>(totalKpisJson)
                                 : new List<LabeledKpi>();
@@ -838,8 +840,10 @@ namespace nsCDEngine.BaseClasses
                         }
                     }
                 }
+                if (FirstKPIRun)
+                    FirstKPIRun = false;
 
-                // Grab some KPIs from sources - Workaround, this should be computed in the source instead
+                    // Grab some KPIs from sources - Workaround, this should be computed in the source instead
                 SetKPI(eKPINames.QSenders, TheQueuedSenderRegistry.GetSenderListNodes().Count);
                 SetKPI(eKPINames.QSenderInRegistry, TheQueuedSenderRegistry.Count());
                 SetKPI(eKPINames.SessionCount, TheBaseAssets.MySession.GetSessionCount());
