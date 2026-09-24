@@ -173,12 +173,14 @@ namespace nsCDEngine.BaseClasses
                 {
                     if (reader.TokenType == JsonTokenType.Null)
                         return default;
-                    return _inner.Read(ref reader, typeToConvert, options);
+                    // Go through the serializer (not _inner.Read) so JsonNumberHandling (strings, NaN/Infinity) is honored
+                    return JsonSerializer.Deserialize<T>(ref reader, BuiltInOptions);
                 }
 
                 public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
                 {
-                    _inner.Write(writer, value, options);
+                    // Go through the serializer (not _inner.Write) so NaN/Infinity are written as named literals
+                    JsonSerializer.Serialize(writer, value, BuiltInOptions);
                 }
 
                 public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
