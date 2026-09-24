@@ -72,7 +72,7 @@ namespace nsCDEngine.Engines
                 TheBaseAssets.MySettings.GetAppSetting("KPIExpirationAfterMinutes", "1440", false, true)));
             TheCDEKPIs.KpiExpirationCheckInterval = TimeSpan.FromMinutes(TheCommonUtils.CInt(
                 TheBaseAssets.MySettings.GetAppSetting("KPIExpirationCheckIntervalInMinutes", "1440", false, true)));
-            
+            TheCDEKPIs.RemoveExpiredKpis(MyBaseThing);
             if (kpiEn)
             {
                 if (TheBaseAssets.MyServiceHostInfo.EnableTaskKPIs)
