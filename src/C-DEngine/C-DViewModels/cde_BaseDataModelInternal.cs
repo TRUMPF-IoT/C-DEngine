@@ -405,7 +405,7 @@ namespace nsCDEngine.ViewModels
 #if JC_COMMDEBUG
 			return string.Format("ID:{0} UN:{1} EM:{2} ACL:{3} PW:{4} SID:{5}",cdeMID,UserName, EMail, AccessMask, Password, AssignedEasyScope);
 #else
-			return $"ID:{cdeMID} N:{HomeNode} NS:{NodeScope} UN:{UserName} EM:{EMail} ACL:{AccessMask} LCID:{LCID}".ToString(CultureInfo.InvariantCulture);
+			return $"ID:{cdeMID} N:{HomeNode} NS:{NodeScope} EM:{EMail} ACL:{AccessMask} LCID:{LCID}".ToString(CultureInfo.InvariantCulture);
 #endif
 
 		}

@@ -197,7 +197,7 @@ namespace nsCDEngine.Security
                 {
                     if (LoggedOnUser == null || !LoggedOnUser.PrimaryRole.Equals(eUserRoles.Guest))
                     {
-                        pUser = new TheUserDetails("AnonymousUser", TheCommonUtils.MOTLockGenerator(), eUserRoles.Guest, "", Guid.Empty);
+                        pUser = new TheUserDetails("", TheCommonUtils.MOTLockGenerator(), eUserRoles.Guest, "", Guid.Empty);
                         pUser.EMail = pUser.cdeMID + "@" + TheBaseAssets.MyServiceHostInfo.SiteName;
                         if (TheCDEngines.MyNMIService.IsInit())
                         {
