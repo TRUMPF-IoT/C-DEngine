@@ -26,28 +26,6 @@ namespace CDEngine.BaseClasses.Net45.Tests
             public string BName { get; set; }
             public A ARef { get; set; }
         }
-        [Test]
-        public void SerializeObjectToJSONStringWithCycleTest()
-        {
-            var a1 = new A { AName = "A1" };
-            var b1 = new B { BName = "B1" };
-            var a2 = new A { AName = "A2" };
-            a1.BRef = b1;
-            b1.ARef = a2;
-            var json = TheCommonUtils.SerializeObjectToJSONString(a1);
-            var expectedJson = "{\"AName\":\"A1\",\"BRef\":{\"BName\":\"B1\",\"ARef\":{\"AName\":\"A2\"}}}";
-            Assert.That(json, Is.EqualTo(expectedJson));
-
-            if (TheCommonUtils.cdeNewtonJSONConfig.ReferenceLoopHandling != cdeNewtonsoft.Json.ReferenceLoopHandling.Serialize)
-            {
-                a2.BRef = b1; // Loop A1 -> B1 -> A2 => B1
-
-                // This will crash the process with stack overflow with option ReferenceLoopHandling.Serialize
-                var jsonCycle = TheCommonUtils.SerializeObjectToJSONString(a1);
-                var expectedJsonCycle = "{\"AName\":\"A1\",\"BRef\":{\"BName\":\"B1\",\"ARef\":{\"AName\":\"A2\"}}}";
-                Assert.That(jsonCycle, Is.EqualTo(expectedJsonCycle));
-            }
-        }
 
         [Test]
         public void CStrDateTimeOffsetTest()

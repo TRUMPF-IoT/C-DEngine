@@ -11,7 +11,7 @@
     <PackageReference Include="C-DEngine" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="4.1.0" />
+    <PackageReference Include="NUnit" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
