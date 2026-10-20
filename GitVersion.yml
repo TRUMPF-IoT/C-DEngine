@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
 # SPDX-License-Identifier: MPL-2.0
 
+# Minimum version to calculate when no higher release tag is reachable (e.g. tags not pushed to the remote)
+next-version: 7.110.0
 assembly-informational-format: '{SemVer}+{env:cdeBuildDate ?? private}.{FullBuildMetaData}'
 ignore:
   sha: []
