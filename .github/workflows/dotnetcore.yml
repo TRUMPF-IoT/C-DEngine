@@ -104,10 +104,6 @@ jobs:
     - name: Build
       run: dotnet build './src/C-DEngine.sln' --configuration Release --no-restore --disable-parallel /nowarn:CS1591 /nowarn:nu5105
 
-    - name: Create C-DEngine.CDEX
-      run: .\src\C-DEngine\packagecde.cmd Release
-      shell: cmd
-
     - name: Test
       run: dotnet test './src/C-DEngine.sln' --configuration Release --no-build --no-restore --verbosity normal
 
