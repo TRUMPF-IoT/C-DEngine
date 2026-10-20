@@ -121,7 +121,8 @@ jobs:
 
     - name: REUSE Compliance Check
       run: |
-        pip3 install --user reuse
+        # Windows has no 'file' binary, so reuse needs the charset-normalizer extra to detect file encodings
+        pip3 install --user "reuse[charset-normalizer]"
         reuse lint
 
     - name: Push NuGet Packages
