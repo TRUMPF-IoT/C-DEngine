@@ -111,7 +111,7 @@ namespace cdePackager
             {
                 try
                 {
-                    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (o, args) =>
+                    AppDomain.CurrentDomain.AssemblyResolve += (o, args) =>
                     {
                         string name = null;
                         Assembly ass = null;
@@ -120,7 +120,7 @@ namespace cdePackager
                             name = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
                             try
                             {
-                                ass = System.Reflection.Assembly.ReflectionOnlyLoad(name);
+                                ass = System.Reflection.Assembly.Load(name);
                             }
                             catch (Exception e)
                             {
@@ -130,7 +130,7 @@ namespace cdePackager
                                 {
                                     logger.WriteLine($"Error resolving {args.Name} {name}, trying {assPath}: {e.Message}");
                                 }
-                                ass = System.Reflection.Assembly.ReflectionOnlyLoadFrom(assPath);
+                                ass = System.Reflection.Assembly.LoadFrom(assPath);
                             }
                         }
                         catch (Exception e)
@@ -140,20 +140,12 @@ namespace cdePackager
                         }
                         if (bDiagnostics)
                         {
-                            logger.WriteLine($"Resolving {args.Name} {name}: {ass?.CodeBase}");
+                            logger.WriteLine($"Resolving {args.Name} {name}: {ass?.Location}");
                         }
                         return ass;
                     };
-                    Assembly tAss;
-                    try
-                    {
-                        // load for reflection only first (to support cross-platform tooling). But needs to be in separate app domain like in the engine host. For now only do reflection when LoadFrom fails (i.e. native x86 assembly in x64 packager process).
-                        tAss = Assembly.LoadFrom(pluginFilePath);
-                    }
-                    catch
-                    {
-                        tAss = Assembly.ReflectionOnlyLoadFrom(pluginFilePath);
-                    }
+                    // Reflection-only loading is not supported on .NET (Core); load the plug-in directly like the engine host does.
+                    Assembly tAss = Assembly.LoadFrom(pluginFilePath);
                     tPluginPlatform = TheCommonUtils.GetAssemblyPlatformHostAgnostic(tAss, bDiagnostics, out string diagInfo);
                     if (!string.IsNullOrEmpty(diagInfo))
                     {

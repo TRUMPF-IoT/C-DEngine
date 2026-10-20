@@ -9,7 +9,7 @@ using System;
 
 namespace cdePackagerTask
 {
-    public class PackagePlugIn : AppDomainIsolatedTask, cdePackager.ILogger
+    public class PackagePlugIn : Task, cdePackager.ILogger
     {
         [Required]
         public string PluginFilePath { get; set; }
