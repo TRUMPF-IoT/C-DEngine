@@ -1,6 +1,6 @@
-name: .NET Core
+name: .NET
 
-# SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+# SPDX-FileCopyrightText: Copyright (c) 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
 # SPDX-License-Identifier: CC0-1.0
 
 on:
@@ -13,7 +13,7 @@ on:
 jobs:
   build:
 
-    runs-on: windows-2019
+    runs-on: windows-latest
 
     env: 
         cdePackagerCheckOverwrite : true
@@ -24,36 +24,34 @@ jobs:
         CDE_KVC: ${{secrets.CDE_KVC}}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # gitversion requires full history and tags
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.x'
 
-    - name: Setup .NET Core
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          8.0
+          10.0.x
         source-url: https://api.nuget.org/v3/index.json
         config-file: .\nuget.config
         owner: ${{secrets.NUGETORG_APIKEY_OWNER}}
       env:
         NUGET_AUTH_TOKEN: ${{secrets.NUGETORG_APIKEY}}
 
-    # gitversion requires full history and tags
-    - name: Fetch unshallow
-      run: git fetch --prune --tags --unshallow
-
     - name: Install GitVersion
-      uses: gittools/actions/gitversion/setup@v0.9.9
+      uses: gittools/actions/gitversion/setup@v3
       with:
-          versionSpec: '5.6.6'
+          versionSpec: '5.12.x'
 
     - name: Use GitVersion
       id: gitversion # step id used as reference for output values
-      uses: gittools/actions/gitversion/execute@v0.9.9
+      uses: gittools/actions/gitversion/execute@v3
       env:
         DOTNET_ROLL_FORWARD: Major
 
@@ -103,10 +101,6 @@ jobs:
     - name: Install dependencies
       run: dotnet restore './src/C-DEngine.sln'
 
-    # Workaround for gitversiontask lock exception: build a single targetframework first
-    - name: Build cdeUpdater
-      run: dotnet build './src/Utilities/cdeUpdater/cdeUpdater.csproj' --configuration Release --no-restore --disable-parallel /nowarn:nu5105
-
     - name: Build
       run: dotnet build './src/C-DEngine.sln' --configuration Release --no-restore --disable-parallel /nowarn:CS1591 /nowarn:nu5105
 
@@ -131,7 +125,6 @@ jobs:
 
     - name: REUSE Compliance Check
       run: |
-        pip3 install --user python-debian==0.1.38 # newer versions fail on Windows as of January 2021
         pip3 install --user reuse
         reuse lint
 
