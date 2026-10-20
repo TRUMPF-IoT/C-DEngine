@@ -177,15 +177,15 @@ namespace nsCDEngine.Security
                 {
                     try
                     {
-                        if (cert.PrivateKey == null)
+                        if (!cert.HasPrivateKey)
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommonUtils", $"Certificate with Thumbprint {cert.Thumbprint} has no PrivateKey", eMsgLevel.l1_Error));
                             continue;
                         }
-                        var rsa = cert.PrivateKey as RSACryptoServiceProvider;
+                        using var rsa = cert.GetRSAPrivateKey();
                         if (rsa != null)
                         {
-                            var signed = rsa.SignData(System.Text.Encoding.UTF8.GetBytes("Hello World"), SHA1.Create());
+                            var signed = rsa.SignData(System.Text.Encoding.UTF8.GetBytes("Hello World"), HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
                         }
                         else
                         {

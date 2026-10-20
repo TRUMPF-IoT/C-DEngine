@@ -701,9 +701,8 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         private static Guid GetCryptoGuid()
         {
-            RNGCryptoServiceProvider crypto = new ();
             byte[] data = new byte[16];
-            crypto.GetBytes(data);
+            RandomNumberGenerator.Fill(data);
             return CU.CGuid(data);
         }
 
@@ -758,10 +757,9 @@ namespace nsCDEngine.Security
         private static string MD5(string text, bool useEasyScope16)
         {
             var result = default(string);
-            using (var algo = new SHA512Managed()) // new MD5CryptoServiceProvider())
+            using (var algo = SHA512.Create()) // new MD5CryptoServiceProvider())
             {
-                algo.ComputeHash(Encoding.UTF8.GetBytes(text));
-                result = CU.ToHexString(algo.Hash);
+                result = CU.ToHexString(algo.ComputeHash(Encoding.UTF8.GetBytes(text)));
             }
             return result.Substring(0,useEasyScope16?16:8);
         }

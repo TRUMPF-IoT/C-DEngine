@@ -94,20 +94,11 @@ namespace nsCDEngine.Activation
             HMAC hmac;
             try
             {
-                hmac = HMACSHA1.Create();   //NOSONAR  - not security sensitive context
-                hmac.Key = signingKey;
+                hmac = new HMACSHA1(signingKey);  //NOSONAR  - not security sensitive context
             }
             catch (PlatformNotSupportedException)
             {
-                try
-                {
-                    var sha1 = new HMACSHA1(signingKey);  //NOSONAR  - not security sensitive context
-                    hmac = sha1;
-                }
-                catch (PlatformNotSupportedException)
-                {
-                    return false;
-                }
+                return false;
             }
             licenseSignature = hmac.ComputeHash(licenseAuth);
             hmac.Dispose();

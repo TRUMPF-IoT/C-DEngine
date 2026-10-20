@@ -269,7 +269,10 @@ namespace nsCDEngine.Security
             {
                 if (Environment.OSVersion.Platform == PlatformID.Unix)
                     return CertOnUnixCheck(filePath, verifyIntegrity);
+                // X509CertificateLoader cannot extract the signer certificate from an Authenticode-signed PE file; only this constructor can (Windows CryptQueryObject)
+#pragma warning disable SYSLIB0057
                 cert = new X509Certificate2(filePath);
+#pragma warning restore SYSLIB0057
             }
             catch (Exception) // Unable to read certificate using X509Certificate2 class: read ourselves if on Linux
             {
@@ -580,7 +583,10 @@ namespace nsCDEngine.Security
                         try
                         {
                             var certs = new X509Certificate2Collection();
+                            // X509CertificateLoader cannot parse the PKCS#7 Authenticode blob; Import is the only loader for it without the optional Pkcs assembly
+#pragma warning disable SYSLIB0057
                             certs.Import(certificateBytes);
+#pragma warning restore SYSLIB0057
                             if (TSM.L(eDEBUG_LEVELS.ESSENTIALS))
                             {
                                 TheBaseAssets.MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 25666, "ReadPECertificateFromBinaryImage", $"Certs Found: {certs?.Count}", eMsgLevel.l7_HostDebugMessage);
@@ -687,7 +693,7 @@ namespace nsCDEngine.Security
             }
 
             byte[] fileHash;
-            using (var sha1 = new System.Security.Cryptography.SHA1Managed()) //NOSONAR - required for CodeSigning to work properly
+            using (var sha1 = System.Security.Cryptography.SHA1.Create()) //NOSONAR - required for CodeSigning to work properly
             {
                 fileHash = sha1.ComputeHash(signedImageContent);
             }

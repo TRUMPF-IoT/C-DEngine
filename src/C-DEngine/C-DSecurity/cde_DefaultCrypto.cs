@@ -46,7 +46,7 @@ namespace nsCDEngine.Security
         {
             if (toEncrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new ();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
+            using Aes myRijndael = Aes.Create();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform encryptor = myRijndael.CreateEncryptor(AK, AI);
             MemoryStream msEncrypt = new ();
             CryptoStream csEncrypt = new (msEncrypt, encryptor, CryptoStreamMode.Write);
@@ -70,7 +70,7 @@ namespace nsCDEngine.Security
         {
             if (toDecrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new (); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
+            using Aes myRijndael = Aes.Create(); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform decryptor = myRijndael.CreateDecryptor(AK, AI);
             byte[] resultArray = decryptor.TransformFinalBlock(toDecrypt, 0, toDecrypt.Length);
             myRijndael.Clear();
