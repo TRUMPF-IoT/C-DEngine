@@ -121,21 +121,6 @@ namespace nsCDEngine.Communication
 
         internal static bool StartCommunications()
         {
-            if (!TheCommonUtils.IsFeather())
-            {
-                System.Net.ServicePointManager.ServerCertificateValidationCallback += ValidateServerCertificate;
-                if (!TheBaseAssets.MyServiceHostInfo.DisableTls12)
-                {
-                    try
-                    {
-                        System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
-                    }
-                    catch
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(505, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", $"Setting of SecurityProtocol to TLS1.2 failed. This node will only support {System.Net.ServicePointManager.SecurityProtocol}", eMsgLevel.l1_Error));
-                    }
-                }
-            }
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType != cdeHostType.IIS && TheBaseAssets.MyServiceHostInfo.cdeHostingType != cdeHostType.ASPCore && !TheCommonUtils.IsHostADevice() && TheBaseAssets.MyServiceHostInfo.cdeNodeType != cdeNodeType.Active)
             {
 #if CDE_MINIHTTP
