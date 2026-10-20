@@ -1059,7 +1059,7 @@ namespace nsCDEngine.ISM
                         if (stream != null)
                         {
                             buffer = new byte[stream.Length];
-                            stream.Read(buffer, 0, buffer.Length);
+                            stream.ReadExactly(buffer, 0, buffer.Length);
                         }
                     }
                     break;

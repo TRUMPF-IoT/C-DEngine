@@ -2240,7 +2240,7 @@ namespace nsCDEngine.Engines.StorageService
 
                                     // Read the stream efficiently into a rented buffer or array
                                     byte[] buffer = new byte[fileStream.Length];
-                                    fileStream.Read(buffer);
+                                    fileStream.ReadExactly(buffer, 0, buffer.Length);
 
                                     Utf8JsonReader reader = new Utf8JsonReader(buffer);
 

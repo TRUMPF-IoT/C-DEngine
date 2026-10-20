@@ -301,7 +301,9 @@ namespace nsCDEngine.Discovery
                                         {
                                             try
                                             {
+#pragma warning disable CA1416 // Validate platform compatibility
                                                 tI.IsDnsEnabled = unicastAddress.IsDnsEligible;
+#pragma warning restore CA1416 // Validate platform compatibility
                                             }
                                             catch (PlatformNotSupportedException)
                                             {

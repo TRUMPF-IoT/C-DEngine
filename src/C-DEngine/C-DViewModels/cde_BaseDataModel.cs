@@ -901,7 +901,7 @@ namespace nsCDEngine.ViewModels
                         return (_postDataStream as MemoryStream).GetBuffer();
                     }
                     var buffer = new byte[_postDataStream.Length];
-                    _postDataStream.Read(buffer, 0, (int)_postDataStream.Length);
+                    _postDataStream.ReadExactly(buffer, 0, (int)_postDataStream.Length);
                     return buffer;
                 }
                 return null;

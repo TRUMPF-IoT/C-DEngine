@@ -106,7 +106,16 @@ namespace nsCDEngine.ISM
                         t.WaitReason = "Not Waiting";
                     else
                         t.WaitReason = ThreadWaitReasonToString(pt.WaitReason);
-                    t.StartTime = pt.StartTime;
+#pragma warning disable CA1416 // Validate platform compatibility
+                    try
+                    {
+                        t.StartTime = pt.StartTime;
+                    }
+                    catch (Exception)
+                    {
+                        t.StartTime = DateTime.MinValue;
+                    }
+#pragma warning restore CA1416 // Validate platform compatibility
                     tList.Add(t);
                 }
             }

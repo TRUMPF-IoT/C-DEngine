@@ -538,7 +538,7 @@ namespace nsCDEngine.Security
             if (pCounter == 1 && pSessionID == Guid.Empty && (MyServiceHostInfo?.UseFixedConnectionUrl != true))
                 pSessID = "P" + GetCryptoGuid().ToString().Substring(1);
             MyServiceHostInfo?.MyKPIs?.IncrementKPI(eKPINames.KPI4);
-            string tPath = PathPrefix + "ISB" + Uri.EscapeUriString(Base64Encode($"{string.Format("{0:00000}",CU.GetRandomUInt(0, 99999))}{(string.IsNullOrEmpty(MyServiceHostInfo?.ProtocolVersion)?"40":MyServiceHostInfo?.ProtocolVersion)}_{pCounter}_{((int)(pOriginType))}_{pSessID}"));
+            string tPath = PathPrefix + "ISB" + Uri.EscapeDataString(Base64Encode($"{string.Format("{0:00000}",CU.GetRandomUInt(0, 99999))}{(string.IsNullOrEmpty(MyServiceHostInfo?.ProtocolVersion)?"40":MyServiceHostInfo?.ProtocolVersion)}_{pCounter}_{((int)(pOriginType))}_{pSessID}"));
             if (IsWS && (pDestinationType == cdeSenderType.CDE_CLOUDROUTE || pDestinationType == cdeSenderType.CDE_SERVICE || pDestinationType == cdeSenderType.CDE_CUSTOMISB))
                 tPath += ".ashx";
             return tPath;
