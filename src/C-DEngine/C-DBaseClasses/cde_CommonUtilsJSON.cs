@@ -207,7 +207,7 @@ namespace nsCDEngine.BaseClasses
                 // Handle string values: "true" or "false"
                 if (reader.TokenType == JsonTokenType.String)
                 {
-                    string? value = reader.GetString();
+                    string value = reader.GetString();
 
                     if (string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
                     {
@@ -268,7 +268,7 @@ namespace nsCDEngine.BaseClasses
         }
         public class cdeStringConverter : JsonConverter<string>
         {
-            public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType == JsonTokenType.Null)
                 {
@@ -304,12 +304,12 @@ namespace nsCDEngine.BaseClasses
         }
         extension(JsonNode node)
         {
-            private JsonNode? SelectToken(string path)
+            private JsonNode SelectToken(string path)
             {
                 if (node == null || string.IsNullOrWhiteSpace(path)) return null;
 
                 string[] parts = path.Split('.');
-                JsonNode? current = node;
+                JsonNode current = node;
 
                 foreach (var part in parts)
                 {
@@ -338,7 +338,7 @@ namespace nsCDEngine.BaseClasses
                 }
 
                 // Fallback: Parse the raw string value (handles braces, spaces, etc.)
-                string? rawValue = reader.GetString();
+                string rawValue = reader.GetString();
                 if (Guid.TryParse(rawValue, out Guid parsedGuid))
                 {
                     return parsedGuid;
