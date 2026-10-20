@@ -25,8 +25,6 @@
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
   </PropertyGroup>
 
-  <Import Project="..\cdeZLIB\cdeZLIB.projitems" Label="Shared" />
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="call &quot;$(ProjectDir)..\..\..\BuildTools\signmeSha.bat&quot; &quot;$(TargetPath)&quot;" />
   </Target>

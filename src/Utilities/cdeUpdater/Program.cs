@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-﻿using CDEngine.CDUtils.Zlib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.ServiceProcess;
 using System.Threading;
 
@@ -203,13 +203,10 @@ namespace cdeUpdater
                 {
                     try
                     {
-                        using (ZipFile zip = ZipFile.Read(tFile, new ReadOptions()))  //args[1] + "\\" +
-                        {
-                            if (tFile.ToUpper().EndsWith(".CDEX"))
-                                zip.ExtractAll(args[1], ExtractExistingFileAction.OverwriteSilently);
-                            else
-                                zip.ExtractAll(args[1] + $"{Path.DirectorySeparatorChar}ClientBin", ExtractExistingFileAction.OverwriteSilently);
-                        }
+                        if (tFile.ToUpper().EndsWith(".CDEX"))
+                            ZipFile.ExtractToDirectory(tFile, args[1], true);
+                        else
+                            ZipFile.ExtractToDirectory(tFile, args[1] + $"{Path.DirectorySeparatorChar}ClientBin", true);
                         File.Delete(tFile + ".old");
                         File.Move(tFile, tFile + ".old");
                     }
