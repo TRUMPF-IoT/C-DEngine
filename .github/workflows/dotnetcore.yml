@@ -47,12 +47,14 @@ jobs:
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v3
       with:
-          versionSpec: '5.12.x'
+          # Keep in sync with GitVersion.MsBuild in Directory.Build.targets
+          versionSpec: '5.6.6'
 
     - name: Use GitVersion
       id: gitversion # step id used as reference for output values
       uses: gittools/actions/gitversion/execute@v3
       env:
+        # GitVersion 5.6.6 targets an older runtime; roll forward to the installed .NET SDK
         DOTNET_ROLL_FORWARD: Major
 
     - name: Gitversion info
