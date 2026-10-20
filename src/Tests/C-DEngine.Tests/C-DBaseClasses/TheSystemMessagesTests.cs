@@ -45,7 +45,7 @@ namespace CDEngine.BaseClasses.Net45.Tests
             });
             TheCommCore.PublishCentral(testMsg, true);
             TheCommonUtils.SleepOneEye(5000, 1000);
-            Assert.That(1, Is.EqualTo(numberOfMessages));
+            Assert.That(numberOfMessages, Is.EqualTo(1));
         }
 
         // Tests the eEngineEvents.IncomingMessage2 - fired for both Thing and Engine messages
@@ -67,7 +67,7 @@ namespace CDEngine.BaseClasses.Net45.Tests
             testMsg.SetOriginatorThing(contentServiceThing);
             TheCommCore.PublishCentral(testMsg, true);
             TheCommonUtils.SleepOneEye(5000, 1000);
-            Assert.That(2, Is.EqualTo(numberOfMessages));
+            Assert.That(numberOfMessages, Is.EqualTo(2));
         }
 
         [SetUp]

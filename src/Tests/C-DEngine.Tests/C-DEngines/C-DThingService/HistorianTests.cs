@@ -631,7 +631,7 @@ namespace CDEngine.ThingService.Net45.Tests
         {
             System.Diagnostics.Debug.WriteLine(String.Format($"{DateTimeOffset.Now:O}: {format}", args));
             Console.WriteLine(format, args);
-            TestContext.WriteLine(format, args);
+            TestContext.Out.WriteLine(format, args);
         }
     }
 }

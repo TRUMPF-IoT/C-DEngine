@@ -319,6 +319,7 @@ namespace cdeUpdater
         {
             try
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 System.Management.ManagementScope scope = new ("root\\MicrosoftIISv2");
                 scope.Connect();
                 System.Management.ManagementObject appPool = new (scope, new System.Management.ManagementPath("IIsApplicationPool.Name='W3SVC/AppPools/" + pPoolName + "'"), null);
@@ -326,6 +327,7 @@ namespace cdeUpdater
                     appPool?.InvokeMethod("Recycle", null, null);
                 else
                     appPool?.InvokeMethod("Stop", null, null);
+#pragma warning restore CA1416 // Validate platform compatibility
             }
             catch (Exception ee)
             {
@@ -335,6 +337,7 @@ namespace cdeUpdater
 
         private static void StartStopService(bool StartService, string processName, string processDirectory, int processPid)
         {
+#pragma warning disable CA1416 // Validate platform compatibility
             ServiceController service = new (processName);
             try
             {
@@ -359,6 +362,7 @@ namespace cdeUpdater
             {
                 //ignored
             }
+#pragma warning restore CA1416 // Validate platform compatibility
         }
 
         static private bool IsMainProcessRunning(string pMainExecutable, string processDirectory, int processPid)

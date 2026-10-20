@@ -1,5 +1,5 @@
 <!--
- SPDX-FileCopyrightText: Copyright (c) 2009-2025 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-FileCopyrightText: Copyright (c) 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project Sdk="Microsoft.NET.Sdk">
@@ -10,7 +10,7 @@
     <RootNamespace>cdeUpdater</RootNamespace>
     <AssemblyName>cdeUpdater</AssemblyName>
     <PackageId>cdeUpdater</PackageId>
-    <Version>7.107.0$(cdeNugetSuffix)</Version>
+    <Version>7.110.0$(cdeNugetSuffix)</Version>
     <Authors>Chris Muench</Authors>
     <Company>C-Labs</Company>
 	  <LangVersion>preview</LangVersion>
