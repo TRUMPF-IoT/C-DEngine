@@ -116,7 +116,6 @@ namespace nsCDEngine.PluginManagement
             }
         }
     }
-#if !CDE_NET35 && !CDE_NET4
     public class ThePluginPackager
     {
         /// <summary>
@@ -164,7 +163,7 @@ namespace nsCDEngine.PluginManagement
                         string tFinalFile = tFile;
                         try
                         {
-                            if (tFile.StartsWith("@"))  //If a Manifest file starts with @ this function expects this syntax: "@<platform>@<FileName>"
+                            if (tFile.StartsWith('@'))  //If a Manifest file starts with @ this function expects this syntax: "@<platform>@<FileName>"
                             {
                                 var tC = tFile.Split('@');
                                 if (tC.Length < 3)
@@ -330,5 +329,4 @@ namespace nsCDEngine.PluginManagement
         }
 
     }
-#endif
 }

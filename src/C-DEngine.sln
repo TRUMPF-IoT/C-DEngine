@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.1.32104.313
+# Visual Studio Version 18
+VisualStudioVersion = 18.11.12306.390 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "C-DEngine", "C-DEngine\C-DEngine.csproj", "{EEEF4CCB-7687-40B6-8762-73D1B292B8C7}"
 EndProject
@@ -13,8 +13,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cdePackager", "cdePackager", "{A95DA8B9-BEBE-4899-AA31-AEA75A69C12A}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "cdeNewtonsoft.JSON", "Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.shproj", "{3EF53A99-B09D-43E3-8F75-E5600D2F47E2}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "cdeZLIB", "Utilities\cdeZLIB\cdeZLIB.shproj", "{605AFF65-944E-4174-B92C-8180B3FA93C1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Utilities", "Utilities", "{00302EB8-53C6-4EF3-A8D0-20A75FB95CB7}"
 EndProject
@@ -109,7 +107,6 @@ Global
 		{422492BF-8238-4B4D-8633-CD8251650B52} = {A95DA8B9-BEBE-4899-AA31-AEA75A69C12A}
 		{A95DA8B9-BEBE-4899-AA31-AEA75A69C12A} = {00302EB8-53C6-4EF3-A8D0-20A75FB95CB7}
 		{3EF53A99-B09D-43E3-8F75-E5600D2F47E2} = {00302EB8-53C6-4EF3-A8D0-20A75FB95CB7}
-		{605AFF65-944E-4174-B92C-8180B3FA93C1} = {00302EB8-53C6-4EF3-A8D0-20A75FB95CB7}
 		{876458EC-9271-476D-B04C-4DBDBB062C12} = {FA9B9528-9051-4F66-A5AE-EC2A81B9041F}
 		{931CF659-4DF2-4FF9-9AAD-FD6F88E5B608} = {FA9B9528-9051-4F66-A5AE-EC2A81B9041F}
 		{C4CA7E29-1FFF-4A90-9D9F-2840E9C0A34D} = {FA9B9528-9051-4F66-A5AE-EC2A81B9041F}
@@ -120,8 +117,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{3ef53a99-b09d-43e3-8f75-e5600d2f47e2}*SharedItemsImports = 13
-		Utilities\cdeZLIB\cdeZLIB.projitems*{605aff65-944e-4174-b92c-8180b3fa93c1}*SharedItemsImports = 13
-		Utilities\cdeZLIB\cdeZLIB.projitems*{91c5c704-4777-46b5-9dc8-70d111dc4e23}*SharedItemsImports = 5
 		Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems*{eeef4ccb-7687-40b6-8762-73d1b292b8c7}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

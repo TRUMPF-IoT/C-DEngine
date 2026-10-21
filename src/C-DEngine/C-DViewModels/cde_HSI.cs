@@ -337,6 +337,11 @@ namespace nsCDEngine.ViewModels
             cdeHostingType = pType;
             cdeNodeType = pNodeType;
             BaseDirectory = baseDirectory;
+            ClientBinRootDirectory = baseDirectory;
+            if (TheBaseAssets.MySettings.HasSetting("ClientBinRootDirectory"))
+            {
+                ClientBinRootDirectory = TheBaseAssets.MySettings.GetSetting("ClientBinRootDirectory");
+            }
         }
 
         /// <summary>
@@ -385,14 +390,10 @@ namespace nsCDEngine.ViewModels
             DISCOMX = 3;
             DISCOSubnet = "";
             HeartbeatDelay = 5;
-            StatusColors = "gray;green;yellow;red;blue;brown;purple;black";
+            StatusColors = "gray;green;yellow;red;blue;purple;brown;black";
             CacheMaxAge = 10;
             TokenLifeTime = 3; //By default Token Lifetime is only 3 seconds
 
-#pragma warning disable CS0618 // Type or member is obsolete
-            //StationRoles = new List<string>();
-            //ApplicationRoles = new List<string>();
-#pragma warning restore CS0618 // Type or member is obsolete
             StartupEngines = new List<string>();
             IgnoredEngines = new List<string>();
             IsoEngines = new List<string>();
@@ -1344,6 +1345,15 @@ namespace nsCDEngine.ViewModels
             get;
             internal set;
         }
+        /// <summary>
+        /// New in 6.136.0: Client Bin Root Directory - this is the directory where the Client Bin Folder is located. This allows to run the C-DEngine in a subfolder and still have the Client Bin Folder in the root of the drive for better performance on slow drives
+        /// It requires the ClientBinRootDirectory to be set during startup in the appsettings.json and cannot be changed afterwards. If not set, the BaseDirectory will be used as the root for the Client Bin Folder (which is the default behavior of previous C-DEngine versions)
+        /// </summary>
+        public string ClientBinRootDirectory
+        {
+            get;
+            internal set;
+        }
 
         /// <summary>
         /// Application Name - has to match all nodes in mesh for UPnP auto-connect
@@ -1714,7 +1724,14 @@ namespace nsCDEngine.ViewModels
             internal set;
         }
 
-
+        /// <summary>
+        /// new in V7: If true, JSON Parser requires strict JSON string to parse. this is faster but less compatible with upgraded version of the CDE
+        /// </summary>
+        public bool UseStrictJSON
+        {
+            get;
+            set;
+        }
 
         public int TLDCGs
         {
@@ -1946,15 +1963,7 @@ namespace nsCDEngine.ViewModels
         /// If set to true during startup, this node will try to find Cloud nodes using Bing Search.
         /// </summary>
         public bool EnableBingScan { get; set; }
-        /// <summary>
-        /// True of the C-DEngine is running inside the Mono-Runtime
-        /// </summary>
-        [Obsolete("Consider using TheCommonUtils.cdeIsFileSystemCaseSensitive or IsOnLinux instead", false)] // CODE REVIEW Is this really still needed/encouraged?
-        public bool MonoDetected
-        {
-            get;
-            internal set;
-        }
+
         /// <summary>
         /// True if the C-Dengine is running on Mono
         /// </summary>
@@ -2480,6 +2489,9 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Full Type name of the Plugin Type - Required to load resources from the Plugin
         /// </summary>
+#if CDE_JSONET
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
         public Type EngineType { get; set; }  //This should not be public or deserializing of this property will crash during CDE_GET_SYSTEMINFO. Alternative TheEngineStateClone has to be used for deserialization
         /// <summary>
         /// Station URL of this service

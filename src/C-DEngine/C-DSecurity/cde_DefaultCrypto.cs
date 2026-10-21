@@ -46,7 +46,7 @@ namespace nsCDEngine.Security
         {
             if (toEncrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new ();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
+            using Aes myRijndael = Aes.Create();   //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform encryptor = myRijndael.CreateEncryptor(AK, AI);
             MemoryStream msEncrypt = new ();
             CryptoStream csEncrypt = new (msEncrypt, encryptor, CryptoStreamMode.Write);
@@ -70,7 +70,7 @@ namespace nsCDEngine.Security
         {
             if (toDecrypt == null || AK == null || AI == null)
                 return null;
-            AesManaged myRijndael = new (); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
+            using Aes myRijndael = Aes.Create(); //NOSONAR This method has to be overwritten in the OEM CryptoLib. 
             ICryptoTransform decryptor = myRijndael.CreateDecryptor(AK, AI);
             byte[] resultArray = decryptor.TransformFinalBlock(toDecrypt, 0, toDecrypt.Length);
             myRijndael.Clear();
@@ -145,11 +145,7 @@ namespace nsCDEngine.Security
                 rsa = new RSACryptoServiceProvider(2048);
                 rsa.FromXmlString(RSAKey);
             }
-#if (!CDE_STANDARD) // RSA Decrypt parameter different (padding enum vs. bool)
-                byte[] tBytes = rsa.Decrypt(val, false);
-#else
-            byte[] tBytes = rsa.Decrypt(val, RSAEncryptionPadding.Pkcs1);
-#endif
+            byte[] tBytes = rsa.Decrypt(val, false);
             return Encoding.UTF8.GetString(tBytes, 0, tBytes.Length);
         }
 
@@ -393,7 +389,7 @@ namespace nsCDEngine.Security
             if (string.IsNullOrEmpty(str))
                 return null;
             // To Do -- Handle arrays with an odd number of bytes (which cause an exception).
-            // Example: byte[] aOut = TheCommonUtils.ToHexByte("FAFAEEE");
+            // Example: byte[] aOut = TheCommonUtils.ToHexByte("FAFAEEE")
             if (str.Length % 2 == 1) //Fix here
                 str += "0";
             byte[] b = new byte[str.Length / 2];

@@ -15,7 +15,12 @@ using System.IO;
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 using System.Threading.Tasks;
@@ -349,7 +354,11 @@ namespace nsCDEngine.Engines.ThingService
             public string Units { get; set; }
             public double? RangeMin { get; set; }
             public double? RangeMax { get; set; }
+#if CDE_JSONET
+            [JsonExtensionData]
+#else
             [JsonExtensionData(ReadData = true, WriteData = true)]
+#endif
             public Dictionary<string, object> ExtensionData { get; set; }
 
             public TheConfigurationProperty()
@@ -451,7 +460,6 @@ namespace nsCDEngine.Engines.ThingService
 
         }
 
-#if !CDE_NET4
         public Task<TheThingConfiguration> GetThingConfigurationAsync(bool bGeneralize)
         {
             return GetThingConfigurationAsync(bGeneralize, false);
@@ -595,7 +603,6 @@ namespace nsCDEngine.Engines.ThingService
             }
             return thingConfig;
         }
-#endif
         private TheThingReference GeneralizeThingReference(TheThingReference thingReference)
         {
             // TODO also generalize other parts of the reference (Address?)
@@ -654,8 +661,6 @@ namespace nsCDEngine.Engines.ThingService
         {
             public string Error;
         }
-
-#if !CDE_NET4
 
         public async Task<bool> ApplyThingConfigurationAsync(TheThingConfiguration thingConfig)
         {
@@ -1028,9 +1033,7 @@ namespace nsCDEngine.Engines.ThingService
 
             return thingID;
         }
-#endif
-
-        #endregion
+#endregion
 
     }
 

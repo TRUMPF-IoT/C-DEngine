@@ -317,13 +317,13 @@ namespace nsCDEngine.ViewModels
 		internal int AccessMask { get; set; }
 		public List<string> Permissions { get; set; } // CODE REVIEW: Do these need to be hidden/encrypted like the AccessMask? What UX do we provide?
 		internal string Password { get; set; }
-        private TheMirrorCache<TheRefreshToken> _refreshTokens;
-        internal TheMirrorCache<TheRefreshToken> RefreshTokens
+        private TheMirrorCacheCore<TheRefreshToken> _refreshTokens;
+        internal TheMirrorCacheCore<TheRefreshToken> RefreshTokens
         {
             set { _refreshTokens = value; }
             get
             {
-                _refreshTokens ??= new TheMirrorCache<TheRefreshToken>(5);
+                _refreshTokens ??= new TheMirrorCacheCore<TheRefreshToken>(5);
                 return _refreshTokens;
             }
         }
@@ -405,7 +405,7 @@ namespace nsCDEngine.ViewModels
 #if JC_COMMDEBUG
 			return string.Format("ID:{0} UN:{1} EM:{2} ACL:{3} PW:{4} SID:{5}",cdeMID,UserName, EMail, AccessMask, Password, AssignedEasyScope);
 #else
-			return $"ID:{cdeMID} N:{HomeNode} NS:{NodeScope} UN:{UserName} EM:{EMail} ACL:{AccessMask} LCID:{LCID}".ToString(CultureInfo.InvariantCulture);
+			return $"ID:{cdeMID} N:{HomeNode} NS:{NodeScope} EM:{EMail} ACL:{AccessMask} LCID:{LCID}".ToString(CultureInfo.InvariantCulture);
 #endif
 
 		}

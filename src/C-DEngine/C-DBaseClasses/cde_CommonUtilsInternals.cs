@@ -196,7 +196,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static bool Check4ValidEmail(string userName)
         {
-            if (String.IsNullOrEmpty(userName))
+            if (string.IsNullOrEmpty(userName))
             {
                 return false;
             }
@@ -205,11 +205,11 @@ namespace nsCDEngine.BaseClasses
                 return false;
             }
             // TODO Do RegEx validation (like in NMI/.TS)
-            //var RegExp = new RegexStringValidator("[a-z0-9!#$%&'*+\\=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?");
-            ////var filter:RegExp = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-            ////var filter:RegExp = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:[A-Z]{2}|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)/;
-            //if (!email || !filter.test(email.toLowerCase()) || email.substring(0, 1) === '.' || email.substring(email.length - 1, 1) === '.')
-            //    return false;
+            //var RegExp = new RegexStringValidator("[a-z0-9!#$%&'*+\\=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+\\=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+            ////var filter:RegExp = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/
+            ////var filter:RegExp = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+(?:[A-Z]{2}|com|org|net|gov|biz|info|name|aero|biz|info|jobs|museum)/
+            // !email || !filter.test(email.toLowerCase()) || email.substring(0, 1) === '.' || email.substring(email.length - 1, 1) === '.'
+            //    return false
             return true;
         }
         #endregion
@@ -446,24 +446,11 @@ namespace nsCDEngine.BaseClasses
                     Stream imgStream = a.GetManifestResourceStream(t[i]);
                     if (imgStream != null)
                     {
-#if !CDE_NET35
                         using (MemoryStream ms = new ())
                         {
                             imgStream.CopyTo(ms);
                             return ms.ToArray();
                         }
-#else
-                    byte[] buffer = new byte[TheBaseAssets.MAX_MessageSize[0]];
-                    using (MemoryStream ms = new MemoryStream())
-                    {
-                        int read;
-                        while ((read = imgStream.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            ms.Write(buffer, 0, read);
-                        }
-                        return ms.ToArray();
-                    }
-#endif
                     }
                 }
             }
@@ -558,15 +545,7 @@ namespace nsCDEngine.BaseClasses
 
         internal static void CloseOrDispose(WaitHandle asyncWaitHandle)
         {
-#if !NET35
             asyncWaitHandle?.Dispose();
-#else
-            try
-            {
-                asyncWaitHandle?.Close();
-            }
-            catch { }
-#endif
         }
 
         internal class TaskKPIs
@@ -916,22 +895,14 @@ namespace nsCDEngine.BaseClasses
                 {
                     var exeSinceStart = (now - tStartTime).TotalMilliseconds;
                     //CODE-REVIEW: this is very dangerous to WriteToLog here especially if this is happening during the systemlog already writing. We either need to exclude "RunAsync" by default from SystemLoggin and have it turned on or keep the log level hight to avoid collisions
-#if CDE_NET35 || CDE_NET4
-                     TheBaseAssets.MySYSLOG?.WriteToLog(TSM.L(eDEBUG_LEVELS.VERBOSE)?null: new TSM("RunAsync", $"DoFireEventTPM Async timed out {pFireEventTimeout} ms - elapsed: {exeSinceCreate}, since start: {exeSinceStart}", eMsgLevel.l2_Warning), 5002);
-#else
                     var outputMsg = innerAction.Method.Name;
                     TheBaseAssets.MySYSLOG?.WriteToLog(TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("RunAsync", $"DoFireEventTPM Async timed out {pFireEventTimeout} ms in Target:{outputMsg} - elapsed: {exeSinceCreate}, since start: {exeSinceStart}", eMsgLevel.l2_Warning), 5002);
-#endif
                     TheCDEKPIs.IncrementKPI(eKPINames.EventTimeouts);
                     TheCDEKPIs.IncrementKPI(eKPINames.TotalEventTimeouts);
                 }
             });
         }
-#if CDE_NET4 || CDE_NET35
-        private static readonly TaskCreationOptions defaultTaskCreationOptions = TaskCreationOptions.PreferFairness;
-#else
         private static readonly TaskCreationOptions defaultTaskCreationOptions = TaskCreationOptions.DenyChildAttach | TaskCreationOptions.PreferFairness;
-#endif
         private sealed class PendingTask
         {
             public Task task;
@@ -947,19 +918,9 @@ namespace nsCDEngine.BaseClasses
         /// <typeparam name="T">Type of the task being returned.</typeparam>
         /// <param name="task">Task to be returned from the conditionally compiled async function.</param>
         /// <returns></returns>
-        internal static
-#if !CDE_NET4
-        System.Threading.Tasks.Task<T>
-#else
-        T
-#endif
-            TaskOrResult<T>(System.Threading.Tasks.Task<T> task)
+        internal static Task<T>TaskOrResult<T>(Task<T> task)
         {
-#if !CDE_NET4
             return task;
-#else
-            return task.Result;
-#endif
         }
 
         /// <summary>
@@ -968,19 +929,9 @@ namespace nsCDEngine.BaseClasses
         /// <typeparam name="T">Type of the Task being returned.</typeparam>
         /// <param name="result">Value to be returned from the conditionally compiled async function.</param>
         /// <returns></returns>
-        internal static
-#if !CDE_NET4
-        T
-#else
-        System.Threading.Tasks.Task<T>
-#endif
-            TaskOrResult<T>(T result)
+        internal static T TaskOrResult<T>(T result)
         {
-#if !CDE_NET4
             return result;
-#else
-            return TaskFromResult<T>(result);
-#endif
         }
 
         internal static cdePlatform GetAssemblyPlatform(Assembly tAss, bool bAdjustForHostProcess, bool bDiagnostics, out string diagnosticsInfo)
@@ -1000,48 +951,19 @@ namespace nsCDEngine.BaseClasses
             }
             else
             {
-#if !CDE_NET35
-                // Net 4.x, including .Net Standard
-#if !CDE_NET4
                 var targetFrameworkData = tAss.GetCustomAttributesData()?.FirstOrDefault(at => at.AttributeType.FullName == typeof(System.Runtime.Versioning.TargetFrameworkAttribute).FullName);
                 var nameArg = targetFrameworkData?.ConstructorArguments[0];
                 targetFrameworkSku = nameArg?.Value?.ToString();
-#else
-                // No real need to distinguish on .Net4 hosts: all plug-ins on a .Net4 C-DEngine will be considered as .Net4 plug-ins
-                targetFrameworkSku = ".NETFramework,Version=v4.0";
-#endif
-#else
-                targetFrameworkSku = ".NETFramework,Version=v3.5";
-#endif
             }
             var targetFramework = new FrameworkName(targetFrameworkSku);
 
             if (bDiagnostics)
             {
-                diagnosticsInfo += $"AssemblyInfo: {new Uri(tAss.CodeBase).LocalPath},{runtimeVersion},{targetFrameworkSku},{assemblyPEKind},{assemblyPlatform}\r\n";
-#if !CDE_NET35
-                diagnosticsInfo += (Directory.EnumerateFiles(Path.GetDirectoryName(new Uri(tAss.CodeBase).LocalPath)).Aggregate("", (s, f) => $"{s} {f}"));
-#endif
+                diagnosticsInfo += $"AssemblyInfo: {tAss.Location},{runtimeVersion},{targetFrameworkSku},{assemblyPEKind},{assemblyPlatform}\r\n";
+                diagnosticsInfo += (Directory.EnumerateFiles(Path.GetDirectoryName(tAss.Location)).Aggregate("", (s, f) => $"{s} {f}"));
             }
             return GetCDEPlatform(assemblyPlatform, targetFramework, assemblyPEKind, bAdjustForHostProcess);
         }
-
-#if CDE_NET35
-        // Just a stub for .Net35: we'll consider all plug-ins loaded into a .Net35 C-DEngine to be .Net35 plug-ins
-        class FrameworkName
-        {
-            public FrameworkName(string sku)
-            {
-                Identifier = ".NETFramework";
-                Version = new Version(3, 5);
-                SKU = sku;
-            }
-
-            public string Identifier { get; internal set; }
-            public Version Version { get; internal set; }
-            public string SKU { get; internal set; }
-        }
-#endif
 
         private static cdePlatform GetCDEPlatform(ImageFileMachine assemblyPlatform, FrameworkName targetFramework, PortableExecutableKinds pPEKind, bool bAdjustForHostProcess)
         {
@@ -1135,21 +1057,15 @@ namespace nsCDEngine.BaseClasses
         private static bool IsI386Image64Bit(PortableExecutableKinds pPEKind, bool bAdjustForHostProcess)
         {
             bool bIs64Bit;
-#if !CDE_NET35
             if (bAdjustForHostProcess)
             {
                 bIs64Bit = Environment.Is64BitProcess; // regardless of PEKind, if it's loaded in a 64bit process it's 64bit capable
             }
             else
-#endif
             {
                 if (
                     ((pPEKind & PortableExecutableKinds.ILOnly) != 0 || (pPEKind & PortableExecutableKinds.PE32Plus) != 0)
-                    && (pPEKind & PortableExecutableKinds.Required32Bit) == 0
-#if !CDE_NET35 && !CDE_NET4
-                                                    && (pPEKind & PortableExecutableKinds.Preferred32Bit) == 0
-#endif
-                                                )
+                    && (pPEKind & PortableExecutableKinds.Required32Bit) == 0 && (pPEKind & PortableExecutableKinds.Preferred32Bit) == 0)
                     bIs64Bit = true;
                 else
                     bIs64Bit = false;
@@ -1179,11 +1095,7 @@ namespace nsCDEngine.BaseClasses
             if (pMessage.PLB != null && pMessage.PLB.Length > 0)
             {
                 fileBytes = pMessage.PLB;
-#if PORTABLE
-                        if (!tTargetFileName.Contains("\\") && !tTargetFileName.Contains("/"))
-#else
                 if (!tTargetFileName.Contains(Path.DirectorySeparatorChar) && !tTargetFileName.Contains(Path.AltDirectorySeparatorChar))
-#endif
                 {
                     // CODE REVIEW: While this is more correct than tTargetFileName.ToUpper().EndsWith("PNG") it is also more stricts (i.e. foo.myPNG will not longer match). ARe there use cases for the less stringent match?
                     var extension = Path.GetExtension(tTargetFileName).ToUpper();
@@ -1256,14 +1168,10 @@ namespace nsCDEngine.BaseClasses
 
                     FileStream _FileStream = new (FileToReturn, FileMode.Create, FileAccess.Write);
                     _FileStream.Write(fileBytes, 0, fileBytes.Length);
-#if CDE_STANDARD   //Core uses Dispose not CLose
                     _FileStream.Dispose();
-#else
-                    _FileStream.Close();
-#endif
                     if (IsImage)
                     {
-#if !CDE_STANDARD   //No System.Drawing
+#if CDE_GRAPHICS
                         System.Drawing.Imaging.ImageFormat tFormat = System.Drawing.Imaging.ImageFormat.Jpeg;
                         if (Extension.Equals(".PNG"))
                             tFormat = System.Drawing.Imaging.ImageFormat.Png;
@@ -1419,11 +1327,11 @@ namespace nsCDEngine.BaseClasses
 
         internal static string cdeFixupFileName(string pFilePath, bool AllowCacheAccess)
         {
-            if (pFilePath == null || string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.BaseDirectory))
+            if (pFilePath == null || string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory))
             {
                 return null;
             }
-            string fileToReturn = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
+            string fileToReturn = TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory;
             if (!pFilePath.StartsWith("clientbin", StringComparison.CurrentCultureIgnoreCase))
             {
                 fileToReturn = Path.Combine(fileToReturn, "ClientBin");
@@ -1473,7 +1381,6 @@ namespace nsCDEngine.BaseClasses
             {
                 try
                 {
-#if !CDE_NET35
                     var firstFile = Directory.EnumerateFiles(TheBaseAssets.MyServiceHostInfo.BaseDirectory).FirstOrDefault();
                     if (firstFile != null)
                     {
@@ -1485,9 +1392,6 @@ namespace nsCDEngine.BaseClasses
                         TheBaseAssets.MySYSLOG?.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommonUtils", "Filesystem case-sensitivity: Unable to determine - assuming case-insensitive.", eMsgLevel.l2_Warning));
                         _fileSystemCaseSensitive = false;
                     }
-#else
-                    _fileSystemCaseSensitive = false;
-#endif
                 }
                 catch (Exception e)
                 {
@@ -1498,52 +1402,51 @@ namespace nsCDEngine.BaseClasses
             return _fileSystemCaseSensitive.Value;
         }
 
-#if !CDE_STANDARD   //No System.Drawing
+#if CDE_GRAPHICS
         private static byte[] CreateImageThumbnail(byte[] byteArrayIn, float pWidth, float pHeight, System.Drawing.Imaging.ImageFormat pFormat)
         {
-            MemoryStream ms = new MemoryStream(byteArrayIn);
-            System.Drawing.Image imgToResize = System.Drawing.Image.FromStream(ms);
+            try
+            {
+                MemoryStream ms = new MemoryStream(byteArrayIn);
+                System.Drawing.Image imgToResize = System.Drawing.Image.FromStream(ms);
 
-            int sourceWidth = imgToResize.Width;
-            int sourceHeight = imgToResize.Height;
-            float nPercentW = pWidth / sourceWidth;
-            float nPercentH = pHeight / sourceHeight;
-            float nPercent;
-            if (nPercentH < nPercentW)
-                nPercent = nPercentH;
-            else
-                nPercent = nPercentW;
+                int sourceWidth = imgToResize.Width;
+                int sourceHeight = imgToResize.Height;
+                float nPercentW = pWidth / sourceWidth;
+                float nPercentH = pHeight / sourceHeight;
+                float nPercent;
+                if (nPercentH < nPercentW)
+                    nPercent = nPercentH;
+                else
+                    nPercent = nPercentW;
 
-            int destWidth = (int)(sourceWidth * nPercent);
-            int destHeight = (int)(sourceHeight * nPercent);
+                int destWidth = (int)(sourceWidth * nPercent);
+                int destHeight = (int)(sourceHeight * nPercent);
 
-            System.Drawing.Bitmap b = new System.Drawing.Bitmap(destWidth, destHeight);
-            System.Drawing.Graphics g = System.Drawing.Graphics.FromImage((System.Drawing.Image)b);
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                System.Drawing.Bitmap b = new System.Drawing.Bitmap(destWidth, destHeight);
+                System.Drawing.Graphics g = System.Drawing.Graphics.FromImage((System.Drawing.Image)b);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
 
-            g.DrawImage(imgToResize, 0, 0, destWidth, destHeight);
-            g.Dispose();
+                g.DrawImage(imgToResize, 0, 0, destWidth, destHeight);
+                g.Dispose();
 
-            ms = new MemoryStream();
-            ((System.Drawing.Image)b).Save(ms, pFormat);
-            return ms.ToArray();
+                ms = new MemoryStream();
+                ((System.Drawing.Image)b).Save(ms, pFormat);
+                b.Dispose();
+                return ms.ToArray();
+            }
+            catch (Exception e)
+            {
+                TheBaseAssets.MySYSLOG.WriteToLog(454, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM(eEngineName.ContentService, "Error Creating Thumbnail", eMsgLevel.l1_Error, e.ToString()), true);
+                return null;
+            }
         }
+#endif
 
-        [System.Runtime.InteropServices.DllImport("Shlwapi.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private extern static bool PathFileExists(StringBuilder path);
-
-        internal static bool cdeFileExists(string pName)
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(pName);
-            return PathFileExists(builder);
-        }
-#else
         internal static bool cdeFileExists(string pName)
         {
             return File.Exists(pName);
         }
-#endif
-        #endregion
+#endregion
     }
 }

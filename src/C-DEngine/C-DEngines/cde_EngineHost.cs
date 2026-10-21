@@ -34,9 +34,11 @@ namespace nsCDEngine.Engines
         /// Interface to the Current StorageService
         /// NOTE: This will be replace by MyIStorageService in V5- please migrate your code to use MyIStorageService
         /// </summary>
-        //[Obsolete("Please use MyIStorageService instead. This will be removed in V5")]
-        //public static IStorageService MyStorageService;
-
+        private static ICacheStore _MyICacheStore = null;
+        public static ICacheStore MyICacheStore
+        {
+            get { return _MyICacheStore; }
+        }
         private static IStorageService _MyIStorageService = null;
         /// <summary>
         /// Interface to the Current StorageService
@@ -54,9 +56,6 @@ namespace nsCDEngine.Engines
         {
             if (pService == null)
                 return false;
-#pragma warning disable CS0618 // Type or member is obsolete
-            //MyStorageService = pService;
-#pragma warning restore CS0618 // Type or member is obsolete
             if (MyIStorageService == null)
             {
                 _MyIStorageService = pService;
@@ -65,9 +64,6 @@ namespace nsCDEngine.Engines
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(4138, new TSM("TheCDEngines", "Distributed StorageService could not be started. Node falls back to local storage only", eMsgLevel.l2_Warning));
                     _MyIStorageService = null;
-#pragma warning disable CS0618 // Type or member is obsolete
-                    //MyStorageService = null;
-#pragma warning restore CS0618 // Type or member is obsolete
                 }
                 return Succes;
             }
@@ -146,7 +142,7 @@ namespace nsCDEngine.Engines
         /// <returns></returns>
         public static List<object> GetStorageDefinitions()
         {
-            return MyStorageMirrorRepository?.Values?.ToList().FindAll(sm => sm != null && sm is TheStorageMirror<StorageDefinition>);
+            return MyStorageMirrorRepository?.Values?.ToList().FindAll(sm => sm is TheStorageMirror<StorageDefinition>);
         }
 
         /// <summary>
@@ -215,11 +211,8 @@ namespace nsCDEngine.Engines
         /// </summary>
         public static Action<string> eventPluginStarted;
 
-        /// <summary>
-        /// Fires when All Engines have been started
-        /// RETIRED in V4: please use TheBaseEngine.WaitForEnginesStarted(). Will be removed in V5
-        /// </summary>
-        public static Action eventAllEnginesStarted;
+
+        internal static Action eventAllEnginesStarted2;
 
         /// <summary>
         /// Fires when all Engines are Ready
@@ -288,6 +281,7 @@ namespace nsCDEngine.Engines
                 tStorageEngine = CreatePlugin(tStore.Key);
                 if (tStorageEngine != null && !SetStorageService((IStorageService)tStorageEngine?.AssociatedPlugin))
                     tStorageEngine = null;
+                _MyICacheStore = tStorageEngine?.AssociatedPlugin as ICacheStore;
             }
             TheBaseAssets.MyApplication?.MyUserManager?.Init(!TheBaseAssets.MyServiceHostInfo.IsUserManagerInStorage || MyIStorageService == null, false);
             TheBaseAssets.MySYSLOG.WriteToLog(4143, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheBaseApplication", "UserManager Started", eMsgLevel.l3_ImportantMessage));
@@ -356,11 +350,7 @@ namespace nsCDEngine.Engines
                         {
                             PluginType = mEng.GetType(),
                             ServiceName = mEng.GetType().FullName,
-#if CDE_NET35 || CDE_NET4
-                            PluginPath = mEng.GetType().Assembly.Location
-#else
                             PluginPath = mEng.GetType().GetTypeInfo().Assembly.Location
-#endif
                         });
                     }
                 }
@@ -373,7 +363,6 @@ namespace nsCDEngine.Engines
                 return;
             }
 
-#if !CDE_NET4
             if (!TheCommonUtils.IsFeather())
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(4172, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCDEngines", "Applying .cdeconfig files", eMsgLevel.l7_HostDebugMessage));
@@ -404,7 +393,6 @@ namespace nsCDEngine.Engines
                     }
                 });
             }
-#endif
             TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Starting Engines", eMsgLevel.l7_HostDebugMessage));
 
             IsHostReady = TheThingRegistry.RegisterHost();
@@ -517,15 +505,15 @@ namespace nsCDEngine.Engines
             StartIsolatedPlugins();
             TheBaseAssets.MyServiceHostInfo.AreAllEnginesStarted = true;
             TheBaseAssets.MySYSLOG.WriteToLog(4133, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "All Engines Started", eMsgLevel.l3_ImportantMessage));
-            if (eventAllEnginesStarted != null)
+            if (eventAllEnginesStarted2 != null)
             {
                 try
                 {
-                    eventAllEnginesStarted();
+                    eventAllEnginesStarted2.Invoke();
                 }
                 catch (Exception e)
                 {
-                    TheBaseAssets.MySYSLOG.WriteToLog(4134, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "Some Plugin Crashed during AllengineStarted event", eMsgLevel.l2_Warning, e.ToString()));
+                    TheBaseAssets.MySYSLOG.WriteToLog(4134, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheCDEngines", "Some Plugin Crashed during AllEngineStarted event", eMsgLevel.l2_Warning, e.ToString()));
                 }
             }
             if (TheBaseAssets.MyApplication.MyCommonDisco != null)
@@ -1035,31 +1023,7 @@ namespace nsCDEngine.Engines
             DirectoryInfo di = new (UpdateDirectory);
             try
             {
-#if !CDE_NET35 && !CDE_STANDARD //Child Domains not supported on NET35
-                //Create separate AppDomain to probe for Plugin Types
-                var settings = new AppDomainSetup
-                {
-                    ApplicationBase = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash() // AppDomain.CurrentDomain.BaseDirectory,
-                };
-                if (!TheBaseAssets.MyServiceHostInfo.IsCloudService && TheBaseAssets.MyServiceHostInfo.cdeHostingType!=cdeHostType.IIS)
-                {
-                    System.Security.Policy.Evidence adevidence = AppDomain.CurrentDomain.Evidence;
-                    var childDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), adevidence, settings);
-                    childDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
-                    var handle = Activator.CreateInstance(childDomain,
-                    typeof(ReferenceLoader).Assembly.FullName,
-                    typeof(ReferenceLoader).FullName,
-                    false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.CurrentCulture, new object[0]);
-                    var loader = (ReferenceLoader)handle.Unwrap();
-                    ProcessDirectory(di, "", UpdateDirectory, loader);
-                    AppDomain.Unload(childDomain);
-                }
-                else
-#endif
-                {
-                    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += new ResolveEventHandler(CurrentDomain_ReflectionOnlyAssemblyResolve);
-                    ProcessDirectory(di, "", UpdateDirectory, new ReferenceLoader());
-                }
+                ProcessDirectory(di, "", UpdateDirectory, new ReferenceLoader());
             }
             catch (Exception e)
             {
@@ -1067,13 +1031,6 @@ namespace nsCDEngine.Engines
             }
         }
 
-        static Assembly CurrentDomain_ReflectionOnlyAssemblyResolve(object sender, ResolveEventArgs args)
-        {
-            var name = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
-            return System.Reflection.Assembly.ReflectionOnlyLoad(name);
-        }
-
-        static bool _platformDoesNotSupportReflectionOnlyLoadFrom;
         internal class ReferenceLoader : MarshalByRefObject
         {
             public List<string> ScanForCDEPlugins(string assemblyPath, out TSM resTSM) //,ref Dictionary<string, Type> pCDEPlugins)
@@ -1081,22 +1038,7 @@ namespace nsCDEngine.Engines
                 resTSM = null;
                 List<string> mList = new ();
 
-                Assembly tAss = null;
-                if (!_platformDoesNotSupportReflectionOnlyLoadFrom)
-                {
-                    try
-                    {
-                        tAss = Assembly.ReflectionOnlyLoadFrom(assemblyPath);
-                    }
-                    catch (PlatformNotSupportedException) //No Assembly.ReflectionOnlyLoadFrom
-                    {
-                        _platformDoesNotSupportReflectionOnlyLoadFrom = true;
-                    }
-                }
-                if (_platformDoesNotSupportReflectionOnlyLoadFrom)
-                {
-                    tAss = Assembly.LoadFrom(assemblyPath);
-                }
+                Assembly tAss = Assembly.LoadFrom(assemblyPath);
 
                 if (tAss != null)
                 {
@@ -1327,6 +1269,9 @@ namespace nsCDEngine.Engines
     {
         public string EngineName;
         public string FriendlyName;
+#if CDE_JSONET
+        [System.Text.Json.Serialization.JsonIgnore]
+#endif
         public Type EngineType;
         public string EngineID;
         public double Version;
@@ -1581,60 +1526,6 @@ namespace nsCDEngine.Engines
                 //ignored
             }
         }
-
-        private static void ApplySensorPropertyExtensionAttributes(Type thingType, TheDeviceTypeInfo dt, PropertyInfo[] thingTypeProps)
-        {
-            foreach (var prop in thingTypeProps)
-            {
-                SensorPropertyExtensionAttribute sensorExtensionAttribute = null;
-                try
-                {
-                    sensorExtensionAttribute = prop.GetCustomAttributes(typeof(SensorPropertyExtensionAttribute), true).FirstOrDefault() as SensorPropertyExtensionAttribute;
-                }
-                catch { 
-                    //ignored
-                }
-                if (sensorExtensionAttribute != null)
-                {
-                    var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == prop.Name);
-                    if (sensorProp != null)
-                    {
-                        sensorProp.ExtensionData ??= new Dictionary<string, object>();
-                        sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
-                    }
-                }
-            }
-            try
-            {
-                foreach (var sensorExtensionAttribute in thingType.GetCustomAttributes(typeof(SensorPropertyExtensionAttribute), true).Select(a => a as SensorPropertyExtensionAttribute))
-                {
-                    if (sensorExtensionAttribute != null)
-                    {
-                        if (!string.IsNullOrEmpty(sensorExtensionAttribute.NameOverride))
-                        {
-                            var sensorProp = dt.SensorProperties.FirstOrDefault(sp => sp.Name == sensorExtensionAttribute.NameOverride);
-                            if (sensorProp != null)
-                            {
-                                sensorProp.ExtensionData ??= new Dictionary<string, object>();
-                                sensorProp.ExtensionData[sensorExtensionAttribute.Name] = sensorExtensionAttribute.Value;
-                            }
-                            else
-                            {
-                                TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorPropertyExtension attribute without a SensorProperty attribute", eMsgLevel.l1_Error, $"{thingType.FullName}: {sensorExtensionAttribute.NameOverride}"));
-                            }
-                        }
-                        else
-                        {
-                            TheBaseAssets.MySYSLOG.WriteToLog(4138, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDEngines", "Plug-in has SensorPropertyExtension attribute without NameOverride", eMsgLevel.l1_Error, thingType.FullName));
-                        }
-                    }
-                }
-            }
-            catch { 
-                //ignored
-            }
-        }
-
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]

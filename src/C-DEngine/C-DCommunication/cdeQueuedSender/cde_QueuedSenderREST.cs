@@ -97,11 +97,7 @@ namespace nsCDEngine.Communication
                     int MCQCount = 0;
                     int IsBatchOn = 0;
                     var sendMsgCount = 0;
-#if CDE_NET35
-                    tSendBufferStr = new StringBuilder(TheBaseAssets.MAX_MessageSize[(int)MyTargetNodeChannel.SenderType]*2);
-#else
                     tSendBufferStr.Clear();
-#endif
                     tSendBufferStr.Append("[");
                     byte[] BinSendBuffer = null;
 

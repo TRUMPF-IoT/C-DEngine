@@ -186,8 +186,7 @@ namespace nsCDEngine.Security
             byte[] canonicalName = new byte[nsBytes.Length + nameAsBytes.Length];
             nsBytes.CopyTo(canonicalName, 0);
             nameAsBytes.CopyTo(canonicalName, nsBytes.Length);
-            var hashAlg = new SHA512Managed(); //TODO-MarkusH: can you verify that we can switch to this?
-            var machineNumberHash = hashAlg.ComputeHash(canonicalName);
+            var machineNumberHash = SHA512.HashData(canonicalName);
 
             byte[] nameGuidBytes = machineNumberHash.Take(16).ToArray();
             nameGuidBytes[8] &= 0x3F;   // Clear RFC4122 Variant bits

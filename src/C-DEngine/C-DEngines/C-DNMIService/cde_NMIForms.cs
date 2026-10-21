@@ -272,6 +272,7 @@ namespace nsCDEngine.Engines.NMIService
             {
                 Func<TheFieldInfo, bool> pSelector = (s => TheUserManager.HasUserAccess(pClientInfo.UserID, s.cdeA) &&
                         ((s.Flags & 4) == 0 || !pClientInfo.IsMobile) &&
+                        ((s.Flags & 256) == 0 || pClientInfo.IsOnCloud) &&
                         ((s.Flags & 128) == 0 || pClientInfo.IsFirstNode || pClientInfo.IsUserTrusted));   //NEW3.105: Only Show from First node is set
 
                 IEnumerable<TheFieldInfo> FormFields = TheNMIEngine.GetFieldsByFunc(s => s.FormID == FormId).Where(pSelector).OrderBy(s => s.FldOrder); //NMI-REDO: this is the main bottleneck Function
@@ -550,7 +551,7 @@ namespace nsCDEngine.Engines.NMIService
             (s.Flags == 0 ||
              (((s.Flags & 2) != 0 || !pClientInfo.IsOnCloud || pClientInfo.IsUserTrusted) &&
               ((s.Flags & 4) == 0 || !pClientInfo.IsMobile) &&
-              ((s.Flags & 128) == 0 || pClientInfo.IsFirstNode || pClientInfo.IsUserTrusted)))
+              ((s.Flags & 128) == 0 || !pClientInfo.IsOnCloud || pClientInfo.IsUserTrusted)))
              ).OrderBy(s => s.Category).ThenBy(s => s.FldOrder).ToList();
             if (tInfo.MyDashPanels != null)
             {

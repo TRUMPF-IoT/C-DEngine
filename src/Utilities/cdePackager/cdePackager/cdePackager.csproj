@@ -1,17 +1,17 @@
 <!--
- SPDX-FileCopyrightText: Copyright (c) 2009-2024 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-FileCopyrightText: Copyright (c) 2009-2025 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0-windows</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <RootNamespace>cdePackager</RootNamespace>
     <AssemblyName>cdePackager</AssemblyName>
     <Product>cdePackager for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
     <NeutralLanguage>en</NeutralLanguage>
-    <Copyright>Copyright © 2017-2024 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+    <Copyright>Copyright © 2017-2026 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
     <PackageDescription>cdePackager for C-DEngine plugins</PackageDescription>
     <PackageIcon>toplogo-128.png</PackageIcon>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
@@ -43,14 +43,9 @@
     <None Include="..\..\..\C-DEngine\toplogo-128.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
-  <!--<PropertyGroup Condition="EXISTS('$(ProjectDir)..\..\..\BuildTools')">
-    <PostBuildEvent>xcopy "$(TargetDir)*.*" "$(ProjectDir)..\..\..\..\BuildTools\cdePackager" /C /R /Y /I /F</PostBuildEvent>
-  </PropertyGroup>-->
-
   <!-- Copy to BuildTools and package the C-DEngine -->
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="EXISTS('$(ProjectDir)..\..\..\..\BuildTools')">
     <Exec Command="xcopy &quot;$(TargetDir)*.*&quot; &quot;$(ProjectDir)..\..\..\..\BuildTools\cdePackager&quot; /C /R /Y /I /F" />
-    <Exec Command="$(ProjectDir)..\..\..\C-DEngine\packagecde.cmd $(Configuration)" Condition="'$(BuildingInsideVisualStudio)' == 'true'" />
   </Target>
 
 </Project>

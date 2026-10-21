@@ -93,17 +93,8 @@ namespace nsCDEngine.Communication
         /// Http Service Interface allowing to register "Interceptors" that allow to server http requests coming in to a node by a plugin
         /// </summary>
         public static IHttpInterceptor MyHttpService;
-#if CDE_MINIHTTP
-        internal static HttpService.cdeHTTPService MyWebService;
-#else
         internal static HttpService.cdeMidiHttpService MyWebService;
-#if CDE_USECSWS
-        internal static TheWSServer MyWebSockets;
-#endif
-#if CDE_USEWSS8  //WebSockets Server on Windows 8 with Admin required
         internal static TheWSServer8 MyWebSockets8 ;
-#endif
-#endif
         internal static bool ValidateServerCertificate(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate,
                                                                     System.Security.Cryptography.X509Certificates.X509Chain chain,
                                                                     System.Net.Security.SslPolicyErrors sslPolicyErrors)
@@ -130,25 +121,6 @@ namespace nsCDEngine.Communication
 
         internal static bool StartCommunications()
         {
-            if (!TheCommonUtils.IsFeather())
-            {
-                System.Net.ServicePointManager.ServerCertificateValidationCallback += ValidateServerCertificate;
-                if (!TheBaseAssets.MyServiceHostInfo.DisableTls12)
-                {
-                    try
-                    {
-#if CDE_NET35 || CDE_NET4
-                    System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)0x00000C00;
-#else
-                        System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
-#endif
-                    }
-                    catch
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(505, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", $"Setting of SecurityProtocol to TLS1.2 failed. This node will only support {System.Net.ServicePointManager.SecurityProtocol}", eMsgLevel.l1_Error));
-                    }
-                }
-            }
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType != cdeHostType.IIS && TheBaseAssets.MyServiceHostInfo.cdeHostingType != cdeHostType.ASPCore && !TheCommonUtils.IsHostADevice() && TheBaseAssets.MyServiceHostInfo.cdeNodeType != cdeNodeType.Active)
             {
 #if CDE_MINIHTTP
@@ -175,7 +147,6 @@ namespace nsCDEngine.Communication
                     && (TheBaseAssets.MyServiceHostInfo.MyStationWSPort != TheBaseAssets.MyServiceHostInfo.MyStationPort || MyWebService?.IsHttpListener == false)
                     )
                 {
-#if CDE_USEWSS8
                     if (TheBaseAssets.MyServiceHostInfo.IsWebSocket8Active)
                     {
                         MyWebSockets8 = new TheWSServer8();
@@ -187,7 +158,6 @@ namespace nsCDEngine.Communication
                         TheBaseAssets.MySYSLOG.WriteToLog(5050, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCommCore", $"WebSocket8 (Windows 8+) Http-sys-Server started on different port ({TheBaseAssets.MyServiceHostInfo.MyStationWSPort}) as http ({TheBaseAssets.MyServiceHostInfo.MyStationPort})", eMsgLevel.l3_ImportantMessage));
                     }
                     else
-#endif
                     {
                         TheBaseAssets.MyServiceHostInfo.IsWebSocket8Active = false;
                         if (TheBaseAssets.MyServiceHostInfo.MyStationWSPort == TheBaseAssets.MyServiceHostInfo.MyStationPort)
@@ -213,13 +183,8 @@ namespace nsCDEngine.Communication
         internal static void StopCommunication()
         {
             MyWebService?.ShutDown();
-#if CDE_USEWSS8
             if (MyWebSockets8 != null && MyWebSockets8.IsActive)
                 MyWebSockets8.ShutDown();
-#endif
-#if CDE_USECSWS  //WebSockets Server required
-            MyWebSockets?.ShutDown();
-#endif
             TheBaseAssets.MySYSLOG?.WriteToLog(5053, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheCommCore", "Shutting down QueuedSenderRegistry ", eMsgLevel.l6_Debug));
             TheQueuedSenderRegistry.Shutdown();
             MyHttpService = null;

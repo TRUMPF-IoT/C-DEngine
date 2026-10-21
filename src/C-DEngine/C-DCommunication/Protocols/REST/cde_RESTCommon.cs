@@ -242,21 +242,12 @@ namespace nsCDEngine.Communication
         {
             if (tTarget.StartsWith(pRequestData.RequestUri.Scheme))  
             {
-#if !CDE_NET35
                 Uri tTargetUri = new (tTarget);
                 Uri tUrl = pRequestData.RequestUri;
-#else
-                Uri tTargetUri = TheCommonUtils.CUri(tTarget, false);
-                Uri tUrl = TheCommonUtils.CUri(pRequestData.RequestUri, false);
-#endif
 
                 if (!string.IsNullOrEmpty(pRequestData.RequestUriString))
                 {
-#if !CDE_NET35
                     tUrl = new Uri(pRequestData.RequestUriString);
-#else
-                    tUrl = TheCommonUtils.CUri(pRequestData.RequestUriString, false);
-#endif
                 }
                 Uri tCloudUri = new (tUrl.Scheme + "://" + tUrl.Host + ":" + tUrl.Port + tTargetUri.LocalPath + tTargetUri.Query);
                 pRequestData.Header ??= new cdeConcurrentDictionary<string, string>();
@@ -287,12 +278,7 @@ namespace nsCDEngine.Communication
             }
             else
             {
-#if !CDE_NET35
                 pRequestData.RequestUri = new Uri(pRequestData.RequestUri.Scheme + "://" + pRequestData.RequestUri.Host + ":" + pRequestData.RequestUri.Port + tTarget);
-#else
-                var requestUri =  TheCommonUtils.CUri(pRequestData.RequestUri, false);
-                pRequestData.RequestUri = new Uri(requestUri.Scheme + "://" + requestUri.Host + ":" + requestUri.Port + tTarget);
-#endif
                 if (tTarget.Length > 1 && tTarget.Substring(1).Contains("/"))
                     return false;
             }

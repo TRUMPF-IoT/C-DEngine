@@ -90,16 +90,12 @@ namespace nsCDEngine.ISM
                 return settingsValue;
             }
 
-#if !CDE_STANDARD //No App.Config
-            string tUID = CU.CStr(ConfigurationManager.AppSettings[pSetting]);
-#else
             string tUID = alt;
             var appSettings = GetAppSettingsObject();
             if (appSettings != null)
             {
                 tUID = CU.CStr(appSettings[pSetting]);
             }
-#endif
             if (IsEncrypted && !string.IsNullOrEmpty(tUID))
             {
                 tUID = CU.cdeDecrypt(tUID, TheBaseAssets.MySecrets.GetAI());
@@ -150,11 +146,7 @@ namespace nsCDEngine.ISM
                 if (tSettings != null)
                 {
                     tSettings.Settings.Remove(pKeyname);
-#if !CDE_STANDARD
-                    tConfig.Save(ConfigurationSaveMode.Modified);
-#else
                     tConfig.Save(0);
-#endif
                 }
                 if (pOwner != null && TheBaseAssets.MyCmdArgs.ContainsKey(pKeyname))
                 {
@@ -226,6 +218,7 @@ namespace nsCDEngine.ISM
                 if (!tSettings.ContainsKey(nameof(TheServiceHostInfo.RequireCDEActivation)) || !CU.CBool(tSettings.ContainsKey(nameof(TheServiceHostInfo.RequireCDEActivation)))) //If DontVerifyTrust was previously set to true - do not allow reset!
                     tSettings[nameof(TheServiceHostInfo.RequireCDEActivation)] = TheBaseAssets.MyServiceHostInfo.RequireCDEActivation.ToString();
                 tSettings["IsTLSEnforced"] = TheBaseAssets.MyServiceHostInfo.IsSSLEnforced.ToString();
+                tSettings["UseStrictJSON"]= TheBaseAssets.MyServiceHostInfo.UseStrictJSON.ToString();
                 tSettings["AllowRemoteAdministration"] = TheBaseAssets.MyServiceHostInfo.AllowRemoteAdministration.ToString();
                 tSettings["AllowRemoteThingCreation"] = TheBaseAssets.MyServiceHostInfo.AllowRemoteThingCreation.ToString();
                 tSettings["BlockCloudNMI"] = TheBaseAssets.MyServiceHostInfo.IsCloudNMIBlocked.ToString();
@@ -369,6 +362,10 @@ namespace nsCDEngine.ISM
             {
                 TheBaseAssets.MyServiceHostInfo.BaseDirectory = CU.GetCurrentAppDomainBaseDirWithTrailingSlash();
             }
+            if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory))
+            {
+                TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
+            }
             if (!TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
             {
                 var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
@@ -391,15 +388,11 @@ namespace nsCDEngine.ISM
 
             if (CU.IsFeather())
                 return false;
-#if !CDE_STANDARD
-            var appSettings = ConfigurationManager.AppSettings;
-#else
             dynamic appSettings = GetAppSettingsObject();
             if (appSettings == null)
             {
                 return false;
             }
-#endif
             string[] Keys = appSettings.AllKeys;
             for (int i = 0; i < appSettings.Count; i++)
             {
@@ -471,7 +464,6 @@ namespace nsCDEngine.ISM
             return temp;
         }
 
-#if CDE_STANDARD
         static dynamic GetAppSettingsObject()
         {
             dynamic appSettings = null;
@@ -536,7 +528,6 @@ namespace nsCDEngine.ISM
             }
             return appSettings;
         }
-#endif
         internal static void SetDeviceInfo()
         {
             TheBaseAssets.MyServiceHostInfo.IsNewDevice = !TheBaseAssets.MyServiceHostInfo.IsIsolated;
@@ -812,6 +803,9 @@ namespace nsCDEngine.ISM
             if (TheBaseAssets.MyScopeManager.IsScopingEnabled)
                 TheBaseAssets.MyServiceHostInfo.RequiresConfiguration = false;
 
+            temp = GetArgOrEnv(CmdArgs, "UseStrictJSON");
+            if (!string.IsNullOrEmpty(temp))
+                TheBaseAssets.MyServiceHostInfo.UseStrictJSON = CU.CBool(temp);
             temp = GetArgOrEnv(CmdArgs, "IsTLSEnforced");
             if (!string.IsNullOrEmpty(temp))
                 TheBaseAssets.MyServiceHostInfo.IsSSLEnforced = CU.CBool(temp);
@@ -1379,12 +1373,7 @@ namespace nsCDEngine.ISM
 
         ///New in V4.2 = Remote Provisioning
         ///
-
-        private static
-#if !CDE_NET4
-            async
-#endif
-        Task<string> GetProvisioningInfo(string pProvService, string pDeviceToken)
+        private static async Task<string> GetProvisioningInfo(string pProvService, string pDeviceToken)
         {
             if (string.IsNullOrEmpty(pDeviceToken))
             {
@@ -1418,11 +1407,7 @@ namespace nsCDEngine.ISM
             {
                 postCS.TrySetResult(r.ErrorDescription);
             });
-#if !CDE_NET4
             if (!string.IsNullOrEmpty(await postCS.Task.ConfigureAwait(false)))
-#else
-            if (!string.IsNullOrEmpty(postCS.Task.Result))
-#endif
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2821, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheCDESettings", $"Provisioning Service ({pProvService}) did not respond", eMsgLevel.l1_Error, postCS.Task.Result));
                 return CU.TaskOrResult(postCS.Task.Result);

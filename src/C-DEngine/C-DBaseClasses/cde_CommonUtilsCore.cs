@@ -42,18 +42,17 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static bool IsFeather()
         {
-            if (mIsFeather != null) return mIsFeather==true;
-            mIsFeather=CBool(TheBaseAssets.MySettings?.GetSetting("IsFeatherBoard")) || AppDomain.CurrentDomain?.FriendlyName == "Meadow.dll";
-            return mIsFeather==true;
+            if (mIsFeather != null) return mIsFeather == true;
+            mIsFeather = CBool(TheBaseAssets.MySettings?.GetSetting("IsFeatherBoard")) || AppDomain.CurrentDomain?.FriendlyName == "Meadow.dll";
+            return mIsFeather == true;
         }
-        private static bool? mIsFeather=null;
+        private static bool? mIsFeather = null;
         /// <summary>
         /// Detect the presence of the portable .NET Core platform.
         /// </summary>
         /// <returns>True if running on .NET Core.</returns>
         public static bool IsNetCore()
         {
-#if !CDE_NET35 && !CDE_NET4
             try
             {
                 var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
@@ -63,31 +62,9 @@ namespace nsCDEngine.BaseClasses
             {
                 //intent
             }
-#endif
             return false;
         }
 
-        /// <summary>
-        /// Only use this method if you need to know if you are running in the MONO Runtime. If you want to find out if you are running on Linux use TheCommonUtils.cdeIsFileSystemCaseSensitive or IsOnLinux insted
-        /// </summary>
-        /// <returns>true if CDE runs inside Mono Runtime</returns>
-        public static bool IsMono()
-        {
-            return IsMonoRT();
-        }
-        /// <summary>
-        /// Only use this method if you need to know if you are running in the MONO Runtime. If you want to find out if you are running on Linux use TheCommonUtils.cdeIsFileSystemCaseSensitive or IsOnLinux insted
-        /// </summary>
-        /// <returns>true if CDE runs inside Mono Runtime</returns>
-        public static bool IsMonoRT()
-        {
-            if (TheBaseAssets.MyServiceHostInfo.MonoRTDetected)
-                return TheBaseAssets.MyServiceHostInfo.MonoRTActive;
-            TheBaseAssets.MyServiceHostInfo.MonoRTActive = (Type.GetType("Mono.Runtime") != null);
-            TheBaseAssets.MyServiceHostInfo.MonoRTDetected = true;
-            TheBaseAssets.MySYSLOG?.WriteToLog(new TSM("CommonUtilsCore", $"Is MonoRT Active:{TheBaseAssets.MyServiceHostInfo.MonoRTActive}", eMsgLevel.l6_Debug), 5019);
-            return TheBaseAssets.MyServiceHostInfo.MonoRTActive;
-        }
         #endregion
 
         #region Conversion helpers
@@ -123,6 +100,8 @@ namespace nsCDEngine.BaseClasses
                 }
                 else
                 {
+                    if (inObj is cdeP)
+                        return CBool($"{(inObj as cdeP).GetValue()}");
                     retVal = false;
                 }
             }
@@ -143,14 +122,14 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static ushort CUShort(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is ushort s1) return s1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             ushort retVal;
             try
             {
@@ -180,14 +159,14 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static int CInt(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is int i1) return i1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             int retVal;
             try
             {
@@ -198,7 +177,12 @@ namespace nsCDEngine.BaseClasses
                     if (inObj is cdeP)
                         retVal = Convert.ToInt32(CFloor(Convert.ToDouble(inObjStr, CultureInfo.InvariantCulture)), CultureInfo.InvariantCulture);
                     else
-                        retVal = Convert.ToInt32(CFloor(Convert.ToDouble(inObj, CultureInfo.InvariantCulture)), CultureInfo.InvariantCulture);
+                    {
+                        var dv = Convert.ToDouble(inObj, CultureInfo.InvariantCulture);
+                        if (Double.IsNaN(dv))
+                            return 0;
+                        retVal = Convert.ToInt32(CFloor(dv), CultureInfo.InvariantCulture);
+                    }
                 }
             }
             catch (Exception)
@@ -228,17 +212,13 @@ namespace nsCDEngine.BaseClasses
             Guid retGuid = Guid.Empty;
             try
             {
-                if (inObj is byte[]) return (new Guid(inObj as byte[]));
+                if (inObj is byte[] ara) return (new Guid(ara));
                 if (inObj is string s2 && s2 == "") return Guid.Empty;
                 if (inObj is string s1 && s1.Length == 32)
                 {
                     return cdeUUIDtoGuid(s1);
                 }
-#if CDE_NET35
-                retGuid = new Guid(CStr(inObj));
-#else
                 Guid.TryParse(CStr(inObj), out retGuid);
-#endif
             }
             catch
             {
@@ -275,19 +255,19 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static float CFloat(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is float f1) return f1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             float retVal;
             try
             {
                 if (inObj is string && inObjStr.StartsWith("0x"))
-                    retVal = (float)double.Parse(inObjStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                    retVal = (float)int.Parse(inObjStr.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
                 {
                     if (inObj is cdeP)
@@ -316,7 +296,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (!string.IsNullOrEmpty(jsonTime) && jsonTime.IndexOf("Date") > -1)
             {
-                // Remove all extranous delimiters
+                // Remove all extraneous delimiters
                 int iOpenParen = jsonTime.IndexOf("(");
                 int iCloseParen = jsonTime.IndexOf(")");
                 int ccCopy = iCloseParen - iOpenParen - 1;
@@ -334,7 +314,7 @@ namespace nsCDEngine.BaseClasses
                         milis = milis.Substring(0, offsetIndex);
                     }
 
-                    DateTimeOffset origin = new (1970, 1, 1, 0, 0, 0, offset);
+                    DateTimeOffset origin = new(1970, 1, 1, 0, 0, 0, offset);
                     return origin.AddMilliseconds(CLng(milis));
                 }
             }
@@ -348,11 +328,10 @@ namespace nsCDEngine.BaseClasses
         /// <returns>The converted value.</returns>
         public static string CDateTimeToJSONDate(DateTimeOffset tDate)
         {
-            long ticks = tDate.Subtract(iEpochTime).Ticks / 10000; //Epoch no need for Offset
+            long ticks = tDate.Subtract(DateTime.UnixEpoch).Ticks / 10000; //Epoch no need for Offset
             return string.Format("Date({0})", ticks);
         }
-        private static readonly DateTime iEpochTime = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-        private static DateTimeOffset iEpochTimeOffsetUtc = new (iEpochTime, new TimeSpan(0));
+        private static DateTimeOffset iEpochTimeOffsetUtc = new(DateTime.UnixEpoch, new TimeSpan(0));
 
         /// <summary>
         /// Converts an incoming object to a TimeSpan
@@ -376,7 +355,8 @@ namespace nsCDEngine.BaseClasses
                 {
                     ret = (d1 - iEpochTimeOffsetUtc);
                 }
-                catch { 
+                catch
+                {
                     //intent
                 }
             }
@@ -386,21 +366,17 @@ namespace nsCDEngine.BaseClasses
                 {
                     ret = (t1.ToUniversalTime() - iEpochTimeOffsetUtc);
                 }
-                catch { 
+                catch
+                {
                     //intent
                 }
             }
             else if (inObj is string s2)
             {
-#if !CDE_NET35
                 if (!TimeSpan.TryParse(s2, CultureInfo.InvariantCulture, out ret))
-                { 
+                {
                     //intent
                 }
-#else
-                if (!TimeSpan.TryParse((string)inObj, out ret))
-                { }
-#endif
             }
             return ret;
         }
@@ -449,7 +425,7 @@ namespace nsCDEngine.BaseClasses
             if (inObj == null) return 0;
             if (inObj is Byte b1) return b1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             Byte retVal;
             try
             {
@@ -473,18 +449,22 @@ namespace nsCDEngine.BaseClasses
         /// Safe means that no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static SByte CSByte(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is SByte b1) return b1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             SByte retVal;
             try
             {
-                int tIn = CInt(inObj);
+                int tIn = 0;
+                if (inObj is string && inObjStr.StartsWith("0x"))
+                    tIn = int.Parse(inObjStr.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                else
+                    tIn = CInt(inObj);
                 retVal = Convert.ToSByte(tIn % 128, CultureInfo.InvariantCulture);
             }
             catch (Exception)
@@ -503,14 +483,14 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static short CShort(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is short c1) return c1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             short retVal;
             try
             {
@@ -613,11 +593,11 @@ namespace nsCDEngine.BaseClasses
             DateTimeOffset ret;
             if (dateTime == DateTime.MinValue)
             {
-                ret = DateTimeOffset.MinValue; // implicit conversion will fail for timezones with offset > 0, so do it explicitly to avoid exception
+                ret = DateTimeOffset.MinValue; // implicit conversion will fail for time zones with offset > 0, so do it explicitly to avoid exception
             }
             else if (dateTime == DateTime.MaxValue)
             {
-                ret = DateTimeOffset.MaxValue; // implicit conversion will fail for timezones with offset < 0, so do it explicitly to avoid exception
+                ret = DateTimeOffset.MaxValue; // implicit conversion will fail for time zones with offset < 0, so do it explicitly to avoid exception
             }
             else
             {
@@ -631,7 +611,7 @@ namespace nsCDEngine.BaseClasses
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    // The localTime1 was close enough to MinValue or MaxValue (within the offset of the current timezone) that it could not be represented as a DateTimeOffset
+                    // The localTime1 was close enough to MinValue or MaxValue (within the offset of the current time zone) that it could not be represented as a DateTimeOffset
                     // Round to the MaxValue or MinValue
                     ret = dateTime.Year > 9000 ? DateTimeOffset.MaxValue : DateTimeOffset.MinValue;
                 }
@@ -649,14 +629,14 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static double CDbl(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is double d1) return d1;
             var inObjStr = CStr(inObj);
-            if (string.IsNullOrEmpty(inObjStr)) return 0;
+            if (string.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             double retVal;
             try
             {
@@ -669,7 +649,7 @@ namespace nsCDEngine.BaseClasses
                     }
                     if (s2.StartsWith("0x"))
                     {
-                        return double.Parse(s2, NumberStyles.HexNumber);
+                        return (double)int.Parse(s2.Substring(2), NumberStyles.HexNumber);
                     }
                 }
                 if (inObj is cdeP)
@@ -699,19 +679,19 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static uint CUInt(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is uint u1) return u1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             uint retVal;
             try
             {
                 if (inObj is string && inObjStr.StartsWith("0x"))
-                    retVal = uint.Parse(inObjStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                    retVal = uint.Parse(inObjStr.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
                 {
                     if (inObj is cdeP)
@@ -738,19 +718,19 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static ulong CULng(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is ulong u1) return u1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             ulong retVal;
             try
             {
                 if (inObj is string && inObjStr.StartsWith("0x"))
-                    retVal = ulong.Parse(inObjStr, NumberStyles.HexNumber);
+                    retVal = ulong.Parse(inObjStr.Substring(2), NumberStyles.HexNumber);
                 else
                 {
                     if (inObj is cdeP)
@@ -786,19 +766,19 @@ namespace nsCDEngine.BaseClasses
         /// no unhandled exceptions are generated. A null input value returns 0.
         /// Any invalid input value returns 0.
         /// If the input object is of type bool, 'true' returns 1 and 'false' returns 0.
-        /// Input strings that start with "0x" are interpreted as hexidecimal values.
+        /// Input strings that start with "0x" are interpreted as hexadecimal values.
         /// </remarks>
         public static long CLng(object inObj)
         {
             if (inObj == null) return 0;
             if (inObj is long l1) return l1;
             var inObjStr = CStr(inObj);
-            if (String.IsNullOrEmpty(inObjStr)) return 0;
+            if (String.IsNullOrEmpty(inObjStr) || inObjStr == "NaN") return 0;
             long retVal;
             try
             {
                 if (inObj is string && inObjStr.StartsWith("0x"))
-                    retVal = long.Parse(inObjStr, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+                    retVal = long.Parse(inObjStr.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                 else
                 {
                     if (inObj is cdeP)
@@ -871,15 +851,16 @@ namespace nsCDEngine.BaseClasses
                 {
                     return formattable.ToString(null, CultureInfo.InvariantCulture);
                 }
-                else if (inObj is byte[])
+                else if (inObj is byte[] ar)
                 {
-                    return Convert.ToBase64String(inObj as byte[]);
+                    return Convert.ToBase64String(ar);
                 }
             }
-            catch { 
+            catch
+            {
                 //intent
             }
-            return inObj.ToString(); // ToString() OK - last resort, all cultureinvariant ways to convert to string exhausted
+            return inObj.ToString(); // ToString() OK - last resort, all culture invariant ways to convert to string exhausted
         }
 
         /// <summary>
@@ -1028,7 +1009,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>The converted string.</returns>
         public static string CArray2UTF8String(byte[] pIn, int index, int count)
         {
-            UTF8Encoding enc = new ();
+            UTF8Encoding enc = new();
             return enc.GetString(pIn, index, count);
         }
 
@@ -1039,7 +1020,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A byte array.</returns>
         public static byte[] CUTF8String2Array(string strIn)
         {
-            UTF8Encoding enc = new ();
+            UTF8Encoding enc = new();
             return enc.GetBytes(strIn);
         }
 
@@ -1052,7 +1033,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A string.</returns>
         public static string CArray2UnicodeString(byte[] pIn, int index, int count)
         {
-            UnicodeEncoding enc = new ();
+            UnicodeEncoding enc = new();
             return enc.GetString(pIn, index, count);
         }
 
@@ -1064,7 +1045,7 @@ namespace nsCDEngine.BaseClasses
         /// <returns>A byte array.</returns>
         public static byte[] CUnicodeString2Array(string strIn)
         {
-            UnicodeEncoding enc = new ();
+            UnicodeEncoding enc = new();
             return enc.GetBytes(strIn);
         }
 
@@ -1214,7 +1195,7 @@ namespace nsCDEngine.BaseClasses
         public static string CListToString(List<string> pList, string Sep)
         {
             if (pList == null) return null;
-            StringBuilder AllTopics = new (512);
+            StringBuilder AllTopics = new(512);
             foreach (string t in pList)
             {
                 if (string.IsNullOrEmpty(t)) continue;
@@ -1282,11 +1263,11 @@ namespace nsCDEngine.BaseClasses
                     pFireEventTimeout = TheBaseAssets.MyServiceHostInfo.EventTimeout; //3.2 was hardcoded 60000
                 if (pFireEventTimeout < 0)
                 {
-                    TheCommonUtils.cdeRunAsync("DFE-T No Timeout", true, (o) => action(para), null);
+                    cdeRunAsync("DFE-T No Timeout", true, (o) => action(para), null);
                 }
                 else
                 {
-                    TheCommonUtils.cdeRunAsync("DFE-T with Timeout", true, (o) =>
+                    cdeRunAsync("DFE-T with Timeout", true, (o) =>
                     {
                         DoFireEventParallelInternal(action, a =>
                         {
@@ -1322,7 +1303,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="action">Callback to be fired by the Event. First parameter is generic, second is a cookie object</param>
         /// <param name="para">Parameter of same type as action() first generic parameter</param>
         /// <param name="Para2">cookie object to be fired with the callback</param>
-        /// <param name="FireAsync">if true, the event is fired asynch</param>
+        /// <param name="FireAsync">if true, the event is fired async</param>
         /// <param name="pFireEventTimeout">if larger </param>
         public static void DoFireEvent<T>(Action<T, object> action, T para, object Para2, bool FireAsync, int pFireEventTimeout = 0)
         {
@@ -1337,7 +1318,7 @@ namespace nsCDEngine.BaseClasses
         /// <param name="action">Callback to be fired by the Event. Both parameters are generic</param>
         /// <param name="para">First parameter given to the callback.</param>
         /// <param name="Para2">Second parameter given to the callback.</param>
-        /// <param name="FireAsync">if true, the event is fired asynch</param>
+        /// <param name="FireAsync">if true, the event is fired async</param>
         /// <param name="pFireEventTimeout">if larger </param>
         public static void DoFireEvent<T1, T2>(Action<T1, T2> action, T1 para, T2 Para2, bool FireAsync, int pFireEventTimeout = 0)
         {
@@ -1424,13 +1405,6 @@ namespace nsCDEngine.BaseClasses
                     }
                 }, pThreadName, defaultTaskCreationOptions | (longRunning ? TaskCreationOptions.LongRunning : 0));
 
-#if CDE_NET4 || CDE_NET35
-            // On Net4 and earlier a task with an unobserved exception takes down the process during garbage collection/finalization of the task object
-            // This continuation observes the exception and prevents that.
-            // On Net45 and newer, such unobserved task exception are ignored.
-            task.ContinueWith(c => { var ignored = c.Exception; }, TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
-#endif
-
                 if (pendingTask != null)
                 {
                     pendingTask.task = task;
@@ -1456,15 +1430,6 @@ namespace nsCDEngine.BaseClasses
         /// <returns></returns>
         public static Uri SetWSInfo(this Uri uri, int newPort, string pPath)
         {
-#if CDE_NET35
-            if (newPort == -1)
-            {
-                if (uri.Scheme == "wss")
-                {
-                    newPort = 443;
-                }
-            }
-#endif
             var builder = new UriBuilder(uri + pPath)
             {
                 Port = newPort
@@ -1506,7 +1471,7 @@ namespace nsCDEngine.BaseClasses
             };
             if (newPort == 443)
                 builder.Scheme = "https";
-            else 
+            else
                 builder.Scheme = "http";
             return builder.Uri;
         }

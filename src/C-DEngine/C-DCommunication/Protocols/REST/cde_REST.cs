@@ -1,19 +1,20 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
 //
 // SPDX-License-Identifier: MPL-2.0
-#define NEW_REST_ASYNC
 
 using System;
-using System.IO;
-using System.Net;
-using nsCDEngine.BaseClasses;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
-using nsCDEngine.ViewModels;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
+using nsCDEngine.BaseClasses;
+using nsCDEngine.ViewModels;
 //LOG RANGE: 250 -259
-
-//NETCF Cookies: http://piao8163.blog.163.com/blog/static/969724782011101091723145/
 
 namespace nsCDEngine.Communication
 {
@@ -25,16 +26,11 @@ namespace nsCDEngine.Communication
         private sealed class TheInternalRequestState : IDisposable
         {
             public TheRequestData MyRequestData;
-            public List<byte[]> ResultData;
-            public byte[] BufferRead;
-            public int ResultDataPos;
-            public static int BUFFER_SIZE = 16000;
-            public HttpWebRequest request;
-            public HttpWebResponse response;
-            public Stream streamResponse;
+            public HttpRequestMessage request;
+            public HttpResponseMessage response;
             public Action<TheRequestData> ResultCallback;
             public Action<TheRequestData> ErrorCallback;
-            internal RegisteredWaitHandle waitHandle;
+            internal CancellationTokenSource cts;
             internal TheREST mRest;
 
             public TheInternalRequestState()
@@ -44,27 +40,24 @@ namespace nsCDEngine.Communication
 
             public void Dispose()
             {
-                if (waitHandle != null)
+                if (cts != null)
                 {
                     try
                     {
-                        waitHandle.Unregister(null);
+                        cts.Dispose();
                     }
                     catch
                     {
                         //intentionally blank
                     }
-                    waitHandle = null;
+                    cts = null;
                 }
-                BufferRead = null;
-                ResultData = null;
                 mRest = null;
-                ResultDataPos = 0;
                 if (request != null)
                 {
                     try
                     {
-                        request.Abort();
+                        request.Dispose();
                     }
                     catch
                     {
@@ -74,15 +67,14 @@ namespace nsCDEngine.Communication
                 request = null;
                 if (response != null)
                 {
-                    response?.Close();
-#if !CDE_NET35 && ! CDE_NET4
-                    response?.Dispose();
-#endif
-                }
-                if (streamResponse != null)
-                {
-                    streamResponse?.Dispose();
-                    streamResponse = null;
+                    try
+                    {
+                        response.Dispose();
+                    }
+                    catch
+                    {
+                        //intentionally blank
+                    }
                 }
                 response = null;
                 ResultCallback = null;
@@ -90,6 +82,205 @@ namespace nsCDEngine.Communication
                 MyRequestData = null;
             }
         }
+
+        /// <summary>
+        /// HttpContent that streams the post data of a TheRequestData into the request body
+        /// </summary>
+        private sealed class TheRequestDataContent : HttpContent
+        {
+            private readonly TheRequestData mData;
+
+            public TheRequestDataContent(TheRequestData pData)
+            {
+                mData = pData;
+            }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                mData.WritePostDataToStream(stream);
+                return Task.CompletedTask;
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = mData.GetContentLength();
+                return true;
+            }
+        }
+
+        #region HttpClient management
+
+        private static readonly ConcurrentDictionary<string, HttpClient> MyHttpClients = new();
+
+        /// <summary>
+        /// Returns a cached HttpClient whose handler matches the handler-level settings (proxy, credentials, client certificate) of the request
+        /// </summary>
+        private static HttpClient GetHttpClient(TheRequestData pData)
+        {
+            string tKey = BuildClientKey(pData);
+            return MyHttpClients.GetOrAdd(tKey, _ => CreateHttpClient(pData));
+        }
+
+        private static string BuildClientKey(TheRequestData pData)
+        {
+            string tCert = "";
+            if (pData.ClientCert is X509Certificate crt)
+                tCert = crt.GetCertHashString();
+            else if (pData.ClientCert is X509CertificateCollection x509)
+                tCert = string.Join(",", x509.Cast<X509Certificate>().Select(c => c.GetCertHashString()));
+            string tCred = "";
+            if (!string.IsNullOrEmpty(pData.UID) && !string.IsNullOrEmpty(pData.PWD))
+                tCred = $"{pData.UID}|{pData.PWD}|{pData.DOM}";
+            return $"{TheBaseAssets.MyServiceHostInfo?.ProxyUrl}|{TheBaseAssets.MyServiceHostInfo?.ProxyUID}|{tCred}|{tCert}";
+        }
+
+        private static HttpClient CreateHttpClient(TheRequestData pData)
+        {
+            HttpClientHandler tHandler = new()
+            {
+                AllowAutoRedirect = false,
+                UseCookies = false,
+                AutomaticDecompression = DecompressionMethods.None,
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                ServerCertificateCustomValidationCallback = (msg, cert, chain, errors) => TheCommCore.ValidateServerCertificate(msg, cert, chain, errors)
+            };
+            if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo?.ProxyUrl))
+            {
+                NetworkCredential tNet = null;
+                try
+                {
+                    if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUID))
+                    {
+                        tNet = new NetworkCredential(TheBaseAssets.MyServiceHostInfo.ProxyUID, TheBaseAssets.MyServiceHostInfo.ProxyPWD);
+                    }
+                    tHandler.Proxy = new WebProxy(TheBaseAssets.MyServiceHostInfo.ProxyUrl, true, null, tNet);
+                    tHandler.UseProxy = true;
+                    TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", $"Web Proxy set: {TheBaseAssets.MyServiceHostInfo.ProxyUrl} UID: {!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUID)} PWD: {!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyPWD)}", eMsgLevel.l4_Message));
+                }
+                catch (Exception e)
+                {
+                    TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheREST", "Error setting Proxy credentials:", eMsgLevel.l1_Error, e.ToString()));
+                }
+            }
+            if (pData.ClientCert != null)
+            {
+                if (pData.ClientCert is X509Certificate crt)
+                {
+                    tHandler.ClientCertificates.Add(crt);
+                }
+                else if (pData.ClientCert is X509CertificateCollection x509)
+                {
+                    tHandler.ClientCertificates.AddRange(x509);
+                }
+            }
+            if (!string.IsNullOrEmpty(pData.UID) && !string.IsNullOrEmpty(pData.PWD))
+            {
+                tHandler.Credentials = new NetworkCredential(pData.UID, pData.PWD, pData.DOM ?? "");
+            }
+            return new HttpClient(tHandler)
+            {
+                Timeout = Timeout.InfiniteTimeSpan // Timeouts are handled per request via CancellationTokenSource
+            };
+        }
+
+        private static void AddHeader(HttpRequestMessage pRequest, string pKey, string pValue)
+        {
+            if (!pRequest.Headers.TryAddWithoutValidation(pKey, pValue) && pRequest.Content != null)
+                pRequest.Content.Headers.TryAddWithoutValidation(pKey, pValue);
+        }
+
+        private static void SetUserAgent(HttpRequestMessage pRequest, TheRequestData pData)
+        {
+            pRequest.Headers.Remove("User-Agent");
+            if (!string.IsNullOrEmpty(pData.UserAgent))
+                pRequest.Headers.TryAddWithoutValidation("User-Agent", pData.UserAgent);
+            else
+                pRequest.Headers.TryAddWithoutValidation("User-Agent", !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.CustomUA) ? TheBaseAssets.MyServiceHostInfo.CustomUA : "C-DEngine " + TheBaseAssets.CurrentVersionInfo);
+        }
+
+        private static void ApplyCookieHeader(TheInternalRequestState pState)
+        {
+            if (pState.MyRequestData.TempCookies == null) return;
+            string tCookieHeader = pState.MyRequestData.TempCookies.GetCookieHeader(pState.MyRequestData.RequestUri);
+            if (!string.IsNullOrEmpty(tCookieHeader))
+            {
+                pState.request.Headers.Remove("Cookie");
+                pState.request.Headers.TryAddWithoutValidation("Cookie", tCookieHeader);
+            }
+        }
+
+        private static void ApplyTimeout(TheInternalRequestState pState)
+        {
+            if (pState.MyRequestData.TimeOut <= 0 && TheBaseAssets.MyServiceHostInfo != null)
+                pState.MyRequestData.TimeOut = TheBaseAssets.MyServiceHostInfo.TO.HeartBeatRate * 1000;
+            pState.cts = new CancellationTokenSource(pState.MyRequestData.TimeOut > 0 ? pState.MyRequestData.TimeOut : Timeout.Infinite);
+        }
+
+        /// <summary>
+        /// Sends the prepared request asynchronously and dispatches the result to the callbacks of the request state
+        /// </summary>
+        private static void SendRequest(TheInternalRequestState pState, HttpClient pClient)
+        {
+            ApplyTimeout(pState);
+            string tErrPrefix = pState.mRest != null ? "1406:" : "";
+            string tErrMime = pState.mRest != null ? "text/plain" : "text/html";
+            TheCommonUtils.cdeRunAsync("TheREST.SendRequest", true, async (o) =>
+            {
+                string turl = "Unknown";
+                try
+                {
+                    turl = pState.MyRequestData?.RequestUri?.ToString() ?? turl;
+                    pState.response = await pClient.SendAsync(pState.request, HttpCompletionOption.ResponseHeadersRead, pState.cts.Token).ConfigureAwait(false);
+                    byte[] tBody = pState.response.Content != null ? await pState.response.Content.ReadAsByteArrayAsync(pState.cts.Token).ConfigureAwait(false) : null;
+                    if ((int)pState.response.StatusCode >= 400)
+                        ProcessErrorResponse(pState, tBody, tErrPrefix, tErrMime);
+                    else
+                        ProcessResponse(pState, tBody);
+                }
+                catch (OperationCanceledException) when (pState.cts?.IsCancellationRequested == true)
+                {
+                    try
+                    {
+                        if (pState.MyRequestData != null)
+                        {
+                            pState.MyRequestData.ErrorDescription = "1410:Timeout Error";
+                            pState.MyRequestData.ResponseMimeType = tErrMime; //OK
+                            pState.MyRequestData.StatusCode = 500;
+                            pState.ErrorCallback?.Invoke(pState.MyRequestData);
+                        }
+                        TheBaseAssets.MySYSLOG.WriteToLog(257, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "HttpClient request timed out and was aborted to ORG:" + turl, eMsgLevel.l2_Warning));
+                    }
+                    catch (Exception e2)
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(257, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "TimeoutCallback: timed out and was aborted to ORG:" + turl, eMsgLevel.l1_Error, e2.ToString()));
+                    }
+                }
+                catch (Exception e)
+                {
+                    try
+                    {
+                        if (pState.MyRequestData != null && pState.ErrorCallback != null)
+                        {
+                            pState.MyRequestData.ErrorDescription = $"{tErrPrefix}{e}";
+                            pState.MyRequestData.ResponseMimeType = tErrMime; //OK
+                            pState.MyRequestData.StatusCode = 500;
+                            pState.ErrorCallback(pState.MyRequestData);
+                        }
+                        TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "RespCallback Exception - ORG:" + turl, eMsgLevel.l2_Warning, e.ToString()));
+                    }
+                    catch (Exception e2)
+                    {
+                        TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "RespCallback Exception - ORG:" + turl, eMsgLevel.l2_Warning, e2.ToString()));
+                    }
+                }
+                finally
+                {
+                    CleanUp(pState);
+                }
+            });
+        }
+
+        #endregion
 
         #region Complex RESTGet
 
@@ -115,133 +306,47 @@ namespace nsCDEngine.Communication
             }
             TheInternalRequestState myRequestState = new()
             {
-                MyRequestData = pData
+                MyRequestData = pData,
+                ResultCallback = tCallback,
+                ErrorCallback = pErrorCallback
             };
             try
             {
-                if (tCallback == null)
+                HttpClient tClient = GetHttpClient(pData);
+                myRequestState.request = new HttpRequestMessage(new HttpMethod(!string.IsNullOrEmpty(pData.HttpMethod) ? pData.HttpMethod : "GET"), pData.RequestUri);
+                if (pData.HttpVersion == 1.0)
+                    myRequestState.request.Version = HttpVersion.Version10;
+                SetUserAgent(myRequestState.request, pData);
+
+                if (pData.Header != null && pData.Header.Count > 0)
                 {
-                    WebRequest wrGETURL;
-                    wrGETURL = WebRequest.Create(pData.RequestUri);
-                    wrGETURL.BeginGetResponse((a) =>
+                    foreach (string key in pData.Header.Keys)
                     {
-                    }, wrGETURL);
+                        switch (key)
+                        {
+                            case "Content-Length":
+                            case "User-Agent":
+                            case "Connection":
+                                break;
+                            case "Host":
+                                myRequestState.request.Headers.Host = pData.Header[key];
+                                break;
+                            case "Accept":
+                            case "ContentType":
+                            case "Referer":
+                            default:
+                                AddHeader(myRequestState.request, key == "ContentType" ? "Content-Type" : key, pData.Header[key]);
+                                break;
+                        }
+                    }
                 }
-                else
-                {
-                    myRequestState.ResultCallback = tCallback;
-                    myRequestState.ErrorCallback = pErrorCallback;
-                    myRequestState.request = (HttpWebRequest)WebRequest.Create(myRequestState.MyRequestData.RequestUri);
-                    if (!string.IsNullOrEmpty(pData.HttpMethod))
-                        myRequestState.request.Method = pData.HttpMethod;
-                    if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUrl))
-                    {
-                        NetworkCredential tNet = null;
-                        if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUID))
-                        {
-                            try
-                            {
-                                tNet = new NetworkCredential(TheBaseAssets.MyServiceHostInfo.ProxyUID, TheBaseAssets.MyServiceHostInfo.ProxyPWD);
-                            }
-                            catch (Exception e)
-                            {
-                                TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheREST", "Error setting Proxy credentials:", eMsgLevel.l1_Error, e.ToString()));
-                            }
-                        }
-                        myRequestState.request.Proxy = new WebProxy(TheBaseAssets.MyServiceHostInfo.ProxyUrl, true, null, tNet);
-                        TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", $"Web Proxy set: {TheBaseAssets.MyServiceHostInfo.ProxyUrl} UID: {!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUID)} PWD: {!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyPWD)}", eMsgLevel.l4_Message));
-                    }
-                    if (pData.ClientCert != null)
-                    {
-                        if (pData.ClientCert is X509Certificate crt)
-                        {
-                            myRequestState.request.ClientCertificates.Add(crt);
-                        }
-                        else if (pData.ClientCert is X509CertificateCollection x509)
-                        {
-                            myRequestState.request.ClientCertificates.AddRange(x509);
-                        }
-                    }
+                myRequestState.request.Headers.Remove("Accept");
+                myRequestState.request.Headers.TryAddWithoutValidation("Accept", "*/*");
 
-                    if (myRequestState.MyRequestData.HttpVersion == 1)
-                        myRequestState.request.ProtocolVersion = HttpVersion.Version10;
-                    myRequestState.request.AllowAutoRedirect = false;
-                    if (!string.IsNullOrEmpty(pData.UserAgent))
-                        myRequestState.request.UserAgent = pData.UserAgent;
-                    else
-                        myRequestState.request.UserAgent = !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.CustomUA) ? TheBaseAssets.MyServiceHostInfo.CustomUA : "C-DEngine " + TheBaseAssets.CurrentVersionInfo;
+                SetCookies(myRequestState);
+                ApplyCookieHeader(myRequestState);
 
-                    if (pData.Header != null && pData.Header.Count > 0)
-                    {
-                        foreach (string key in pData.Header.Keys)
-                        {
-                            switch (key)
-                            {
-                                case "Content-Length":
-                                case "User-Agent":
-                                case "Connection":
-                                    break;
-                                case "Host":
-#if !CDE_NET35
-                                    myRequestState.request.Host = pData.Header[key];
-#endif
-                                    break;
-                                case "Accept":
-                                    myRequestState.request.Accept = pData.Header[key];
-                                    break;
-                                case "ContentType":
-                                    myRequestState.request.ContentType = pData.Header[key];
-                                    break;
-                                case "Referer":
-                                    myRequestState.request.Referer = pData.Header[key];
-                                    break;
-                                default:
-                                    myRequestState.request.Headers.Add(key, pData.Header[key]);
-                                    break;
-                            }
-                        }
-                    }
-                    myRequestState.request.Accept = "*/*";
-
-                    if (myRequestState.MyRequestData.TimeOut > 0)
-                    {
-                        myRequestState.request.ReadWriteTimeout = pData.TimeOut;
-                        myRequestState.request.Timeout = pData.TimeOut;
-                    }
-                    else
-                    {
-                        if (TheBaseAssets.MyServiceHostInfo != null)
-                        {
-                            myRequestState.MyRequestData.TimeOut = TheBaseAssets.MyServiceHostInfo.TO.HeartBeatRate * 1000;
-                            myRequestState.request.ReadWriteTimeout = TheBaseAssets.MyServiceHostInfo.TO.HeartBeatRate * 1000;
-                            myRequestState.request.Timeout = TheBaseAssets.MyServiceHostInfo.TO.HeartBeatRate * 1000;
-                        }
-                    }
-                    if (!string.IsNullOrEmpty(myRequestState.MyRequestData.UID) && !string.IsNullOrEmpty(myRequestState.MyRequestData.PWD))
-                    {
-                        if (string.IsNullOrEmpty(myRequestState.MyRequestData.DOM)) myRequestState.MyRequestData.DOM = "";
-                        NetworkCredential networkCredential = new(myRequestState.MyRequestData.UID, myRequestState.MyRequestData.PWD, myRequestState.MyRequestData.DOM);
-                        myRequestState.request.Credentials = networkCredential;
-                    }
-
-                    SetCookies(myRequestState);
-                    myRequestState.request.CookieContainer = myRequestState.MyRequestData.TempCookies;
-
-                    myRequestState.request.BeginGetResponse(GETRespCallback, myRequestState);
-                }
-            }
-            catch (WebException e)
-            {
-                TheSystemMessageLog.WriteLog(250, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "GetRESTAsync WebException", eMsgLevel.l2_Warning, e.Message), false);
-                if (pErrorCallback != null && myRequestState.MyRequestData != null)
-                {
-                    myRequestState.MyRequestData.ErrorDescription = e.ToString();
-                    myRequestState.MyRequestData.ResponseMimeType = "text/html"; //OK
-                    myRequestState.MyRequestData.StatusCode = 500;
-                    pErrorCallback(myRequestState.MyRequestData);
-                }
-                if (myRequestState != null)
-                    myRequestState.Dispose();
+                SendRequest(myRequestState, tClient);
             }
             catch (Exception e)
             {
@@ -253,190 +358,46 @@ namespace nsCDEngine.Communication
                     myRequestState.MyRequestData.StatusCode = 500;
                     pErrorCallback(myRequestState.MyRequestData);
                 }
-                if (myRequestState != null)
-                    myRequestState.Dispose();
+                myRequestState.Dispose();
             }
         }
 
-        private static void GETRespCallback(IAsyncResult asynchronousResult)
+        private static void ProcessErrorResponse(TheInternalRequestState pState, byte[] pBody, string pErrPrefix, string pErrMime)
         {
-            TheInternalRequestState myRequestState = null;
-            try
+            if (pState?.MyRequestData == null) return;
+            var tResponse = pState.response;
+            TheBaseAssets.MySYSLOG.WriteToLog(251, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", $"Response error {(int)tResponse.StatusCode} for {pState.MyRequestData.RequestUri}", eMsgLevel.l2_Warning, tResponse.ReasonPhrase));
+            if (pState.ErrorCallback != null)
             {
-                myRequestState = (TheInternalRequestState)asynchronousResult.AsyncState;
-                myRequestState.response = (HttpWebResponse)myRequestState.request.EndGetResponse(asynchronousResult);
-                myRequestState.streamResponse = myRequestState.response.GetResponseStream();
-                if (myRequestState.streamResponse == null)
-                {
-                    // CODE REVIEW: Should there an error callback here, or is this always the consequence of a cancel/timeout? Can this even happen (i.e. GetResponseStream() either throws or returns a stream)
-                    myRequestState.Dispose();
-                    myRequestState = null;
-                    TheCommonUtils.CloseOrDispose(asynchronousResult?.AsyncWaitHandle);
-                    return;
-                }
-                myRequestState.BufferRead = new byte[TheInternalRequestState.BUFFER_SIZE];
-#if NEW_REST_ASYNC
-                TheCommonUtils.cdeRunAsync("ReceiveAsync", true, async (o) =>
-                {
-                    int read = 0;
-                    do
-                    {
-                        read = await myRequestState.streamResponse.ReadAsync(myRequestState.BufferRead, 0, TheInternalRequestState.BUFFER_SIZE);
-                        if (read > 0)
-                        {
-                            byte[] tBuf = new byte[read];
-                            TheCommonUtils.cdeBlockCopy(myRequestState.BufferRead, 0, tBuf, 0, read);
-                            myRequestState.ResultData ??= new List<byte[]>();
-                            myRequestState.ResultData.Add(tBuf);
-                            myRequestState.ResultDataPos += read;
-                        }
-                    }
-                    while (read > 0);
-                    ProcessResponse(myRequestState);
-                    myRequestState.Dispose();
-                });
-#else
-                myRequestState.streamResponse.BeginRead(myRequestState.BufferRead, 0, TheInternalRequestState.BUFFER_SIZE, GETReadCallBack, myRequestState);
-#endif
-            }
-            catch (WebException e)
-            {
-                string turl = "Unknown";
-                try
-                {
-                    if (myRequestState?.MyRequestData != null)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(251, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", string.Format("GETRespCallback E4 Exception for {0}", myRequestState.MyRequestData), eMsgLevel.l2_Warning, e.ToString()));
-                        turl = myRequestState.MyRequestData.RequestUri?.ToString() ?? turl;
-                        if (myRequestState.ErrorCallback != null)
-                        {
-                            myRequestState.MyRequestData.ErrorDescription = e.ToString();
-                            myRequestState.MyRequestData.ResponseMimeType = "text/html"; //OK
-                            if (e.Response != null)
-                                myRequestState.MyRequestData.StatusCode = TheCommonUtils.CInt(((HttpWebResponse)e.Response).StatusCode);
-                            else
-                                myRequestState.MyRequestData.StatusCode = 404;
-                            myRequestState.ErrorCallback(myRequestState.MyRequestData);
-                        }
-                    }
-                    TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "RespCallback Exception - ORG:" + turl, eMsgLevel.l2_Warning, e.ToString()));
-                }
-                catch (Exception e2)
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "RespCallback Exception - ORG:" + turl, eMsgLevel.l2_Warning, e2.ToString()));
-                }
-                finally
-                {
-                    myRequestState?.Dispose();
-                    TheCommonUtils.CloseOrDispose(asynchronousResult.AsyncWaitHandle);
-                }
-            }
-            catch (Exception e)
-            {
-                string turl = "Unknown";
-                try
-                {
-                    if (myRequestState?.MyRequestData != null)
-                    {
-                        turl = myRequestState.MyRequestData.RequestUri?.ToString() ?? turl;
-                        if (myRequestState.ErrorCallback != null)
-                        {
-                            myRequestState.MyRequestData.ErrorDescription = e.ToString();
-                            myRequestState.MyRequestData.ResponseMimeType = "text/html"; //OK
-                            myRequestState.MyRequestData.StatusCode = 500;
-                            myRequestState.ErrorCallback(myRequestState.MyRequestData);
-                        }
-                    }
-                    TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "RespCallback Exception - ORG:" + turl, eMsgLevel.l2_Warning, e.ToString()));
-                }
-                catch (Exception e2)
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "RespCallback Exception - ORG:" + turl, eMsgLevel.l2_Warning, e2.ToString()));
-                }
-                finally
-                {
-                    myRequestState?.Dispose();
-                    TheCommonUtils.CloseOrDispose(asynchronousResult.AsyncWaitHandle);
-                }
-
+                pState.MyRequestData.ErrorDescription = $"{pErrPrefix}The remote server returned an error: ({(int)tResponse.StatusCode}) {tResponse.ReasonPhrase}.";
+                string tContentType = tResponse.Content?.Headers?.ContentType?.ToString();
+                pState.MyRequestData.ResponseMimeType = !string.IsNullOrEmpty(tContentType) ? tContentType : pErrMime; //OK
+                pState.MyRequestData.StatusCode = (int)tResponse.StatusCode;
+                if (pBody != null && pBody.Length > 0)
+                    pState.MyRequestData.ResponseBuffer = pBody;
+                pState.ErrorCallback(pState.MyRequestData);
             }
         }
 
-#if !NEW_REST_ASYNC
-        private static void GETReadCallBack(IAsyncResult asyncResult)
-        {
-            TheInternalRequestState myRequestState = null;
-            try
-            {
-                myRequestState = (TheInternalRequestState)asyncResult.AsyncState;
-                int read = myRequestState.streamResponse.EndRead(asyncResult);
-                if (read > 0)
-                {
-                    byte[] tBuf = new byte[read];
-                    TheCommonUtils.cdeBlockCopy(myRequestState.BufferRead, 0, tBuf, 0, read);
-                    if (myRequestState.ResultData == null) myRequestState.ResultData = new List<byte[]>();
-                    myRequestState.ResultData.Add(tBuf);
-                    myRequestState.ResultDataPos += read;
-                    myRequestState.streamResponse.BeginRead(myRequestState.BufferRead, 0, TheInternalRequestState.BUFFER_SIZE, GETReadCallBack, myRequestState);
-                }
-                else
-                {
-                    ProcessResponse(myRequestState);
-                }
-            }
-            catch (Exception e)
-            {
-                string ats = "state not valid";
-                try
-                {
-                    if (myRequestState != null && myRequestState.MyRequestData.RequestUri != null) ats = myRequestState.MyRequestData.RequestUri.ToString();
-                    TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "ReadCallBack Exception: " + ats, eMsgLevel.l2_Warning, e.ToString()));
-                    if (myRequestState != null && myRequestState.ErrorCallback != null && myRequestState.MyRequestData != null)
-                    {
-                        myRequestState.MyRequestData.ErrorDescription = ats + e;
-                        myRequestState.MyRequestData.ResponseMimeType = "text/html"; //OK
-                        myRequestState.MyRequestData.StatusCode = 500;
-                        myRequestState.ErrorCallback(myRequestState.MyRequestData);
-                    }
-                }
-                catch
-                {
-                    //Intentionally blank
-                }
-                finally
-                {
-                    myRequestState?.Dispose();
-                    TheCommonUtils.CloseOrDispose(asyncResult.AsyncWaitHandle);
-                }
-            }
-        }
-#endif
-
-        private static void ProcessResponse(TheInternalRequestState pRequestState)
+        private static void ProcessResponse(TheInternalRequestState pRequestState, byte[] pBody)
         {
             if (pRequestState != null && pRequestState.ResultCallback != null)
             {
-                pRequestState.MyRequestData.ResponseMimeType = pRequestState.response.ContentType;
-                pRequestState.MyRequestData.ResponseEncoding = pRequestState.response.ContentEncoding;
+                var tResponse = pRequestState.response;
+                pRequestState.MyRequestData.ResponseMimeType = tResponse.Content?.Headers?.ContentType?.ToString();
+                pRequestState.MyRequestData.ResponseEncoding = tResponse.Content?.Headers?.ContentEncoding != null ? string.Join(", ", tResponse.Content.Headers.ContentEncoding) : "";
                 ProcessCookies(pRequestState);
-                if (pRequestState.ResultDataPos > 0)
+                if (pBody != null && pBody.Length > 0)
                 {
-                    pRequestState.MyRequestData.ResponseBuffer = new byte[pRequestState.ResultDataPos];
-                    int pos = 0;
-                    foreach (byte[] tBuf in pRequestState.ResultData)
-                    {
-                        TheCommonUtils.cdeBlockCopy(tBuf, 0, pRequestState.MyRequestData.ResponseBuffer, pos, tBuf.Length);
-                        pos += tBuf.Length;
-                    }
-                    pRequestState.ResultData.Clear();
+                    pRequestState.MyRequestData.ResponseBuffer = pBody;
                 }
-                pRequestState.MyRequestData.StatusCode = TheCommonUtils.CInt((pRequestState.response).StatusCode);
+                pRequestState.MyRequestData.StatusCode = (int)tResponse.StatusCode;
                 if (pRequestState.MyRequestData.StatusCode > 300 && pRequestState.MyRequestData.StatusCode < 400 && !pRequestState.MyRequestData.DisableRedirect)
                 {
-                    string tTarget = pRequestState.response.Headers["Location"];
+                    string tTarget = tResponse.Headers.TryGetValues("Location", out var tLocs) ? tLocs.FirstOrDefault() : null;
                     if (!string.IsNullOrEmpty(tTarget) && ProcessRedirect(pRequestState.MyRequestData, tTarget))
                     {
-                        pRequestState.MyRequestData.StatusCode = (int)pRequestState.response.StatusCode;
+                        pRequestState.MyRequestData.StatusCode = (int)tResponse.StatusCode;
                         pRequestState.MyRequestData.RequestCookies = pRequestState.MyRequestData.SessionState.StateCookies;
                         pRequestState.MyRequestData.Header = null;
                         pRequestState.MyRequestData.HttpMethod = "GET";
@@ -455,36 +416,47 @@ namespace nsCDEngine.Communication
             myRequestState.MyRequestData.SessionState ??= new TheSessionState();
             if (myRequestState.MyRequestData.SessionState.StateCookies == null)
                 myRequestState.MyRequestData.SessionState.StateCookies = new cdeConcurrentDictionary<string, string>();
-            if (myRequestState.response.Headers != null)
+            var tResponse = myRequestState.response;
+            if (tResponse.Headers != null)
             {
                 myRequestState.MyRequestData.Header = new cdeConcurrentDictionary<string, string>();
-                if (!string.IsNullOrEmpty(myRequestState.response.Headers["cdeDeviceID"]))
-                    myRequestState.MyRequestData.DeviceID = TheCommonUtils.CGuid(myRequestState.response.Headers["cdeDeviceID"]);
-                int max = myRequestState.response.Headers.AllKeys.Length;
-                for (int i = 0; i < max; i++)
+                foreach (var tHeader in tResponse.Headers)
                 {
-                    myRequestState.MyRequestData.Header.TryAdd(myRequestState.response.Headers.AllKeys[i], myRequestState.response.Headers[myRequestState.response.Headers.AllKeys[i]]);
+                    myRequestState.MyRequestData.Header.TryAdd(tHeader.Key, string.Join(", ", tHeader.Value));
+                }
+                if (tResponse.Content?.Headers != null)
+                {
+                    foreach (var tHeader in tResponse.Content.Headers)
+                    {
+                        myRequestState.MyRequestData.Header.TryAdd(tHeader.Key, string.Join(", ", tHeader.Value));
+                    }
+                }
+                if (myRequestState.MyRequestData.Header.TryGetValue("cdeDeviceID", out string tDeviceID) && !string.IsNullOrEmpty(tDeviceID))
+                    myRequestState.MyRequestData.DeviceID = TheCommonUtils.CGuid(tDeviceID);
+
+                if (myRequestState.MyRequestData.TempCookies != null && tResponse.Headers.TryGetValues("Set-Cookie", out var tSetCookies))
+                {
+                    foreach (string tSetCookie in tSetCookies)
+                    {
+                        try
+                        {
+                            myRequestState.MyRequestData.TempCookies.SetCookies(myRequestState.MyRequestData.RequestUri, tSetCookie);
+                        }
+                        catch (Exception e)
+                        {
+                            TheBaseAssets.MySYSLOG.WriteToLog(254, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "ProcessCookies: invalid Set-Cookie header for " + myRequestState.MyRequestData.RequestUri, eMsgLevel.l2_Warning, e.Message));
+                        }
+                    }
                 }
             }
             if (myRequestState.MyRequestData.TempCookies != null)
             {
-                foreach (Cookie c in myRequestState.MyRequestData.TempCookies.GetCookies(myRequestState.request.RequestUri))
+                foreach (Cookie c in myRequestState.MyRequestData.TempCookies.GetCookies(myRequestState.MyRequestData.RequestUri))
                 {
                     if (!myRequestState.MyRequestData.SessionState.StateCookies.ContainsKey(c.Name.Trim()))
                         myRequestState.MyRequestData.SessionState.StateCookies.TryAdd(c.Name.Trim(), c.Value.Trim() + ";" + c.Path + ";" + c.Domain);
                     else
                         myRequestState.MyRequestData.SessionState.StateCookies[c.Name.Trim()] = c.Value.Trim() + ";" + c.Path + ";" + c.Domain;
-                }
-            }
-            //VERIFY: Is this realy necessary?
-            if (myRequestState.response.Cookies != null)
-            {
-                foreach (Cookie c in myRequestState.response.Cookies)
-                {
-                    if (myRequestState.MyRequestData.SessionState.StateCookies.ContainsKey(c.Name.Trim()))
-                        myRequestState.MyRequestData.SessionState.StateCookies[c.Name.Trim()] = c.Value.Trim() + ";" + c.Path + ";" + c.Domain;
-                    else
-                        myRequestState.MyRequestData.SessionState.StateCookies.TryAdd(c.Name.Trim(), c.Value.Trim() + ";" + c.Path + ";" + c.Domain);
                 }
             }
         }
@@ -530,70 +502,28 @@ namespace nsCDEngine.Communication
             TheInternalRequestState myRequestState = new()
             {
                 MyRequestData = pRequest,
-                mRest = this
+                mRest = this,
+                ResultCallback = pCallback,
+                ErrorCallback = pErrorCallback
             };
-            IAsyncResult tResult = null;
             try
             {
-                myRequestState.request = (HttpWebRequest)WebRequest.Create(myRequestState.MyRequestData.RequestUri);
-                if (!string.IsNullOrEmpty(pRequest.HttpMethod))
-                    myRequestState.request.Method = pRequest.HttpMethod;
-                else
-                    myRequestState.request.Method = "POST";
-                if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUrl))
+                HttpClient tClient = GetHttpClient(pRequest);
+                myRequestState.request = new HttpRequestMessage(new HttpMethod(!string.IsNullOrEmpty(pRequest.HttpMethod) ? pRequest.HttpMethod : "POST"), pRequest.RequestUri)
                 {
-                    NetworkCredential tNet = null;
-                    try
-                    {
-                        if (!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUID))
-                        {
-                            tNet = new NetworkCredential(TheBaseAssets.MyServiceHostInfo.ProxyUID, TheBaseAssets.MyServiceHostInfo.ProxyPWD);
-                        }
-                        myRequestState.request.Proxy = new WebProxy(TheBaseAssets.MyServiceHostInfo.ProxyUrl, true, null, tNet);
-                        TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", $"Web Proxy set: {TheBaseAssets.MyServiceHostInfo.ProxyUrl} UID: {!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyUID)} PWD: {!string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ProxyPWD)}", eMsgLevel.l4_Message));
-                    }
-                    catch (Exception e)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(4365, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("TheREST", "Error setting Proxy credentials:", eMsgLevel.l1_Error, e.ToString()));
-                    }
-                }
-                if (myRequestState.MyRequestData.HttpVersion == 1)
-                    myRequestState.request.ProtocolVersion = HttpVersion.Version10;
-                myRequestState.request.AllowAutoRedirect = false;
-                myRequestState.request.Accept = "*/*";
+                    Content = new TheRequestDataContent(pRequest)
+                };
+                if (pRequest.HttpVersion == 1.0)
+                    myRequestState.request.Version = HttpVersion.Version10;
+                myRequestState.request.Headers.TryAddWithoutValidation("Accept", "*/*");
                 if (pRequest.Disable100)
-                    myRequestState.request.ServicePoint.Expect100Continue = false;
-
-                if (pRequest.ClientCert != null)
-                {
-                    if (pRequest.ClientCert is X509Certificate crt)
-                    {
-                        myRequestState.request.ClientCertificates.Add(crt);
-                    }
-                    else if (pRequest.ClientCert is X509CertificateCollection x509)
-                    {
-                        myRequestState.request.ClientCertificates.AddRange(x509);
-                    }
-                }
-
-                myRequestState.ResultCallback = pCallback;
-                myRequestState.ErrorCallback = pErrorCallback;
+                    myRequestState.request.Headers.ExpectContinue = false;
 
                 SetCookies(myRequestState);
-                myRequestState.request.CookieContainer = myRequestState.MyRequestData.TempCookies;
-                if (myRequestState.MyRequestData.TimeOut > 0)
-                {
-                    myRequestState.request.ReadWriteTimeout = myRequestState.MyRequestData.TimeOut;
-                    myRequestState.request.Timeout = myRequestState.MyRequestData.TimeOut;
-                }
-                else
-                {
-                    myRequestState.MyRequestData.TimeOut = TheBaseAssets.MyServiceHostInfo.TO.HeartBeatRate * 1000;
-                    myRequestState.request.ReadWriteTimeout = TheBaseAssets.MyServiceHostInfo.TO.HeartBeatRate * 1000;
-                    myRequestState.request.Timeout = TheBaseAssets.MyServiceHostInfo.TO.HeartBeatRate * 1000;
-                }
-                if (myRequestState.MyRequestData.DeviceID != Guid.Empty)
-                    myRequestState.request.Headers.Add("cdeDeviceID", myRequestState.MyRequestData.DeviceID.ToString());
+                ApplyCookieHeader(myRequestState);
+
+                if (pRequest.DeviceID != Guid.Empty)
+                    myRequestState.request.Headers.TryAddWithoutValidation("cdeDeviceID", pRequest.DeviceID.ToString());
                 if (pRequest.Header != null && pRequest.Header.Count > 0)
                 {
                     foreach (string key in pRequest.Header.Keys)
@@ -605,87 +535,35 @@ namespace nsCDEngine.Communication
                             case "Connection":
                                 break;
                             case "Host":
-#if !CDE_NET35
-                                myRequestState.request.Host = pRequest.Header[key];
-#endif
+                                myRequestState.request.Headers.Host = pRequest.Header[key];
                                 break;
                             case "Accept":
-                                myRequestState.request.Accept = pRequest.Header[key];
-                                break;
-                            case "Content-Type":
-                                myRequestState.request.ContentType = pRequest.Header[key];
-                                break;
-                            case "Referer":
-                                myRequestState.request.Referer = pRequest.Header[key];
+                                myRequestState.request.Headers.Remove("Accept");
+                                AddHeader(myRequestState.request, key, pRequest.Header[key]);
                                 break;
                             default:
-                                myRequestState.request.Headers.Add(key, pRequest.Header[key]);
+                                AddHeader(myRequestState.request, key, pRequest.Header[key]);
                                 break;
                         }
                     }
                 }
-                if (myRequestState.MyRequestData.RequestUri.LocalPath.StartsWith("/ISB"))
-                    myRequestState.request.Referer = TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false);
-                if (!string.IsNullOrEmpty(myRequestState.MyRequestData.UserAgent))
-                    myRequestState.request.UserAgent = myRequestState.MyRequestData.UserAgent;
-                else
-                    myRequestState.request.UserAgent = !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.CustomUA) ? TheBaseAssets.MyServiceHostInfo.CustomUA : "C-DEngine " + TheBaseAssets.CurrentVersionInfo;
-                if (!string.IsNullOrEmpty(myRequestState.MyRequestData.UID) && !string.IsNullOrEmpty(myRequestState.MyRequestData.PWD))
+                if (pRequest.RequestUri.LocalPath.StartsWith("/ISB"))
                 {
-                    if (string.IsNullOrEmpty(myRequestState.MyRequestData.DOM)) myRequestState.MyRequestData.DOM = "";
-                    NetworkCredential networkCredential = new(myRequestState.MyRequestData.UID, myRequestState.MyRequestData.PWD, myRequestState.MyRequestData.DOM);
-                    myRequestState.request.Credentials = networkCredential;
+                    myRequestState.request.Headers.Remove("Referer");
+                    myRequestState.request.Headers.TryAddWithoutValidation("Referer", TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false));
                 }
-                if (!string.IsNullOrEmpty(myRequestState.MyRequestData.ResponseMimeType))
-                    myRequestState.request.ContentType = myRequestState.MyRequestData.ResponseMimeType;
-                else
-                    if (string.IsNullOrEmpty(myRequestState.request.ContentType))
-                        myRequestState.request.ContentType = "application/x-gzip";
+                SetUserAgent(myRequestState.request, pRequest);
+                if (!string.IsNullOrEmpty(pRequest.ResponseMimeType))
+                {
+                    myRequestState.request.Content.Headers.Remove("Content-Type");
+                    myRequestState.request.Content.Headers.TryAddWithoutValidation("Content-Type", pRequest.ResponseMimeType);
+                }
+                else if (myRequestState.request.Content.Headers.ContentType == null)
+                {
+                    myRequestState.request.Content.Headers.TryAddWithoutValidation("Content-Type", "application/x-gzip");
+                }
 
-                myRequestState.request.ContentLength = myRequestState.MyRequestData.GetContentLength();
-
-                tResult = myRequestState.request.BeginGetRequestStream(PostRequestStreamCallback, myRequestState);
-                if (tResult == null)
-                {
-                    myRequestState.MyRequestData.ErrorDescription = "1401:Begin Request Stream Failed - missing in Assembly?";
-                    pErrorCallback?.Invoke(myRequestState.MyRequestData);
-                    CleanUp(myRequestState);
-                    myRequestState = null;
-                    return;
-                }
-                try
-                {
-                    myRequestState.waitHandle = ThreadPool.RegisterWaitForSingleObject(tResult.AsyncWaitHandle, new WaitOrTimerCallback(TimeoutCallback), myRequestState, myRequestState.MyRequestData.TimeOut, true);
-                }
-                catch (ObjectDisposedException) 
-                {
-                    // This can happen in races with BeginGetRequestStream error cleanup: swallow to avoid a second error callback
-                }
-            }
-            catch (WebException e)
-            {
-                try
-                {
-                    if (TheBaseAssets.MySYSLOG != null)
-                        TheBaseAssets.MySYSLOG.WriteToLog(253, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "Post-RESTAsync WebException: " + myRequestState?.MyRequestData?.RequestUri, eMsgLevel.l2_Warning, e.Message));
-                    if (pErrorCallback != null)
-                    {
-                        myRequestState.MyRequestData.ErrorDescription = $"1402:{e}";
-                        myRequestState.MyRequestData.ResponseMimeType = "text/plain"; //OK
-                        myRequestState.MyRequestData.StatusCode = ((int?)((e?.Response) as HttpWebResponse)?.StatusCode) ?? 500;
-                        pErrorCallback(myRequestState.MyRequestData);
-                    }
-                }
-                catch (Exception e2)
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(252, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "PostRESTAsync Exception - ORG:", eMsgLevel.l1_Error, e2.ToString()));
-                }
-                finally
-                {
-                    CleanUp(myRequestState);
-                    myRequestState = null;
-                    TheCommonUtils.CloseOrDispose(tResult?.AsyncWaitHandle);
-                }
+                SendRequest(myRequestState, tClient);
             }
             catch (Exception e)
             {
@@ -708,261 +586,6 @@ namespace nsCDEngine.Communication
                 finally
                 {
                     CleanUp(myRequestState);
-                    myRequestState = null;
-                    TheCommonUtils.CloseOrDispose(tResult?.AsyncWaitHandle);
-                }
-            }
-        }
-
-        private void PostRequestStreamCallback(IAsyncResult asynchronousResult)
-        {
-            TheInternalRequestState tRequestState = null;
-            try
-            {
-                tRequestState = (TheInternalRequestState)asynchronousResult.AsyncState;
-
-                using (Stream postStream = tRequestState.request.EndGetRequestStream(asynchronousResult))
-                {
-                    tRequestState.MyRequestData.WritePostDataToStream(postStream);
-                }
-                tRequestState.request.BeginGetResponse(POSTRespCallback, tRequestState);
-            }
-            catch (Exception e)
-            {
-                string rReq = " Request State invalid";
-                if (tRequestState != null)
-                {
-                    try
-                    {
-                        if (tRequestState.request != null)
-                            tRequestState.request.Abort();
-                        if (tRequestState.ErrorCallback != null)
-                        {
-                            if (tRequestState.MyRequestData != null)
-                            {
-                                rReq = string.Format("ORG:{0}", tRequestState.MyRequestData.RequestUri);
-                                tRequestState.MyRequestData.ErrorDescription = $"1404:{e}";
-                                tRequestState.MyRequestData.ResponseMimeType = "text/plain"; //OK
-                                tRequestState.MyRequestData.StatusCode = ((int?)(((e as WebException)?.Response) as HttpWebResponse)?.StatusCode) ?? 500;
-                                tRequestState.ErrorCallback(tRequestState.MyRequestData);
-                            }
-                            else
-                                tRequestState.ErrorCallback(new TheRequestData() { ErrorDescription = $"1405:{e}" });
-                        }
-                    }
-                    catch (Exception e2)
-                    {
-                        TheBaseAssets.MySYSLOG.WriteToLog(255, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "PostRequestStreamCallback Exception for " + rReq, eMsgLevel.l1_Error, e2.Message));
-                    }
-                    finally
-                    {
-                        CleanUp(tRequestState);
-                        tRequestState = null;
-                        TheCommonUtils.CloseOrDispose(asynchronousResult?.AsyncWaitHandle);
-                    }
-                }
-                TheBaseAssets.MySYSLOG.WriteToLog(255, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "PostRequestStreamCallback Exception for " + rReq, eMsgLevel.l2_Warning, e.Message));
-            }
-        }
-
-        private void POSTRespCallback(IAsyncResult asynchronousResult)
-        {
-            TheInternalRequestState tRequestState = null;
-            try
-            {
-                tRequestState = (TheInternalRequestState)asynchronousResult.AsyncState;
-                tRequestState.response = (HttpWebResponse)tRequestState.request.EndGetResponse(asynchronousResult);
-                //tRequestState.MyRequestData.StatusCode = TheCommonUtils.CInt(((HttpWebResponse)tRequestState.response).StatusCode); //NEW 3.200 - Moved to the End of Processing
-                tRequestState.streamResponse = tRequestState.response.GetResponseStream();
-                if (tRequestState.streamResponse == null)
-                {
-                    CleanUp(tRequestState);
-                    tRequestState = null;
-                    TheCommonUtils.CloseOrDispose(asynchronousResult?.AsyncWaitHandle);
-                    return;
-                }
-                tRequestState.BufferRead = new byte[TheInternalRequestState.BUFFER_SIZE];
-#if NEW_REST_ASYNC
-                TheCommonUtils.cdeRunAsync("POSTRespCallback", true, async (o) =>
-                {
-                    int read = 0;
-                    do
-                    {
-                        read = await tRequestState.streamResponse.ReadAsync(tRequestState.BufferRead, 0, TheInternalRequestState.BUFFER_SIZE);
-                        if (read > 0)
-                        {
-                            byte[] tBuf = new byte[read];
-                            TheCommonUtils.cdeBlockCopy(tRequestState.BufferRead, 0, tBuf, 0, read);
-                            tRequestState.ResultData ??= new List<byte[]>();
-                            tRequestState.ResultData.Add(tBuf);
-                            tRequestState.ResultDataPos += read;
-                        }
-                    }
-                    while (read > 0);
-                    ProcessResponse(tRequestState);
-                    CleanUp(tRequestState);
-                    tRequestState = null;
-                });
-#else
-                tRequestState.streamResponse.BeginRead(tRequestState.BufferRead, 0, TheInternalRequestState.BUFFER_SIZE, POSTReadCallBack, tRequestState); //IAsyncResult asynchronousInputRead =
-#endif
-            }
-            catch (Exception e)
-            {
-                string rReq = " !Request State invalid!";
-                try
-                {
-                    if (tRequestState != null)
-                    {
-                        try
-                        {
-                            if (tRequestState.request != null)
-                                tRequestState.request.Abort();
-                        }
-                        catch
-                        {
-                            //intentionally blank
-                        }
-                        if (tRequestState.ErrorCallback != null)
-                        {
-                            if (tRequestState.MyRequestData != null)
-                            {
-                                rReq = string.Format("ORG:{0}", tRequestState.MyRequestData.RequestUri);
-                                tRequestState.MyRequestData.ErrorDescription = $"1406:{e}";
-                                tRequestState.MyRequestData.ResponseMimeType = "text/plain"; //OK
-                                tRequestState.MyRequestData.StatusCode = ((int?)(((e as WebException)?.Response) as HttpWebResponse)?.StatusCode) ?? 500;
-                                try
-                                {
-                                    if (e is WebException we && we.Response != null)
-                                    {
-                                        var stm = we.Response.GetResponseStream();
-                                        var buffer = new byte[we.Response.ContentLength];
-                                        if (stm.Read(buffer, 0, buffer.Length) == buffer.Length)
-                                        {
-                                            tRequestState.MyRequestData.ResponseBuffer = buffer;
-                                            if (!string.IsNullOrEmpty(we.Response.ContentType))
-                                            {
-                                                tRequestState.MyRequestData.ResponseMimeType = we.Response.ContentType;
-                                            }
-                                        }
-                                    }
-                                }
-                                catch
-                                {
-                                    //intentionally blank
-                                }
-
-                                tRequestState.ErrorCallback(tRequestState.MyRequestData);
-                            }
-                            else
-                                tRequestState.ErrorCallback(new TheRequestData() { ErrorDescription = $"1407:{e}" });
-                        }
-                    }
-                }
-                catch (Exception e2)
-                {
-                    if (TheBaseAssets.MySYSLOG != null)
-                        TheBaseAssets.MySYSLOG.WriteToLog(256, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", $"POSTRespCallback Exception crash for {rReq} {IsPosting}", eMsgLevel.l1_Error, e2.Message));
-                }
-                finally
-                {
-                    CleanUp(tRequestState);
-                    tRequestState = null;
-                    TheCommonUtils.CloseOrDispose(asynchronousResult?.AsyncWaitHandle);
-                }
-                if (TheBaseAssets.MySYSLOG != null)
-                    TheBaseAssets.MySYSLOG.WriteToLog(256, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", $"POSTRespCallback Exception for {rReq} {IsPosting}", eMsgLevel.l2_Warning, e.Message));
-            }
-        }
-
-#if !NEW_REST_ASYNC
-        private void POSTReadCallBack(IAsyncResult asyncResult)
-        {
-            TheInternalRequestState tRequestState = null;
-            try
-            {
-                tRequestState = asyncResult.AsyncState as TheInternalRequestState;
-                if (tRequestState == null) return;
-                int read = tRequestState.streamResponse.EndRead(asyncResult);
-                if (read > 0)
-                {
-                    byte[] tBuf = new byte[read];
-                    TheCommonUtils.cdeBlockCopy(tRequestState.BufferRead, 0, tBuf, 0, read);
-                    if (tRequestState.ResultData == null) tRequestState.ResultData = new List<byte[]>();
-                    tRequestState.ResultData.Add(tBuf);
-                    tRequestState.ResultDataPos += read;
-                    tRequestState.streamResponse.BeginRead(tRequestState.BufferRead, 0, TheInternalRequestState.BUFFER_SIZE, POSTReadCallBack, tRequestState);
-                }
-                else
-                {
-                    ProcessResponse(tRequestState);
-                    CleanUp(tRequestState);
-                    tRequestState = null;
-                    TheCommonUtils.CloseOrDispose(asyncResult?.AsyncWaitHandle);
-                }
-            }
-            catch (Exception e)
-            {
-                string tReq = " !Request State invalid!";
-                try
-                {
-                    if (tRequestState != null)
-                    {
-                        tRequestState.request.Abort();
-                        if (tRequestState.ErrorCallback != null)
-                        {
-                            if (tRequestState.MyRequestData != null)
-                            {
-                                tReq = string.Format("ORG:{0}", tRequestState.MyRequestData.RequestUri);
-                                tRequestState.MyRequestData.ErrorDescription = $"1408:{e}";
-                                tRequestState.MyRequestData.ResponseMimeType = "text/plain"; //OK
-                                tRequestState.MyRequestData.StatusCode = ((int?)(((e as WebException)?.Response) as HttpWebResponse)?.StatusCode) ?? 500;
-                                tRequestState.ErrorCallback(tRequestState.MyRequestData);
-                            }
-                            else
-                                tRequestState.ErrorCallback(new TheRequestData() { ErrorDescription = $"1409:{e}" });
-                        }
-                    }
-                }
-                catch (Exception e2)
-                {
-                    if (TheBaseAssets.MySYSLOG != null)
-                        TheBaseAssets.MySYSLOG.WriteToLog(257, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "POSTReadCallBack Exception for " + tReq, eMsgLevel.l1_Error, e2.ToString()));
-                }
-                finally
-                {
-                    CleanUp(tRequestState);
-                    if (TheBaseAssets.MySYSLOG != null)
-                        TheBaseAssets.MySYSLOG.WriteToLog(257, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "POSTReadCallBack Exception for " + tReq, eMsgLevel.l2_Warning, e.ToString()));
-                    tRequestState = null;
-                    TheCommonUtils.CloseOrDispose(asyncResult?.AsyncWaitHandle);
-                }
-            }
-        }
-#endif
-
-        private static void TimeoutCallback(object pState, bool timedOut)
-        {
-            if (timedOut && pState is TheInternalRequestState tPostState)
-            {
-                string tReg = "Unknow Org";
-                try
-                {
-                    if (tPostState.MyRequestData != null)
-                    {
-                        tReg = tPostState.MyRequestData.RequestUri?.ToString() ?? tReg;
-                        tPostState.MyRequestData.ErrorDescription = "1410:Timeout Error";
-                        tPostState.ErrorCallback?.Invoke(tPostState.MyRequestData);
-                        TheBaseAssets.MySYSLOG.WriteToLog(257, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("TheREST", "HttpWebRequest timed out and was aborted to ORG:" + tReg, eMsgLevel.l2_Warning));
-                    }
-                }
-                catch (Exception e2)
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(257, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheREST", "TimeoutCallback: timed out and was aborted to ORG:" + tReg, eMsgLevel.l1_Error, e2.ToString()));
-                }
-                finally
-                {
-                    CleanUp(tPostState);
                 }
             }
         }

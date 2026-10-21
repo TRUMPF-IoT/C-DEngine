@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-﻿using CDEngine.CDUtils.Zlib;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.ServiceProcess;
 using System.Threading;
 
@@ -107,7 +107,6 @@ namespace cdeUpdater
                         {
                             StartupLog($"Wiping Node: {processDirectory}/ClientBin");
                             Directory.Delete($"{processDirectory}/ClientBin", true);
-#if !CDE_NET35
                             StartupLog($"Wiping Plugins from {processDirectory}");
                             var dir = new DirectoryInfo(processDirectory);
                             foreach (var file in dir.EnumerateFiles("CDMy*.dll"))
@@ -118,7 +117,6 @@ namespace cdeUpdater
                             {
                                 file.Delete();
                             }
-#endif
                         }
                         catch (Exception)
                         {
@@ -205,13 +203,10 @@ namespace cdeUpdater
                 {
                     try
                     {
-                        using (ZipFile zip = ZipFile.Read(tFile, new ReadOptions()))  //args[1] + "\\" +
-                        {
-                            if (tFile.ToUpper().EndsWith(".CDEX"))
-                                zip.ExtractAll(args[1], ExtractExistingFileAction.OverwriteSilently);
-                            else
-                                zip.ExtractAll(args[1] + $"{Path.DirectorySeparatorChar}ClientBin", ExtractExistingFileAction.OverwriteSilently);
-                        }
+                        if (tFile.ToUpper().EndsWith(".CDEX"))
+                            ZipFile.ExtractToDirectory(tFile, args[1], true);
+                        else
+                            ZipFile.ExtractToDirectory(tFile, args[1] + $"{Path.DirectorySeparatorChar}ClientBin", true);
                         File.Delete(tFile + ".old");
                         File.Move(tFile, tFile + ".old");
                     }
@@ -324,6 +319,7 @@ namespace cdeUpdater
         {
             try
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 System.Management.ManagementScope scope = new ("root\\MicrosoftIISv2");
                 scope.Connect();
                 System.Management.ManagementObject appPool = new (scope, new System.Management.ManagementPath("IIsApplicationPool.Name='W3SVC/AppPools/" + pPoolName + "'"), null);
@@ -331,6 +327,7 @@ namespace cdeUpdater
                     appPool?.InvokeMethod("Recycle", null, null);
                 else
                     appPool?.InvokeMethod("Stop", null, null);
+#pragma warning restore CA1416 // Validate platform compatibility
             }
             catch (Exception ee)
             {
@@ -340,6 +337,7 @@ namespace cdeUpdater
 
         private static void StartStopService(bool StartService, string processName, string processDirectory, int processPid)
         {
+#pragma warning disable CA1416 // Validate platform compatibility
             ServiceController service = new (processName);
             try
             {
@@ -364,6 +362,7 @@ namespace cdeUpdater
             {
                 //ignored
             }
+#pragma warning restore CA1416 // Validate platform compatibility
         }
 
         static private bool IsMainProcessRunning(string pMainExecutable, string processDirectory, int processPid)

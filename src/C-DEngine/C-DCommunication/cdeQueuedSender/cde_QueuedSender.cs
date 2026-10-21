@@ -25,10 +25,10 @@ namespace nsCDEngine.Communication
     {
         public TheQueuedSender()
         {
-            MySubscriptions = new TheMirrorCache<TheSubscriptionInfo>();
-            MyCoreQueue = new TheMirrorCache<TheCoreQueueContent>();
+            MySubscriptions = new TheMirrorCacheCore<TheSubscriptionInfo>();
+            MyCoreQueue = new TheMirrorCacheCore<TheCoreQueueContent>();
             MyJSKnownThings = new cdeConcurrentDictionary<Guid, byte>();
-            MyJSKnownFields = new TheMirrorCache<TheMetaDataBase>();
+            MyJSKnownFields = new TheMirrorCacheCore<TheMetaDataBase>();
             IsAlive = true;
         }
 
@@ -128,7 +128,6 @@ namespace nsCDEngine.Communication
                     eventSenderThreadRunning += sinkSTRunning;
                     if (!TheBaseAssets.MyServiceHostInfo.DisableWebSockets && MyTargetNodeChannel.TargetUrl.StartsWith("ws", StringComparison.CurrentCultureIgnoreCase))
                     {
-#if CDE_USEWSS8
                         if (TheBaseAssets.MyServiceHostInfo.IsWebSocket8Active)
                         {
                             TheWSProcessor8 tWS = new (null);
@@ -142,21 +141,8 @@ namespace nsCDEngine.Communication
                             }
                         }
                         else
-#endif
                         {
-#if CDE_USECSWS
-                            TheWSProcessor tWS = new (null);
-                            tWS.eventConnected += sinkWSconnected;
-                            tWS.SetRequest(new TheRequestData());
-                            SetWebSocketProcessor(tWS);
-                            if (!tWS.Connect(this))
-                            {
-                                TheBaseAssets.MySYSLOG.WriteToLog(2302, new TSM("QueuedSender", $"Could not create WSCS QS:{myTargetNodeChannel.ToMLString()}", eMsgLevel.l1_Error), true);
-                                return false;
-                            }
-#else
                             TheBaseAssets.MySYSLOG.WriteToLog(2302, new TSM("QueuedSender", $"No WebSocket Stack available therefore could not create WSCS QS:{myTargetNodeChannel.ToMLString()}", eMsgLevel.l1_Error), true);
-#endif
                         }
                     }
                     else
@@ -441,11 +427,7 @@ namespace nsCDEngine.Communication
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(IsConnected ? "<span style='color:green; font-weight:bold;'>YES</span>" : "<span style='color:red; font-weight:bold;'>NO</span>")}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{GetLastError()}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : $"{TheCommonUtils.GetDateTimeString(lastConnectTime, -1)}")}</td>");
-#if CDE_NET35
-            ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : $"{(DateTimeOffset.Now - lastConnectTime)}")}</td>");
-#else
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{(lastConnectTime == DateTimeOffset.MinValue ? "not yet" : (DateTimeOffset.Now - lastConnectTime).ToString(@"dd\.hh\:mm\:ss"))}</td>");
-#endif
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{TheCommonUtils.GetDateTimeString(GetLastHeartBeat(), -1)}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{HasWebSockets()}</td>");
             ret.Append($"<td class=\"cdeLogEntry\" style=\"text-align:center;\">{IsInPost}</td>");
@@ -511,15 +493,15 @@ namespace nsCDEngine.Communication
         }
         internal void FlushQueue()
         {
-            MyCoreQueue.RemoveAllItems();
+            MyCoreQueue.FlushCache(false);
         }
         internal void RemoveOrphanFromQueue(Guid pUri)
         {
             List<TheCoreQueueContent> tErasers = MyCoreQueue.TheValues.Where(s => s == null || s.OrgMessage == null || s.OrgMessage.GetOriginator().Equals(pUri)).ToList();
             MyCoreQueue.RemoveItems(tErasers, null);
         }
-        private readonly TheMirrorCache<TheCoreQueueContent> MyCoreQueue;
-        private readonly TheMirrorCache<TheMetaDataBase> MyJSKnownFields;
+        private readonly TheMirrorCacheCore<TheCoreQueueContent> MyCoreQueue;
+        private readonly TheMirrorCacheCore<TheMetaDataBase> MyJSKnownFields;
         private readonly cdeConcurrentDictionary<Guid, byte> MyJSKnownThings;
 
 #region Cleanup and Excption Handling
@@ -904,6 +886,11 @@ namespace nsCDEngine.Communication
                                                     {
                                                         if (tSend.MySubscriptionContains(tTopicNameOnly, tTopicRealScope, true))
                                                         {
+                                                            if (!string.IsNullOrEmpty(pMessage.PLS) && pMessage.IsPLSEncrypted())
+                                                            {
+                                                                pMessage.PLS = TheCommonUtils.cdeDecrypt(pMessage.PLS, TheBaseAssets.MySecrets.GetAI());
+                                                                pMessage.ResetPLSEncryption();
+                                                            }
                                                             tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                                                             bFoundISB = true;
                                                         }

@@ -50,11 +50,7 @@ namespace nsCDEngine.ISM
                     System.Threading.Thread.CurrentThread.IsBackground = IsBackGround;
                 if (TheBaseAssets.MyServiceHostInfo.DebugLevel > eDEBUG_LEVELS.ESSENTIALS)
                 {
-#if !CDE_STANDARD
-                    ThreadID = NativeMethods.GetCurrentThreadId();
-#else
                     System.Threading.Interlocked.Increment(ref ThreadID);
-#endif
                     string t = System.Threading.Thread.CurrentThread.Name;
                     if (string.IsNullOrEmpty(t))
                     {
@@ -77,11 +73,9 @@ namespace nsCDEngine.ISM
         internal static List<TheThreadInfo> GetThreadInfo()
         {
             List<TheThreadInfo> tList = new ();
-#if CDE_STANDARD //No Thread Name Diagnostics
-#else
             try
             {
-                int cid = NativeMethods.GetCurrentThreadId();
+                int cid = Environment.CurrentManagedThreadId;
                 foreach (ProcessThread pt in Process.GetCurrentProcess().Threads)
                 {
                     TheThreadInfo t = new TheThreadInfo()
@@ -92,7 +86,6 @@ namespace nsCDEngine.ISM
                     if (t.ID < MAX_IDS)
                     {
                         t.Name = MyThreadNames[t.ID];
-                        //t.StackFrame = MyThreadStacks[t.ID];
                         if (t.ID == cid)
                         {
                             t.Name = "GETTHREADINFO";
@@ -103,11 +96,6 @@ namespace nsCDEngine.ISM
                             {
                                 t.IsBackground = MyThreadStacks[t.ID].IsBackground;
                                 t.IsPooled = MyThreadStacks[t.ID].IsThreadPoolThread;
-#pragma warning disable CS0618 // System.Diagnostics.StrackTrace requires the thread to be suspended
-                                MyThreadStacks[t.ID].Suspend();
-                                t.StackFrame = TheCommonUtils.GetStackInfo(new System.Diagnostics.StackTrace(MyThreadStacks[t.ID], true));
-                                MyThreadStacks[t.ID].Resume();
-#pragma warning restore CS0618
                             }
                         }
                     }
@@ -118,7 +106,16 @@ namespace nsCDEngine.ISM
                         t.WaitReason = "Not Waiting";
                     else
                         t.WaitReason = ThreadWaitReasonToString(pt.WaitReason);
-                    t.StartTime = pt.StartTime;
+#pragma warning disable CA1416 // Validate platform compatibility
+                    try
+                    {
+                        t.StartTime = pt.StartTime;
+                    }
+                    catch (Exception)
+                    {
+                        t.StartTime = DateTime.MinValue;
+                    }
+#pragma warning restore CA1416 // Validate platform compatibility
                     tList.Add(t);
                 }
             }
@@ -126,7 +123,6 @@ namespace nsCDEngine.ISM
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(999, new TSM("Diagnostics", "Thread Diagnostics Failed", eMsgLevel.l1_Error, e.ToString()));
             }
-#endif
             return tList;
         }
 
