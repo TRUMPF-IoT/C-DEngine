@@ -56,7 +56,7 @@ namespace nsCDEngine.BaseClasses
                 var types = AppDomain.CurrentDomain.GetAssemblies();
                 if (pDLLName.ToLower().EndsWith(".dll"))
                     tCryptoAssembly = types.FirstOrDefault(g => g.Location.Contains(pDLLName.Substring(0,pDLLName.Length-4)));//new way of detecting mobile devices
-                if (tCryptoAssembly == null) // AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
+                if (tCryptoAssembly == null || !bDontVerifyTrust) // AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
                 {
                     TheSystemMessageLog.ToCo($"Starting CodeSign-Verifier in ({pDLLName}) with DVT:{bDontVerifyTrust} VTP:{bVerifyTrustPath} DVI:{bDontVerifyIntegrity}");
                     MyCodeSigner ??= new TheDefaultCodeSigning(MySecrets, pMySYSLOG);
