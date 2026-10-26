@@ -12,11 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-#if !CDE_NET35
 namespace CDEngine.BaseClasses.Net45.Tests
-#else
-namespace CDEngine.BaseClasses.Net35.Tests
-#endif
 {
     [TestFixture]
     class TheSystemMessagesTests : TestHost
@@ -49,7 +45,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
             });
             TheCommCore.PublishCentral(testMsg, true);
             TheCommonUtils.SleepOneEye(5000, 1000);
-            Assert.That(1, Is.EqualTo(numberOfMessages));
+            Assert.That(numberOfMessages, Is.EqualTo(1));
         }
 
         // Tests the eEngineEvents.IncomingMessage2 - fired for both Thing and Engine messages
@@ -71,7 +67,7 @@ namespace CDEngine.BaseClasses.Net35.Tests
             testMsg.SetOriginatorThing(contentServiceThing);
             TheCommCore.PublishCentral(testMsg, true);
             TheCommonUtils.SleepOneEye(5000, 1000);
-            Assert.That(2, Is.EqualTo(numberOfMessages));
+            Assert.That(numberOfMessages, Is.EqualTo(2));
         }
 
         [SetUp]

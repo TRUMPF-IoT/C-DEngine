@@ -7,11 +7,7 @@
 using nsCDEngine.ViewModels;
 using System.Collections.Generic;
 
-#if !CDE_NET35
 namespace CDEngine.BaseDataModel.Net45.Tests
-#else
-namespace CDEngine.BaseDataModel.Net35.Tests
-#endif
 {
     [TestFixture]
     public class BaseDataModelTest

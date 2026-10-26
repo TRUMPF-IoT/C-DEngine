@@ -189,6 +189,10 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         Bot = 8,
         /// <summary>
+        /// The Page is viewed inside a Phone App
+        /// </summary>
+        InApp=9,
+        /// <summary>
         /// Undefined or all platforms
         /// </summary>
         Any = 99,
@@ -324,9 +328,13 @@ namespace nsCDEngine.ViewModels
         /// </summary>
         NETSTD_V21 = 17,
         /// <summary>
+        /// .NET 10
+        /// </summary>
+        NETCORE = 18,
+        /// <summary>
         /// Max Terminator
         /// </summary>
-        MAX = 18
+        MAX = 19
     }
 
     /// <summary>
@@ -736,7 +744,6 @@ namespace nsCDEngine.ViewModels
 
     /// <summary>
     /// Defines a Thread-Safe Concurrent Directory
-    /// On Silverlight and .NET35 this uses a normal Directory that can be locked with the MyLock object inside this class
     /// </summary>
     /// <typeparam name="TKey">Type of the Key</typeparam>
     /// <typeparam name="TValue">Type of the Value</typeparam>

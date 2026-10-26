@@ -136,16 +136,16 @@ namespace cdeNewtonsoft.Json.Serialization
             return property;
         }
 
-        private bool TryGetValue(string key, out JsonProperty item)
-        {
-            if (Dictionary == null)
-            {
-                item = default(JsonProperty);
-                return false;
-            }
+        //private bool TryGetValue(string key, out JsonProperty item)
+        //{
+        //    if (Dictionary == null)
+        //    {
+        //        item = default(JsonProperty);
+        //        return false;
+        //    }
 
-            return Dictionary.TryGetValue(key, out item);
-        }
+        //    return Dictionary.TryGetValue(key, out item);
+        //}
 
         /// <summary>
         /// Gets a property by property name.

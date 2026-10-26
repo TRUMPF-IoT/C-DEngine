@@ -3,12 +3,17 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #if !CDE_INTNEWTON //JSON.NET from Nuget
+#if !CDE_JSONET
 using Newtonsoft.Json;
+#else
+using System.Text.Json.Serialization;
+#endif
 #else
 using cdeNewtonsoft.Json;
 #endif
 using System;
 using System.Threading;
+using static nsCDEngine.BaseClasses.TheCommonUtils;
 
 namespace nsCDEngine.BaseClasses
 {
@@ -332,6 +337,9 @@ namespace nsCDEngine.BaseClasses
         /// <summary>
         /// String Payload of the Message. In oposite to the TXT this string has no character limit
         /// </summary>
+#if CDE_JSONET
+        [JsonConverter(typeof(cdeStringConverter))]
+#endif
         public string PLS = "";         // PayLoad String
         /// <summary>
         /// Payload Binary of the Message. If PLB is NULL and PLS is set, the PLS will be compressed to binary and put in PLB for footprint reduction.
@@ -372,6 +380,9 @@ namespace nsCDEngine.BaseClasses
         /// Serial Number of the Message.
         /// Do NOT set! This is managed by the C-DEngine
         /// </summary>
+#if CDE_JSONET         
+        [JsonConverter(typeof(cdeStringConverter))]
+#endif
         public string FID = "";
         /// <summary>
         /// Scrambled Scope ID of this message.

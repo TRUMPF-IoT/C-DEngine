@@ -31,6 +31,82 @@ namespace cdePackager
             {
                 binDirectoryPath += Path.DirectorySeparatorChar;
             }
+
+            // Guards against re-entrancy: resolving an assembly from within the handler must not trigger the handler again for the same name (stack overflow).
+            var resolving = new HashSet<string>();
+            ResolveEventHandler resolver = (o, args) =>
+            {
+                string name = null;
+                try
+                {
+                    name = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
+                    var assName = new AssemblyName(name).Name;
+                    lock (resolving)
+                    {
+                        if (!resolving.Add(assName))
+                        {
+                            return null;
+                        }
+                    }
+                    try
+                    {
+                        var loaded = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => string.Equals(a.GetName().Name, assName, StringComparison.OrdinalIgnoreCase));
+                        if (loaded != null)
+                        {
+                            if (bDiagnostics)
+                            {
+                                logger.WriteLine($"Resolving {args.Name} {name}: already loaded {loaded.Location}");
+                            }
+                            return loaded;
+                        }
+                        var assPath = Path.Combine(binDirectoryPath, assName + ".dll");
+                        if (!File.Exists(assPath))
+                        {
+                            assPath = Path.Combine(Path.GetDirectoryName(pluginFilePath) ?? binDirectoryPath, assName + ".dll");
+                        }
+                        if (!File.Exists(assPath))
+                        {
+                            if (bDiagnostics)
+                            {
+                                logger.WriteLine($"Could not resolve {args.Name} {name}: no file found for {assName}");
+                            }
+                            return null;
+                        }
+                        var ass = Assembly.LoadFrom(assPath);
+                        if (bDiagnostics)
+                        {
+                            logger.WriteLine($"Resolving {args.Name} {name}: {ass?.Location}");
+                        }
+                        return ass;
+                    }
+                    finally
+                    {
+                        lock (resolving)
+                        {
+                            resolving.Remove(assName);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.WriteLine($"Error resolving {args.Name} {name}: {e.Message}");
+                    return null;
+                }
+            };
+
+            AppDomain.CurrentDomain.AssemblyResolve += resolver;
+            try
+            {
+                return PackagePlugInInternal(pluginFilePath, binDirectoryPath, storeDirectoryPath, pPlatform, logger, bDiagnostics, bCheckForFileOverwrite, out error);
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyResolve -= resolver;
+            }
+        }
+
+        static int PackagePlugInInternal(string pluginFilePath, string binDirectoryPath, string storeDirectoryPath, string pPlatform, ILogger logger, bool bDiagnostics, bool bCheckForFileOverwrite, out string error)
+        {
             if (storeDirectoryPath != null &&  !storeDirectoryPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
             {
                 storeDirectoryPath += Path.DirectorySeparatorChar;
@@ -63,6 +139,9 @@ namespace cdePackager
                         break;
                     case "netstandard2.1":
                         tPluginPlatform = cdePlatform.NETSTD_V21;
+                        break;
+                    case "net10":
+                        tPluginPlatform = cdePlatform.NETCORE;
                         break;
                 }
             }
@@ -108,49 +187,8 @@ namespace cdePackager
             {
                 try
                 {
-                    AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (o, args) =>
-                    {
-                        string name = null;
-                        Assembly ass = null;
-                        try
-                        {
-                            name = AppDomain.CurrentDomain.ApplyPolicy(args.Name);
-                            try
-                            {
-                                ass = System.Reflection.Assembly.ReflectionOnlyLoad(name);
-                            }
-                            catch (Exception e)
-                            {
-                                var assName = new AssemblyName(name).Name;
-                                var assPath = Path.Combine(binDirectoryPath, assName + ".dll");
-                                if (bDiagnostics)
-                                {
-                                    logger.WriteLine($"Error resolving {args.Name} {name}, trying {assPath}: {e.Message}");
-                                }
-                                ass = System.Reflection.Assembly.ReflectionOnlyLoadFrom(assPath);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            logger.WriteLine($"Error resolving {args.Name} {name}: {e.Message}");
-                            throw;
-                        }
-                        if (bDiagnostics)
-                        {
-                            logger.WriteLine($"Resolving {args.Name} {name}: {ass?.CodeBase}");
-                        }
-                        return ass;
-                    };
-                    Assembly tAss;
-                    try
-                    {
-                        // load for reflection only first (to support cross-platform tooling). But needs to be in separate app domain like in the engine host. For now only do reflection when LoadFrom fails (i.e. native x86 assembly in x64 packager process).
-                        tAss = Assembly.LoadFrom(pluginFilePath);
-                    }
-                    catch
-                    {
-                        tAss = Assembly.ReflectionOnlyLoadFrom(pluginFilePath);
-                    }
+                    // Reflection-only loading
+                    Assembly tAss = Assembly.LoadFrom(pluginFilePath);
                     tPluginPlatform = TheCommonUtils.GetAssemblyPlatformHostAgnostic(tAss, bDiagnostics, out string diagInfo);
                     if (!string.IsNullOrEmpty(diagInfo))
                     {

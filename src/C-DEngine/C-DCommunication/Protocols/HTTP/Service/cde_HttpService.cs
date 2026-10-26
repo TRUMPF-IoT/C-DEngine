@@ -387,7 +387,7 @@ namespace nsCDEngine.Communication.HttpService
                             tRefsh = $"<meta http-equiv=\"refresh\" content=\"{ts};URL='{Query}'\" /> ";
                         pRequestData.ResponseBufferStr = $"<html><head><meta http-equiv=\"Expires\" content=\"0\" />{tRefsh}<meta http-equiv=\"Cache-Control\" content=\"no-cache\" /><meta http-equiv=\"Pragma\" content=\"no-cache\" /></html><body style=\"background-color: {TheBaseAssets.MyServiceHostInfo.BaseBackgroundColor};\">";
                         pRequestData.ResponseBufferStr += $"<table width=\"100%\" style=\"height:100%;\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr><td style=\"text-align:center;\"><p style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor}; font-family: Arial; font-size: 36px\">Your Session has ended</p><p style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor}; font-family: Arial; font-size: 36px\">";
-                        pRequestData.ResponseBufferStr += $"<a style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor};\" href=\"{Query}\">Touch here to get back to the Portal</a>";  //TODO: Make Customizable
+                        pRequestData.ResponseBufferStr += $"<a style=\"color: {TheBaseAssets.MyServiceHostInfo.BaseForegroundColor};\" href=\"{Query}\">Tap here to get back to the Portal</a>";  //TODO: Make Customizable
                         pRequestData.ResponseBufferStr += "</p></td></tr></table></body></HTML>";
 
                         pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
@@ -438,7 +438,14 @@ namespace nsCDEngine.Communication.HttpService
 
         internal static void GetAnyFile(TheRequestData pRequestData, bool ProcessWRIntercept)
         {
-            if (pRequestData == null) return; 
+            if (pRequestData == null) return;
+            if (!TheBaseAssets.MasterSwitch)
+            {
+                pRequestData.StatusCode = 404;
+                pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array("Engine not running");
+                return;
+            }
+
             if (pRequestData.cdeRealPage.Length == 1 && !string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.DefHomePage))
             {
                 pRequestData.cdeRealPage = $"{(TheBaseAssets.MyServiceHostInfo.DefHomePage.StartsWith("/") ? "" : "/")}{TheBaseAssets.MyServiceHostInfo.DefHomePage}";
@@ -511,7 +518,7 @@ namespace nsCDEngine.Communication.HttpService
                                     }
                                 }
                             }
-                            pRequestData.ResponseBufferStr = cdeStatus.GetDiagReport(true);
+                            pRequestData.ResponseBufferStr = cdeStatus.GetDiagReport(true, pRequestData);
                             pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
@@ -524,7 +531,7 @@ namespace nsCDEngine.Communication.HttpService
                         {
                             if (!IsTokenValid(pRequestData, tQ))
                                 break;
-                            pRequestData.ResponseBufferStr = cdeStatus.RenderHostServiceInfo(true);
+                            pRequestData.ResponseBufferStr = cdeStatus.RenderHostServiceInfo(true, pRequestData);
                             pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
@@ -542,7 +549,7 @@ namespace nsCDEngine.Communication.HttpService
                             {
                                 DoReset = tQ.TryGetValue("RESET", out string InTopicRes);
                             }
-                            pRequestData.ResponseBufferStr = cdeStatus.ShowKPIs(DoReset);
+                            pRequestData.ResponseBufferStr = cdeStatus.ShowKPIs(DoReset, pRequestData);
                             pRequestData.ResponseBufferStr += cdeStatus.AddHTMLFooter;
                             pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(pRequestData.ResponseBufferStr);
                         }
@@ -589,7 +596,7 @@ namespace nsCDEngine.Communication.HttpService
                     case "/CDESTATUS.ASPX":
                         {
                             bool Force = false;
-                            cdeStatus.TheCdeStatusOptions statusOptions = new ();
+                            cdeStatus.TheCdeStatusOptions statusOptions = new();
                             if (tQ != null)
                             {
                                 statusOptions.ShowManyDetails = tQ.ContainsKey("SUBDET");
@@ -615,28 +622,28 @@ namespace nsCDEngine.Communication.HttpService
                                     }
 
                                     LastCdeStatusTime = DateTimeOffset.Now;
-                                    LastCdeStatus = cdeStatus.ShowSubscriptionsStatus(true, statusOptions);
+                                    LastCdeStatus = cdeStatus.ShowSubscriptionsStatus(true, statusOptions, pRequestData);
                                     if (statusOptions.ShowHSI)
                                         LastCdeStatus += cdeStatus.RenderHostServiceInfo(false);
                                     if (statusOptions.ShowDiag)
                                     {
                                         sinkGetStatus?.Invoke(pRequestData);
-                                        LastCdeStatus += cdeStatus.GetDiagReport(false);
+                                        LastCdeStatus += cdeStatus.GetDiagReport(false, pRequestData);
                                     }
-                                    if(statusOptions.ShowSesLog)
+                                    if (statusOptions.ShowSesLog)
                                         LastCdeStatus += TheBaseAssets.MySession.GetSessionLog();
-                                    if(statusOptions.ShowSysLog)
+                                    if (statusOptions.ShowSysLog)
                                         LastCdeStatus += TheBaseAssets.MySYSLOG.GetNodeLog(pRequestData.SessionState, TheCommonUtils.cdeStripHTML(InTopic), true);
                                     LastCdeStatus += cdeStatus.AddHTMLFooter;
                                 }
-                                if (LastCdeStatus!=null)
+                                if (LastCdeStatus != null)
                                     pRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(LastCdeStatus);
                             }
                             pRequestData.ResponseBufferStr = "";
                             pRequestData.ResponseMimeType = "text/html";
                             pRequestData.AllowStatePush = false;
-                            break;
                         }
+                        break;
                     case "/LOG.ASPX":
                         if (!IsTokenValid(pRequestData, tQ))
                             break;

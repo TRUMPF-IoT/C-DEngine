@@ -375,9 +375,16 @@ namespace nsCDEngine.Communication
             return MySessionStateLock; //LOCK-REVIEW: no longer in StorageMirror - SessionManager has its own lock now
         }
 
+        private bool? EnableLogSession = null;
         public void LogSession(Guid pSessionID, string pUrl, string pBrowser, string pBrowserDesc, string pRef, string pCustomData)
         {
             if (TheCDEngines.MyIStorageService == null) return;
+            if (EnableLogSession==null)
+            {
+                EnableLogSession=TheCommonUtils.CBool(TheBaseAssets.MySettings.GetSetting("EnableSessionLogging"));
+            }
+            if (EnableLogSession != true)
+                return;
             TheSessionState pSess = new ()
             {
                 cdeMID = pSessionID,

@@ -1152,7 +1152,7 @@ namespace NUnit_TheCommonUtils
             int minuteInterval = 5;
             RoundingDirection direction = RoundingDirection.RoundDown;
             DateTimeOffset Returned = TheCommonUtils.RoundDateToMinuteInterval(time, minuteInterval, direction);
-            Assert.That(0, Is.EqualTo(Returned.Second));
+            Assert.That(Returned.Second, Is.EqualTo(0));
         }
 
 

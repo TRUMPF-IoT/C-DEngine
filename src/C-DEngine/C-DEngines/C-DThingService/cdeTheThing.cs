@@ -5,7 +5,12 @@
 #if CDE_INTNEWTON
 using cdeNewtonsoft.Json;
 #else
+#if CDE_JSONET
+using System.Text.Json;
+using System.Text.Json.Serialization;
+#else
 using Newtonsoft.Json;
+#endif
 #endif
 
 using nsCDEngine.BaseClasses;
@@ -27,13 +32,6 @@ using NMI = nsCDEngine.Engines.NMIService.TheNMIEngine;
 using TT = nsCDEngine.Engines.ThingService.TheThing;
 
 #pragma warning disable CS1591    //TODO: Remove and document public methods
-
-#if CDE_NET4
-// .Net 4 does not have this, while Net 3.5 does: workaround to make this compile-time only feature work:
-namespace System.Runtime.CompilerServices {
-    sealed class CallerMemberNameAttribute : Attribute { }
-}
-#endif
 
 namespace nsCDEngine.Engines.ThingService
 {
@@ -325,6 +323,82 @@ namespace nsCDEngine.Engines.ThingService
         }
         #endregion
 
+        #region DeviceTempate
+        public TheDeviceDescription MyDeviceTemplate = null;
+       
+        public int DeviceHealthInterval
+        {
+            get { return (int)TT.MemberGetSafePropertyNumber(MyBaseThing); }
+            set { TT.MemberSetSafePropertyNumber(MyBaseThing, value); }
+        }
+        public void DTApplyDeviceTemplate(int healthInterval)
+        {
+            if (MyDeviceTemplate != null)
+            {
+                if (MyDeviceTemplate.Properties?.Count > 0)
+                    MyBaseThing.SetProperties(MyDeviceTemplate.Properties, DateTimeOffset.Now);
+                MyBaseThing.SetProperty("ParentOwned", CU.CListToString(MyDeviceTemplate.Variables, ";"));
+                if (!string.IsNullOrEmpty(TT.GetSafePropertyString(MyBaseThing, "ParentID")))
+                {
+                    DeviceHealthInterval = healthInterval;
+                    TheQueuedSenderRegistry.RegisterHealthTimer(sinkSendDeviceHealth);
+                }
+            }
+        }
+
+        void sinkSendDeviceHealth(long ticks)
+        {
+            if (DeviceHealthInterval > 0 && (ticks % DeviceHealthInterval) == 0)
+            {
+                var parentID = TT.GetSafePropertyString(MyBaseThing, "ParentID");
+                if (!string.IsNullOrEmpty(parentID))
+                {
+                    DTPushToParent(new Dictionary<string, object> {
+                                    { $"Child_{MyBaseThing.ID}_LastUpdate", DateTimeOffset.Now },
+                                    { $"Child_{MyBaseThing.ID}_StatusLevel", MyBaseThing.StatusLevel },
+                                    { $"Child_{MyBaseThing.ID}_LastMessage", MyBaseThing.LastMessage }
+                                    }, DateTimeOffset.Now, false);
+                }
+            }
+        }
+        protected void DTPushToParent(Dictionary<string, object> dict, DateTimeOffset timestamp, bool ApplyToChild=false)
+        {
+            if (ApplyToChild)
+                MyBaseThing.SetProperties(dict, timestamp);
+            if (!string.IsNullOrEmpty(MyBaseThing.Parent))
+            {
+                var t = TheThingRegistry.GetThingByMID(CU.CGuid(MyBaseThing.Parent));
+                if (t != null)
+                {
+                    t.SetProperties(dict, timestamp);
+                    t.SetProperty($"Child_{MyBaseThing.ID}_DataUpdate", timestamp);
+                }
+            }
+        }
+        public void DTPushToParent(DateTimeOffset timestamp)
+        {
+            if (!string.IsNullOrEmpty(MyBaseThing.Parent))
+            {
+                var t = TheThingRegistry.GetThingByMID(CU.CGuid(MyBaseThing.Parent));
+                if (t != null)
+                {
+                    List<string> propList = CU.CStringToList($"{MyBaseThing.GetProperty("ParentOwned", false)}", ';');
+                    if (propList?.Count > 0)
+                    {
+                        foreach (var prop in propList)
+                        {
+                            var tPParts = prop.Split(':');
+                            var tprop = tPParts.Length > 1 ? tPParts[1] : prop;
+                            var sprop = tPParts.Length > 1 ? tPParts[0] : prop;
+                            t.SetProperty(tprop, MyBaseThing.GetProperty(sprop, false)?.GetValue());
+                        }
+                        t.SetProperty($"Child_{MyBaseThing.ID}_DataUpdate", timestamp);
+                    }
+                }
+            }
+        }
+        #endregion
+
         #region NMI FacePlates for Group-Screens
         public virtual int AddDeviceFace(TheFormInfo MyLiveForm, int pLeft, int pTop, ThePropertyBag pProperties = null)
         {
@@ -412,6 +486,8 @@ namespace nsCDEngine.Engines.ThingService
             bool hideBorder = ThePropertyBag.PropBagHasValue(pProperties, "HideBorder", "=");
             foreach (var pin in tPins)
             {
+                if (pin.NMIPinPosition < 0)
+                    continue;
                 TheFieldInfo tfld = null;
                 if (pin.NMIPinLocation == ThePin.ePinLocation.Left)
                     tfld = NMI.AddSmartControl(MyBaseThing, MyLiveForm, eFieldType.FacePlate, MyLiveForm.FldPos, 0, 0, null, "FriendlyName",
@@ -877,6 +953,39 @@ namespace nsCDEngine.Engines.ThingService
         }
     }
 
+#if CDE_JSONET
+    internal class ThingPropertyBagConverter : JsonConverter<cdeConcurrentDictionary<string, cdeP>>
+    {
+        public override cdeConcurrentDictionary<string, cdeP> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            // Deserializes the target object using the current options configuration
+            return JsonSerializer.Deserialize<cdeConcurrentDictionary<string, cdeP>>(ref reader, options);
+        }
+
+        public override void Write(Utf8JsonWriter writer, cdeConcurrentDictionary<string, cdeP> value, JsonSerializerOptions options)
+        {
+            if (value == null)
+            {
+                writer.WriteNullValue();
+                return;
+            }
+
+            var propBagToWrite = new Dictionary<string, cdePjson>();
+
+            // Strongly typed value allows you to read .GetDynamicEnumerable() directly
+            foreach (var prop in value.GetDynamicEnumerable())
+            {
+                if ((prop.Value.cdeE & 0x10) == 0)
+                {
+                    propBagToWrite.Add(prop.Key, cdePjson.CloneTo(prop.Value));
+                }
+            }
+
+            // Serializes the filtered dictionary to the writer
+            JsonSerializer.Serialize(writer, propBagToWrite, options);
+        }
+    }
+#else
     internal class ThingPropertyBagConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
@@ -902,6 +1011,7 @@ namespace nsCDEngine.Engines.ThingService
             serializer.Serialize(writer, propBagToWrite);
         }
     }
+#endif
 
     /// <summary>
     /// Specifies the algorithm for Throttling of SETP calls
@@ -1439,6 +1549,10 @@ namespace nsCDEngine.Engines.ThingService
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(7691, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("ThingService", "Switching IThingObject", eMsgLevel.l2_Warning, $"{this.EngineName} {this.FriendlyName}: IThingObject replaced with a different one. Race condition in plug-in instance creation?"));
                 }
+                if (pObj?.GetType() == typeof(TheThingBase))
+                {
+                    MyThingBase = pObj as TheThingBase;
+                }
                 ThingObject = pObj;
             }
         }
@@ -1533,7 +1647,6 @@ namespace nsCDEngine.Engines.ThingService
         /// Returns a count of all current Properties
         /// Only properties on TheThing will be counted.
         /// </summary>
-        [IgnoreDataMember]
         public int PropertyCount
         {
             get { return MyPropertyBag.Count; }
@@ -2085,6 +2198,24 @@ namespace nsCDEngine.Engines.ThingService
             if (EventAction < 0 || (EventAction & 0x10) == 0)
             {
                 tProp.SetValue(tInternalValue, originator, sourceTimeStamp);
+                var parent=GetProperty(nameof(Parent));
+                //Stores the property in a designated parent thing's property
+                if (!string.IsNullOrEmpty($"{parent?.GetValue()}"))
+                {
+                    string pol = $"{GetProperty(nameof(ParentOwned))?.GetValue()}";
+                    if (pol?.Contains(tProp.Name)==true)
+                    {
+                        List<string> propList = CU.CStringToList(pol, ';');
+                        var targetProp = propList?.Find(s => s.StartsWith(tProp.Name));
+                        if (targetProp != null)
+                        {
+                            var tPParts = targetProp.Split(':');
+                            var tprop = tPParts.Length > 1 ? tPParts[1] : targetProp;
+                            var t = TheThingRegistry.GetThingByMID(CU.CGuid(parent.GetValue()));
+                            t?.SetProperty(tprop, tProp.Value);
+                        }
+                    }
+                }
             }
             UpdatePropertyInBag(tProp, WasOk);
 
@@ -2103,7 +2234,7 @@ namespace nsCDEngine.Engines.ThingService
                 tPB = pProp.cdeOP.cdePB;
             }
             if (MustUpdate && tPB.ContainsKey(pProp.Name) && tPB[pProp.Name].cdeMID != pProp.cdeMID)
-                    return;
+                return;
             cdeP tOldProp = null;
             if (tPB.ContainsKey(pProp.Name))
                 tOldProp = tPB[pProp.Name];
@@ -2434,7 +2565,7 @@ namespace nsCDEngine.Engines.ThingService
         /// 2=warning
         /// 3=Failure
         /// 4=Ramp Up
-        /// 5=Engineering
+        /// 5=Engineering/Simulation/Maintenance
         /// 6=Shutdown
         /// 7=Unknown/not visible
         /// </summary>
@@ -2558,6 +2689,13 @@ namespace nsCDEngine.Engines.ThingService
         {
             get { return GetSafePropertyString(this, "Parent"); }
             set { SetSafePropertyString(this, "Parent", value); }
+        }
+
+        [IgnoreDataMember]
+        public string ParentOwned
+        {
+            get { return GetSafePropertyString(this, "ParentOwned"); }
+            set { SetSafePropertyString(this, "ParentOwned", value); }
         }
 
         /// <summary>
@@ -3108,7 +3246,7 @@ namespace nsCDEngine.Engines.ThingService
             {
                 foreach (var t in pConnectedTo)
                 {
-                    MyPins[pPinID.PinName].RemoveConnection(t);
+                    MyPins[pPinID.PinName].RemovePinConnection(t);
                     TT targetThing = TheThingRegistry.GetThingByMID(MyPins[pPinID.PinName].cdeO);
                     if (targetThing!=null)
                         targetThing.UpdatePinProperty(MyPins[pPinID.PinName]);

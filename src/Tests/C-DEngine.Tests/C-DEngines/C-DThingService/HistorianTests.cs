@@ -17,11 +17,7 @@ using System.Threading.Tasks;
 using System.Globalization;
 using System.Threading;
 
-#if !CDE_NET35
 namespace CDEngine.ThingService.Net45.Tests
-#else
-namespace CDEngine.ThingService.Net35.Tests
-#endif
 {
     [TestFixture]
     public class HistorianTests : TestHost
@@ -635,7 +631,7 @@ namespace CDEngine.ThingService.Net35.Tests
         {
             System.Diagnostics.Debug.WriteLine(String.Format($"{DateTimeOffset.Now:O}: {format}", args));
             Console.WriteLine(format, args);
-            TestContext.WriteLine(format, args);
+            TestContext.Out.WriteLine(format, args);
         }
     }
 }

@@ -4,14 +4,14 @@
  -->
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="C-DEngine" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NUnit" Version="4.1.0" />
+    <PackageReference Include="NUnit" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

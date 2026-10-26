@@ -15,7 +15,7 @@ namespace nsCDEngine.Communication
 {
     internal partial class TheQueuedSender
     {
-        private readonly TheMirrorCache<TheSubscriptionInfo> MySubscriptions;
+        private readonly TheMirrorCacheCore<TheSubscriptionInfo> MySubscriptions;
 
         #region Subscription Management
 

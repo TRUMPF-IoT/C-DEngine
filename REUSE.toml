@@ -1,0 +1,38 @@
+# SPDX-FileCopyrightText: Copyright (c) 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
+# SPDX-License-Identifier: MPL-2.0
+#
+# REUSE specification: https://reuse.software/spec-3.3/#reusetoml
+# Converted from the deprecated .reuse/dep5 file.
+
+version = 1
+SPDX-PackageName = "C-DEngine"
+SPDX-PackageSupplier = "TRUMPF Laser GmbH, authors: C-Labs/Hyviva"
+SPDX-PackageDownloadLocation = "https://github.com/TRUMPF-IoT/C-DEngine"
+
+[[annotations]]
+path = ".github/ISSUE_TEMPLATE/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020-2026 C-Labs/Hyviva"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = [
+	"readme.md",
+	"src/C-DEngine/toplogo-128.png",
+	"src/C-DEngine/C-DCommunication/ClientBin/FAVICON.ICO",
+	"src/C-DEngine.sln",
+	"src/Utilities/cdePackager/cdePackager/App.config",
+	"src/Tests/C-DEngine.Tests/README.md",
+	"src/Tests/DataLogVerifier/Properties/PublishProfiles/FolderProfileRelease.pubxml",
+	"src/Tests/DataLogVerifier/Properties/PublishProfiles/To IIS Setup.pubxml",
+	"src/Tests/DataLogVerifier/readme.md",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2009-2026 TRUMPF Laser GmbH, authors: C-Labs/Hyviva"
+SPDX-License-Identifier = "MPL-2.0"
+
+[[annotations]]
+path = "artifacts/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2009-2026 TRUMPF Laser GmbH, authors: C-Labs/Hyviva"
+SPDX-License-Identifier = "MPL-2.0"

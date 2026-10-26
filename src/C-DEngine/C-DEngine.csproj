@@ -1,35 +1,38 @@
 <!--
- SPDX-FileCopyrightText: Copyright (c) 2009-2023 TRUMPF Laser GmbH, authors: C-Labs
+ SPDX-FileCopyrightText: Copyright (c) 2009-2026 TRUMPF Laser GmbH, authors: C-Labs
  SPDX-License-Identifier: MPL-2.0
  -->
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
+		<TargetFrameworks>net10.0</TargetFrameworks>
 		<RootNamespace>nsCDEngine</RootNamespace>
 		<AssemblyName>C-DEngine</AssemblyName>
 		<PackageId>C-DEngine</PackageId>
 		<PackageIcon>toplogo-128.png</PackageIcon>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>		
-		<Version>6.104.0</Version>
+		<Version>7.110.0</Version>
 		<Authors>Chris Muench</Authors>
 		<Company>C-Labs</Company>
 		<Product>C-DEngine for $(TargetFramework)$(cdeDebugProductSuffix)</Product>
 		<NeutralLanguage>en</NeutralLanguage>
 		<Description>C-Labs Distributed Engine</Description>
 		<PackageDescription>C-Labs Distributed Engine</PackageDescription>
-		<Copyright>Copyright © 2017-2024 TRUMPF Laser GmbH, authors: C-Labs</Copyright>
+		<Copyright>Copyright © 2017-2026 TRUMPF Laser GmbH, authors: C-Labs, Hyviva</Copyright>
 		<PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<!-- Workaround for placing each DLL into a separate directory when using msbuild's GenerateProjectSpecificOutputFolder -->
 		<ProjectName>$(AssemblyName).$(TargetFramework)</ProjectName>
 		<!-- Workaround for placing the .nupkg into the build's output folder when using msbuild's GenerateProjectSpecificOutputFolder -->
 		<PackageOutputPath>$(SolutionDir)Nugets</PackageOutputPath>
-		<DefineConstants>TRACE;CDE_SYSLOG;$(DefineConstants)</DefineConstants>
+		<DefineConstants>TRACE;CDE_SYSLOG;CDE_JSONET</DefineConstants>
 		<LangVersion>preview</LangVersion>
 		<DocumentationFile>$(OutputPath)C-DEngine.xml</DocumentationFile>
-		<cdeNewtonSoftDefineConstants>HAVE_ADO_NET;HAVE_APP_DOMAIN;HAVE_ASYNC;HAVE_BIG_INTEGER;HAVE_BINARY_FORMATTER;HAVE_BINARY_SERIALIZATION;HAVE_BINARY_EXCEPTION_SERIALIZATION;HAVE_CHAR_TO_LOWER_WITH_CULTURE;HAVE_CHAR_TO_STRING_WITH_CULTURE;HAVE_COM_ATTRIBUTES;HAVE_COMPONENT_MODEL;HAVE_CONCURRENT_COLLECTIONS;HAVE_COVARIANT_GENERICS;HAVE_DATA_CONTRACTS;HAVE_DATE_TIME_OFFSET;HAVE_DB_NULL_TYPE_CODE;HAVE_DYNAMIC;HAVE_EMPTY_TYPES;HAVE_ENTITY_FRAMEWORK;HAVE_EXPRESSIONS;HAVE_FAST_REVERSE;HAVE_FSHARP_TYPES;HAVE_FULL_REFLECTION;HAVE_GUID_TRY_PARSE;HAVE_HASH_SET;HAVE_ICLONEABLE;HAVE_ICONVERTIBLE;HAVE_IGNORE_DATA_MEMBER_ATTRIBUTE;HAVE_INOTIFY_COLLECTION_CHANGED;HAVE_INOTIFY_PROPERTY_CHANGING;HAVE_ISET;HAVE_LINQ;HAVE_MEMORY_BARRIER;HAVE_METHOD_IMPL_ATTRIBUTE;HAVE_NON_SERIALIZED_ATTRIBUTE;HAVE_READ_ONLY_COLLECTIONS;HAVE_SECURITY_SAFE_CRITICAL_ATTRIBUTE;HAVE_SERIALIZATION_BINDER_BIND_TO_NAME;HAVE_STREAM_READER_WRITER_CLOSE;HAVE_STRING_JOIN_WITH_ENUMERABLE;HAVE_TIME_SPAN_PARSE_WITH_CULTURE;HAVE_TIME_SPAN_TO_STRING_WITH_CULTURE;HAVE_TIME_ZONE_INFO;HAVE_TRACE_WRITER;HAVE_TYPE_DESCRIPTOR;HAVE_UNICODE_SURROGATE_DETECTION;HAVE_VARIANT_TYPE_PARAMETERS;HAVE_VERSION_TRY_PARSE;HAVE_XLINQ;HAVE_XML_DOCUMENT;HAVE_XML_DOCUMENT_TYPE;HAVE_CONCURRENT_DICTIONARY</cdeNewtonSoftDefineConstants>
-		<DefineConstants>CDE_USEWSS8;CDE_STANDARD;$(DefineConstants);$(cdeNewtonSoftDefineConstants)</DefineConstants>
+		<!-- Debugging into the NuGet package: embed the PDB in the DLL and strip the drive letter
+			 from source paths so they resolve as \github\... on whichever drive the debugger runs from. -->
+		<DebugType>embedded</DebugType>
+		<DebugSymbols>true</DebugSymbols>
+		<PathMap>$([System.IO.Path]::GetPathRoot($(MSBuildThisFileDirectory)))=\</PathMap>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -37,22 +40,15 @@
 		<None Include="..\..\readme.md" Pack="true" PackagePath="\" />
 		<EmbeddedResource Include="C-DCommunication\ClientBin\FAVICON.ICO" />
 	</ItemGroup>
-	<ItemGroup>
-		<PackageReference Include="Microsoft.CSharp">
-			<Version>4.7.0</Version>
-		</PackageReference>
-	</ItemGroup>
+
 	<!-- MarkusH 2020/02/10: nuget restore does not set a proper solution path: fix it up -->
-	<PropertyGroup Condition=" ('$(SolutionPath)' == '' OR !Exists('$(SolutionPath)'))AND  '$(SolutionDir)' != '' AND '$(SolutionDir)' != '*undefined*' ">
+	<PropertyGroup Condition=" ('$(SolutionPath)' == '' OR !Exists('$(SolutionPath)'))AND  '$(SolutionDir)' != '' AND '$(SolutionDir)' != '*undefined*' and Exists('$(SolutionDir)$(SolutionName).SLN')">
 		<SolutionPath>$(SolutionDir)$(SolutionName).SLN</SolutionPath>
 	</PropertyGroup>
+	<PropertyGroup Condition=" ('$(SolutionPath)' == '' OR !Exists('$(SolutionPath)'))AND  '$(SolutionDir)' != '' AND '$(SolutionDir)' != '*undefined*' and Exists('$(SolutionDir)$(SolutionName).SLNX')">
+		<SolutionPath>$(SolutionDir)$(SolutionName).SLNX</SolutionPath>
+	</PropertyGroup>
 
-	<PropertyGroup>
-		<NewtonsoftSharedInSolution>$([System.IO.File]::ReadAllText($(SolutionPath)).Contains('\cdeNewtonsoft.JSON'))</NewtonsoftSharedInSolution>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(NewtonsoftSharedInSolution)' == 'True'">
-		<DefineConstants>CDE_INTNEWTON;$(DefineConstants)</DefineConstants>
-	</PropertyGroup>
 	<PropertyGroup>
 	  <NoWarn>1701;1702;CS1591</NoWarn>
 	  <NoWarn>1701;1702;CS1591</NoWarn>
@@ -66,12 +62,6 @@
 
 	<Target Name="GetPackagingOutputs" />
 
-	<Import Project="..\Utilities\cdeNewtonsoft.JSON\cdeNewtonsoft.JSON.projitems" Label="Shared" Condition="$(DefineConstants.Contains('CDE_INTNEWTON'))" />
-	<ItemGroup>
-		<PackageReference Include="Newtonsoft.JSON" Version="13.0.3" Condition="!$(DefineConstants.Contains('CDE_INTNEWTON'))" />
-		<PackageReference Include="System.Text.Json" Version="8.0.0" Condition="$(DefineConstants.Contains('CDE_MEADOW'))" />
-	</ItemGroup>
-
 	<Target Name="CopyUpdaterEXEBeforeBuild" BeforeTargets="BeforeBuild">
 		<MSBuild Projects="@(ProjectReference)" Targets="GetTargetPath" BuildInParallel="false" Condition="'%(Name)'=='cdeUpdater'">
 			<Output TaskParameter="TargetOutputs" ItemName="DependentAssemblies" />
@@ -80,14 +70,7 @@
 	</Target>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<!--<Exec Command="if not exist $(TargetDir)merged\ md $(TargetDir)merged\" />
-    <Exec Command="$(ILMergeConsolePath) $(TargetPath) /out:$(TargetDir)merged\$(AssemblyName).dll $(PkgNewtonsoft_JSON)\lib\$(TargetFramework)\Newtonsoft.Json.dll /internalize" />
-    <Exec Command="del $(TargetPath)" />
-    <Exec Command="del $(TargetDir)$(AssemblyName).pdb" />
-    <Exec Command="move $(TargetDir)merged\$(AssemblyName).dll $(TargetDir)" />
-    <Exec Command="move $(TargetDir)merged\$(AssemblyName).pdb $(TargetDir)" />-->
 		<Exec Command="call &quot;$(ProjectDir)..\..\BuildTools\signMeSha.bat&quot; &quot;$(TargetDir)$(TargetFileName)&quot;" />
 	</Target>
-
 </Project>
 

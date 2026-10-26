@@ -59,7 +59,8 @@ namespace nsCDEngine.Engines.StorageService.Model
         LessThanOrEqual,
         Contains,
         StartsWith,
-        EndsWith
+        EndsWith,
+        NotEqual,
     }
 
     public class SQLDefinition

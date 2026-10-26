@@ -241,7 +241,7 @@ namespace nsCDEngine.Engines.NMIService
             FireEvent(eThingEvents.Initialized, this, true, true);
 
             CreateUX();
-            TheUserManager.AddNewUserByRole(new TheUserDetails() { PrimaryRole = "NMIADMIN", UserName = "admin", Password = "", Name = "Administrator", AssignedEasyScope = "*", AccessMask = 255, NodeScope = "ALL", IsReadOnly = true }); //* Scope OK AES OK ; PW must be empty
+            TheUserManager.AddNewUserByRole(new TheUserDetails() { PrimaryRole = "NMIADMIN", UserName = "", Password = "", Name = "Administrator", AssignedEasyScope = "*", AccessMask = 255, NodeScope = "ALL", IsReadOnly = true }); //* Scope OK AES OK ; PW must be empty
             RegisterControlType(MyBaseEngine, "Single Line Text", "1");
             RegisterControlType(MyBaseEngine, "eMail Address", "16");
             RegisterControlType(MyBaseEngine, "Drop Down Box", "2");

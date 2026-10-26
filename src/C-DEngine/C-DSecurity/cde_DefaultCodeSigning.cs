@@ -6,14 +6,13 @@ using nsCDEngine.BaseClasses;
 using nsCDEngine.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Formats.Asn1;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-#if !CDE_STANDARD // PKCS on .Net Standard requires additional nuget package: must allow running without dependency
-using System.Security.Cryptography.Pkcs;
-#endif
 
 namespace nsCDEngine.Security
 {
@@ -270,23 +269,16 @@ namespace nsCDEngine.Security
             X509Certificate2 cert;
             try
             {
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                    return CertOnUnixCheck(filePath, verifyIntegrity);
+                // X509CertificateLoader cannot extract the signer certificate from an Authenticode-signed PE file; only this constructor can (Windows CryptQueryObject)
+#pragma warning disable SYSLIB0057
                 cert = new X509Certificate2(filePath);
+#pragma warning restore SYSLIB0057
             }
             catch (Exception) // Unable to read certificate using X509Certificate2 class: read ourselves if on Linux
             {
-                if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    try
-                    {
-                        return ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity);
-                    }
-                    catch (Exception ex)
-                    {
-                        TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (on linux) excepted: {ex.Message}");
-                        return null;
-                    }
-                }
-                return null;
+                return CertOnUnixCheck(filePath, verifyIntegrity);
             }
             if (!verifyCertificateTrust && verifyIntegrity)
             {
@@ -305,6 +297,23 @@ namespace nsCDEngine.Security
                 }
             }
             return cert;
+        }
+
+        private static X509Certificate2 CertOnUnixCheck(string filePath, bool verifyIntegrity)
+        {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
+                try
+                {
+                    return ReadPECertificateFromBinaryImage(filePath, false, verifyIntegrity);
+                }
+                catch (Exception ex)
+                {
+                    TheSystemMessageLog.ToCo($"ReadPECertificateFromBinaryImage (on linux) excepted: {ex.Message}");
+                    return null;
+                }
+            }
+            return null;
         }
 
         private static X509Certificate2 ReadPECertificateFromBinaryImage(string filePath, bool verifyCertificateTrust, bool verifyIntegrity)
@@ -484,9 +493,6 @@ namespace nsCDEngine.Security
                     }
                     if (verifyIntegrity)
                     {
-#if !CDE_STANDARD
-                        var signedCms = new SignedCms();
-#else
                         // .Net Standard requires System.Security.Cryptography.Pkcs NuGet package for this functionality (also part of Microsoft.Windows.Compatibility): make this optional
                         dynamic signedCms = null;
                         System.Reflection.Assembly pkcsAssembly = null;
@@ -528,7 +534,6 @@ namespace nsCDEngine.Security
                         {
                             return null;
                         }
-#endif
                         if (verifyIntegrity)
                         {
                             try
@@ -556,18 +561,20 @@ namespace nsCDEngine.Security
                             }
                             firstSignerCert ??= signedCms.SignerInfos[0].Certificate;
 
-                            // Propertly parse the SpcIndirectDataContent structure per Authenticode Spec
-                            // For SHA1 the hash is always in the last 20 bytes of the content info: if another algorithm is used we will currently reject the signature
-                            var signedHash = new byte[20];
+                            // Parse the SpcIndirectDataContent structure per Authenticode Spec to get the digest algorithm (SHA1/SHA256/SHA384/SHA512) and the signed file hash
                             byte[] contentBytes = signedCms.ContentInfo.Content;
-                            signedHash = contentBytes.Skip(contentBytes.Length - 20).ToArray();
+                            if (!TryReadAuthenticodeDigest(contentBytes, out string digestAlgorithmOid, out byte[] signedHash))
+                            {
+                                TheSystemMessageLog.ToCo($"Could not parse SpcIndirectDataContent of signature: {filePath}");
+                                return null;
+                            }
 
                             // Compute the image hash, ignoring certain sections per Authenticode spec
-                            var fileHash = ComputePEHash(fileStream, optionalHeaderOffset, headerOffset, dataDirectoryOffset, certificateTableSize, certificateTableEntryOffset);
+                            var fileHash = ComputePEHash(fileStream, optionalHeaderOffset, headerOffset, dataDirectoryOffset, certificateTableSize, certificateTableEntryOffset, digestAlgorithmOid);
 
-                            if (fileHash?.SequenceEqual(signedHash) != true)
+                            if (fileHash == null || !CryptographicOperations.FixedTimeEquals(fileHash, signedHash))
                             {
-                                TheSystemMessageLog.ToCo($"File hash doesn't match signature: file was tampered with or not using SHA1!");
+                                TheSystemMessageLog.ToCo($"File hash doesn't match signature: file was tampered with or uses an unsupported digest algorithm ({digestAlgorithmOid})!");
                                 return null;
                             }
                         }
@@ -577,7 +584,10 @@ namespace nsCDEngine.Security
                         try
                         {
                             var certs = new X509Certificate2Collection();
+                            // X509CertificateLoader cannot parse the PKCS#7 Authenticode blob; Import is the only loader for it without the optional Pkcs assembly
+#pragma warning disable SYSLIB0057
                             certs.Import(certificateBytes);
+#pragma warning restore SYSLIB0057
                             if (TSM.L(eDEBUG_LEVELS.ESSENTIALS))
                             {
                                 TheBaseAssets.MySYSLOG?.WriteToLog(eDEBUG_LEVELS.ESSENTIALS, 25666, "ReadPECertificateFromBinaryImage", $"Certs Found: {certs?.Count}", eMsgLevel.l7_HostDebugMessage);
@@ -606,8 +616,64 @@ namespace nsCDEngine.Security
             public UInt32 Size;
         }
 
-        private static byte[] ComputePEHash(FileStream fileStream, UInt32 optionalHeaderOffset, UInt32 headerOffset, UInt32 dataDirectoryOffset, UInt32 certificateTableSize, UInt32 certificateTableEntryOffset)
+        /// <summary>
+        /// Reads digest algorithm and digest from the SpcIndirectDataContent of an Authenticode signature:
+        /// SpcIndirectDataContent ::= SEQUENCE { data SpcAttributeTypeAndOptionalValue, messageDigest DigestInfo }
+        /// DigestInfo ::= SEQUENCE { digestAlgorithm AlgorithmIdentifier, digest OCTET STRING }
+        /// SignedCms.ContentInfo.Content may or may not include the outer SEQUENCE (Windows/.NET Framework compat strips it): both are handled.
+        /// </summary>
+        private static bool TryReadAuthenticodeDigest(byte[] content, out string digestAlgorithmOid, out byte[] digest)
         {
+            digestAlgorithmOid = null;
+            digest = null;
+            if (content == null || content.Length == 0)
+            {
+                return false;
+            }
+            try
+            {
+                var reader = new AsnReader(content, AsnEncodingRules.BER);
+                var first = reader.ReadSequence();
+                AsnReader digestInfo;
+                if (reader.HasData)
+                {
+                    // Content is the inner value of SpcIndirectDataContent: first = data, next = DigestInfo
+                    digestInfo = reader.ReadSequence();
+                }
+                else
+                {
+                    // Content includes the outer SpcIndirectDataContent SEQUENCE
+                    first.ReadSequence(); // data
+                    digestInfo = first.ReadSequence();
+                }
+                var algorithmIdentifier = digestInfo.ReadSequence();
+                digestAlgorithmOid = algorithmIdentifier.ReadObjectIdentifier();
+                digest = digestInfo.ReadOctetString();
+                return digest.Length > 0;
+            }
+            catch (AsnContentException)
+            {
+                return false;
+            }
+        }
+
+        private static HashAlgorithm CreateHashAlgorithm(string digestAlgorithmOid)
+        {
+            return digestAlgorithmOid switch
+            {
+                "1.3.14.3.2.26" => SHA1.Create(), //NOSONAR - required to verify legacy SHA1 Authenticode signatures
+                "2.16.840.1.101.3.4.2.1" => SHA256.Create(),
+                "2.16.840.1.101.3.4.2.2" => SHA384.Create(),
+                "2.16.840.1.101.3.4.2.3" => SHA512.Create(),
+                _ => null,
+            };
+        }
+
+        private static byte[] ComputePEHash(FileStream fileStream, UInt32 optionalHeaderOffset, UInt32 headerOffset, UInt32 dataDirectoryOffset, UInt32 certificateTableSize, UInt32 certificateTableEntryOffset, string digestAlgorithmOid)
+        {
+            using var hashAlgorithm = CreateHashAlgorithm(digestAlgorithmOid);
+            if (hashAlgorithm == null) return null;
+
             // Get SizeOfHeaders
             fileStream.Seek(optionalHeaderOffset + 60, SeekOrigin.Begin);
             if (!ReadUInt32LittleEndian(fileStream, out var sizeOfHeaders)) return null;
@@ -638,7 +704,7 @@ namespace nsCDEngine.Security
 
             var fileSize = fileStream.Length;
             var extraDataSize = fileSize - certificateTableSize - sumOfBytesHashed;
-            if (extraDataSize > int.MaxValue) return null;
+            if (extraDataSize < 0 || extraDataSize > int.MaxValue) return null;
             var signedImageContent = new byte[sumOfBytesHashed - (4 + 8) + extraDataSize];
 
             int bytesToCheckSumField = (int)headerOffset + 20 + 64; // size of standard header + offset of checksum field in optional header
@@ -674,7 +740,8 @@ namespace nsCDEngine.Security
 
             if (extraDataSize > 0)
             {
-                fileStream.Seek(extraDataSize, SeekOrigin.End);
+                // Per Authenticode spec the extra data begins at SUM_OF_BYTES_HASHED and ends at the Attribute Certificate Table
+                fileStream.Seek(sumOfBytesHashed, SeekOrigin.Begin);
                 if (fileStream.Read(signedImageContent, currentImageContentIndex, (int)extraDataSize) != extraDataSize) return null;
                 currentImageContentIndex += (int)extraDataSize;
             }
@@ -683,12 +750,7 @@ namespace nsCDEngine.Security
                 return null;
             }
 
-            byte[] fileHash;
-            using (var sha1 = new System.Security.Cryptography.SHA1Managed()) //NOSONAR - required for CodeSigning to work properly
-            {
-                fileHash = sha1.ComputeHash(signedImageContent);
-            }
-            return fileHash;
+            return hashAlgorithm.ComputeHash(signedImageContent);
         }
 
         private static bool ReadUInt16LittleEndian(FileStream fileStream, out UInt16 value)
@@ -718,7 +780,7 @@ namespace nsCDEngine.Security
         private static bool DontVerifyTrust;
         private static bool VerifyTrustPath;
         private static bool DontVerifyIntegrity;
-        private static ICDESystemLog MySYSLOG = null;
+        private ICDESystemLog MySYSLOG = null;
 
         public string GetAppCert(bool bDontVerifyTrust = false, string pFromFile = null, bool bVerifyTrustPath = true, bool bDontVerifyIntegrity = false)
         {
@@ -791,6 +853,7 @@ namespace nsCDEngine.Security
 
             // Check to see if thumbprints on file and c-labs file are the same
             bool match = MyAppHostCert?.Thumbprint.Equals(cert?.Thumbprint, StringComparison.OrdinalIgnoreCase) == true ||
+                    "DEE334FF9466AA158D92574F52C4F3A2779ABBCA".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2026 cert
                     "770421C26FFA756E0551018D66AB0DDFB8DBCC9C".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2025 cert
                     "A99B91578F275D44BE365BA0BD6AF29D49FCA159".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2024 cert
                     "C8F244B6856C3A16604E7C00A0DD645C15EBE05A".Equals(cert.Thumbprint, StringComparison.OrdinalIgnoreCase) || //2023 Cert

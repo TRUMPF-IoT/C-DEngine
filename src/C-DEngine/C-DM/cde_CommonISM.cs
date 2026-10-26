@@ -278,7 +278,7 @@ namespace nsCDEngine.ISM
                     if (string.IsNullOrEmpty(ISMUpdateDirectory)) ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory;
                     if (string.IsNullOrEmpty(ISMUpdateDirectory))
                     {
-                        ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory.Substring(0, TheBaseAssets.MyServiceHostInfo.BaseDirectory.Length - 1);
+                        ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory.Substring(0, TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory.Length - 1);
                         TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory = ISMUpdateDirectory;
                     }
                 }
@@ -621,7 +621,6 @@ namespace nsCDEngine.ISM
             if (!string.IsNullOrEmpty(pUpdateDir)) uDir += pUpdateDir;
             if (TheBaseAssets.MyServiceHostInfo.cdeHostingType == cdeHostType.IIS) uDir += "\\bin";
 
-#if !CDE_NET4 && !CDE_NET35    //TODO: Need to dynamically load the required ZipArchive dependencies
             if (TheCommonUtils.IsOnLinux() || !ShutdownRequired)
             {
                 TheBaseAssets.MySYSLOG.WriteToLog(2, new TSM("ISMManager", $"Updating files: {pSourceFile} to: {uDir}"));
@@ -736,7 +735,6 @@ namespace nsCDEngine.ISM
                 UpdaterStarted = false;
             }
             else
-#endif
             {
                 if (ExtractUpdater(uDir))
                 {
@@ -911,7 +909,7 @@ namespace nsCDEngine.ISM
             try
             {
                 List<string> tList = new ();
-                DirectoryInfo di = new (TheBaseAssets.MyServiceHostInfo.BaseDirectory);
+                DirectoryInfo di = new (TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory);
                 ProcessDirectory(di, ref tList, "", ".tmp", false, false);
                 if (tList.Count > 0)
                 {
@@ -1061,7 +1059,7 @@ namespace nsCDEngine.ISM
                         if (stream != null)
                         {
                             buffer = new byte[stream.Length];
-                            stream.Read(buffer, 0, buffer.Length);
+                            stream.ReadExactly(buffer, 0, buffer.Length);
                         }
                     }
                     break;

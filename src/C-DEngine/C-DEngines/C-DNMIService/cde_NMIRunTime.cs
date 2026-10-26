@@ -77,7 +77,7 @@ namespace nsCDEngine.Engines.NMIService
                                     var tGroupMThing = TheThingRegistry.GetThingByMID(tForm.cdeO);
                                     var tGroupThing = tGroupMThing?.GetObject() as TheThingGroup;
                                     if (tGroupThing?.RemoveThingMIDFromGroup(TheCommonUtils.CGuid(tLocParts[2]))==true)
-                                        tGroupThing.ReloadForm();                                }
+                                        tGroupThing.ReloadForm(pMsg);                                }
                             }
                         }
                         catch {
@@ -162,7 +162,8 @@ namespace nsCDEngine.Engines.NMIService
                                         }
                                         if (!bDontShowDefault)
                                         {
-                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2010, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new ThePropertyBag() { "NoTE=true", "TileHeight=8", "TileWidth=6" });
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.CollapsibleGroup, 2010, 2, 0, "Element Properties",null, new nmiCtrlCollapsibleGroup { IsSmall = true, DoClose = true, TileHeight=10, TileWidth=6 });
+                                            AddSmartControl(MyBaseThing, tMyForm, eFieldType.Table, 2011, 0xA2, 0x80, "All Properties", $"mypropertybag;2;{tfld.cdeMID}", new nmiCtrlTableView() { NoTE=true, ParentFld=2010, TileHeight=5, TileWidth=6 });
                                         }
                                         ReloadNMIEditor();
                                     }
@@ -346,11 +347,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             case "NMI_UPD_DATA":
                                                 {
-#if CDE_STANDARD  //Metro Style Reflection
-                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("UpdateFromJSON");
-#else
                                                     magicMethod = magicType.GetMethod("UpdateFromJSON", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                                     if (magicMethod != null)
                                                     {
                                                         string tDirtyMask = "*";
@@ -379,11 +376,7 @@ namespace nsCDEngine.Engines.NMIService
                                                 break;
                                             case "NMI_DEL_ID":
                                                 {
-#if CDE_STANDARD  //Metro Style Reflection
-                                                    magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("DeleteByID"); 
-#else
                                                     magicMethod = magicType.GetMethod("DeleteByID", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                                     if (magicMethod != null)
                                                     {
                                                         object tRes = magicMethod.Invoke(MyStorageMirror, new[] { tTable, (object)cmd[2], tClientInfo, null });
@@ -467,11 +460,7 @@ namespace nsCDEngine.Engines.NMIService
                                         if (cmd.Length > 3)
                                             tClientInfo.FormID = TheCommonUtils.CGuid(cmd[3]);
                                         Type magicType = MyStorageMirror.GetType();
-#if CDE_STANDARD  //Metro Style Reflection
-                                        var magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("InsertFromJSON");
-#else
                                         var magicMethod = magicType.GetMethod("InsertFromJSON", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                         if (magicMethod != null)
                                         {
                                             var tRes = magicMethod.Invoke(MyStorageMirror, new[] { tTableInsert, (object)pMsg.Message.PLS, tClientInfo, null });
@@ -1033,7 +1022,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (group != null)
                         {
                             var tGS = group.GetObject() as TheThingGroup;
-                            tGS?.UpdateFldPositions(tNewScene);
+                            tGS?.UpdateFldPositions(tNewScene, pMsg);
                         }
                     }
                     break;
@@ -1055,7 +1044,7 @@ namespace nsCDEngine.Engines.NMIService
                         if (group != null)
                         {
                             var tGS = group.GetObject() as TheThingGroup;
-                            tGS?.DeleteAllFldPositions();
+                            tGS?.DeleteAllFldPositions(pMsg);
                         }
                     }
                     break;
@@ -1386,7 +1375,7 @@ namespace nsCDEngine.Engines.NMIService
                                         {
                                             TSM tForward = TSM.Clone(pMsg, true);
                                             tForward.ENG = tTable.OwnerEngine;
-                                            tBase.ProcessMessage(tForward);
+                                            tBase.ProcessMessage(new TheProcessMessage() { Topic = TheBaseAssets.MyScopeManager.AddScopeID(tForward.ENG, ref tForward.SID, true), ClientInfo = pClientInfo, Message = tForward });
                                             return true;
                                         }
                                         return false; //No processing here
@@ -1401,11 +1390,7 @@ namespace nsCDEngine.Engines.NMIService
                                         if (MyStorageMirror != null && !(tTable.IsNotAutoLoading && IsInitialLoad))
                                         {
                                             Type magicType = MyStorageMirror.GetType();
-#if CDE_STANDARD //Metro Style Reflection
-                                            MethodInfo magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("SerializeToJSON");
-#else
                                             MethodInfo magicMethod = magicType.GetMethod("SerializeToJSON", BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
                                             if (magicMethod != null)
                                             {
                                                 TheJSONLoaderDefinition tJSON = new ()
@@ -1588,6 +1573,17 @@ namespace nsCDEngine.Engines.NMIService
             }
             TheCommCore.PublishToOriginator(pMsg, tTsm);
             return true;
+        }
+
+        public static string AddModelUpdate(TheClientInfo pClientInfo, TheFormInfo tTable, bool ForceReload)
+        {
+            TheFormInfo tToSend = tTable.Clone(pClientInfo.WebPlatform);
+            CheckAddButtonPermission(pClientInfo, tToSend);
+            var tso = TheFormsGenerator.GetScreenOptions(tTable.cdeMID, pClientInfo, ForceReload ? tTable : null);
+            if (tso != null && tso.TileWidth > 0)
+                tToSend.TileWidth = tso.TileWidth;
+            tToSend.FormFields = TheFormsGenerator.GetPermittedFields(tTable.cdeMID, pClientInfo, tso, true);
+            return ":-MODELUPDATE-:" + TheCommonUtils.GenerateFinalStr(TheCommonUtils.SerializeObjectToJSONString(tToSend.GetLocalizedForm(pClientInfo.LCID)));
         }
 
         internal static void CheckAddButtonPermission(TheClientInfo pClientInfo, TheFormInfo tToSend)
@@ -1817,11 +1813,7 @@ namespace nsCDEngine.Engines.NMIService
             if (MyStorageMirror != null)
             {
                 Type magicType = MyStorageMirror.GetType();
-#if CDE_STANDARD  //Metro Style Reflection
-                var magicMethod = magicType.GetTypeInfo().GetDeclaredMethod("ReturnAsString");
-#else
                 var magicMethod = magicType.GetMethod("ReturnAsString");
-#endif
                 if (magicMethod != null)
                     res = magicMethod.Invoke(MyStorageMirror, new[] { pName, (object)pItem }).ToString();
             }

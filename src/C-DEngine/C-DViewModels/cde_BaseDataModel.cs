@@ -119,7 +119,11 @@ namespace nsCDEngine.ViewModels
         /// <summary>
         /// Contains support for ICDELoggerEngine to provide logging support
         /// </summary>
-        LoggerEngine = 49
+        LoggerEngine = 49,
+        /// <summary>
+        /// Contains support for ICDEIssueLog to manage and store issues
+        /// </summary>
+        IssueLog = 50
     }
     #endregion
 
@@ -147,34 +151,6 @@ namespace nsCDEngine.ViewModels
         }
 
         #region NEW 3.121: Register and Fire Event on any Element Derived from TheMetaBase - new in 4.110 moved here for better low level support of telegrams
-        // CODE REVIEW: Do we need this still? Has been obsolete for a long time now
-        private TheCommonUtils.RegisteredEventHelper<object, TheProcessMessage> TMDBRegisteredEventsOLD;
-
-        /// <summary>
-        /// Register a callback that will be fired on a Property Event
-        /// </summary>
-        /// <param name="pEventName">Using eThingEvents.XXX to register a callback</param>
-        /// <param name="pCallback">A Callback that will be called when the eThingEvents.XXX fires</param>
-        [Obsolete("Do not use anymore! Please us RegisterEvent2(string pEventName, Action<TheProcessMessage,object> pCallback) instead")]
-        public virtual Action<object, TheProcessMessage> RegisterEvent(string pEventName, Action<object, TheProcessMessage> pCallback)
-        {
-            if (pCallback == null || string.IsNullOrEmpty(pEventName)) return null;
-            TMDBRegisteredEventsOLD ??= new TheCommonUtils.RegisteredEventHelper<object, TheProcessMessage>();
-
-            return TMDBRegisteredEventsOLD.RegisterEvent(pEventName, pCallback);
-        }
-
-        /// <summary>
-        /// Unregister a previously registered callback
-        /// </summary>
-        /// <param name="pEventName">eThingEvents that holds the callback </param>
-        /// <param name="pCallback">The callback to unregister</param>
-        [Obsolete("Do not use anymore! Please us UnregisterEvent2(string pEventName, Action<TheProcessMessage,object> pCallback) instead")]
-        public virtual bool UnregisterEvent(string pEventName, Action<object, TheProcessMessage> pCallback)
-        {
-            return TMDBRegisteredEventsOLD?.UnregisterEvent(pEventName, pCallback) ?? false;
-        }
-
         /// <summary>
         /// Fire an Event on a property
         /// </summary>
@@ -187,24 +163,11 @@ namespace nsCDEngine.ViewModels
             if (string.IsNullOrEmpty(pEventName)) return;
 
             bool HasFired = false;
-            if (TMDBRegisteredEventsOLD != null)
-            {
-                try
-                {
-                    TMDBRegisteredEventsOLD.FireEvent(pEventName, this, pMsg, FireAsync, pFireEventTimeout);
-                }
-                catch (Exception e)
-                {
-                    TheBaseAssets.MySYSLOG.WriteToLog(2352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("TheThing", string.Format("Error during Event Fire:{0}", pEventName), e.ToString()));
-                }
-                HasFired = true;
-            }
             if (TMDBRegisteredEvents != null && !HasFired)
             {
                 TMDBRegisteredEvents.FireEvent(pEventName, pMsg, this, FireAsync, pFireEventTimeout);
             }
         }
-
         private TheCommonUtils.RegisteredEventHelper<TheProcessMessage, object> TMDBRegisteredEvents;
 
         /// <summary>
@@ -613,9 +576,7 @@ namespace nsCDEngine.ViewModels
                     _myRSA = null;
                     try
                     {
-#if !CDE_NET35
                         myRSATemp.Dispose();
-#endif
                     }
                     catch { 
                     //intent
@@ -917,20 +878,7 @@ namespace nsCDEngine.ViewModels
             {
                 if (_postDataStream != null)
                 {
-#if !CDE_NET35
                     _postDataStream.CopyTo(stream);
-#else
-                    var buffer = new byte[4096];
-                    int bytesRead = 0;
-                    do
-                    {
-                        bytesRead = _postDataStream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead > 0)
-                        {
-                            stream.Write(buffer, 0, bytesRead);
-                        }
-                    } while (bytesRead > 0);
-#endif
                 }
             }
         }
@@ -953,7 +901,7 @@ namespace nsCDEngine.ViewModels
                         return (_postDataStream as MemoryStream).GetBuffer();
                     }
                     var buffer = new byte[_postDataStream.Length];
-                    _postDataStream.Read(buffer, 0, (int)_postDataStream.Length);
+                    _postDataStream.ReadExactly(buffer, 0, (int)_postDataStream.Length);
                     return buffer;
                 }
                 return null;

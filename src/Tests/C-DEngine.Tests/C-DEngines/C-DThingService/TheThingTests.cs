@@ -14,11 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-#if !CDE_NET35
 namespace CDEngine.ThingService.Net45.Tests
-#else
-namespace CDEngine.ThingService.Net35.Tests
-#endif
 {
     [TestFixture]
     public class TheThingTests : TestHost
@@ -38,16 +34,16 @@ namespace CDEngine.ThingService.Net35.Tests
                 Assert.That(testThing.GetProperty("Prop1").Value, Is.SameAs(x));
 
                 x = "456";
-                Assert.That("123", Is.EqualTo(prop1Value));
+                Assert.That(prop1Value, Is.EqualTo("123"));
                 Assert.That(x, Is.Not.SameAs(prop1Value));
 
                 testThing.SetProperty("Prop1", "789");
                 Assert.That(String.Equals(x, "456"));
-                Assert.That("123", Is.EqualTo(prop1Value));
+                Assert.That(prop1Value, Is.EqualTo("123"));
 
                 var prop1Value_2 = testThing.GetProperty("Prop1").Value;
-                Assert.That("789", Is.EqualTo(prop1Value_2));
-                Assert.That("123", Is.EqualTo(prop1Value));
+                Assert.That(prop1Value_2, Is.EqualTo("789"));
+                Assert.That(prop1Value, Is.EqualTo("123"));
                 Assert.That(prop1Value, Is.Not.SameAs(prop1Value_2));
             }
 
@@ -65,18 +61,18 @@ namespace CDEngine.ThingService.Net35.Tests
                 Assert.That(x, Is.Not.SameAs(testThing.GetProperty("Prop1").Value)); // Value types are automatically cloned
 
                 x = 4.56;
-                Assert.That(1.23, Is.EqualTo(prop1Value));
+                Assert.That(prop1Value, Is.EqualTo(1.23));
                 Assert.That(x, Is.Not.SameAs(prop1Value));
 #pragma warning restore NUnit2020 // Incompatible types for SameAs constraint
 #pragma warning restore NUnit2040 // Non-reference types for SameAs constraint
 
                 testThing.SetProperty("Prop1", 7.89);
                 Assert.That(double.Equals(x, 4.56));
-                Assert.That(1.23, Is.EqualTo(prop1Value));
+                Assert.That(prop1Value, Is.EqualTo(1.23));
 
                 var prop1Value_2 = testThing.GetProperty("Prop1").Value;
-                Assert.That(7.89, Is.EqualTo(prop1Value_2));
-                Assert.That(1.23, Is.EqualTo(prop1Value));
+                Assert.That(prop1Value_2, Is.EqualTo(7.89));
+                Assert.That(prop1Value, Is.EqualTo(1.23));
                 Assert.That(prop1Value, Is.Not.SameAs(prop1Value_2));
             }
 

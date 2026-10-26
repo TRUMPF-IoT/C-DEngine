@@ -43,11 +43,7 @@ namespace nsCDEngine.Communication.HttpService
                 try
                 {
                     mHttpListener = new HttpListener();
-#if !CDE_NET35
                     Uri tUri = new (TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false));
-#else
-                Uri tUri = TheCommonUtils.CUri(TheBaseAssets.MyServiceHostInfo.GetPrimaryStationURL(false), false);
-#endif
                     MyHttpUrl = tUri.Scheme + "://*"; 
                     if ((tUri.Scheme.Equals("https") && tUri.Port != 443) || (tUri.Scheme.Equals("http") && tUri.Port != 80))
                         MyHttpUrl += ":" + pPort; 
@@ -98,7 +94,6 @@ namespace nsCDEngine.Communication.HttpService
                         if (mHttpListener != null)
                         {
                             HttpListenerContext context = mHttpListener.GetContext();
-#if CDE_USEWSS8
                             TheBaseAssets.MySYSLOG.WriteToLog(4343, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("HttpMidiServer", $"Incoming Request. IsWebSocketRequest:{context.Request.IsWebSocketRequest}", eMsgLevel.l3_ImportantMessage));
                             if (!TheBaseAssets.MyServiceHostInfo.DisableWebSockets && TheBaseAssets.MyServiceHostInfo.MyStationWSPort > 0 && TheBaseAssets.MyServiceHostInfo.MyStationWSPort == TheBaseAssets.MyServiceHostInfo.MyStationPort
                                && context.Request.IsWebSocketRequest)
@@ -120,7 +115,6 @@ namespace nsCDEngine.Communication.HttpService
                                 }
                             }
                             else
-#endif
                             {
                                 TheCommonUtils.cdeRunAsync("MidiWebServer-HttpProcessing", false, (p) =>
                                 {

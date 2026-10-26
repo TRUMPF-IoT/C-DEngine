@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
-﻿#if CDE_USEWSS8
 using System;
 using System.Net;
 using System.Threading.Tasks;
@@ -142,4 +141,3 @@ namespace nsCDEngine.Communication
         }
     }
 }
-#endif

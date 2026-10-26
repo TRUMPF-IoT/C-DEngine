@@ -538,7 +538,7 @@ namespace nsCDEngine.Security
             if (pCounter == 1 && pSessionID == Guid.Empty && (MyServiceHostInfo?.UseFixedConnectionUrl != true))
                 pSessID = "P" + GetCryptoGuid().ToString().Substring(1);
             MyServiceHostInfo?.MyKPIs?.IncrementKPI(eKPINames.KPI4);
-            string tPath = PathPrefix + "ISB" + Uri.EscapeUriString(Base64Encode($"{string.Format("{0:00000}",CU.GetRandomUInt(0, 99999))}{(string.IsNullOrEmpty(MyServiceHostInfo?.ProtocolVersion)?"40":MyServiceHostInfo?.ProtocolVersion)}_{pCounter}_{((int)(pOriginType))}_{pSessID}"));
+            string tPath = PathPrefix + "ISB" + Uri.EscapeDataString(Base64Encode($"{string.Format("{0:00000}",CU.GetRandomUInt(0, 99999))}{(string.IsNullOrEmpty(MyServiceHostInfo?.ProtocolVersion)?"40":MyServiceHostInfo?.ProtocolVersion)}_{pCounter}_{((int)(pOriginType))}_{pSessID}"));
             if (IsWS && (pDestinationType == cdeSenderType.CDE_CLOUDROUTE || pDestinationType == cdeSenderType.CDE_SERVICE || pDestinationType == cdeSenderType.CDE_CUSTOMISB))
                 tPath += ".ashx";
             return tPath;
@@ -701,9 +701,8 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         private static Guid GetCryptoGuid()
         {
-            RNGCryptoServiceProvider crypto = new ();
             byte[] data = new byte[16];
-            crypto.GetBytes(data);
+            RandomNumberGenerator.Fill(data);
             return CU.CGuid(data);
         }
 
@@ -758,10 +757,9 @@ namespace nsCDEngine.Security
         private static string MD5(string text, bool useEasyScope16)
         {
             var result = default(string);
-            using (var algo = new SHA512Managed()) // new MD5CryptoServiceProvider())
+            using (var algo = SHA512.Create()) // new MD5CryptoServiceProvider())
             {
-                algo.ComputeHash(Encoding.UTF8.GetBytes(text));
-                result = CU.ToHexString(algo.Hash);
+                result = CU.ToHexString(algo.ComputeHash(Encoding.UTF8.GetBytes(text)));
             }
             return result.Substring(0,useEasyScope16?16:8);
         }
