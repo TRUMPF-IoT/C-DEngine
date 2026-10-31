@@ -83,6 +83,7 @@ namespace nsCDEngine.BaseClasses
             MaxDepth = 64,
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             NumberHandling = JsonNumberHandling.AllowReadingFromString|JsonNumberHandling.AllowNamedFloatingPointLiterals,
             Converters = { new ObjectToInferredTypesConverter(), new cdeGuidConverter(), new cdeStringConverter(), new cdeBooleanConverter(), new cdeNullToDefaultConverterFactory() }
         };
@@ -97,6 +98,7 @@ namespace nsCDEngine.BaseClasses
             MaxDepth=64,
             AllowTrailingCommas=true,
             ReadCommentHandling = JsonCommentHandling.Skip,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
             Converters = { new ObjectToInferredTypesConverter() } 
         };
@@ -112,6 +114,7 @@ namespace nsCDEngine.BaseClasses
             MaxDepth = 64,
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
             Converters = { new cdeNullToDefaultConverterFactory() }
         };
@@ -128,6 +131,7 @@ namespace nsCDEngine.BaseClasses
             AllowTrailingCommas = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
             NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             Converters = { new cdeNullToDefaultConverterFactory() }
         };
 
@@ -144,7 +148,7 @@ namespace nsCDEngine.BaseClasses
 
             private static readonly System.Collections.Generic.HashSet<Type> SupportedTypes = new()
             {
-                typeof(decimal), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), typeof(Guid),
+                typeof(decimal), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan),     typeof(Guid),
                 typeof(DateOnly), typeof(TimeOnly), typeof(Half), typeof(Int128), typeof(UInt128)
             };
 
@@ -415,7 +419,7 @@ namespace nsCDEngine.BaseClasses
         {
             if (string.IsNullOrEmpty(json)) return default;
 #if CDE_JSONET
-            T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json, TheBaseAssets.MyServiceHostInfo.UseStrictJSON ? cdeJsonEtConfigStrict : cdeJsonEtConfig);
+            T tDataf = System.Text.Json.JsonSerializer.Deserialize<T>(json, TheBaseAssets.MyServiceHostInfo?.UseStrictJSON == true ? cdeJsonEtConfigStrict : cdeJsonEtConfig);
             return tDataf;
 #else
             T tData = JsonConvert.DeserializeObject<T>(json, cdeNewtonJSONConfig);

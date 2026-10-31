@@ -133,4 +133,13 @@ jobs:
       # this should work, but doesn't:
       #run: dotnet nuget push './artifacts/**/*.nupkg' -s Source -k ${{secrets.GITHUB_TOKEN}}
       # workaround:
-      run: "Get-ChildItem ./artifacts/*.nupkg -File -Recurse | Foreach { $retryCount=0; do { if ($retryCount -gt 0) {start-sleep 30}; dotnet nuget push $_.fullname -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGETORG_APIKEY}}; $retryCount = $retryCount + 1 } while (($retryCount -lt 10) -and ($LastExitCode -ne 0)); if ($retryCount -ge 10) { throw(\"Error pushing to NuGet: \"+$LastExitCode) } }"
+      # --no-symbols: don't implicitly push the .snupkg here; symbols are pushed in a separate, non-blocking step below
+      # --skip-duplicate: a retry after a partially successful push must not fail with 409 Conflict
+      run: "Get-ChildItem ./artifacts/*.nupkg -File -Recurse | Foreach { $retryCount=0; do { if ($retryCount -gt 0) {start-sleep 30}; dotnet nuget push $_.fullname -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGETORG_APIKEY}} --no-symbols --skip-duplicate; $retryCount = $retryCount + 1 } while (($retryCount -lt 10) -and ($LastExitCode -ne 0)); if ($retryCount -ge 10) { throw(\"Error pushing to NuGet: \"+$LastExitCode) } }"
+
+    - name: Push NuGet Symbol Packages
+      # Only publish if the commit was tagged
+      if: steps.gitversion.outputs.VersionSourceSha == steps.gitversion.outputs.Sha
+      # Symbol package upload failures must not fail the release: the .nupkg is already published at this point
+      continue-on-error: true
+      run: "Get-ChildItem ./artifacts/*.snupkg -File -Recurse | Foreach { $retryCount=0; do { if ($retryCount -gt 0) {start-sleep 30}; dotnet nuget push $_.fullname -s https://api.nuget.org/v3/index.json -k ${{secrets.NUGETORG_APIKEY}} --skip-duplicate; $retryCount = $retryCount + 1 } while (($retryCount -lt 3) -and ($LastExitCode -ne 0)); if ($retryCount -ge 3) { Write-Warning (\"Error pushing symbol package to NuGet: \"+$LastExitCode) } }"
