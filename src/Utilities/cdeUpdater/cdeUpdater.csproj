@@ -25,12 +25,8 @@
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
   </PropertyGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="call &quot;$(ProjectDir)..\..\..\BuildTools\signmeSha.bat&quot; &quot;$(TargetPath)&quot;" />
-  </Target>
-
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="10.0.9" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.14" />
     <PackageReference Include="System.Management" Version="10.0.13" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.13" />
   </ItemGroup>
