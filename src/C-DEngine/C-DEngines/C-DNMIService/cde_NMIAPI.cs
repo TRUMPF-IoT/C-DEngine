@@ -345,7 +345,7 @@ namespace nsCDEngine.Engines.NMIService
                             if (p != null)
                             {
                                 var pSafe = p.ToString();
-                                if ((flags & 512) == 0)
+                                if ((flags & 256) == 0)
                                     pSafe = TheCommonUtils.cdeStripHTML(pSafe);
                                 tFldInfo.SetUXProperty(Guid.Empty, $"{ts[0]}={pSafe}");
                             }
