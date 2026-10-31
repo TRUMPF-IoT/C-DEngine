@@ -819,8 +819,8 @@ namespace nsCDEngine.Engines.NMIService
         /// 32=Advanced Editior
         /// 64=Live Update
         /// 128=Only Show if user is on first node
-        /// 256=Show on Cloud Only
-        /// 512=Allow HTML in Field
+        /// 256=Allow HTML in Field
+        /// 512=Show on Cloud Only
         /// </summary>
         public int Flags { get; set; }
         public eFieldType Type { get; set; }
