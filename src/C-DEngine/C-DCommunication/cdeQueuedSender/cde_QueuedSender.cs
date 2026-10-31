@@ -1357,7 +1357,8 @@ namespace nsCDEngine.Communication
                 int curLen = PayLen;
                 if (!TheBaseAssets.MyServiceHostInfo.DisableChunking && !pTopic.Contains(":,:") && !MsgToQueue.DoNotChunk())
                 {
-                    tTeles = ((PayLen / TheBaseAssets.MAX_MessageSize[(int)myTargetNodeChannel.SenderType]) + 1);
+                    tTeles = (PayLen + TheBaseAssets.MAX_MessageSize[(int)myTargetNodeChannel.SenderType]-1) / TheBaseAssets.MAX_MessageSize[(int)myTargetNodeChannel.SenderType];
+                    if (tTeles == 0) tTeles = 1;
                     curLen = TheBaseAssets.MAX_MessageSize[(int)myTargetNodeChannel.SenderType];
                 }
                 if (tTeles > 1)
