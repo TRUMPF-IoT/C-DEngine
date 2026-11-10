@@ -362,10 +362,7 @@ namespace nsCDEngine.ISM
             {
                 TheBaseAssets.MyServiceHostInfo.BaseDirectory = CU.GetCurrentAppDomainBaseDirWithTrailingSlash();
             }
-            if (string.IsNullOrEmpty(TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory))
-            {
-                TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory = TheBaseAssets.MyServiceHostInfo.BaseDirectory;
-            }
+            SetClientBinRootDirectory(argList);
             if (!TheBaseAssets.MyServiceHostInfo.UseRandomDeviceID)
             {
                 var tpiFile = CU.cdeFixupFileName("cache\\TheProvInfo.cdeTPI", true);
@@ -400,6 +397,36 @@ namespace nsCDEngine.ISM
                     argList.Add(Keys[i], appSettings[i]);
             }
             return true;
+        }
+
+        /// <summary>
+        /// Sets the ClientBinRootDirectory before anything is read from the ClientBin folder.
+        /// </summary>
+        /// <param name="argList">The start arguments of the host</param>
+        private static void SetClientBinRootDirectory(IDictionary<string, string> argList)
+        {
+            var hostInfo = TheBaseAssets.MyServiceHostInfo;
+            hostInfo.ClientBinRootDirectory = ResolveClientBinRootDirectory(GetArgOrEnv(argList, "ClientBinRootDirectory"), hostInfo.ClientBinRootDirectory, hostInfo.BaseDirectory);
+        }
+
+        /// <summary>
+        /// Returns the ClientBinRootDirectory as a full path with a trailing directory separator.
+        /// The start argument wins over the directory given to the constructor of TheServiceHostInfo.
+        /// Without both, the BaseDirectory is used. A relative path is relative to the BaseDirectory.
+        /// </summary>
+        /// <param name="argument">The start argument "ClientBinRootDirectory"</param>
+        /// <param name="current">The ClientBinRootDirectory given to the constructor of TheServiceHostInfo</param>
+        /// <param name="baseDirectory">The BaseDirectory of the host</param>
+        /// <returns>The ClientBinRootDirectory</returns>
+        internal static string ResolveClientBinRootDirectory(string argument, string current, string baseDirectory)
+        {
+            var directory = argument;
+            if (string.IsNullOrEmpty(directory))
+                directory = current;
+            if (string.IsNullOrEmpty(directory))
+                directory = baseDirectory;
+            directory = Path.GetFullPath(Path.Combine(baseDirectory, directory));
+            return Path.EndsInDirectorySeparator(directory) ? directory : directory + Path.DirectorySeparatorChar;
         }
 
         /**********************************************
