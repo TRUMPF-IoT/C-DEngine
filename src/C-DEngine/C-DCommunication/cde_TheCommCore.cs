@@ -437,8 +437,9 @@ namespace nsCDEngine.Communication
                     Guid tDID = TheCommonUtils.CGuid(tDeviceID);
                     if (Guid.Empty!=tDID)
                     {
-                        var tSend=TheQueuedSenderRegistry.GetSenderByGuid(tDID);
-                        tSend?.DisposeSender(true);
+                        //New 7.111.3: Security Review by TRUMPF could lead unwanted Node Teardown. Validation still required
+                        //var tSend=TheQueuedSenderRegistry.GetSenderByGuid(tDID);
+                        //tSend?.DisposeSender(true);
                         TheBaseAssets.MySYSLOG.WriteToLog(50561, new TSM("TheCommCore", $"Teardown of QSender for NodeID {tDID} after error {errorText}", eMsgLevel.l3_ImportantMessage), false);
                     }
                 }
