@@ -1347,7 +1347,7 @@ namespace nsCDEngine.ViewModels
         }
         /// <summary>
         /// New in 6.136.0: Client Bin Root Directory - this is the directory where the Client Bin Folder is located. This allows to run the C-DEngine in a subfolder and still have the Client Bin Folder in the root of the drive for better performance on slow drives
-        /// It requires the ClientBinRootDirectory to be set during startup in the appsettings.json and cannot be changed afterwards. If not set, the BaseDirectory will be used as the root for the Client Bin Folder (which is the default behavior of previous C-DEngine versions)
+        /// It is set during startup by the start argument "ClientBinRootDirectory" or by the constructor that takes a base directory, and cannot be changed afterwards. A relative path is relative to the BaseDirectory. If not set, the BaseDirectory will be used as the root for the Client Bin Folder (which is the default behavior of previous C-DEngine versions)
         /// </summary>
         public string ClientBinRootDirectory
         {
