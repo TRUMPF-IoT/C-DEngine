@@ -278,7 +278,8 @@ namespace nsCDEngine.ISM
                     if (string.IsNullOrEmpty(ISMUpdateDirectory)) ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory;
                     if (string.IsNullOrEmpty(ISMUpdateDirectory))
                     {
-                        ISMUpdateDirectory = TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory.Substring(0, TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory.Length - 1);
+                        // The updater installs into and restarts the application from this directory, so it stays the BaseDirectory when the ClientBin folder is moved
+                        ISMUpdateDirectory = Path.TrimEndingDirectorySeparator(TheBaseAssets.MyServiceHostInfo.BaseDirectory);
                         TheBaseAssets.MyServiceHostInfo.ISMUpdateDirectory = ISMUpdateDirectory;
                     }
                 }
@@ -872,7 +873,8 @@ namespace nsCDEngine.ISM
             }
             if (tList.Count == 0 && pFallBack)
             {
-                string FileToReturn1 = $"{ISMUpdateDirectory}{Path.DirectorySeparatorChar}ClientBin{Path.DirectorySeparatorChar}updates";
+                // Received updates are stored with cdeFixupFileName, which places them under the ClientBinRootDirectory
+                string FileToReturn1 = Path.Combine(TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory, "ClientBin", "updates");
                 TheBaseAssets.MySYSLOG.WriteToLog(2, TSM.L(eDEBUG_LEVELS.VERBOSE) ? null : new TSM("ISMManager", $"No files in MyDoc found Now scanning {FileToReturn1}"));
                 di = new DirectoryInfo(FileToReturn1);
                 ProcessDirectory(di, ref tList, "", GetISMExtension(), false, true);
@@ -909,7 +911,8 @@ namespace nsCDEngine.ISM
             try
             {
                 List<string> tList = new ();
-                DirectoryInfo di = new (TheBaseAssets.MyServiceHostInfo.ClientBinRootDirectory);
+                // Leftovers of the updater, which runs in the ISMUpdateDirectory
+                DirectoryInfo di = new (ISMUpdateDirectory);
                 ProcessDirectory(di, ref tList, "", ".tmp", false, false);
                 if (tList.Count > 0)
                 {

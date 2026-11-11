@@ -483,7 +483,11 @@ namespace nsCDEngine.BaseClasses
             // To ensure that restored backups are not overwritten during shutdown, we write them to a temp directory and move them into place on start up
             if (!MyServiceHostInfo.UseRandomDeviceID && !MyServiceHostInfo.IsIsolated)
             {
-                string cacheParentPath = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash() + "ClientBin"+ Path.DirectorySeparatorChar;
+                // The backup is written with cdeFixupFileName, which places it under the ClientBinRootDirectory
+                string clientBinRootDirectory = MyServiceHostInfo.ClientBinRootDirectory;
+                if (string.IsNullOrEmpty(clientBinRootDirectory))
+                    clientBinRootDirectory = TheCommonUtils.GetCurrentAppDomainBaseDirWithTrailingSlash();
+                string cacheParentPath = Path.Combine(clientBinRootDirectory, "ClientBin") + Path.DirectorySeparatorChar;
                 if (Directory.Exists(cacheParentPath + "__cachetorestore"))
                 {
                     // Keep the old Cache around just in case
