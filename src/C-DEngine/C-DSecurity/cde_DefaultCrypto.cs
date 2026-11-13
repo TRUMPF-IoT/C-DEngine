@@ -116,7 +116,7 @@ namespace nsCDEngine.Security
                 // TODO parse XML
                 throw;
             }
-            byte[] tBytes = rsa.Decrypt(val, false);
+            byte[] tBytes = rsa.Decrypt(val, RSAEncryptionPadding.Pkcs1);
             return Encoding.UTF8.GetString(tBytes, 0, tBytes.Length);
         }
 
@@ -145,7 +145,7 @@ namespace nsCDEngine.Security
                 rsa = new RSACryptoServiceProvider(2048);
                 rsa.FromXmlString(RSAKey);
             }
-            byte[] tBytes = rsa.Decrypt(val, false);
+            byte[] tBytes = rsa.Decrypt(val, RSAEncryptionPadding.Pkcs1);
             return Encoding.UTF8.GetString(tBytes, 0, tBytes.Length);
         }
 
@@ -170,7 +170,7 @@ namespace nsCDEngine.Security
                 Exponent = ToHexByte(rsaP[0])
             };
             rsa.ImportParameters(tP);
-            byte[] tBytes = rsa.Encrypt(CUTF8String2Array(val), false);     //NOSONAR This is required to support browsers without TLS in on-premises environments
+            byte[] tBytes = rsa.Encrypt(CUTF8String2Array(val), RSAEncryptionPadding.Pkcs1);     //NOSONAR This is required to support browsers without TLS in on-premises environments
             return tBytes;
         }
 

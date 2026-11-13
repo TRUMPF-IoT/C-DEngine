@@ -5,7 +5,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net10.0</TargetFrameworks>
+		<TargetFrameworks>net10.0;net11.0</TargetFrameworks>
 		<RootNamespace>nsCDEngine</RootNamespace>
 		<AssemblyName>C-DEngine</AssemblyName>
 		<PackageId>C-DEngine</PackageId>
@@ -27,7 +27,8 @@
 		<PackageOutputPath>$(SolutionDir)Nugets</PackageOutputPath>
 		<DefineConstants>TRACE;CDE_SYSLOG;CDE_JSONET</DefineConstants>
 		<LangVersion>preview</LangVersion>
-		<DocumentationFile>$(OutputPath)C-DEngine.xml</DocumentationFile>
+		<!-- Must be per target framework: a fixed DocumentationFile path would be written by all inner builds at the same time -->
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<!-- Debugging into the NuGet package: embed the PDB in the DLL and strip the drive letter
 			 from source paths so they resolve as \github\... on whichever drive the debugger runs from. -->
 		<DebugType>embedded</DebugType>
