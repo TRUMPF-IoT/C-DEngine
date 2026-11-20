@@ -54,8 +54,18 @@ namespace nsCDEngine.BaseClasses
                 Assembly tCryptoAssembly = null;
                 string codeSignThumb;
                 var types = AppDomain.CurrentDomain.GetAssemblies();
-                if (pDLLName.ToLower().EndsWith(".dll"))
-                    tCryptoAssembly = types.FirstOrDefault(g => g.Location.Contains(pDLLName.Substring(0,pDLLName.Length-4)));//new way of detecting mobile devices
+                if (bDontVerifyTrust && pDLLName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(pDLLName, Path.GetFileName(pDLLName), StringComparison.Ordinal))
+                {
+                    // Bundled mobile assemblies may not have a filesystem location.
+                    string assemblyName = Path.GetFileNameWithoutExtension(pDLLName);
+                    tCryptoAssembly = types.FirstOrDefault(g => string.Equals(g.GetName().Name, assemblyName, StringComparison.OrdinalIgnoreCase));
+                }
+                if (tCryptoAssembly == null && bDontVerifyTrust && pDLLName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                {
+                    string assemblyPath = pDLLName.Substring(0, pDLLName.Length - 4);
+                    tCryptoAssembly = types.FirstOrDefault(g => !g.IsDynamic && g.Location.Contains(assemblyPath));
+                }
                 if (tCryptoAssembly == null || !bDontVerifyTrust) // AppDomain.CurrentDomain?.FriendlyName != "RootDomain" && AppDomain.CurrentDomain?.FriendlyName != "MonoTouch" && AppDomain.CurrentDomain?.FriendlyName != "Meadow.dll") //Android and IOS
                 {
                     TheSystemMessageLog.ToCo($"Starting CodeSign-Verifier in ({pDLLName}) with DVT:{bDontVerifyTrust} VTP:{bVerifyTrustPath} DVI:{bDontVerifyIntegrity}");
