@@ -937,6 +937,11 @@ namespace nsCDEngine.Communication
                                 {
                                     foreach (TheQueuedSender tSend in tISBSender)
                                     {
+                                        if (!string.IsNullOrEmpty(pMessage.PLS) && pMessage.IsPLSEncrypted())
+                                        {
+                                            pMessage.PLS = TheCommonUtils.cdeDecrypt(pMessage.PLS, TheBaseAssets.MySecrets.GetAI());
+                                            pMessage.ResetPLSEncryption();
+                                        }
                                         tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                                     }
                                     return true;
