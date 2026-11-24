@@ -1025,7 +1025,7 @@ namespace nsCDEngine.Communication
                     return false;
                 }
 
-                if (tHasDirectAddress && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))     //IDST-OK: Quick check if the TSM with a direct address is for this QS since it will not relay
+                if (tHasDirectAddress && MyTargetNodeChannel.SenderType != cdeSenderType.CDE_CUSTOMISB && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))     //IDST-OK: Quick check if the TSM with a direct address is for this QS since it will not relay
                 {
 #pragma warning disable S1066 // Collapsible "if" statements should be merged
                     if (!tDirectGuid.Equals(myTargetNodeChannel.cdeMID) && !tDirectGuid.Equals(myTargetNodeChannel.TruDID))

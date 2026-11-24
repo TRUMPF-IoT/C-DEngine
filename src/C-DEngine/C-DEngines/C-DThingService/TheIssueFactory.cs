@@ -21,6 +21,8 @@ namespace nsCDEngine.Engines.ThingService
 
         TheFormInfo AddCurrentIssuesTable(TheThing pBaseThing, TheBaseEngine pBaseEngine, Guid IssueTableID, bool AddToDash, int TW = 12, int TH = 3, string pCategory = null);
         int CurrentOpenIssues(string pDevId, int level);
+        public TheIssue GetIssue(string pDevId, string pSensorId);
+        public List<TheIssue> GetIssues(string pDevId, List<string> pSensorIds);
     }
 
     /// <summary>
