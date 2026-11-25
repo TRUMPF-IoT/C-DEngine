@@ -123,8 +123,9 @@ namespace nsCDEngine.Communication.HttpService
             }
             catch (Exception e)
             {
-                TheBaseAssets.MySYSLOG.WriteToLog(4350, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("HttpMidiServer", "ProcessRequest Error:" + firstRequestLine, eMsgLevel.l1_Error, e.ToString()));
-                tRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(e.ToString());
+                // Only the log gets the exception: its stack trace tells a caller too much about the node
+                TheBaseAssets.MySYSLOG.WriteToLog(4350, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpMidiServer", "ProcessRequest Error:" + firstRequestLine, eMsgLevel.l1_Error, e.ToString()));
+                tRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array("ProcessRequest Error");
                 tRequestData.StatusCode = (int)eHttpStatusCode.ServerError;
             }
 
@@ -273,8 +274,9 @@ namespace nsCDEngine.Communication.HttpService
             }
             catch (Exception e)
             {
-                TheBaseAssets.MySYSLOG.WriteToLog(4352, TSM.L(eDEBUG_LEVELS.ESSENTIALS) ? null : new TSM("HttpMidiServer", "ProcessRequest Error:" + firstRequestLine, eMsgLevel.l1_Error, e.ToString()));
-                tRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array(e.ToString());
+                // Only the log gets the exception: its stack trace tells a caller too much about the node
+                TheBaseAssets.MySYSLOG.WriteToLog(4352, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpMidiServer", "ProcessRequest Error:" + firstRequestLine, eMsgLevel.l1_Error, e.ToString()));
+                tRequestData.ResponseBuffer = TheCommonUtils.CUTF8String2Array("ProcessRequest Error");
                 tRequestData.StatusCode = (int)eHttpStatusCode.ServerError;
             }
 

@@ -722,7 +722,8 @@ namespace nsCDEngine.Communication
                         catch (Exception ee)
                         {
                             TheBaseAssets.MySYSLOG.WriteToLog(5059, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("HttpService", "Execute Command Error", ee.ToString()));
-                            SendError($"1711:{ee}", pRequestData, eHttpStatusCode.ServerError);
+                            // Only the log gets the exception: its stack trace tells a caller too much about the node
+                            SendError("1711:Execute Command Error", pRequestData, eHttpStatusCode.ServerError);
                         }
                     }
                     else
