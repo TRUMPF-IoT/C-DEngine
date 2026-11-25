@@ -1001,7 +1001,7 @@ namespace nsCDEngine.Communication
                     return false;
                 }
 
-                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(MyTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
+                if (!((!pMessage.DoesORGContain(myTargetNodeChannel.cdeMID) && !pMessage.DoesORGContain(myTargetNodeChannel.TruDID)) || (tHasDirectAddress && tDirectGuid == myTargetNodeChannel.cdeMID)))
                 {
                     TheBaseAssets.MySYSLOG.WriteToLog(2328, TSM.L(eDEBUG_LEVELS.FULLVERBOSE) ? null : new TSM("CoreComm", $"Target {myTargetNodeChannel.ToMLString()} found in Hubs ORG:{pMessage.ORG} - {pMessage.TXT} Will be ignored", eMsgLevel.l7_HostDebugMessage), true);//ORG-OK
                     return false;
@@ -1030,7 +1030,7 @@ namespace nsCDEngine.Communication
                     return false;
                 }
 
-                if (tHasDirectAddress && MyTargetNodeChannel.SenderType != cdeSenderType.CDE_CUSTOMISB && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))     //IDST-OK: Quick check if the TSM with a direct address is for this QS since it will not relay
+                if (tHasDirectAddress && myTargetNodeChannel.SenderType != cdeSenderType.CDE_CUSTOMISB && TheCommonUtils.IsDeviceSenderType(myTargetNodeChannel.SenderType))     //IDST-OK: Quick check if the TSM with a direct address is for this QS since it will not relay
                 {
 #pragma warning disable S1066 // Collapsible "if" statements should be merged
                     if (!tDirectGuid.Equals(myTargetNodeChannel.cdeMID) && !tDirectGuid.Equals(myTargetNodeChannel.TruDID))
