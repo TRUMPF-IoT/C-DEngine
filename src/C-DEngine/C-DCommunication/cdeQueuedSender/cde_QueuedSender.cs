@@ -886,11 +886,7 @@ namespace nsCDEngine.Communication
                                                     {
                                                         if (tSend.MySubscriptionContains(tTopicNameOnly, tTopicRealScope, true))
                                                         {
-                                                            if (!string.IsNullOrEmpty(pMessage.PLS) && pMessage.IsPLSEncrypted())
-                                                            {
-                                                                pMessage.PLS = TheCommonUtils.cdeDecrypt(pMessage.PLS, TheBaseAssets.MySecrets.GetAI());
-                                                                pMessage.ResetPLSEncryption();
-                                                            }
+                                                            CheckForPLSEncryption(pMessage);
                                                             tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                                                             bFoundISB = true;
                                                         }
@@ -927,6 +923,7 @@ namespace nsCDEngine.Communication
                             if (myTargetNodeChannel.SenderType == cdeSenderType.CDE_CUSTOMISB && tDirectGuid == myTargetNodeChannel.cdeMID && MyISBlock?.OnThisNode == true)
                             {
                                 //CM: 5.123.0: This is required to handle PublishToOriginator, PublishToNode and any other publishes with direct GUID and ISBConnects
+                                CheckForPLSEncryption(pMessage);
                                 MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                                 return true;
                             }
@@ -937,11 +934,7 @@ namespace nsCDEngine.Communication
                                 {
                                     foreach (TheQueuedSender tSend in tISBSender)
                                     {
-                                        if (!string.IsNullOrEmpty(pMessage.PLS) && pMessage.IsPLSEncrypted())
-                                        {
-                                            pMessage.PLS = TheCommonUtils.cdeDecrypt(pMessage.PLS, TheBaseAssets.MySecrets.GetAI());
-                                            pMessage.ResetPLSEncryption();
-                                        }
+                                        CheckForPLSEncryption(pMessage);
                                         tSend?.MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                                     }
                                     return true;
@@ -1142,12 +1135,16 @@ namespace nsCDEngine.Communication
                                 tBase.ProcessMessage(new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback });
                         }
                         if (MyISBlock?.OnThisNode == true)
+                        {
+                            CheckForPLSEncryption(tSendMessage);
                             MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = tSendMessage, LocalCallback = pLocalCallback });
+                        }
                     });
                     return true;
                 }
                 if (!tHasDirectAddress && MyISBlock?.OnThisNode == true && TheBaseAssets.MyServiceHostInfo.MyDeviceInfo.DeviceID != pMessage.GetOriginator())
                 {
+                    CheckForPLSEncryption(pMessage);
                     MyISBlock?.FireEvent("TSMReceived", new TheProcessMessage() { Topic = tTopic, Message = TSM.Clone(pMessage, true), LocalCallback = pLocalCallback });
                     //return true; This prevents relaying of ISB Messages messages
                 }
@@ -1451,6 +1448,15 @@ namespace nsCDEngine.Communication
                 TheBaseAssets.MySYSLOG.WriteToLog(23223, TSM.L(eDEBUG_LEVELS.OFF) ? null : new TSM("QueuedSender", $"Fatal Error in Send-Queued! to {myTargetNodeChannel} - Topic:{tTopicNameOnly} ORG:{TheCommonUtils.GetDeviceIDML(pMessage.ORG)}", eMsgLevel.l1_Error, $"TXT:{pMessage.TXT} Error:{e}"));//ORG-OK
             }
             return true;
+        }
+
+        private static void CheckForPLSEncryption(TSM pMessage)
+        {
+            if (!string.IsNullOrEmpty(pMessage.PLS) && pMessage.IsPLSEncrypted())
+            {
+                pMessage.PLS = TheCommonUtils.cdeDecrypt(pMessage.PLS, TheBaseAssets.MySecrets.GetAI());
+                pMessage.ResetPLSEncryption();
+            }
         }
 
         private TheCoreQueueContent GetNextMessage(out int pQCount)
