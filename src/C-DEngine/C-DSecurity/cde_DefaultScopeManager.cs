@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2009-2020 TRUMPF Laser GmbH, authors: C-Labs
+// SPDX-FileCopyrightText: Copyright (c) 2009-2026 TRUMPF Laser GmbH, authors: C-Labs, Hyviva
 //
 // SPDX-License-Identifier: MPL-2.0
 
@@ -106,7 +106,7 @@ namespace nsCDEngine.Security
         ///
         /// <returns>   The code. </returns>
         ////////////////////////////////////////////////////////////////////////////////////////////////////
-        public static string GenerateCode(int digits=8)
+        public static string GenerateCode(int digits = 8)
         {
             return TheBaseAssets.MyScopeManager?.GenerateCode(digits);
         }
@@ -133,7 +133,7 @@ namespace nsCDEngine.Security
         /// <param name="pTopic">The topic. If IsSScope is true, the pTopic is viewed as a Scrambled ScopeID.</param>
         /// <param name="IsSScope">if set to <c>true</c> [is pTopic is a scrambled Scope ID].</param>
         /// <returns>System.String.</returns>
-        public static string GetScopeHash(string pTopic, bool IsSScope=false)
+        public static string GetScopeHash(string pTopic, bool IsSScope = false)
         {
             if (TheBaseAssets.MyScopeManager == null) return null;
             return TheBaseAssets.MyScopeManager?.GetScopeHash(pTopic, IsSScope);
@@ -161,7 +161,7 @@ namespace nsCDEngine.Security
         /// <returns></returns>
         public static string GetScrambledScopeIDFromEasyID(string pEasyScope, bool bNoLogging = false, bool bUseEasyScope16 = false)
         {
-            return TheBaseAssets.MyScopeManager?.GetScrambledScopeIDFromEasyID(pEasyScope,bNoLogging, bUseEasyScope16);
+            return TheBaseAssets.MyScopeManager?.GetScrambledScopeIDFromEasyID(pEasyScope, bNoLogging, bUseEasyScope16);
         }
 
         /// <summary>
@@ -288,7 +288,7 @@ namespace nsCDEngine.Security
             else
                 return Base64Encode(CU.GetRandomUInt(0, 1000) + "&" + GetRealScopeID(pRealScopeID));
         }
-        public string GetRealScopeIDFromEasyID(string pEasyID, bool bNoLogging=false, bool bUseEasyScope16=false)
+        public string GetRealScopeIDFromEasyID(string pEasyID, bool bNoLogging = false, bool bUseEasyScope16 = false)
         {
             return InsertCodeIntoGUID(pEasyID, CU.CGuid(TheBaseAssets.MySecrets.GetAK()), bUseEasyScope16).ToString();
         }
@@ -496,7 +496,7 @@ namespace nsCDEngine.Security
 
         public string GetSessionIDFromISB(string pRealPage)
         {
-            string[] tQ = Base64Decode(pRealPage).Split('_');
+            string[] tQ = Base64Decode(Uri.UnescapeDataString(pRealPage)).Split('_');
             if (tQ.Length > 3) return tQ[3];
             return null;
         }
@@ -510,7 +510,8 @@ namespace nsCDEngine.Security
 
             try
             {
-                string[] tQ = Base64Decode(pRealPage).Split('_');
+                // The NPA of a telegram carries the path as escaped for a URL
+                string[] tQ = Base64Decode(Uri.UnescapeDataString(pRealPage)).Split('_');
 
                 pType = tQ.Length == 4 ? (cdeSenderType)(CU.CInt(tQ[2])) : cdeSenderType.NOTSET;
                 if (tQ.Length > 1) pFID = CU.CLng(tQ[1]);
@@ -538,7 +539,14 @@ namespace nsCDEngine.Security
             if (pCounter == 1 && pSessionID == Guid.Empty && (MyServiceHostInfo?.UseFixedConnectionUrl != true))
                 pSessID = "P" + GetCryptoGuid().ToString().Substring(1);
             MyServiceHostInfo?.MyKPIs?.IncrementKPI(eKPINames.KPI4);
-            string tPath = PathPrefix + "ISB" + Uri.EscapeDataString(Base64Encode($"{string.Format("{0:00000}",CU.GetRandomUInt(0, 99999))}{(string.IsNullOrEmpty(MyServiceHostInfo?.ProtocolVersion)?"40":MyServiceHostInfo?.ProtocolVersion)}_{pCounter}_{((int)(pOriginType))}_{pSessID}"));
+            string tPrefix = $"{string.Format("{0:00000}", CU.GetRandomUInt(0, 99999))}{(string.IsNullOrEmpty(MyServiceHostInfo?.ProtocolVersion) ? "40" : MyServiceHostInfo?.ProtocolVersion)}";
+            string tSuffix = $"_{((int)(pOriginType))}_{pSessID}";
+            // Leading zeros on the counter spare the Base64 its padding: escaped as %3D, it broke the session in the
+            // NPA for nodes that read it without unescaping, which they then replaced by one the relay does not know
+            string tCounter = pCounter.ToString();
+            while ((tPrefix.Length + 1 + tCounter.Length + tSuffix.Length) % 3 != 0)
+                tCounter = "0" + tCounter;
+            string tPath = PathPrefix + "ISB" + Uri.EscapeDataString(Base64Encode($"{tPrefix}_{tCounter}{tSuffix}"));
             if (IsWS && (pDestinationType == cdeSenderType.CDE_CLOUDROUTE || pDestinationType == cdeSenderType.CDE_SERVICE || pDestinationType == cdeSenderType.CDE_CUSTOMISB))
                 tPath += ".ashx";
             return tPath;
@@ -583,7 +591,7 @@ namespace nsCDEngine.Security
 
         public string GetScrambledScopeIDFromEasyID(string pEasyScope)
         {
-            return GetScrambledScopeIDFromEasyID(pEasyScope, false, MyServiceHostInfo?.UseEasyScope16==true);
+            return GetScrambledScopeIDFromEasyID(pEasyScope, false, MyServiceHostInfo?.UseEasyScope16 == true);
         }
 
         /// <summary>
@@ -630,7 +638,7 @@ namespace nsCDEngine.Security
         public cdeSenderType GetSenderTypeFromDeviceID(Guid pNodeID)
         {
             string tN = pNodeID.ToString();
-            return (cdeSenderType)CU.CInt(tN.Substring(tN.Length-1, 1));
+            return (cdeSenderType)CU.CInt(tN.Substring(tN.Length - 1, 1));
         }
 
         /// <summary>
@@ -750,8 +758,8 @@ namespace nsCDEngine.Security
             string tg = MD5(pCode, useEasyScope16);
             string tguid = pGuid.ToString().Replace("{", "").Replace("}", "").Replace("-", "");
             if (tg.Length > tguid.Length)
-                return CU.CGuid(tg.Substring(0,tguid.Length));
-            return CU.CGuid(tg + tguid.Substring(0, tguid.Length-tg.Length));
+                return CU.CGuid(tg.Substring(0, tguid.Length));
+            return CU.CGuid(tg + tguid.Substring(0, tguid.Length - tg.Length));
         }
 
         private static string MD5(string text, bool useEasyScope16)
@@ -761,7 +769,7 @@ namespace nsCDEngine.Security
             {
                 result = CU.ToHexString(algo.ComputeHash(Encoding.UTF8.GetBytes(text)));
             }
-            return result.Substring(0,useEasyScope16?16:8);
+            return result.Substring(0, useEasyScope16 ? 16 : 8);
         }
 
         private static string Base64Encode(string plainText)
