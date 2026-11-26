@@ -48,4 +48,8 @@
     <ProjectReference Include="..\DataLogUtilities\DataLogUtilities.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="C-DSecurity\" />
+  </ItemGroup>
+
 </Project>
